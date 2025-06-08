@@ -341,7 +341,7 @@ const WorkerGigList: React.FC = () => {
                               <MapPin className="h-4 w-4 mr-2" />
                               {gig.location}
                               {gig.remote && (
-                                <Badge variant="outline" className="ml-2 text-xs">
+                                <Badge variant="outline\" className="ml-2 text-xs">
                                   Remote
                                 </Badge>
                               )}

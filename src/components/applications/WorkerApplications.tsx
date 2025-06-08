@@ -294,7 +294,7 @@ const WorkerApplications: React.FC = () => {
                                 </div>
                                 <div className="flex items-center space-x-2">
                                   {application.status === 'accepted' && (
-                                    <Button size="sm" className="bg-green-600 hover:bg-green-700">
+                                    <Button size="sm\" className="bg-green-600 hover:bg-green-700">
                                       View Details
                                     </Button>
                                   )}
