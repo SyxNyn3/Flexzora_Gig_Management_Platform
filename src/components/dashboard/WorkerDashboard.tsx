@@ -1,0 +1,464 @@
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useAuth } from '@/contexts/AuthContext';
+import { useGigs, useApplications } from '@/hooks/useSupabaseQuery';
+import { 
+  Calendar, 
+  DollarSign, 
+  Clock,
+  MapPin,
+  TrendingUp,
+  Bell,
+  Plus,
+  ArrowRight,
+  CheckCircle,
+  AlertCircle,
+  Star,
+  Briefcase,
+  Users,
+  Building2
+} from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { format, isToday, isTomorrow, addDays } from 'date-fns';
+
+const WorkerDashboard: React.FC = () => {
+  const { profile } = useAuth();
+  const navigate = useNavigate();
+  const [greeting, setGreeting] = useState('');
+
+  // Fetch data
+  const { data: availableGigs = [] } = useGigs({ status: 'published' });
+  const { data: myApplications = [] } = useApplications({ workerId: profile?.id });
+
+  useEffect(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) setGreeting('Good morning');
+    else if (hour < 17) setGreeting('Good afternoon');
+    else setGreeting('Good evening');
+  }, []);
+
+  // Mock data for demo
+  const upcomingGigs = [
+    {
+      id: '1',
+      title: 'Corporate Event Setup',
+      company: 'TechCorp Events',
+      date: new Date(),
+      time: '9:00 AM - 5:00 PM',
+      location: 'San Francisco, CA',
+      rate: 45,
+      status: 'confirmed',
+      avatar: '🏢'
+    },
+    {
+      id: '2',
+      title: 'Wedding Photography',
+      company: 'Dream Weddings',
+      date: addDays(new Date(), 1),
+      time: '2:00 PM - 10:00 PM',
+      location: 'Napa Valley, CA',
+      rate: 55,
+      status: 'confirmed',
+      avatar: '💒'
+    }
+  ];
+
+  const recentApplications = myApplications.slice(0, 3);
+  const todaysGigs = upcomingGigs.filter(gig => isToday(gig.date));
+  const tomorrowsGigs = upcomingGigs.filter(gig => isTomorrow(gig.date));
+
+  const stats = {
+    totalEarnings: 15420,
+    thisMonth: 3200,
+    pendingApplications: recentApplications.filter(app => app.status === 'pending').length,
+    upcomingGigs: upcomingGigs.length,
+    completedGigs: 28,
+    rating: 4.8
+  };
+
+  const getDateLabel = (date: Date) => {
+    if (isToday(date)) return 'Today';
+    if (isTomorrow(date)) return 'Tomorrow';
+    return format(date, 'MMM d');
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'confirmed': return 'bg-green-100 text-green-800';
+      case 'pending': return 'bg-yellow-100 text-yellow-800';
+      case 'accepted': return 'bg-blue-100 text-blue-800';
+      case 'rejected': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">
+                {greeting}, {profile?.full_name?.split(' ')[0]}! 👋
+              </h1>
+              <p className="text-gray-600 mt-1">
+                Here's what's happening with your gigs today
+              </p>
+            </div>
+            <div className="flex items-center space-x-3">
+              <Button variant="outline" size="sm">
+                <Bell className="h-4 w-4 mr-2" />
+                3
+              </Button>
+              <Avatar className="h-10 w-10">
+                <AvatarImage src={profile?.avatar_url} />
+                <AvatarFallback>
+                  {profile?.full_name?.split(' ').map(n => n[0]).join('')}
+                </AvatarFallback>
+              </Avatar>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Quick Stats */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-blue-100 text-sm">Total Earnings</p>
+                  <p className="text-2xl font-bold">${stats.totalEarnings.toLocaleString()}</p>
+                </div>
+                <DollarSign className="h-8 w-8 text-blue-200" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-green-100 text-sm">This Month</p>
+                  <p className="text-2xl font-bold">${stats.thisMonth.toLocaleString()}</p>
+                </div>
+                <TrendingUp className="h-8 w-8 text-green-200" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-purple-100 text-sm">Completed</p>
+                  <p className="text-2xl font-bold">{stats.completedGigs}</p>
+                </div>
+                <Briefcase className="h-8 w-8 text-purple-200" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-orange-500 to-orange-600 text-white">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-orange-100 text-sm">Rating</p>
+                  <div className="flex items-center">
+                    <p className="text-2xl font-bold">{stats.rating}</p>
+                    <Star className="h-5 w-5 text-orange-200 ml-1 fill-current" />
+                  </div>
+                </div>
+                <Users className="h-8 w-8 text-orange-200" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Today's Schedule */}
+          <div className="lg:col-span-2 space-y-6">
+            <Card>
+              <CardHeader className="pb-4">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center">
+                    <Calendar className="h-5 w-5 mr-2 text-blue-600" />
+                    Today's Schedule
+                  </CardTitle>
+                  <Button variant="outline" size="sm" onClick={() => navigate('/calendar')}>
+                    View All
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {todaysGigs.length > 0 ? (
+                  <div className="space-y-4">
+                    {todaysGigs.map((gig) => (
+                      <div key={gig.id} className="flex items-center p-4 bg-blue-50 rounded-lg border border-blue-200">
+                        <div className="text-3xl mr-4">{gig.avatar}</div>
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-gray-900">{gig.title}</h3>
+                          <p className="text-sm text-gray-600">{gig.company}</p>
+                          <div className="flex items-center mt-2 space-x-4 text-sm text-gray-500">
+                            <div className="flex items-center">
+                              <Clock className="h-4 w-4 mr-1" />
+                              {gig.time}
+                            </div>
+                            <div className="flex items-center">
+                              <MapPin className="h-4 w-4 mr-1" />
+                              {gig.location}
+                            </div>
+                            <div className="flex items-center">
+                              <DollarSign className="h-4 w-4 mr-1" />
+                              ${gig.rate}/hr
+                            </div>
+                          </div>
+                        </div>
+                        <Badge className={getStatusColor(gig.status)}>
+                          {gig.status}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No gigs today</h3>
+                    <p className="text-gray-600 mb-4">Take a break or look for new opportunities!</p>
+                    <Button onClick={() => navigate('/gigs')}>
+                      Browse Available Gigs
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Tomorrow's Preview */}
+            {tomorrowsGigs.length > 0 && (
+              <Card>
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center">
+                    <Clock className="h-5 w-5 mr-2 text-green-600" />
+                    Tomorrow's Preview
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {tomorrowsGigs.map((gig) => (
+                      <div key={gig.id} className="flex items-center p-3 bg-green-50 rounded-lg border border-green-200">
+                        <div className="text-2xl mr-3">{gig.avatar}</div>
+                        <div className="flex-1">
+                          <h4 className="font-medium text-gray-900">{gig.title}</h4>
+                          <p className="text-sm text-gray-600">{gig.time} • {gig.location}</p>
+                        </div>
+                        <Badge className={getStatusColor(gig.status)}>
+                          {gig.status}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Available Gigs */}
+            <Card>
+              <CardHeader className="pb-4">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center">
+                    <Briefcase className="h-5 w-5 mr-2 text-purple-600" />
+                    New Opportunities
+                  </CardTitle>
+                  <Button variant="outline" size="sm" onClick={() => navigate('/gigs')}>
+                    View All
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {availableGigs.slice(0, 3).map((gig) => (
+                    <div 
+                      key={gig.id} 
+                      className="p-4 border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors cursor-pointer"
+                      onClick={() => navigate(`/gigs/${gig.id}`)}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-gray-900">{gig.title}</h4>
+                          <p className="text-sm text-gray-600 mt-1">{gig.company?.name}</p>
+                          <div className="flex items-center mt-2 space-x-4 text-sm text-gray-500">
+                            <div className="flex items-center">
+                              <Calendar className="h-4 w-4 mr-1" />
+                              {format(new Date(gig.start_date), 'MMM d')}
+                            </div>
+                            <div className="flex items-center">
+                              <MapPin className="h-4 w-4 mr-1" />
+                              {gig.location}
+                            </div>
+                            {gig.hourly_rate && (
+                              <div className="flex items-center">
+                                <DollarSign className="h-4 w-4 mr-1" />
+                                ${gig.hourly_rate}/hr
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <ArrowRight className="h-5 w-5 text-gray-400" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Sidebar */}
+          <div className="space-y-6">
+            {/* Quick Actions */}
+            <Card>
+              <CardHeader className="pb-4">
+                <CardTitle>Quick Actions</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Button className="w-full justify-start" onClick={() => navigate('/gigs')}>
+                  <Briefcase className="h-4 w-4 mr-2" />
+                  Find New Gigs
+                </Button>
+                <Button variant="outline" className="w-full justify-start" onClick={() => navigate('/applications')}>
+                  <Clock className="h-4 w-4 mr-2" />
+                  My Applications
+                </Button>
+                <Button variant="outline" className="w-full justify-start" onClick={() => navigate('/finances')}>
+                  <DollarSign className="h-4 w-4 mr-2" />
+                  Track Earnings
+                </Button>
+                <Button variant="outline" className="w-full justify-start" onClick={() => navigate('/profile')}>
+                  <Users className="h-4 w-4 mr-2" />
+                  Update Profile
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Recent Applications */}
+            <Card>
+              <CardHeader className="pb-4">
+                <div className="flex items-center justify-between">
+                  <CardTitle>Recent Applications</CardTitle>
+                  <Button variant="ghost" size="sm" onClick={() => navigate('/applications')}>
+                    View All
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {recentApplications.length > 0 ? (
+                  <div className="space-y-3">
+                    {recentApplications.map((application) => (
+                      <div key={application.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div className="flex-1">
+                          <h4 className="font-medium text-sm text-gray-900">
+                            {application.gig?.title}
+                          </h4>
+                          <p className="text-xs text-gray-600">
+                            Applied {format(new Date(application.application_date), 'MMM d')}
+                          </p>
+                        </div>
+                        <Badge className={getStatusColor(application.status)} size="sm">
+                          {application.status}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-4">
+                    <AlertCircle className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                    <p className="text-sm text-gray-600">No recent applications</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Company Integrations */}
+            <Card>
+              <CardHeader className="pb-4">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center">
+                    <Building2 className="h-5 w-5 mr-2" />
+                    Connected Companies
+                  </CardTitle>
+                  <Button variant="ghost" size="sm" onClick={() => navigate('/integrations')}>
+                    Manage
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
+                    <div className="flex items-center">
+                      <div className="text-lg mr-3">🦏</div>
+                      <div>
+                        <p className="font-medium text-sm">Rhino Staging</p>
+                        <p className="text-xs text-gray-600">15 gigs</p>
+                      </div>
+                    </div>
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                  </div>
+                  
+                  <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <div className="flex items-center">
+                      <div className="text-lg mr-3">🎵</div>
+                      <div>
+                        <p className="font-medium text-sm">Giglife</p>
+                        <p className="text-xs text-gray-600">8 gigs</p>
+                      </div>
+                    </div>
+                    <CheckCircle className="h-4 w-4 text-blue-600" />
+                  </div>
+
+                  <Button variant="outline" size="sm" className="w-full" onClick={() => navigate('/integrations')}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Company
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Performance */}
+            <Card>
+              <CardHeader className="pb-4">
+                <CardTitle>This Month</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Gigs Completed</span>
+                  <span className="font-semibold">12</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Hours Worked</span>
+                  <span className="font-semibold">96</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Avg. Rating</span>
+                  <div className="flex items-center">
+                    <span className="font-semibold mr-1">4.8</span>
+                    <Star className="h-4 w-4 text-yellow-500 fill-current" />
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Response Rate</span>
+                  <span className="font-semibold">98%</span>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default WorkerDashboard;

@@ -4,11 +4,14 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import Layout from '@/components/layout/Layout';
 import AuthForm from '@/components/auth/AuthForm';
+import WorkerDashboard from '@/components/dashboard/WorkerDashboard';
 import Dashboard from '@/components/dashboard/Dashboard';
+import WorkerGigList from '@/components/gigs/WorkerGigList';
 import GigList from '@/components/gigs/GigList';
 import GigDetails from '@/components/gigs/GigDetails';
 import GigManagement from '@/components/gigs/GigManagement';
 import CreateGigForm from '@/components/gigs/CreateGigForm';
+import WorkerApplications from '@/components/applications/WorkerApplications';
 import ApplicationsManager from '@/components/gigs/ApplicationsManager';
 import CalendarView from '@/components/calendar/CalendarView';
 import FinanceDashboard from '@/components/finances/FinanceDashboard';
@@ -44,7 +47,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   }
 
   if (!user) {
-    return <Navigate to="/auth\" replace />;
+    return <Navigate to="/auth" replace />;
   }
 
   return <>{children}</>;
@@ -58,13 +61,20 @@ const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   }
 
   if (user) {
-    return <Navigate to="/dashboard\" replace />;
+    return <Navigate to="/dashboard" replace />;
   }
 
   return <>{children}</>;
 };
 
 const AppRoutes: React.FC = () => {
+  const { profile } = useAuth();
+
+  // Determine which components to use based on user role
+  const DashboardComponent = profile?.role === 'worker' ? WorkerDashboard : Dashboard;
+  const GigListComponent = profile?.role === 'worker' ? WorkerGigList : GigList;
+  const ApplicationsComponent = profile?.role === 'worker' ? WorkerApplications : ApplicationsManager;
+
   return (
     <Router>
       <Routes>
@@ -81,7 +91,7 @@ const AppRoutes: React.FC = () => {
           element={
             <ProtectedRoute>
               <Layout>
-                <Dashboard />
+                <DashboardComponent />
               </Layout>
             </ProtectedRoute>
           }
@@ -91,7 +101,7 @@ const AppRoutes: React.FC = () => {
           element={
             <ProtectedRoute>
               <Layout>
-                <GigList />
+                <GigListComponent />
               </Layout>
             </ProtectedRoute>
           }
@@ -131,7 +141,7 @@ const AppRoutes: React.FC = () => {
           element={
             <ProtectedRoute>
               <Layout>
-                <ApplicationsManager />
+                <ApplicationsComponent />
               </Layout>
             </ProtectedRoute>
           }
@@ -187,6 +197,16 @@ const AppRoutes: React.FC = () => {
           }
         />
         <Route
+          path="/unified-schedule"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <UnifiedSchedule />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/workforce"
           element={
             <ProtectedRoute>
@@ -196,8 +216,8 @@ const AppRoutes: React.FC = () => {
             </ProtectedRoute>
           }
         />
-        <Route path="/" element={<Navigate to="/dashboard\" replace />} />
-        <Route path="*" element={<Navigate to="/dashboard\" replace />} />
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </Router>
   );
