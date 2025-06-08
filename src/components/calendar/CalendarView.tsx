@@ -4,7 +4,12 @@ import moment from 'moment';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { Gig, GigApplication } from '@/lib/types';
@@ -14,10 +19,18 @@ import {
   Clock, 
   Users,
   DollarSign,
-  Building
+  Building,
+  Plus,
+  Bell,
+  FileText,
+  Save,
+  X,
+  Edit,
+  Trash2
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 
 const localizer = momentLocalizer(moment);
@@ -27,23 +40,57 @@ interface CalendarEvent {
   title: string;
   start: Date;
   end: Date;
-  resource: Gig;
+  resource: Gig | CalendarNote | CalendarReminder;
   status: string;
+  type: 'gig' | 'note' | 'reminder';
+}
+
+interface CalendarNote {
+  id: string;
+  title: string;
+  content: string;
+  date: string;
+  color: string;
+  created_at: string;
+}
+
+interface CalendarReminder {
+  id: string;
+  title: string;
+  description: string;
+  date: string;
+  time: string;
+  priority: 'low' | 'medium' | 'high';
+  completed: boolean;
+  created_at: string;
 }
 
 const CalendarView: React.FC = () => {
   const { profile } = useAuth();
   const navigate = useNavigate();
   const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [notes, setNotes] = useState<CalendarNote[]>([]);
+  const [reminders, setReminders] = useState<CalendarReminder[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showEventDialog, setShowEventDialog] = useState(false);
+  const [showAddDialog, setShowAddDialog] = useState(false);
   const [currentView, setCurrentView] = useState<View>(Views.MONTH);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [loading, setLoading] = useState(true);
 
+  // Add item form state
+  const [addType, setAddType] = useState<'note' | 'reminder'>('note');
+  const [title, setTitle] = useState('');
+  const [content, setContent] = useState('');
+  const [reminderTime, setReminderTime] = useState('09:00');
+  const [reminderPriority, setReminderPriority] = useState<'low' | 'medium' | 'high'>('medium');
+  const [noteColor, setNoteColor] = useState('#3B82F6');
+
   useEffect(() => {
     if (profile) {
       fetchCalendarData();
+      loadMockNotesAndReminders();
     }
   }, [profile]);
 
@@ -76,6 +123,7 @@ const CalendarView: React.FC = () => {
             end: new Date(app.gig!.end_date),
             resource: app.gig!,
             status: 'accepted',
+            type: 'gig' as const,
           }));
 
         setEvents(workerEvents);
@@ -97,6 +145,7 @@ const CalendarView: React.FC = () => {
           end: new Date(gig.end_date),
           resource: gig,
           status: gig.status,
+          type: 'gig' as const,
         }));
 
         setEvents(companyEvents);
@@ -108,9 +157,86 @@ const CalendarView: React.FC = () => {
     }
   };
 
+  const loadMockNotesAndReminders = () => {
+    // Mock notes
+    const mockNotes: CalendarNote[] = [
+      {
+        id: '1',
+        title: 'Equipment Check',
+        content: 'Remember to check all camera equipment before the corporate event',
+        date: '2024-01-14',
+        color: '#10B981',
+        created_at: new Date().toISOString(),
+      },
+      {
+        id: '2',
+        title: 'Client Meeting',
+        content: 'Discuss project requirements and timeline with TechCorp',
+        date: '2024-01-16',
+        color: '#8B5CF6',
+        created_at: new Date().toISOString(),
+      }
+    ];
+
+    // Mock reminders
+    const mockReminders: CalendarReminder[] = [
+      {
+        id: '1',
+        title: 'Submit Invoice',
+        description: 'Submit invoice for last week\'s wedding photography gig',
+        date: '2024-01-17',
+        time: '10:00',
+        priority: 'high',
+        completed: false,
+        created_at: new Date().toISOString(),
+      },
+      {
+        id: '2',
+        title: 'Equipment Maintenance',
+        description: 'Schedule maintenance for lighting equipment',
+        date: '2024-01-20',
+        time: '14:00',
+        priority: 'medium',
+        completed: false,
+        created_at: new Date().toISOString(),
+      }
+    ];
+
+    setNotes(mockNotes);
+    setReminders(mockReminders);
+
+    // Add notes and reminders to events
+    const noteEvents: CalendarEvent[] = mockNotes.map(note => ({
+      id: `note-${note.id}`,
+      title: `📝 ${note.title}`,
+      start: new Date(`${note.date}T09:00:00`),
+      end: new Date(`${note.date}T09:30:00`),
+      resource: note,
+      status: 'note',
+      type: 'note' as const,
+    }));
+
+    const reminderEvents: CalendarEvent[] = mockReminders.map(reminder => ({
+      id: `reminder-${reminder.id}`,
+      title: `🔔 ${reminder.title}`,
+      start: new Date(`${reminder.date}T${reminder.time}:00`),
+      end: new Date(`${reminder.date}T${reminder.time}:00`),
+      resource: reminder,
+      status: reminder.completed ? 'completed' : reminder.priority,
+      type: 'reminder' as const,
+    }));
+
+    setEvents(prev => [...prev, ...noteEvents, ...reminderEvents]);
+  };
+
   const handleSelectEvent = (event: CalendarEvent) => {
     setSelectedEvent(event);
     setShowEventDialog(true);
+  };
+
+  const handleSelectSlot = ({ start }: { start: Date }) => {
+    setSelectedDate(start);
+    setShowAddDialog(true);
   };
 
   const handleNavigate = (date: Date) => {
@@ -121,24 +247,132 @@ const CalendarView: React.FC = () => {
     setCurrentView(view);
   };
 
+  const addNote = async () => {
+    if (!title.trim() || !selectedDate) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    const newNote: CalendarNote = {
+      id: Date.now().toString(),
+      title,
+      content,
+      date: format(selectedDate, 'yyyy-MM-dd'),
+      color: noteColor,
+      created_at: new Date().toISOString(),
+    };
+
+    const newEvent: CalendarEvent = {
+      id: `note-${newNote.id}`,
+      title: `📝 ${newNote.title}`,
+      start: new Date(`${newNote.date}T09:00:00`),
+      end: new Date(`${newNote.date}T09:30:00`),
+      resource: newNote,
+      status: 'note',
+      type: 'note',
+    };
+
+    setNotes(prev => [...prev, newNote]);
+    setEvents(prev => [...prev, newEvent]);
+    resetForm();
+    setShowAddDialog(false);
+    toast.success('Note added successfully!');
+  };
+
+  const addReminder = async () => {
+    if (!title.trim() || !selectedDate) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    const newReminder: CalendarReminder = {
+      id: Date.now().toString(),
+      title,
+      description: content,
+      date: format(selectedDate, 'yyyy-MM-dd'),
+      time: reminderTime,
+      priority: reminderPriority,
+      completed: false,
+      created_at: new Date().toISOString(),
+    };
+
+    const newEvent: CalendarEvent = {
+      id: `reminder-${newReminder.id}`,
+      title: `🔔 ${newReminder.title}`,
+      start: new Date(`${newReminder.date}T${newReminder.time}:00`),
+      end: new Date(`${newReminder.date}T${newReminder.time}:00`),
+      resource: newReminder,
+      status: newReminder.priority,
+      type: 'reminder',
+    };
+
+    setReminders(prev => [...prev, newReminder]);
+    setEvents(prev => [...prev, newEvent]);
+    resetForm();
+    setShowAddDialog(false);
+    toast.success('Reminder added successfully!');
+  };
+
+  const deleteItem = (event: CalendarEvent) => {
+    if (event.type === 'note') {
+      setNotes(prev => prev.filter(note => note.id !== event.resource.id));
+    } else if (event.type === 'reminder') {
+      setReminders(prev => prev.filter(reminder => reminder.id !== event.resource.id));
+    }
+    
+    setEvents(prev => prev.filter(e => e.id !== event.id));
+    setShowEventDialog(false);
+    toast.success(`${event.type === 'note' ? 'Note' : 'Reminder'} deleted successfully!`);
+  };
+
+  const toggleReminderComplete = (reminderId: string) => {
+    setReminders(prev => prev.map(reminder => 
+      reminder.id === reminderId 
+        ? { ...reminder, completed: !reminder.completed }
+        : reminder
+    ));
+
+    setEvents(prev => prev.map(event => 
+      event.id === `reminder-${reminderId}` 
+        ? { ...event, status: event.status === 'completed' ? 'medium' : 'completed' }
+        : event
+    ));
+
+    toast.success('Reminder updated!');
+  };
+
+  const resetForm = () => {
+    setTitle('');
+    setContent('');
+    setReminderTime('09:00');
+    setReminderPriority('medium');
+    setNoteColor('#3B82F6');
+  };
+
   const eventStyleGetter = (event: CalendarEvent) => {
     let backgroundColor = '#3174ad';
     
-    switch (event.status) {
-      case 'published':
-        backgroundColor = '#2563eb'; // Blue
-        break;
-      case 'in_progress':
-        backgroundColor = '#16a34a'; // Green
-        break;
-      case 'completed':
-        backgroundColor = '#6b7280'; // Gray
-        break;
-      case 'accepted':
-        backgroundColor = '#059669'; // Emerald
-        break;
-      default:
-        backgroundColor = '#3174ad';
+    if (event.type === 'note') {
+      backgroundColor = (event.resource as CalendarNote).color;
+    } else if (event.type === 'reminder') {
+      const reminder = event.resource as CalendarReminder;
+      if (reminder.completed) {
+        backgroundColor = '#6B7280'; // Gray for completed
+      } else {
+        switch (reminder.priority) {
+          case 'high': backgroundColor = '#EF4444'; break;
+          case 'medium': backgroundColor = '#F59E0B'; break;
+          case 'low': backgroundColor = '#10B981'; break;
+        }
+      }
+    } else {
+      // Gig events
+      switch (event.status) {
+        case 'published': backgroundColor = '#2563eb'; break;
+        case 'in_progress': backgroundColor = '#16a34a'; break;
+        case 'completed': backgroundColor = '#6b7280'; break;
+        case 'accepted': backgroundColor = '#059669'; break;
+      }
     }
 
     return {
@@ -159,6 +393,10 @@ const CalendarView: React.FC = () => {
       case 'in_progress': return 'bg-green-100 text-green-800';
       case 'completed': return 'bg-gray-100 text-gray-800';
       case 'accepted': return 'bg-emerald-100 text-emerald-800';
+      case 'note': return 'bg-purple-100 text-purple-800';
+      case 'high': return 'bg-red-100 text-red-800';
+      case 'medium': return 'bg-yellow-100 text-yellow-800';
+      case 'low': return 'bg-green-100 text-green-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -178,8 +416,8 @@ const CalendarView: React.FC = () => {
         <h1 className="text-3xl font-bold text-gray-900">Calendar</h1>
         <p className="text-gray-600 mt-2">
           {profile?.role === 'worker' 
-            ? 'View your scheduled gigs and availability'
-            : 'Manage your company\'s gig schedule'
+            ? 'View your scheduled gigs, notes, and reminders'
+            : 'Manage your company\'s gig schedule and planning'
           }
         </p>
       </div>
@@ -194,11 +432,13 @@ const CalendarView: React.FC = () => {
               startAccessor="start"
               endAccessor="end"
               onSelectEvent={handleSelectEvent}
+              onSelectSlot={handleSelectSlot}
               onNavigate={handleNavigate}
               onView={handleViewChange}
               view={currentView}
               date={currentDate}
               eventPropGetter={eventStyleGetter}
+              selectable
               popup
               views={[Views.MONTH, Views.WEEK, Views.DAY, Views.AGENDA]}
               step={60}
@@ -256,6 +496,33 @@ const CalendarView: React.FC = () => {
               }}
             />
           </div>
+          
+          {/* Legend */}
+          <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+            <h3 className="font-medium mb-2">Legend</h3>
+            <div className="flex flex-wrap gap-4 text-sm">
+              <div className="flex items-center">
+                <div className="w-4 h-4 bg-blue-600 rounded mr-2"></div>
+                <span>Published Gigs</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-4 h-4 bg-green-600 rounded mr-2"></div>
+                <span>In Progress</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-4 h-4 bg-purple-600 rounded mr-2"></div>
+                <span>Notes</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-4 h-4 bg-yellow-500 rounded mr-2"></div>
+                <span>Reminders</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-4 h-4 bg-gray-400 rounded mr-2"></div>
+                <span>Completed</span>
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
@@ -264,11 +531,15 @@ const CalendarView: React.FC = () => {
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle className="flex items-center space-x-2">
-              <CalendarIcon className="h-5 w-5" />
+              {selectedEvent?.type === 'gig' && <CalendarIcon className="h-5 w-5" />}
+              {selectedEvent?.type === 'note' && <FileText className="h-5 w-5" />}
+              {selectedEvent?.type === 'reminder' && <Bell className="h-5 w-5" />}
               <span>{selectedEvent?.title}</span>
             </DialogTitle>
             <DialogDescription>
-              Gig details and information
+              {selectedEvent?.type === 'gig' && 'Gig details and information'}
+              {selectedEvent?.type === 'note' && 'Note details'}
+              {selectedEvent?.type === 'reminder' && 'Reminder details'}
             </DialogDescription>
           </DialogHeader>
           
@@ -278,47 +549,105 @@ const CalendarView: React.FC = () => {
                 <Badge className={getStatusColor(selectedEvent.status)}>
                   {selectedEvent.status.charAt(0).toUpperCase() + selectedEvent.status.slice(1)}
                 </Badge>
-                {selectedEvent.resource.company && (
-                  <div className="flex items-center text-sm text-gray-600">
-                    <Building className="h-4 w-4 mr-1" />
-                    {selectedEvent.resource.company.name}
+                {selectedEvent.type !== 'gig' && (
+                  <div className="flex space-x-2">
+                    {selectedEvent.type === 'reminder' && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => toggleReminderComplete((selectedEvent.resource as CalendarReminder).id)}
+                      >
+                        {(selectedEvent.resource as CalendarReminder).completed ? 'Mark Incomplete' : 'Mark Complete'}
+                      </Button>
+                    )}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => deleteItem(selectedEvent)}
+                      className="text-red-600 hover:text-red-700"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
                 )}
               </div>
 
-              <div className="space-y-3">
-                <div className="flex items-center text-sm">
-                  <Clock className="h-4 w-4 mr-2 text-gray-400" />
-                  <div>
-                    <div>{format(selectedEvent.start, 'MMM d, yyyy h:mm a')}</div>
-                    <div className="text-gray-500">to {format(selectedEvent.end, 'MMM d, yyyy h:mm a')}</div>
-                  </div>
-                </div>
-
-                <div className="flex items-center text-sm">
-                  <MapPin className="h-4 w-4 mr-2 text-gray-400" />
-                  <span>{selectedEvent.resource.location}</span>
-                </div>
-
-                {selectedEvent.resource.hourly_rate && (
+              {selectedEvent.type === 'gig' && (
+                <div className="space-y-3">
                   <div className="flex items-center text-sm">
-                    <DollarSign className="h-4 w-4 mr-2 text-gray-400" />
-                    <span>${selectedEvent.resource.hourly_rate}/hour</span>
+                    <Clock className="h-4 w-4 mr-2 text-gray-400" />
+                    <div>
+                      <div>{format(selectedEvent.start, 'MMM d, yyyy h:mm a')}</div>
+                      <div className="text-gray-500">to {format(selectedEvent.end, 'MMM d, yyyy h:mm a')}</div>
+                    </div>
                   </div>
-                )}
 
-                <div className="flex items-center text-sm">
-                  <Users className="h-4 w-4 mr-2 text-gray-400" />
-                  <span>{selectedEvent.resource.required_workers} worker{selectedEvent.resource.required_workers !== 1 ? 's' : ''} needed</span>
+                  <div className="flex items-center text-sm">
+                    <MapPin className="h-4 w-4 mr-2 text-gray-400" />
+                    <span>{(selectedEvent.resource as Gig).location}</span>
+                  </div>
+
+                  {(selectedEvent.resource as Gig).hourly_rate && (
+                    <div className="flex items-center text-sm">
+                      <DollarSign className="h-4 w-4 mr-2 text-gray-400" />
+                      <span>${(selectedEvent.resource as Gig).hourly_rate}/hour</span>
+                    </div>
+                  )}
+
+                  <div className="flex items-center text-sm">
+                    <Users className="h-4 w-4 mr-2 text-gray-400" />
+                    <span>{(selectedEvent.resource as Gig).required_workers} worker{(selectedEvent.resource as Gig).required_workers !== 1 ? 's' : ''} needed</span>
+                  </div>
+
+                  {(selectedEvent.resource as Gig).description && (
+                    <div>
+                      <h4 className="font-medium mb-2">Description</h4>
+                      <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg">
+                        {(selectedEvent.resource as Gig).description}
+                      </p>
+                    </div>
+                  )}
                 </div>
-              </div>
+              )}
 
-              {selectedEvent.resource.description && (
-                <div>
-                  <h4 className="font-medium mb-2">Description</h4>
-                  <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg">
-                    {selectedEvent.resource.description}
-                  </p>
+              {selectedEvent.type === 'note' && (
+                <div className="space-y-3">
+                  <div className="flex items-center text-sm">
+                    <CalendarIcon className="h-4 w-4 mr-2 text-gray-400" />
+                    <span>{format(new Date((selectedEvent.resource as CalendarNote).date), 'MMM d, yyyy')}</span>
+                  </div>
+                  
+                  {(selectedEvent.resource as CalendarNote).content && (
+                    <div>
+                      <h4 className="font-medium mb-2">Content</h4>
+                      <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg">
+                        {(selectedEvent.resource as CalendarNote).content}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {selectedEvent.type === 'reminder' && (
+                <div className="space-y-3">
+                  <div className="flex items-center text-sm">
+                    <Clock className="h-4 w-4 mr-2 text-gray-400" />
+                    <span>{format(new Date(`${(selectedEvent.resource as CalendarReminder).date}T${(selectedEvent.resource as CalendarReminder).time}`), 'MMM d, yyyy h:mm a')}</span>
+                  </div>
+                  
+                  <div className="flex items-center text-sm">
+                    <Bell className="h-4 w-4 mr-2 text-gray-400" />
+                    <span>Priority: {(selectedEvent.resource as CalendarReminder).priority}</span>
+                  </div>
+                  
+                  {(selectedEvent.resource as CalendarReminder).description && (
+                    <div>
+                      <h4 className="font-medium mb-2">Description</h4>
+                      <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg">
+                        {(selectedEvent.resource as CalendarReminder).description}
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -329,17 +658,126 @@ const CalendarView: React.FC = () => {
                 >
                   Close
                 </Button>
-                <Button
-                  onClick={() => {
-                    navigate(`/gigs/${selectedEvent.id}`);
-                    setShowEventDialog(false);
-                  }}
-                >
-                  View Details
-                </Button>
+                {selectedEvent.type === 'gig' && (
+                  <Button
+                    onClick={() => {
+                      navigate(`/gigs/${selectedEvent.id}`);
+                      setShowEventDialog(false);
+                    }}
+                  >
+                    View Details
+                  </Button>
+                )}
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Note/Reminder Dialog */}
+      <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center space-x-2">
+              <Plus className="h-5 w-5" />
+              <span>Add to Calendar</span>
+            </DialogTitle>
+            <DialogDescription>
+              Add a note or reminder for {selectedDate && format(selectedDate, 'MMM d, yyyy')}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div>
+              <Label>Type</Label>
+              <Select value={addType} onValueChange={(value: 'note' | 'reminder') => setAddType(value)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="note">📝 Note</SelectItem>
+                  <SelectItem value="reminder">🔔 Reminder</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="title">Title</Label>
+              <Input
+                id="title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder={addType === 'note' ? 'Note title...' : 'Reminder title...'}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="content">
+                {addType === 'note' ? 'Content' : 'Description'}
+              </Label>
+              <Textarea
+                id="content"
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                placeholder={addType === 'note' ? 'Note content...' : 'Reminder description...'}
+                rows={3}
+              />
+            </div>
+
+            {addType === 'reminder' && (
+              <>
+                <div>
+                  <Label htmlFor="time">Time</Label>
+                  <Input
+                    id="time"
+                    type="time"
+                    value={reminderTime}
+                    onChange={(e) => setReminderTime(e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <Label>Priority</Label>
+                  <Select value={reminderPriority} onValueChange={(value: 'low' | 'medium' | 'high') => setReminderPriority(value)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="low">Low</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="high">High</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </>
+            )}
+
+            {addType === 'note' && (
+              <div>
+                <Label>Color</Label>
+                <div className="flex space-x-2 mt-2">
+                  {['#3B82F6', '#10B981', '#8B5CF6', '#F59E0B', '#EF4444', '#6B7280'].map((color) => (
+                    <button
+                      key={color}
+                      className={`w-8 h-8 rounded-full border-2 ${noteColor === color ? 'border-gray-800' : 'border-gray-300'}`}
+                      style={{ backgroundColor: color }}
+                      onClick={() => setNoteColor(color)}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={addType === 'note' ? addNote : addReminder}>
+              <Save className="h-4 w-4 mr-2" />
+              Add {addType === 'note' ? 'Note' : 'Reminder'}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
