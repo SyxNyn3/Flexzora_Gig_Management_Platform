@@ -6,21 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
-import { 
-  Calendar, 
-  AlertTriangle, 
-  Clock,
-  MapPin,
-  Building2,
-  DollarSign,
-  CheckCircle,
-  XCircle,
-  Sync,
-  Filter,
-  Download,
-  Eye,
-  EyeOff
-} from 'lucide-react';
+import { Calendar, AlertTriangle, Clock, MapPin, Building2, DollarSign, CheckCircle, XCircle, FolderSync as Sync, Filter, Download, Eye, EyeOff } from 'lucide-react';
 import { format, isWithinInterval, parseISO, startOfWeek, endOfWeek, addDays } from 'date-fns';
 
 interface UnifiedGig {

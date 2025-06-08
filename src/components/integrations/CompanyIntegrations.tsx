@@ -10,25 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/contexts/AuthContext';
-import { 
-  Building2, 
-  Plus, 
-  Link, 
-  CheckCircle,
-  AlertCircle,
-  Sync,
-  Settings,
-  Users,
-  Calendar,
-  DollarSign,
-  MessageSquare,
-  Upload,
-  Download,
-  Wifi,
-  WifiOff,
-  Star,
-  Shield
-} from 'lucide-react';
+import { Building2, Plus, Link, CheckCircle, AlertCircle, FolderSync as Sync, Settings, Users, Calendar, DollarSign, MessageSquare, Upload, Download, Wifi, WifiOff, Star, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface CompanyIntegration {
