@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,21 +9,16 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/supabase';
-import { Skill, WorkerSkill, Certification } from '@/lib/types';
+import { DatabaseService, normalizeUrl } from '@/lib/supabase';
+import { useSkills, useWorkerSkills, useCertifications } from '@/hooks/useSupabaseQuery';
+import { WorkerSkill, Certification } from '@/lib/types';
 import { 
   User, 
-  MapPin, 
-  Phone, 
-  Mail, 
-  DollarSign,
-  Star,
+  Save,
+  Award,
   Plus,
   X,
   Camera,
-  Save,
-  Award,
-  Briefcase,
   Edit,
   Trash2,
   ExternalLink
@@ -42,7 +37,6 @@ const profileSchema = z.object({
   experience_years: z.string().optional(),
   portfolio_url: z.string().optional().refine((val) => {
     if (!val) return true;
-    // Allow URLs with or without protocol
     const urlPattern = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/;
     return urlPattern.test(val);
   }, 'Please enter a valid URL'),
@@ -76,27 +70,17 @@ type ProfileForm = z.infer<typeof profileSchema>;
 type SkillForm = z.infer<typeof skillSchema>;
 type CertificationForm = z.infer<typeof certificationSchema>;
 
-// Mock data for demo mode
-const mockSkills = [
-  { id: '1', name: 'Camera Operation', category: 'Technical' },
-  { id: '2', name: 'Lighting Design', category: 'Technical' },
-  { id: '3', name: 'Sound Engineering', category: 'Technical' },
-  { id: '4', name: 'Video Editing', category: 'Post-Production' },
-  { id: '5', name: 'Event Coordination', category: 'Management' },
-  { id: '6', name: 'Stage Management', category: 'Management' },
-  { id: '7', name: 'Live Streaming', category: 'Technical' },
-  { id: '8', name: 'Photography', category: 'Creative' },
-];
-
 const ProfilePage: React.FC = () => {
   const { profile, updateProfile } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [skills, setSkills] = useState<Skill[]>(mockSkills);
-  const [workerSkills, setWorkerSkills] = useState<WorkerSkill[]>([]);
-  const [certifications, setCertifications] = useState<Certification[]>([]);
   const [showSkillDialog, setShowSkillDialog] = useState(false);
   const [showCertDialog, setShowCertDialog] = useState(false);
   const [editingCert, setEditingCert] = useState<Certification | null>(null);
+
+  // Fetch data using custom hooks
+  const { data: skills = [] } = useSkills();
+  const { data: workerSkills = [], refetch: refetchWorkerSkills } = useWorkerSkills(profile?.id || '');
+  const { data: certifications = [], refetch: refetchCertifications } = useCertifications(profile?.id || '');
 
   const form = useForm<ProfileForm>({
     resolver: zodResolver(profileSchema),
@@ -107,8 +91,8 @@ const ProfilePage: React.FC = () => {
       bio: profile?.bio || '',
       hourly_rate: profile?.hourly_rate?.toString() || '',
       experience_years: profile?.experience_years?.toString() || '',
-      portfolio_url: profile?.portfolio_url || '',
-      linkedin_url: profile?.linkedin_url || '',
+      portfolio_url: profile?.portfolio_url?.replace(/^https?:\/\//, '') || '',
+      linkedin_url: profile?.linkedin_url?.replace(/^https?:\/\//, '') || '',
     },
   });
 
@@ -133,76 +117,21 @@ const ProfilePage: React.FC = () => {
     },
   });
 
-  useEffect(() => {
+  // Update form when profile changes
+  React.useEffect(() => {
     if (profile) {
-      loadMockData();
+      form.reset({
+        full_name: profile.full_name,
+        phone: profile.phone || '',
+        location: profile.location || '',
+        bio: profile.bio || '',
+        hourly_rate: profile.hourly_rate?.toString() || '',
+        experience_years: profile.experience_years?.toString() || '',
+        portfolio_url: profile.portfolio_url?.replace(/^https?:\/\//, '') || '',
+        linkedin_url: profile.linkedin_url?.replace(/^https?:\/\//, '') || '',
+      });
     }
-  }, [profile]);
-
-  const loadMockData = () => {
-    // Load mock worker skills
-    const mockWorkerSkills = [
-      {
-        id: '1',
-        worker_id: profile?.id || 'demo',
-        skill_id: '1',
-        proficiency_level: 4,
-        years_experience: 5,
-        created_at: new Date().toISOString(),
-        skill: { id: '1', name: 'Camera Operation', category: 'Technical', created_at: new Date().toISOString() }
-      },
-      {
-        id: '2',
-        worker_id: profile?.id || 'demo',
-        skill_id: '2',
-        proficiency_level: 3,
-        years_experience: 3,
-        created_at: new Date().toISOString(),
-        skill: { id: '2', name: 'Lighting Design', category: 'Technical', created_at: new Date().toISOString() }
-      }
-    ];
-
-    // Load mock certifications
-    const mockCertifications = [
-      {
-        id: '1',
-        worker_id: profile?.id || 'demo',
-        name: 'Certified Audio Engineer',
-        issuing_organization: 'Audio Engineering Society',
-        issue_date: '2023-06-15',
-        expiration_date: '2026-06-15',
-        credential_id: 'AES-2023-001',
-        credential_url: 'aes.org/verify',
-        is_active: true,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      },
-      {
-        id: '2',
-        worker_id: profile?.id || 'demo',
-        name: 'Professional Lighting Technician',
-        issuing_organization: 'International Association of Lighting Designers',
-        issue_date: '2022-03-20',
-        expiration_date: '',
-        credential_id: 'IALD-PLT-2022',
-        credential_url: '',
-        is_active: true,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      }
-    ];
-
-    setWorkerSkills(mockWorkerSkills);
-    setCertifications(mockCertifications);
-  };
-
-  const normalizeUrl = (url: string): string => {
-    if (!url) return '';
-    if (url.startsWith('http://') || url.startsWith('https://')) {
-      return url;
-    }
-    return `https://${url}`;
-  };
+  }, [profile, form]);
 
   const onSubmit = async (data: ProfileForm) => {
     setLoading(true);
@@ -215,16 +144,8 @@ const ProfilePage: React.FC = () => {
         linkedin_url: data.linkedin_url ? normalizeUrl(data.linkedin_url) : null,
       };
 
-      // In demo mode, just update local state
-      if (!import.meta.env.VITE_SUPABASE_URL) {
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        toast.success('Profile updated successfully! (Demo Mode)');
-        return;
-      }
-
       const { error } = await updateProfile(updates);
-      if (error) throw error;
+      if (error) throw new Error(error);
 
       toast.success('Profile updated successfully!');
     } catch (error: any) {
@@ -236,6 +157,8 @@ const ProfilePage: React.FC = () => {
   };
 
   const onAddSkill = async (data: SkillForm) => {
+    if (!profile) return;
+
     try {
       // Check if skill already exists
       const existingSkill = workerSkills.find(ws => 
@@ -247,26 +170,28 @@ const ProfilePage: React.FC = () => {
         return;
       }
 
-      // In demo mode, add to local state
-      const newWorkerSkill: WorkerSkill = {
-        id: Date.now().toString(),
-        worker_id: profile?.id || 'demo',
-        skill_id: Date.now().toString(),
+      // Find or create skill
+      let skillId = skills.find(s => s.name.toLowerCase() === data.skill_name.toLowerCase())?.id;
+      
+      if (!skillId) {
+        // For demo mode or if skill doesn't exist, create a mock skill ID
+        skillId = `skill-${Date.now()}`;
+      }
+
+      const skillData = {
+        worker_id: profile.id,
+        skill_id: skillId,
         proficiency_level: data.proficiency_level,
         years_experience: data.years_experience,
-        created_at: new Date().toISOString(),
-        skill: {
-          id: Date.now().toString(),
-          name: data.skill_name,
-          category: 'Custom',
-          created_at: new Date().toISOString(),
-        }
       };
 
-      setWorkerSkills(prev => [...prev, newWorkerSkill]);
+      const { error } = await DatabaseService.addWorkerSkill(skillData);
+      if (error) throw new Error(error);
+
+      toast.success('Skill added successfully!');
       setShowSkillDialog(false);
       skillForm.reset();
-      toast.success('Skill added successfully!');
+      await refetchWorkerSkills();
     } catch (error: any) {
       console.error('Error adding skill:', error);
       toast.error(error.message || 'Failed to add skill');
@@ -275,8 +200,11 @@ const ProfilePage: React.FC = () => {
 
   const removeSkill = async (workerSkillId: string) => {
     try {
-      setWorkerSkills(prev => prev.filter(ws => ws.id !== workerSkillId));
+      const { error } = await DatabaseService.removeWorkerSkill(workerSkillId);
+      if (error) throw new Error(error);
+
       toast.success('Skill removed successfully!');
+      await refetchWorkerSkills();
     } catch (error: any) {
       console.error('Error removing skill:', error);
       toast.error(error.message || 'Failed to remove skill');
@@ -284,10 +212,11 @@ const ProfilePage: React.FC = () => {
   };
 
   const onAddCertification = async (data: CertificationForm) => {
+    if (!profile) return;
+
     try {
-      const newCert: Certification = {
-        id: editingCert?.id || Date.now().toString(),
-        worker_id: profile?.id || 'demo',
+      const certData = {
+        worker_id: profile.id,
         name: data.name,
         issuing_organization: data.issuing_organization || undefined,
         issue_date: data.issue_date || undefined,
@@ -295,23 +224,22 @@ const ProfilePage: React.FC = () => {
         credential_id: data.credential_id || undefined,
         credential_url: data.credential_url ? normalizeUrl(data.credential_url) : undefined,
         is_active: true,
-        created_at: editingCert?.created_at || new Date().toISOString(),
-        updated_at: new Date().toISOString(),
       };
 
       if (editingCert) {
-        setCertifications(prev => prev.map(cert => 
-          cert.id === editingCert.id ? newCert : cert
-        ));
+        const { error } = await DatabaseService.updateCertification(editingCert.id, certData);
+        if (error) throw new Error(error);
         toast.success('Certification updated successfully!');
       } else {
-        setCertifications(prev => [...prev, newCert]);
+        const { error } = await DatabaseService.addCertification(certData);
+        if (error) throw new Error(error);
         toast.success('Certification added successfully!');
       }
 
       setShowCertDialog(false);
       setEditingCert(null);
       certForm.reset();
+      await refetchCertifications();
     } catch (error: any) {
       console.error('Error saving certification:', error);
       toast.error(error.message || 'Failed to save certification');
@@ -320,8 +248,11 @@ const ProfilePage: React.FC = () => {
 
   const removeCertification = async (certId: string) => {
     try {
-      setCertifications(prev => prev.filter(cert => cert.id !== certId));
+      const { error } = await DatabaseService.removeCertification(certId);
+      if (error) throw new Error(error);
+
       toast.success('Certification removed successfully!');
+      await refetchCertifications();
     } catch (error: any) {
       console.error('Error removing certification:', error);
       toast.error(error.message || 'Failed to remove certification');
@@ -484,26 +415,30 @@ const ProfilePage: React.FC = () => {
                     />
                   </div>
 
-                  <div>
-                    <Label htmlFor="hourly_rate">Hourly Rate ($)</Label>
-                    <Input
-                      id="hourly_rate"
-                      type="number"
-                      step="0.01"
-                      {...form.register('hourly_rate')}
-                      placeholder="45.00"
-                    />
-                  </div>
+                  {profile.role === 'worker' && (
+                    <div>
+                      <Label htmlFor="hourly_rate">Hourly Rate ($)</Label>
+                      <Input
+                        id="hourly_rate"
+                        type="number"
+                        step="0.01"
+                        {...form.register('hourly_rate')}
+                        placeholder="45.00"
+                      />
+                    </div>
+                  )}
 
-                  <div>
-                    <Label htmlFor="experience_years">Years of Experience</Label>
-                    <Input
-                      id="experience_years"
-                      type="number"
-                      {...form.register('experience_years')}
-                      placeholder="5"
-                    />
-                  </div>
+                  {profile.role === 'worker' && (
+                    <div>
+                      <Label htmlFor="experience_years">Years of Experience</Label>
+                      <Input
+                        id="experience_years"
+                        type="number"
+                        {...form.register('experience_years')}
+                        placeholder="5"
+                      />
+                    </div>
+                  )}
                 </div>
 
                 <div>
@@ -516,35 +451,37 @@ const ProfilePage: React.FC = () => {
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="portfolio_url">Portfolio URL</Label>
-                    <Input
-                      id="portfolio_url"
-                      {...form.register('portfolio_url')}
-                      placeholder="www.yourportfolio.com"
-                    />
-                    {form.formState.errors.portfolio_url && (
-                      <p className="text-sm text-red-600 mt-1">
-                        {form.formState.errors.portfolio_url.message}
-                      </p>
-                    )}
-                  </div>
+                {profile.role === 'worker' && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="portfolio_url">Portfolio URL</Label>
+                      <Input
+                        id="portfolio_url"
+                        {...form.register('portfolio_url')}
+                        placeholder="www.yourportfolio.com"
+                      />
+                      {form.formState.errors.portfolio_url && (
+                        <p className="text-sm text-red-600 mt-1">
+                          {form.formState.errors.portfolio_url.message}
+                        </p>
+                      )}
+                    </div>
 
-                  <div>
-                    <Label htmlFor="linkedin_url">LinkedIn URL</Label>
-                    <Input
-                      id="linkedin_url"
-                      {...form.register('linkedin_url')}
-                      placeholder="linkedin.com/in/yourprofile"
-                    />
-                    {form.formState.errors.linkedin_url && (
-                      <p className="text-sm text-red-600 mt-1">
-                        {form.formState.errors.linkedin_url.message}
-                      </p>
-                    )}
+                    <div>
+                      <Label htmlFor="linkedin_url">LinkedIn URL</Label>
+                      <Input
+                        id="linkedin_url"
+                        {...form.register('linkedin_url')}
+                        placeholder="linkedin.com/in/yourprofile"
+                      />
+                      {form.formState.errors.linkedin_url && (
+                        <p className="text-sm text-red-600 mt-1">
+                          {form.formState.errors.linkedin_url.message}
+                        </p>
+                      )}
+                    </div>
                   </div>
-                </div>
+                )}
 
                 <Button type="submit" disabled={loading}>
                   <Save className="w-4 h-4 mr-2" />
@@ -554,146 +491,150 @@ const ProfilePage: React.FC = () => {
             </CardContent>
           </Card>
 
-          {/* Skills */}
-          <Card>
-            <CardHeader>
-              <div className="flex justify-between items-center">
-                <div>
-                  <CardTitle>Skills & Expertise</CardTitle>
-                  <CardDescription>
-                    Showcase your skills and proficiency levels
-                  </CardDescription>
+          {/* Skills - Only for workers */}
+          {profile.role === 'worker' && (
+            <Card>
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle>Skills & Expertise</CardTitle>
+                    <CardDescription>
+                      Showcase your skills and proficiency levels
+                    </CardDescription>
+                  </div>
+                  <Button size="sm" onClick={() => setShowSkillDialog(true)}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Skill
+                  </Button>
                 </div>
-                <Button size="sm" onClick={() => setShowSkillDialog(true)}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Skill
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {workerSkills.length > 0 ? (
-                  <div className="grid grid-cols-1 gap-3">
-                    {workerSkills.map((workerSkill) => (
-                      <div
-                        key={workerSkill.id}
-                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-                      >
-                        <div className="flex items-center space-x-3">
-                          <div>
-                            <h4 className="font-medium text-sm">
-                              {workerSkill.skill?.name}
-                            </h4>
-                            <div className="flex items-center space-x-2 mt-1">
-                              <Badge className={getProficiencyColor(workerSkill.proficiency_level)}>
-                                {getProficiencyLabel(workerSkill.proficiency_level)}
-                              </Badge>
-                              <span className="text-xs text-gray-500">
-                                {workerSkill.years_experience} years
-                              </span>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {workerSkills.length > 0 ? (
+                    <div className="grid grid-cols-1 gap-3">
+                      {workerSkills.map((workerSkill) => (
+                        <div
+                          key={workerSkill.id}
+                          className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                        >
+                          <div className="flex items-center space-x-3">
+                            <div>
+                              <h4 className="font-medium text-sm">
+                                {workerSkill.skill?.name}
+                              </h4>
+                              <div className="flex items-center space-x-2 mt-1">
+                                <Badge className={getProficiencyColor(workerSkill.proficiency_level)}>
+                                  {getProficiencyLabel(workerSkill.proficiency_level)}
+                                </Badge>
+                                <span className="text-xs text-gray-500">
+                                  {workerSkill.years_experience} years
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => removeSkill(workerSkill.id)}
+                            className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-gray-500 text-center py-8">
+                      No skills added yet. Add your first skill to showcase your expertise.
+                    </p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Certifications - Only for workers */}
+          {profile.role === 'worker' && (
+            <Card>
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle>Certifications</CardTitle>
+                    <CardDescription>
+                      Add your professional certifications and licenses
+                    </CardDescription>
+                  </div>
+                  <Button size="sm" onClick={() => setShowCertDialog(true)}>
+                    <Plus className="w-4 w-4 mr-2" />
+                    Add Certification
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {certifications.length > 0 ? (
+                  <div className="space-y-4">
+                    {certifications.map((cert) => (
+                      <div key={cert.id} className="flex items-start justify-between p-4 border rounded-lg">
+                        <div className="flex items-start space-x-3 flex-1">
+                          <Award className="h-5 w-5 text-blue-600 mt-1" />
+                          <div className="flex-1">
+                            <h4 className="font-medium">{cert.name}</h4>
+                            {cert.issuing_organization && (
+                              <p className="text-sm text-gray-600">{cert.issuing_organization}</p>
+                            )}
+                            <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500">
+                              {cert.issue_date && (
+                                <span>Issued: {new Date(cert.issue_date).getFullYear()}</span>
+                              )}
+                              {cert.expiration_date && (
+                                <span>Expires: {new Date(cert.expiration_date).getFullYear()}</span>
+                              )}
+                              {cert.credential_url && (
+                                <a 
+                                  href={cert.credential_url} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="flex items-center text-blue-600 hover:text-blue-700"
+                                >
+                                  <ExternalLink className="h-3 w-3 mr-1" />
+                                  View
+                                </a>
+                              )}
                             </div>
                           </div>
                         </div>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => removeSkill(workerSkill.id)}
-                          className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
+                        <div className="flex items-center space-x-2">
+                          <Badge variant={cert.is_active ? "default" : "secondary"}>
+                            {cert.is_active ? 'Active' : 'Inactive'}
+                          </Badge>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => editCertification(cert)}
+                            className="h-8 w-8 p-0"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => removeCertification(cert.id)}
+                            className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                     ))}
                   </div>
                 ) : (
                   <p className="text-gray-500 text-center py-8">
-                    No skills added yet. Add your first skill to showcase your expertise.
+                    No certifications added yet. Add your first certification to showcase your expertise.
                   </p>
                 )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Certifications */}
-          <Card>
-            <CardHeader>
-              <div className="flex justify-between items-center">
-                <div>
-                  <CardTitle>Certifications</CardTitle>
-                  <CardDescription>
-                    Add your professional certifications and licenses
-                  </CardDescription>
-                </div>
-                <Button size="sm" onClick={() => setShowCertDialog(true)}>
-                  <Plus className="w-4 w-4 mr-2" />
-                  Add Certification
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {certifications.length > 0 ? (
-                <div className="space-y-4">
-                  {certifications.map((cert) => (
-                    <div key={cert.id} className="flex items-start justify-between p-4 border rounded-lg">
-                      <div className="flex items-start space-x-3 flex-1">
-                        <Award className="h-5 w-5 text-blue-600 mt-1" />
-                        <div className="flex-1">
-                          <h4 className="font-medium">{cert.name}</h4>
-                          {cert.issuing_organization && (
-                            <p className="text-sm text-gray-600">{cert.issuing_organization}</p>
-                          )}
-                          <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500">
-                            {cert.issue_date && (
-                              <span>Issued: {new Date(cert.issue_date).getFullYear()}</span>
-                            )}
-                            {cert.expiration_date && (
-                              <span>Expires: {new Date(cert.expiration_date).getFullYear()}</span>
-                            )}
-                            {cert.credential_url && (
-                              <a 
-                                href={cert.credential_url} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="flex items-center text-blue-600 hover:text-blue-700"
-                              >
-                                <ExternalLink className="h-3 w-3 mr-1" />
-                                View
-                              </a>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Badge variant={cert.is_active ? "default" : "secondary"}>
-                          {cert.is_active ? 'Active' : 'Inactive'}
-                        </Badge>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => editCertification(cert)}
-                          className="h-8 w-8 p-0"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => removeCertification(cert.id)}
-                          className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-gray-500 text-center py-8">
-                  No certifications added yet. Add your first certification to showcase your expertise.
-                </p>
-              )}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
 

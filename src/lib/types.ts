@@ -3,6 +3,79 @@ export type GigStatus = 'draft' | 'published' | 'in_progress' | 'completed' | 'c
 export type ApplicationStatus = 'pending' | 'accepted' | 'rejected' | 'withdrawn';
 export type PaymentStatus = 'pending' | 'paid' | 'overdue' | 'cancelled';
 export type ExpenseCategory = 'travel' | 'equipment' | 'meals' | 'accommodation' | 'other';
+export type IntegrationStatus = 'connected' | 'pending' | 'error' | 'disconnected';
+
+export interface Database {
+  public: {
+    Tables: {
+      profiles: {
+        Row: Profile;
+        Insert: Omit<Profile, 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Omit<Profile, 'id' | 'created_at' | 'updated_at'>>;
+      };
+      companies: {
+        Row: Company;
+        Insert: Omit<Company, 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Omit<Company, 'id' | 'created_at' | 'updated_at'>>;
+      };
+      skills: {
+        Row: Skill;
+        Insert: Omit<Skill, 'id' | 'created_at'>;
+        Update: Partial<Omit<Skill, 'id' | 'created_at'>>;
+      };
+      worker_skills: {
+        Row: WorkerSkill;
+        Insert: Omit<WorkerSkill, 'id' | 'created_at'>;
+        Update: Partial<Omit<WorkerSkill, 'id' | 'created_at'>>;
+      };
+      certifications: {
+        Row: Certification;
+        Insert: Omit<Certification, 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Omit<Certification, 'id' | 'created_at' | 'updated_at'>>;
+      };
+      gigs: {
+        Row: Gig;
+        Insert: Omit<Gig, 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Omit<Gig, 'id' | 'created_at' | 'updated_at'>>;
+      };
+      gig_applications: {
+        Row: GigApplication;
+        Insert: Omit<GigApplication, 'id' | 'application_date'>;
+        Update: Partial<Omit<GigApplication, 'id' | 'application_date'>>;
+      };
+      availability: {
+        Row: Availability;
+        Insert: Omit<Availability, 'id' | 'created_at'>;
+        Update: Partial<Omit<Availability, 'id' | 'created_at'>>;
+      };
+      payments: {
+        Row: Payment;
+        Insert: Omit<Payment, 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Omit<Payment, 'id' | 'created_at' | 'updated_at'>>;
+      };
+      expenses: {
+        Row: Expense;
+        Insert: Omit<Expense, 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Omit<Expense, 'id' | 'created_at' | 'updated_at'>>;
+      };
+      notifications: {
+        Row: Notification;
+        Insert: Omit<Notification, 'id' | 'created_at'>;
+        Update: Partial<Omit<Notification, 'id' | 'created_at'>>;
+      };
+      company_integrations: {
+        Row: CompanyIntegration;
+        Insert: Omit<CompanyIntegration, 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Omit<CompanyIntegration, 'id' | 'created_at' | 'updated_at'>>;
+      };
+      calendar_events: {
+        Row: CalendarEvent;
+        Insert: Omit<CalendarEvent, 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Omit<CalendarEvent, 'id' | 'created_at' | 'updated_at'>>;
+      };
+    };
+  };
+}
 
 export interface Profile {
   id: string;
@@ -163,4 +236,93 @@ export interface Notification {
   action_url?: string;
   metadata?: any;
   created_at: string;
+}
+
+export interface CompanyIntegration {
+  id: string;
+  worker_id: string;
+  company_name: string;
+  integration_type: string;
+  status: IntegrationStatus;
+  credentials?: any;
+  settings: any;
+  last_sync?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CalendarEvent {
+  id: string;
+  user_id: string;
+  title: string;
+  description?: string;
+  event_type: 'gig' | 'note' | 'reminder';
+  start_time: string;
+  end_time?: string;
+  all_day: boolean;
+  color: string;
+  metadata: any;
+  created_at: string;
+  updated_at: string;
+}
+
+// API Response types
+export interface ApiResponse<T> {
+  data: T | null;
+  error: string | null;
+  loading?: boolean;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  count: number;
+  page: number;
+  limit: number;
+  hasMore: boolean;
+}
+
+// Form types
+export interface ProfileFormData {
+  full_name: string;
+  phone?: string;
+  location?: string;
+  bio?: string;
+  hourly_rate?: number;
+  experience_years?: number;
+  portfolio_url?: string;
+  linkedin_url?: string;
+}
+
+export interface GigFormData {
+  title: string;
+  description: string;
+  company_id: string;
+  location: string;
+  start_date: string;
+  end_date: string;
+  hourly_rate?: number;
+  total_budget?: number;
+  required_workers: number;
+  skills_required?: string[];
+  equipment_provided?: string[];
+  special_requirements?: string;
+  is_remote: boolean;
+}
+
+export interface ApplicationFormData {
+  cover_letter?: string;
+  proposed_rate?: number;
+}
+
+// Error types
+export interface DatabaseError {
+  message: string;
+  code?: string;
+  details?: string;
+  hint?: string;
+}
+
+export interface ValidationError {
+  field: string;
+  message: string;
 }

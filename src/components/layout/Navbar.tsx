@@ -156,9 +156,9 @@ const Navbar: React.FC = () => {
                           <span>Company Integrations</span>
                         </DropdownMenuItem>
                       )}
-                      <DropdownMenuItem onClick={() => navigate('/settings')}>
-                        <Settings className="mr-2 h-4 w-4" />
-                        <span>Settings</span>
+                      <DropdownMenuItem onClick={() => navigate('/calendar')}>
+                        <Calendar className="mr-2 h-4 w-4" />
+                        <span>Calendar</span>
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={handleSignOut}>
