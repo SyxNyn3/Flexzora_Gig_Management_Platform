@@ -59,12 +59,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         if (isDemoMode) {
           // In demo mode, check localStorage for demo session
-          const demoSession = localStorage.getItem('demo-session');
+          const demoSession = localStorage.getItem('flexora-demo-session');
           if (demoSession && mounted) {
-            const sessionData = JSON.parse(demoSession);
-            setUser(sessionData.user);
-            setSession(sessionData.session);
-            setProfile(createMockProfile(sessionData.user.email));
+            try {
+              const sessionData = JSON.parse(demoSession);
+              setUser(sessionData.user);
+              setSession(sessionData.session);
+              setProfile(sessionData.profile || createMockProfile(sessionData.user.email));
+              console.log('Demo session restored:', sessionData.user.email);
+            } catch (error) {
+              console.error('Error parsing demo session:', error);
+              localStorage.removeItem('flexora-demo-session');
+            }
           }
           if (mounted) setLoading(false);
           return;
@@ -155,13 +161,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Demo mode signup
         const mockUser = { id: 'demo-user', email };
         const mockSession = { user: mockUser };
+        const mockProfile = createMockProfile(email);
         
-        localStorage.setItem('demo-session', JSON.stringify({ user: mockUser, session: mockSession }));
+        const sessionData = { 
+          user: mockUser, 
+          session: mockSession, 
+          profile: mockProfile 
+        };
+        
+        localStorage.setItem('flexora-demo-session', JSON.stringify(sessionData));
         
         setUser(mockUser as User);
         setSession(mockSession as Session);
-        setProfile(createMockProfile(email));
+        setProfile(mockProfile);
         
+        console.log('Demo signup successful:', email);
         return { data: { user: mockUser, session: mockSession }, error: null };
       }
 
@@ -185,13 +199,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Demo mode signin
         const mockUser = { id: 'demo-user', email };
         const mockSession = { user: mockUser };
+        const mockProfile = createMockProfile(email);
         
-        localStorage.setItem('demo-session', JSON.stringify({ user: mockUser, session: mockSession }));
+        const sessionData = { 
+          user: mockUser, 
+          session: mockSession, 
+          profile: mockProfile 
+        };
+        
+        localStorage.setItem('flexora-demo-session', JSON.stringify(sessionData));
         
         setUser(mockUser as User);
         setSession(mockSession as Session);
-        setProfile(createMockProfile(email));
+        setProfile(mockProfile);
         
+        console.log('Demo signin successful:', email);
         return { data: { user: mockUser, session: mockSession }, error: null };
       }
 
@@ -209,10 +231,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signOut = async () => {
     try {
       if (isDemoMode) {
-        localStorage.removeItem('demo-session');
+        localStorage.removeItem('flexora-demo-session');
         setUser(null);
         setSession(null);
         setProfile(null);
+        console.log('Demo signout successful');
         return { error: null };
       }
 
@@ -229,9 +252,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     try {
       if (isDemoMode) {
-        // In demo mode, update local profile state
+        // In demo mode, update local profile state and persist to localStorage
         const updatedProfile = { ...profile, ...updates } as Profile;
         setProfile(updatedProfile);
+        
+        // Update localStorage with new profile data
+        const currentSession = localStorage.getItem('flexora-demo-session');
+        if (currentSession) {
+          const sessionData = JSON.parse(currentSession);
+          sessionData.profile = updatedProfile;
+          localStorage.setItem('flexora-demo-session', JSON.stringify(sessionData));
+        }
+        
+        console.log('Demo profile updated:', updates);
         return { data: updatedProfile, error: null };
       }
 

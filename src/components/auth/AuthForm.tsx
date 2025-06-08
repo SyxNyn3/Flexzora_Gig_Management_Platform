@@ -39,11 +39,13 @@ const AuthForm: React.FC = () => {
   const { signIn, signUp } = useAuth();
   const navigate = useNavigate();
 
+  const isDemoMode = !import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY;
+
   const signInForm = useForm<SignInForm>({
     resolver: zodResolver(signInSchema),
     defaultValues: {
-      email: '',
-      password: '',
+      email: isDemoMode ? 'demo@flexora.com' : '',
+      password: isDemoMode ? 'password' : '',
     },
   });
 
@@ -92,11 +94,30 @@ const AuthForm: React.FC = () => {
         setError(error.message);
       } else {
         toast.success('Account created successfully!');
-        // For demo mode, redirect immediately
         navigate('/dashboard');
       }
     } catch (err: any) {
       setError(err.message || 'An error occurred during sign up');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDemoLogin = async () => {
+    setLoading(true);
+    setError('');
+
+    try {
+      const { error } = await signIn('demo@flexora.com', 'password');
+
+      if (error) {
+        setError(error.message);
+      } else {
+        toast.success('Demo login successful!');
+        navigate('/dashboard');
+      }
+    } catch (err: any) {
+      setError(err.message || 'An error occurred during demo login');
     } finally {
       setLoading(false);
     }
@@ -123,6 +144,25 @@ const AuthForm: React.FC = () => {
         </CardHeader>
 
         <CardContent>
+          {isDemoMode && (
+            <div className="mb-6">
+              <Alert className="border-blue-200 bg-blue-50">
+                <AlertDescription className="text-blue-800">
+                  <div className="flex flex-col space-y-2">
+                    <span><strong>Demo Mode:</strong> Supabase not configured</span>
+                    <Button 
+                      onClick={handleDemoLogin}
+                      disabled={loading}
+                      className="w-full bg-gradient-to-r from-blue-600 to-green-500"
+                    >
+                      {loading ? 'Signing In...' : 'Try Demo (No Registration Required)'}
+                    </Button>
+                  </div>
+                </AlertDescription>
+              </Alert>
+            </div>
+          )}
+
           {error && (
             <Alert className="mb-4 border-red-200 bg-red-50">
               <AlertDescription className="text-red-800">{error}</AlertDescription>
@@ -222,7 +262,7 @@ const AuthForm: React.FC = () => {
                   type="email"
                   {...signInForm.register('email')}
                   className="mt-1"
-                  placeholder="demo@flexora.com"
+                  placeholder={isDemoMode ? 'demo@flexora.com' : 'your@email.com'}
                 />
                 {signInForm.formState.errors.email && (
                   <p className="text-sm text-red-600 mt-1">
@@ -238,7 +278,7 @@ const AuthForm: React.FC = () => {
                   type="password"
                   {...signInForm.register('password')}
                   className="mt-1"
-                  placeholder="password"
+                  placeholder={isDemoMode ? 'password' : 'Your password'}
                 />
                 {signInForm.formState.errors.password && (
                   <p className="text-sm text-red-600 mt-1">
@@ -247,9 +287,11 @@ const AuthForm: React.FC = () => {
                 )}
               </div>
 
-              <div className="bg-blue-50 p-3 rounded-lg text-sm text-blue-800">
-                <strong>Demo Mode:</strong> Use any email and password to explore the platform
-              </div>
+              {isDemoMode && (
+                <div className="bg-blue-50 p-3 rounded-lg text-sm text-blue-800">
+                  <strong>Demo Mode:</strong> Use any email and password to explore the platform
+                </div>
+              )}
 
               <Button type="submit" className="w-full bg-gradient-to-r from-blue-600 to-green-500" disabled={loading}>
                 {loading ? 'Signing In...' : 'Sign In'}
