@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
-import { Bell, Calendar, DollarSign, Settings, LogOut, User, Briefcase, Plus, MessageSquare, Building2, Users, Link as LinkIcon } from 'lucide-react';
+import { Bell, Calendar, DollarSign, Settings, LogOut, User, Briefcase, Plus, MessageSquare, Building2, Users, Link as LinkIcon, CalendarDays } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import NotificationCenter from '@/components/notifications/NotificationCenter';
 
@@ -31,7 +31,7 @@ const Navbar: React.FC = () => {
     { path: '/gigs', label: 'Gigs', icon: Calendar },
     { path: '/applications', label: 'Applications', icon: MessageSquare },
     { path: '/integrations', label: 'Integrations', icon: LinkIcon },
-    { path: '/schedule', label: 'Schedule', icon: Calendar },
+    { path: '/schedule', label: 'Schedule', icon: CalendarDays },
     { path: '/finances', label: 'Finances', icon: DollarSign },
   ];
 
@@ -40,6 +40,7 @@ const Navbar: React.FC = () => {
     { path: '/gigs', label: 'Gigs', icon: Calendar },
     { path: '/workforce', label: 'Workforce', icon: Users },
     { path: '/applications', label: 'Applications', icon: MessageSquare },
+    { path: '/schedule', label: 'Schedule', icon: CalendarDays },
     { path: '/finances', label: 'Finances', icon: DollarSign },
   ];
 

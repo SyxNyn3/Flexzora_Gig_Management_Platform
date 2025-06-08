@@ -16,6 +16,7 @@ import ProfilePage from '@/components/profile/ProfilePage';
 import CompanyIntegrations from '@/components/integrations/CompanyIntegrations';
 import UnifiedSchedule from '@/components/integrations/UnifiedSchedule';
 import CompanyDashboard from '@/components/integrations/CompanyDashboard';
+import SchedulingInterface from '@/components/scheduling/SchedulingInterface';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -43,7 +44,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   }
 
   if (!user) {
-    return <Navigate to="/auth\" replace />;
+    return <Navigate to="/auth" replace />;
   }
 
   return <>{children}</>;
@@ -57,7 +58,7 @@ const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   }
 
   if (user) {
-    return <Navigate to="/dashboard\" replace />;
+    return <Navigate to="/dashboard" replace />;
   }
 
   return <>{children}</>;
@@ -146,6 +147,16 @@ const AppRoutes: React.FC = () => {
           }
         />
         <Route
+          path="/schedule"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <SchedulingInterface />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/finances"
           element={
             <ProtectedRoute>
@@ -176,16 +187,6 @@ const AppRoutes: React.FC = () => {
           }
         />
         <Route
-          path="/schedule"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <UnifiedSchedule />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
           path="/workforce"
           element={
             <ProtectedRoute>
@@ -195,8 +196,8 @@ const AppRoutes: React.FC = () => {
             </ProtectedRoute>
           }
         />
-        <Route path="/" element={<Navigate to="/dashboard\" replace />} />
-        <Route path="*" element={<Navigate to="/dashboard\" replace />} />
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </Router>
   );
