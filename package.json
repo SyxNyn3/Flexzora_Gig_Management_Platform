@@ -43,7 +43,6 @@
     "@supabase/supabase-js": "^2.39.0",
     "@tanstack/react-query": "^5.17.0",
     "@tanstack/react-table": "^8.11.0",
-    "caniuse-lite": "^1.0.30001721",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "cmdk": "^1.0.0",
