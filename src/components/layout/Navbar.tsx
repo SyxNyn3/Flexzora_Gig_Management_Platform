@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
-import { Bell, Calendar, DollarSign, Settings, LogOut, User, Briefcase, Plus, MessageSquare } from 'lucide-react';
+import { Bell, Calendar, DollarSign, Settings, LogOut, User, Briefcase, Plus, MessageSquare, Building2, Users, Link as LinkIcon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import NotificationCenter from '@/components/notifications/NotificationCenter';
 
@@ -26,13 +26,24 @@ const Navbar: React.FC = () => {
     navigate('/auth');
   };
 
-  const navItems = [
+  const workerNavItems = [
     { path: '/dashboard', label: 'Dashboard', icon: Briefcase },
     { path: '/gigs', label: 'Gigs', icon: Calendar },
     { path: '/applications', label: 'Applications', icon: MessageSquare },
-    { path: '/calendar', label: 'Calendar', icon: Calendar },
+    { path: '/integrations', label: 'Integrations', icon: LinkIcon },
+    { path: '/schedule', label: 'Schedule', icon: Calendar },
     { path: '/finances', label: 'Finances', icon: DollarSign },
   ];
+
+  const companyNavItems = [
+    { path: '/dashboard', label: 'Dashboard', icon: Briefcase },
+    { path: '/gigs', label: 'Gigs', icon: Calendar },
+    { path: '/workforce', label: 'Workforce', icon: Users },
+    { path: '/applications', label: 'Applications', icon: MessageSquare },
+    { path: '/finances', label: 'Finances', icon: DollarSign },
+  ];
+
+  const navItems = profile?.role === 'company' ? companyNavItems : workerNavItems;
 
   return (
     <>
@@ -86,6 +97,19 @@ const Navbar: React.FC = () => {
                     </Button>
                   )}
 
+                  {/* Integration Status for Workers */}
+                  {profile?.role === 'worker' && (
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => navigate('/integrations')}
+                      className="flex items-center space-x-2"
+                    >
+                      <Building2 className="w-4 h-4" />
+                      <span className="hidden sm:inline">3 Connected</span>
+                    </Button>
+                  )}
+
                   <Button 
                     variant="ghost" 
                     size="sm" 
@@ -126,6 +150,12 @@ const Navbar: React.FC = () => {
                         <User className="mr-2 h-4 w-4" />
                         <span>Profile</span>
                       </DropdownMenuItem>
+                      {profile?.role === 'worker' && (
+                        <DropdownMenuItem onClick={() => navigate('/integrations')}>
+                          <Building2 className="mr-2 h-4 w-4" />
+                          <span>Company Integrations</span>
+                        </DropdownMenuItem>
+                      )}
                       <DropdownMenuItem onClick={() => navigate('/settings')}>
                         <Settings className="mr-2 h-4 w-4" />
                         <span>Settings</span>
