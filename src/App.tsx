@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import LandingPage from '@/components/landing/LandingPage';
 import Layout from '@/components/layout/Layout';
 import AuthForm from '@/components/auth/AuthForm';
 import WorkerDashboard from '@/components/dashboard/WorkerDashboard';
@@ -78,6 +79,10 @@ const AppRoutes: React.FC = () => {
   return (
     <Router>
       <Routes>
+        <Route
+          path="/"
+          element={<LandingPage />}
+        />
         <Route
           path="/auth"
           element={
@@ -216,7 +221,6 @@ const AppRoutes: React.FC = () => {
             </ProtectedRoute>
           }
         />
-        <Route path="/" element={<Navigate to="/dashboard\" replace />} />
         <Route path="*" element={<Navigate to="/dashboard\" replace />} />
       </Routes>
     </Router>
