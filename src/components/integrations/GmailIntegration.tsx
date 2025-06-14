@@ -105,7 +105,7 @@ const GmailIntegration: React.FC = () => {
           id: '6',
           subject: 'Special Discount on Camera Equipment',
           sender: 'sales@camerastore.com',
-          preview: 'As a valued customer, we're offering you 15% off your next purchase...',
+          preview: 'As a valued customer, we\'re offering you 15% off your next purchase...',
           date: '2024-06-09T11:30:00Z',
           isRead: true,
           hasAttachment: false,
