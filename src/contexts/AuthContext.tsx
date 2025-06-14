@@ -140,9 +140,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       let error = null;
 
       try {
-        const result = await DatabaseService.getProfile(userId);
+        // First try to get existing profile
+        let result = await DatabaseService.getProfile(userId);
         profileData = result.data;
         error = result.error;
+        
+        // If profile doesn't exist, try to create it
+        if (!profileData && !error) {
+          console.log('Profile not found, attempting to create...');
+          result = await DatabaseService.getOrCreateProfile(userId);
+          profileData = result.data;
+          error = result.error;
+        }
       } catch (err) {
         console.log('Profile not found, will create one on first update');
         // Profile doesn't exist yet, that's okay for new users
@@ -206,6 +215,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { data: { user: mockUser, session: mockSession }, error: null };
       }
 
+      // Validate input data
+      if (!userData.full_name || !userData.role) {
+        return { 
+          data: null, 
+          error: { message: 'Full name and role are required' }
+        };
+      }
+
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -215,7 +232,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
 
       if (error) {
-        throw error;
+        console.error('Supabase signup error:', error);
+        return { data: null, error };
+      }
+
+      // If user was created but not confirmed, that's still success
+      if (data.user && !data.user.email_confirmed_at) {
+        console.log('User created successfully, email confirmation may be required');
+      }
+
+      // Try to fetch/create the profile after successful signup
+      if (data.user) {
+        try {
+          await fetchProfile(data.user.id);
+        } catch (profileError) {
+          console.warn('Profile creation delayed, will retry on next login:', profileError);
+        }
       }
 
       return { data, error: null };
@@ -258,7 +290,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
 
       if (error) {
-        throw error;
+        console.error('Supabase signin error:', error);
+        return { data: null, error };
+      }
+
+      // Ensure profile exists after successful signin
+      if (data.user) {
+        try {
+          await fetchProfile(data.user.id);
+        } catch (profileError) {
+          console.warn('Profile fetch failed after signin:', profileError);
+        }
       }
 
       return { data, error: null };
