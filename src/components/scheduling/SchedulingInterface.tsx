@@ -993,11 +993,7 @@ const SchedulingInterface: React.FC = () => {
             <Button variant="outline" onClick={() => setShowEventDialog(false)}>
               Cancel
             </Button>
-            <Button onClick={() => {
-              updateEvent(selectedEvent.id, selectedEvent);
-              setShowEventDialog(false);
-              toast.success('Event updated successfully');
-            }}>
+            <Button onClick={saveChanges}>
               Save Changes
             </Button>
           </DialogFooter>
