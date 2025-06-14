@@ -257,8 +257,17 @@ const SchedulingInterface: React.FC = () => {
       events.slice(index + 1).forEach(otherEvent => {
         // Check for overlapping events with same team members
         const hasCommonMembers = event.assignedTo.some(id => otherEvent.assignedTo.includes(id));
-        const isOverlapping = isWithinInterval(event.start, { start: otherEvent.start, end: otherEvent.end }) ||
-                             isWithinInterval(event.end, { start: otherEvent.start, end: otherEvent.end });
+        // Improved conflict detection algorithm
+        const isOverlapping = (
+          // Event starts during other event
+          (event.start >= otherEvent.start && event.start < otherEvent.end) ||
+          // Event ends during other event
+          (event.end > otherEvent.start && event.end <= otherEvent.end) ||
+          // Event completely contains other event
+          (event.start <= otherEvent.start && event.end >= otherEvent.end) ||
+          // Event is completely contained by other event
+          (event.start >= otherEvent.start && event.end <= otherEvent.end)
+        );
         
         if (hasCommonMembers && isOverlapping) {
           newConflicts.push({
@@ -838,6 +847,28 @@ const SchedulingInterface: React.FC = () => {
   function EventDialog() {
     if (!selectedEvent) return null;
 
+    // Create a local copy of the event for editing
+    const [localEvent, setLocalEvent] = useState<ScheduleEvent>({...selectedEvent});
+    
+    // Update local event when selected event changes
+    useEffect(() => {
+      setLocalEvent({...selectedEvent});
+    }, [selectedEvent]);
+
+    // Handle input changes
+    const handleInputChange = (field: string, value: any) => {
+      setLocalEvent(prev => ({
+        ...prev,
+        [field]: value
+      }));
+    };
+
+    // Save changes
+    const saveChanges = () => {
+      updateEvent(selectedEvent.id, localEvent);
+      setShowEventDialog(false);
+      toast.success('Event updated successfully');
+    };
     return (
       <Dialog open={showEventDialog} onOpenChange={setShowEventDialog}>
         <DialogContent className="sm:max-w-[600px]">
@@ -853,8 +884,8 @@ const SchedulingInterface: React.FC = () => {
               <Label htmlFor="title">Title</Label>
               <Input
                 id="title"
-                value={selectedEvent.title}
-                onChange={(e) => setSelectedEvent({ ...selectedEvent, title: e.target.value })}
+                value={localEvent.title}
+                onChange={(e) => handleInputChange('title', e.target.value)}
               />
             </div>
 
@@ -864,11 +895,8 @@ const SchedulingInterface: React.FC = () => {
                 <Input
                   id="start"
                   type="datetime-local"
-                  value={format(selectedEvent.start, "yyyy-MM-dd'T'HH:mm")}
-                  onChange={(e) => setSelectedEvent({ 
-                    ...selectedEvent, 
-                    start: new Date(e.target.value) 
-                  })}
+                  value={format(localEvent.start, "yyyy-MM-dd'T'HH:mm")}
+                  onChange={(e) => handleInputChange('start', new Date(e.target.value))}
                 />
               </div>
               <div>
@@ -876,11 +904,8 @@ const SchedulingInterface: React.FC = () => {
                 <Input
                   id="end"
                   type="datetime-local"
-                  value={format(selectedEvent.end, "yyyy-MM-dd'T'HH:mm")}
-                  onChange={(e) => setSelectedEvent({ 
-                    ...selectedEvent, 
-                    end: new Date(e.target.value) 
-                  })}
+                  value={format(localEvent.end, "yyyy-MM-dd'T'HH:mm")}
+                  onChange={(e) => handleInputChange('end', new Date(e.target.value))}
                 />
               </div>
             </div>
@@ -889,11 +914,8 @@ const SchedulingInterface: React.FC = () => {
               <Label htmlFor="description">Description</Label>
               <Input
                 id="description"
-                value={selectedEvent.description || ''}
-                onChange={(e) => setSelectedEvent({ 
-                  ...selectedEvent, 
-                  description: e.target.value 
-                })}
+                value={localEvent.description || ''}
+                onChange={(e) => handleInputChange('description', e.target.value)}
               />
             </div>
 
@@ -901,11 +923,8 @@ const SchedulingInterface: React.FC = () => {
               <div>
                 <Label htmlFor="type">Type</Label>
                 <Select
-                  value={selectedEvent.type}
-                  onValueChange={(value) => setSelectedEvent({ 
-                    ...selectedEvent, 
-                    type: value as any 
-                  })}
+                  value={localEvent.type}
+                  onValueChange={(value) => handleInputChange('type', value)}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -921,11 +940,8 @@ const SchedulingInterface: React.FC = () => {
               <div>
                 <Label htmlFor="status">Status</Label>
                 <Select
-                  value={selectedEvent.status}
-                  onValueChange={(value) => setSelectedEvent({ 
-                    ...selectedEvent, 
-                    status: value as any 
-                  })}
+                  value={localEvent.status}
+                  onValueChange={(value) => handleInputChange('status', value)}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -955,11 +971,8 @@ const SchedulingInterface: React.FC = () => {
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2">
                 <Switch
-                  checked={selectedEvent.isRecurring}
-                  onCheckedChange={(checked) => setSelectedEvent({ 
-                    ...selectedEvent, 
-                    isRecurring: checked 
-                  })}
+                  checked={localEvent.isRecurring}
+                  onCheckedChange={(checked) => handleInputChange('isRecurring', checked)}
                 />
                 <Label>Recurring Event</Label>
               </div>
@@ -969,7 +982,10 @@ const SchedulingInterface: React.FC = () => {
           <DialogFooter>
             <Button
               variant="destructive"
-              onClick={() => deleteEvent(selectedEvent.id)}
+              onClick={() => {
+                deleteEvent(selectedEvent.id);
+                setShowEventDialog(false);
+              }}
             >
               <Trash2 className="h-4 w-4 mr-2" />
               Delete

@@ -506,6 +506,7 @@ export class DatabaseService {
         throw new Error(`Failed to delete calendar event: ${error.message}`);
       }
 
+      // Return success response
       return { error: null };
     } catch (error: any) {
       return { error: error.message };
