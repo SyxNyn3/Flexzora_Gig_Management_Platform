@@ -107,10 +107,10 @@ const LandingPage: React.FC = () => {
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-blue-50 via-white to-green-50">
+      {/* Hero Section with Image Grid */}
+      <section className="relative overflow-hidden bg-gradient-to-br from-blue-50 via-white to-green-50 py-20 lg:py-32">
         <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-32">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div className="text-center lg:text-left">
               <div className="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm font-medium mb-6">
@@ -159,17 +159,130 @@ const LandingPage: React.FC = () => {
                 </div>
               </div>
             </div>
-            <div className="relative">
-              <div className="relative z-10">
+            
+            {/* Image Grid Showcase */}
+            <div className="relative grid grid-cols-2 gap-4">
+              {/* Main large image - Video Production */}
+              <div className="col-span-2 relative group">
+                <img 
+                  src="https://images.pexels.com/photos/66134/pexels-photo-66134.jpeg?auto=compress&cs=tinysrgb&w=800" 
+                  alt="Video production and camera work" 
+                  className="w-full h-64 object-cover rounded-2xl shadow-xl group-hover:shadow-2xl transition-all duration-300"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent rounded-2xl"></div>
+                <div className="absolute bottom-4 left-4 text-white">
+                  <h3 className="font-semibold text-lg">Video Production</h3>
+                  <p className="text-sm opacity-90">Camera operators, directors, editors</p>
+                </div>
+              </div>
+              
+              {/* Sound Engineering */}
+              <div className="relative group">
+                <img 
+                  src="https://images.pexels.com/photos/164938/pexels-photo-164938.jpeg?auto=compress&cs=tinysrgb&w=400" 
+                  alt="Sound engineering and audio mixing" 
+                  className="w-full h-48 object-cover rounded-xl shadow-lg group-hover:shadow-xl transition-all duration-300"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent rounded-xl"></div>
+                <div className="absolute bottom-3 left-3 text-white">
+                  <h4 className="font-medium">Sound Engineering</h4>
+                  <p className="text-xs opacity-90">Audio mixing, live sound</p>
+                </div>
+              </div>
+              
+              {/* Lighting Design */}
+              <div className="relative group">
+                <img 
+                  src="https://images.pexels.com/photos/1190297/pexels-photo-1190297.jpeg?auto=compress&cs=tinysrgb&w=400" 
+                  alt="Stage lighting and design" 
+                  className="w-full h-48 object-cover rounded-xl shadow-lg group-hover:shadow-xl transition-all duration-300"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent rounded-xl"></div>
+                <div className="absolute bottom-3 left-3 text-white">
+                  <h4 className="font-medium">Lighting Design</h4>
+                  <p className="text-xs opacity-90">Stage lighting, LED systems</p>
+                </div>
+              </div>
+              
+              {/* Event Coordination */}
+              <div className="col-span-2 relative group">
                 <img 
                   src="https://images.pexels.com/photos/1190298/pexels-photo-1190298.jpeg?auto=compress&cs=tinysrgb&w=800" 
-                  alt="Professional event production" 
-                  className="rounded-2xl shadow-2xl"
+                  alt="Event coordination and management" 
+                  className="w-full h-40 object-cover rounded-xl shadow-lg group-hover:shadow-xl transition-all duration-300"
                 />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent rounded-xl"></div>
+                <div className="absolute bottom-3 left-3 text-white">
+                  <h4 className="font-medium">Event Coordination</h4>
+                  <p className="text-xs opacity-90">Project management, logistics, crew coordination</p>
+                </div>
               </div>
+              
+              {/* Stage Management */}
+              <div className="relative group">
+                <img 
+                  src="https://images.pexels.com/photos/1105666/pexels-photo-1105666.jpeg?auto=compress&cs=tinysrgb&w=400" 
+                  alt="Stage management and setup" 
+                  className="w-full h-32 object-cover rounded-xl shadow-lg group-hover:shadow-xl transition-all duration-300"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent rounded-xl"></div>
+                <div className="absolute bottom-2 left-2 text-white">
+                  <h4 className="font-medium text-sm">Stage Management</h4>
+                  <p className="text-xs opacity-90">Setup, rigging, safety</p>
+                </div>
+              </div>
+              
+              {/* Photography */}
+              <div className="relative group">
+                <img 
+                  src="https://images.pexels.com/photos/1983032/pexels-photo-1983032.jpeg?auto=compress&cs=tinysrgb&w=400" 
+                  alt="Professional photography" 
+                  className="w-full h-32 object-cover rounded-xl shadow-lg group-hover:shadow-xl transition-all duration-300"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent rounded-xl"></div>
+                <div className="absolute bottom-2 left-2 text-white">
+                  <h4 className="font-medium text-sm">Photography</h4>
+                  <p className="text-xs opacity-90">Events, portraits, commercial</p>
+                </div>
+              </div>
+              
+              {/* Floating elements for visual interest */}
               <div className="absolute -top-4 -right-4 w-72 h-72 bg-gradient-to-r from-blue-400 to-green-400 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
               <div className="absolute -bottom-8 -left-4 w-72 h-72 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Professional Categories Section */}
+      <section className="py-16 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">
+              Built for Every Type of Professional
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              From video production to event coordination, Flexora supports all types of gig work in the entertainment and production industry.
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+            {[
+              { icon: '🎥', title: 'Video Production', desc: 'Camera ops, directors' },
+              { icon: '🎵', title: 'Sound Engineering', desc: 'Audio mixing, live sound' },
+              { icon: '💡', title: 'Lighting Design', desc: 'Stage lighting, LED' },
+              { icon: '📸', title: 'Photography', desc: 'Events, commercial' },
+              { icon: '🎭', title: 'Stage Management', desc: 'Setup, rigging' },
+              { icon: '📋', title: 'Event Coordination', desc: 'Project management' }
+            ].map((category, index) => (
+              <div key={index} className="text-center group hover:scale-105 transition-transform duration-300">
+                <div className="text-4xl mb-3 group-hover:scale-110 transition-transform duration-300">
+                  {category.icon}
+                </div>
+                <h3 className="font-semibold text-gray-900 mb-1">{category.title}</h3>
+                <p className="text-sm text-gray-600">{category.desc}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -280,12 +393,12 @@ const LandingPage: React.FC = () => {
             ))}
           </div>
           <blockquote className="text-2xl lg:text-3xl font-medium text-white mb-8 leading-relaxed">
-            "Flexora has completely transformed how I manage my freelance career. 
-            I've increased my earnings by 40% and never miss a gig anymore."
+            "As a sound engineer working with multiple production companies, Flexora keeps me organized and ensures I never double-book. 
+            My earnings have increased 40% since I started using it."
           </blockquote>
           <div className="flex items-center justify-center space-x-4">
             <img 
-              src="https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=100" 
+              src="https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=100" 
               alt="Sarah Chen" 
               className="w-12 h-12 rounded-full"
             />
