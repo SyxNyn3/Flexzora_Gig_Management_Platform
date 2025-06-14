@@ -67,6 +67,25 @@ export class DatabaseService {
     }
   }
 
+  static async getOrCreateProfile(userId: string): Promise<{ data: Profile | null; error: string | null }> {
+    try {
+      if (isDemoMode) {
+        return { data: null, error: 'Demo mode - profiles handled in AuthContext' };
+      }
+
+      const { data, error } = await supabase.rpc('get_or_create_profile', { user_id: userId });
+      
+      if (error) {
+        console.error('Error getting or creating profile:', error);
+        return { data: null, error: error.message };
+      }
+
+      return { data: data as Profile, error: null };
+    } catch (error: any) {
+      return { data: null, error: error.message };
+    }
+  }
+
   static async updateProfile(userId: string, updates: Partial<Database['public']['Tables']['profiles']['Update']>) {
     try {
       if (isDemoMode) {
