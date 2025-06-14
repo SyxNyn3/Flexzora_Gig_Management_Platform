@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/contexts/AuthContext';
+import { AuthKitButton } from './AuthKitButton';
 import { Building2, Plus, Link, CheckCircle, AlertCircle, FolderSync as Sync, Settings, Users, Calendar, DollarSign, MessageSquare, Upload, Download, Wifi, WifiOff, Star, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -644,6 +645,16 @@ const CompanyIntegrations: React.FC = () => {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* AuthKit Integration Section */}
+      <div className="mt-8">
+        <AuthKitButton 
+          onConnectionSuccess={(connection) => {
+            console.log('New connection established:', connection);
+            // You can add logic here to update your integrations list
+          }}
+        />
+      </div>
 
       {/* Add Integration Dialog */}
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>

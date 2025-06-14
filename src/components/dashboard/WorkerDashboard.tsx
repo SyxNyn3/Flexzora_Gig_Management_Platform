@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGigs, useApplications } from '@/hooks/useSupabaseQuery';
+import { AuthKitButton } from '@/components/integrations/AuthKitButton';
 import { 
   Calendar, 
   DollarSign, 
@@ -419,10 +420,14 @@ const WorkerDashboard: React.FC = () => {
                     <CheckCircle className="h-4 w-4 text-blue-600" />
                   </div>
 
-                  <Button variant="outline" size="sm" className="w-full" onClick={() => navigate('/integrations')}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Company
-                  </Button>
+                  <div className="pt-2">
+                    <AuthKitButton 
+                      onConnectionSuccess={(connection) => {
+                        console.log('Dashboard integration connected:', connection);
+                      }}
+                      className="w-full"
+                    />
+                  </div>
                 </div>
               </CardContent>
             </Card>

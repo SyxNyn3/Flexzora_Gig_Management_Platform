@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
+import { AuthKitButton } from './AuthKitButton';
 import { Calendar, AlertTriangle, Clock, MapPin, Building2, DollarSign, CheckCircle, XCircle, FolderSync as Sync, Filter, Download, Eye, EyeOff } from 'lucide-react';
 import { format, isWithinInterval, parseISO, startOfWeek, endOfWeek, addDays } from 'date-fns';
 
@@ -453,6 +454,16 @@ const UnifiedSchedule: React.FC = () => {
             </CardContent>
           </Card>
         )}
+      </div>
+
+      {/* External Tool Connections */}
+      <div className="mt-8">
+        <AuthKitButton 
+          onConnectionSuccess={(connection) => {
+            console.log('Schedule integration connected:', connection);
+            toast.success(`Connected ${connection.provider} to your schedule!`);
+          }}
+        />
       </div>
     </div>
   );
