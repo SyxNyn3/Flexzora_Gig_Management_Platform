@@ -10,8 +10,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { AuthKitButton } from './AuthKitButton';
 import { Building2, Plus, Link, CheckCircle, AlertCircle, FolderSync as Sync, Settings, Users, Calendar, DollarSign, MessageSquare, Upload, Download, Wifi, WifiOff, Star, Shield } from 'lucide-react';
+import { Mail } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface CompanyIntegration {
@@ -647,13 +649,69 @@ const CompanyIntegrations: React.FC = () => {
       </Tabs>
 
       {/* AuthKit Integration Section */}
-      <div className="mt-8">
-        <AuthKitButton 
-          onConnectionSuccess={(connection) => {
-            console.log('New connection established:', connection);
-            // You can add logic here to update your integrations list
-          }}
-        />
+      <div className="mt-8 space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Email & Calendar Integrations</CardTitle>
+            <CardDescription>
+              Connect your email and calendar services to streamline your workflow
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-4 border rounded-lg hover:shadow-md transition-shadow">
+                <div className="flex items-center space-x-3 mb-3">
+                  <div className="text-2xl">📧</div>
+                  <div>
+                    <h3 className="font-medium">Gmail Integration</h3>
+                    <p className="text-sm text-gray-600">Sync emails, detect gig offers, and manage communications</p>
+                  </div>
+                </div>
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => navigate('/integrations/gmail')}
+                >
+                  <Mail className="h-4 w-4 mr-2" />
+                  Manage Gmail Integration
+                </Button>
+              </div>
+              
+              <div className="p-4 border rounded-lg hover:shadow-md transition-shadow">
+                <div className="flex items-center space-x-3 mb-3">
+                  <div className="text-2xl">🗓️</div>
+                  <div>
+                    <h3 className="font-medium">Google Calendar</h3>
+                    <p className="text-sm text-gray-600">Sync your gigs with Google Calendar automatically</p>
+                  </div>
+                </div>
+                <AuthKitButton 
+                  onConnectionSuccess={(connection) => {
+                    console.log('Calendar connection established:', connection);
+                    toast.success('Google Calendar connected successfully!');
+                  }}
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>Other Integrations</CardTitle>
+            <CardDescription>
+              Connect additional tools and services
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <AuthKitButton 
+              onConnectionSuccess={(connection) => {
+                console.log('New connection established:', connection);
+                toast.success(`Connected to ${connection.provider || 'service'} successfully!`);
+              }}
+            />
+          </CardContent>
+        </Card>
       </div>
 
       {/* Add Integration Dialog */}

@@ -18,6 +18,7 @@ import CalendarView from '@/components/calendar/CalendarView';
 import FinanceDashboard from '@/components/finances/FinanceDashboard';
 import ProfilePage from '@/components/profile/ProfilePage';
 import CompanyIntegrations from '@/components/integrations/CompanyIntegrations';
+import GmailIntegration from '@/components/integrations/GmailIntegration';
 import UnifiedSchedule from '@/components/integrations/UnifiedSchedule';
 import CompanyDashboard from '@/components/integrations/CompanyDashboard';
 import SchedulingInterface from '@/components/scheduling/SchedulingInterface';
@@ -197,6 +198,16 @@ const AppRoutes: React.FC = () => {
             <ProtectedRoute>
               <Layout>
                 <CompanyIntegrations />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/integrations/gmail"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <GmailIntegration />
               </Layout>
             </ProtectedRoute>
           }

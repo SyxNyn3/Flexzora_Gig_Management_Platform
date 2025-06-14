@@ -19,7 +19,7 @@ export function AuthKitButton({ onConnectionSuccess, className = "" }: AuthKitBu
   const { open } = useAuthKit({
     token: {
       url: `${import.meta.env.VITE_SUPABASE_URL || ''}/functions/v1/authkit-token`,
-      headers: {
+      headers: isDemoMode ? {} : {
         'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
         'Content-Type': 'application/json'
       },
@@ -45,17 +45,19 @@ export function AuthKitButton({ onConnectionSuccess, className = "" }: AuthKitBu
   const handleConnect = () => {
     if (isDemoMode) {
       // Demo mode simulation
+      const providers = ['Google', 'Gmail', 'Google Calendar', 'Slack', 'Trello', 'Notion'];
+      const randomProvider = providers[Math.floor(Math.random() * providers.length)];
       setIsConnecting(true);
       setTimeout(() => {
         const mockConnection = {
           id: Date.now().toString(),
-          provider: 'Demo Service',
+          provider: randomProvider,
           status: 'connected',
           connectedAt: new Date().toISOString()
         };
         setConnections(prev => [...prev, mockConnection]);
         setIsConnecting(false);
-        toast.success('Demo connection successful!');
+        toast.success(`Connected to ${randomProvider} successfully!`);
         onConnectionSuccess?.(mockConnection);
       }, 2000);
       return;
