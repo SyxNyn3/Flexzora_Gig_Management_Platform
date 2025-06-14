@@ -69,6 +69,7 @@ const AuthForm: React.FC = () => {
       const { error } = await signIn(data.email, data.password);
 
       if (error) {
+        console.error('Sign in error:', error);
         setError(error.message);
       } else {
         toast.success('Signed in successfully!');
@@ -76,6 +77,7 @@ const AuthForm: React.FC = () => {
       }
     } catch (err: any) {
       setError(err.message || 'An error occurred during sign in');
+      console.error('Sign in exception:', err);
     } finally {
       setLoading(false);
     }
@@ -86,12 +88,20 @@ const AuthForm: React.FC = () => {
     setError('');
 
     try {
+      // Validate form data
+      if (!data.fullName.trim()) {
+        setError('Full name is required');
+        setLoading(false);
+        return;
+      }
+
       const { error } = await signUp(data.email, data.password, {
         full_name: data.fullName,
         role: data.role,
       });
 
       if (error) {
+        console.error('Sign up error:', error);
         setError(error.message);
       } else {
         toast.success('Account created successfully!');
@@ -99,6 +109,7 @@ const AuthForm: React.FC = () => {
       }
     } catch (err: any) {
       setError(err.message || 'An error occurred during sign up');
+      console.error('Sign up exception:', err);
     } finally {
       setLoading(false);
     }
@@ -152,6 +163,7 @@ const AuthForm: React.FC = () => {
       }
     } catch (err: any) {
       setError(err.message || 'An error occurred during demo login');
+      console.error('Demo login exception:', err);
     } finally {
       setLoading(false);
     }
