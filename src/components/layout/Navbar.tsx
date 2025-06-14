@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
-import { Bell, Calendar, DollarSign, Settings, LogOut, User, Briefcase, Plus, MessageSquare, Building2, Users, Link as LinkIcon, CalendarDays } from 'lucide-react';
+import { Bell, Calendar, DollarSign, Settings, LogOut, User, Briefcase, Plus, MessageSquare, Building2, Users, Link as LinkIcon, CalendarDays, Mail } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import NotificationCenter from '@/components/notifications/NotificationCenter';
 
@@ -152,10 +152,16 @@ const Navbar: React.FC = () => {
                         <span>Profile</span>
                       </DropdownMenuItem>
                       {profile?.role === 'worker' && (
-                        <DropdownMenuItem onClick={() => navigate('/integrations')}>
-                          <Building2 className="mr-2 h-4 w-4" />
-                          <span>Company Integrations</span>
-                        </DropdownMenuItem>
+                        <>
+                          <DropdownMenuItem onClick={() => navigate('/integrations')}>
+                            <Building2 className="mr-2 h-4 w-4" />
+                            <span>Company Integrations</span>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => navigate('/integrations/gmail')}>
+                            <Mail className="mr-2 h-4 w-4" />
+                            <span>Gmail Integration</span>
+                          </DropdownMenuItem>
+                        </>
                       )}
                       <DropdownMenuItem onClick={() => navigate('/calendar')}>
                         <Calendar className="mr-2 h-4 w-4" />

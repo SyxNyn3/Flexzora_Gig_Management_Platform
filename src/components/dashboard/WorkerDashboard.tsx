@@ -420,13 +420,23 @@ const WorkerDashboard: React.FC = () => {
                     <CheckCircle className="h-4 w-4 text-blue-600" />
                   </div>
 
-                  <div className="pt-2">
-                    <AuthKitButton 
-                      onConnectionSuccess={(connection) => {
-                        console.log('Dashboard integration connected:', connection);
-                      }}
-                      className="w-full"
-                    />
+                  <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-200">
+                    <div className="flex items-center">
+                      <div className="text-lg mr-3">📧</div>
+                      <div>
+                        <p className="font-medium text-sm">Gmail</p>
+                        <p className="text-xs text-gray-600">Connected</p>
+                      </div>
+                    </div>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-6 px-2"
+                      onClick={() => navigate('/integrations/gmail')}
+                    >
+                      <Mail className="h-3 w-3 mr-1" />
+                      View
+                    </Button>
                   </div>
                 </div>
               </CardContent>
