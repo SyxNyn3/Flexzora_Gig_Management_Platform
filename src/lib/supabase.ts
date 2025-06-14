@@ -33,6 +33,24 @@ export class DatabaseService {
   // Profile operations
   static async getProfile(userId: string) {
     try {
+      if (isDemoMode) {
+        // In demo mode, return mock data
+        return { 
+          data: {
+            id: 'demo-profile-id',
+            user_id: userId,
+            email: 'demo@flexora.com',
+            full_name: 'Demo User',
+            role: 'worker',
+            experience_years: 5,
+            is_available: true,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }, 
+          error: null 
+        };
+      }
+
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -51,6 +69,20 @@ export class DatabaseService {
 
   static async updateProfile(userId: string, updates: Partial<Database['public']['Tables']['profiles']['Update']>) {
     try {
+      if (isDemoMode) {
+        // In demo mode, return mock updated data
+        return { 
+          data: {
+            id: 'demo-profile-id',
+            user_id: userId,
+            email: 'demo@flexora.com',
+            ...updates,
+            updated_at: new Date().toISOString()
+          }, 
+          error: null 
+        };
+      }
+
       const { data, error } = await supabase
         .from('profiles')
         .update(updates)

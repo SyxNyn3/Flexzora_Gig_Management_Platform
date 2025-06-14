@@ -136,15 +136,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchProfile = async (userId: string) => {
     try {
-      const { data, error } = await DatabaseService.getProfile(userId);
+      let profileData = null;
+      let error = null;
 
-      if (error) {
+      try {
+        const result = await DatabaseService.getProfile(userId);
+        profileData = result.data;
+        error = result.error;
+      } catch (err) {
+        console.log('Profile not found, will create one on first update');
+        // Profile doesn't exist yet, that's okay for new users
+      }
+
+      if (error && !error.includes('not found')) {
         console.error('Error fetching profile:', error);
         setLoading(false);
         return;
       }
 
-      setProfile(data);
+      setProfile(profileData);
     } catch (error) {
       console.error('Error fetching profile:', error);
     } finally {
