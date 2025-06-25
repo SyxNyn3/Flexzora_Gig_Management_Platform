@@ -8,12 +8,21 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
-import { Company, Skill } from '@/lib/types';
+import { Company, Skill, DatabaseService } from '@/lib/types';
 import { 
   Plus, 
   X, 
@@ -22,10 +31,14 @@ import {
   DollarSign,
   Users,
   Save,
-  ArrowLeft
+  ArrowLeft,
+  Check,
+  ChevronsUpDown,
+  Building
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 const gigSchema = z.object({
   title: z.string().min(5, 'Title must be at least 5 characters'),
@@ -43,6 +56,16 @@ const gigSchema = z.object({
 
 type GigForm = z.infer<typeof gigSchema>;
 
+const companySchema = z.object({
+  name: z.string().min(2, 'Company name is required'),
+  description: z.string().optional(),
+  website_url: z.string().url('Please enter a valid URL').optional().or(z.literal('')),
+  contact_email: z.string().email('Please enter a valid email').optional().or(z.literal('')),
+  contact_phone: z.string().optional(),
+  address: z.string().optional(),
+});
+
+type CompanyForm = z.infer<typeof companySchema>;
 const CreateGigForm: React.FC = () => {
   const { profile } = useAuth();
   const navigate = useNavigate();
@@ -50,8 +73,21 @@ const CreateGigForm: React.FC = () => {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [skills, setSkills] = useState<Skill[]>([]);
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
+  const [skillSearchTerm, setSkillSearchTerm] = useState('');
+  const [openSkillsCombobox, setOpenSkillsCombobox] = useState(false);
   const [equipmentProvided, setEquipmentProvided] = useState<string[]>([]);
   const [newEquipment, setNewEquipment] = useState('');
+  const [predefinedEquipment, setPredefinedEquipment] = useState<string[]>([
+    'Camera', 'Lighting Kit', 'Sound System', 'Microphones', 'Tripods',
+    'Monitors', 'Cables', 'Headphones', 'Batteries', 'Memory Cards',
+    'Laptop', 'Software Licenses', 'Drone', 'Stabilizer', 'Green Screen'
+  ]);
+  const [openCompanyCombobox, setOpenCompanyCombobox] = useState(false);
+  const [companySearchTerm, setCompanySearchTerm] = useState('');
+  const [showAddCompanyDialog, setShowAddCompanyDialog] = useState(false);
+  const [showAddSkillDialog, setShowAddSkillDialog] = useState(false);
+  const [newSkillName, setNewSkillName] = useState('');
+  const [newSkillCategory, setNewSkillCategory] = useState('');
 
   const form = useForm<GigForm>({
     resolver: zodResolver(gigSchema),
@@ -67,6 +103,18 @@ const CreateGigForm: React.FC = () => {
       required_workers: '1',
       special_requirements: '',
       is_remote: false,
+    },
+  });
+  
+  const companyForm = useForm<CompanyForm>({
+    resolver: zodResolver(companySchema),
+    defaultValues: {
+      name: '',
+      description: '',
+      website_url: '',
+      contact_email: '',
+      contact_phone: '',
+      address: '',
     },
   });
 
@@ -103,10 +151,22 @@ const CreateGigForm: React.FC = () => {
     }
   };
 
-  const addSkill = (skillName: string) => {
-    if (skillName && !selectedSkills.includes(skillName)) {
+  const addSkill = (skillName: string, fromDropdown = true) => {
+    if (!skillName.trim()) return;
+    
+    if (!selectedSkills.includes(skillName)) {
       setSelectedSkills([...selectedSkills, skillName]);
+      
+      // If this is a new skill (not from dropdown), show dialog to add details
+      if (!fromDropdown && !skills.some(s => s.name.toLowerCase() === skillName.toLowerCase())) {
+        setNewSkillName(skillName);
+        setShowAddSkillDialog(true);
+      }
     }
+    
+    // Clear search term after adding
+    setSkillSearchTerm('');
+    setOpenSkillsCombobox(false);
   };
 
   const removeSkill = (skillName: string) => {
@@ -119,9 +179,101 @@ const CreateGigForm: React.FC = () => {
       setNewEquipment('');
     }
   };
+  
+  const addPredefinedEquipment = (equipment: string) => {
+    if (!equipmentProvided.includes(equipment)) {
+      setEquipmentProvided([...equipmentProvided, equipment]);
+    }
+  };
 
   const removeEquipment = (equipment: string) => {
     setEquipmentProvided(equipmentProvided.filter(item => item !== equipment));
+  };
+  
+  const handleAddCompany = async () => {
+    try {
+      const formData = companyForm.getValues();
+      
+      if (!formData.name) {
+        toast.error('Company name is required');
+        return;
+      }
+      
+      setLoading(true);
+      
+      const companyData = {
+        name: formData.name,
+        description: formData.description || null,
+        website_url: formData.website_url || null,
+        contact_email: formData.contact_email || null,
+        contact_phone: formData.contact_phone || null,
+        address: formData.address || null,
+        created_by: profile?.id,
+      };
+      
+      const { data: newCompany, error } = await supabase
+        .from('companies')
+        .insert(companyData)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
+      // Add the new company to the list and select it
+      setCompanies(prev => [...prev, newCompany]);
+      form.setValue('company_id', newCompany.id);
+      
+      // Close dialog and reset form
+      setShowAddCompanyDialog(false);
+      companyForm.reset();
+      
+      toast.success('Company added successfully!');
+    } catch (error: any) {
+      console.error('Error adding company:', error);
+      toast.error(error.message || 'Failed to add company');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  const handleAddNewSkill = async () => {
+    try {
+      if (!newSkillName.trim()) {
+        toast.error('Skill name is required');
+        return;
+      }
+      
+      setLoading(true);
+      
+      const skillData = {
+        name: newSkillName,
+        category: newSkillCategory || null,
+        description: null,
+      };
+      
+      const { data: newSkill, error } = await supabase
+        .from('skills')
+        .insert(skillData)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
+      // Add the new skill to the list
+      setSkills(prev => [...prev, newSkill]);
+      
+      // Close dialog and reset form
+      setShowAddSkillDialog(false);
+      setNewSkillName('');
+      setNewSkillCategory('');
+      
+      toast.success('Skill added successfully!');
+    } catch (error: any) {
+      console.error('Error adding skill:', error);
+      toast.error(error.message || 'Failed to add skill');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const onSubmit = async (data: GigForm) => {
@@ -182,6 +334,16 @@ const CreateGigForm: React.FC = () => {
       </div>
     );
   }
+  
+  // Filter skills based on search term
+  const filteredSkills = skills.filter(skill => 
+    skill.name.toLowerCase().includes(skillSearchTerm.toLowerCase())
+  );
+  
+  // Filter companies based on search term
+  const filteredCompanies = companies.filter(company => 
+    company.name.toLowerCase().includes(companySearchTerm.toLowerCase())
+  );
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -244,18 +406,82 @@ const CreateGigForm: React.FC = () => {
 
             <div>
               <Label htmlFor="company_id">Company</Label>
-              <Select onValueChange={(value) => form.setValue('company_id', value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a company" />
-                </SelectTrigger>
-                <SelectContent>
-                  {companies.map((company) => (
-                    <SelectItem key={company.id} value={company.id}>
-                      {company.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="relative mt-1">
+                <Popover open={openCompanyCombobox} onOpenChange={setOpenCompanyCombobox}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={openCompanyCombobox}
+                      className="w-full justify-between"
+                    >
+                      {form.watch('company_id')
+                        ? companies.find((company) => company.id === form.watch('company_id'))?.name
+                        : "Select a company"}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0">
+                    <Command>
+                      <CommandInput 
+                        placeholder="Search companies..." 
+                        value={companySearchTerm}
+                        onValueChange={setCompanySearchTerm}
+                      />
+                      <CommandEmpty>
+                        <div className="py-6 text-center text-sm">
+                          <p>No company found.</p>
+                          <Button 
+                            variant="link" 
+                            className="mt-2"
+                            onClick={() => {
+                              setShowAddCompanyDialog(true);
+                              setOpenCompanyCombobox(false);
+                              companyForm.setValue('name', companySearchTerm);
+                            }}
+                          >
+                            <Plus className="h-4 w-4 mr-1" />
+                            Add "{companySearchTerm}"
+                          </Button>
+                        </div>
+                      </CommandEmpty>
+                      <CommandGroup>
+                        {filteredCompanies.map((company) => (
+                          <CommandItem
+                            key={company.id}
+                            value={company.id}
+                            onSelect={(value) => {
+                              form.setValue('company_id', value);
+                              setOpenCompanyCombobox(false);
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                form.watch('company_id') === company.id ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            {company.name}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                      <div className="p-2 border-t">
+                        <Button 
+                          variant="outline" 
+                          className="w-full"
+                          onClick={() => {
+                            setShowAddCompanyDialog(true);
+                            setOpenCompanyCombobox(false);
+                          }}
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add New Company
+                        </Button>
+                      </div>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              </div>
               {form.formState.errors.company_id && (
                 <p className="text-sm text-red-600 mt-1">
                   {form.formState.errors.company_id.message}
@@ -393,21 +619,80 @@ const CreateGigForm: React.FC = () => {
             {/* Skills Required */}
             <div>
               <Label>Skills Required</Label>
-              <div className="mt-2">
-                <Select onValueChange={addSkill}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Add required skills" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {skills
-                      .filter(skill => !selectedSkills.includes(skill.name))
-                      .map((skill) => (
-                        <SelectItem key={skill.id} value={skill.name}>
-                          {skill.name}
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
+              <div className="relative mt-2">
+                <Popover open={openSkillsCombobox} onOpenChange={setOpenSkillsCombobox}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={openSkillsCombobox}
+                      className="w-full justify-between"
+                    >
+                      {skillSearchTerm || "Search or add skills..."}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0">
+                    <Command>
+                      <CommandInput 
+                        placeholder="Search skills..."
+                        value={skillSearchTerm}
+                        onValueChange={setSkillSearchTerm}
+                      />
+                      <CommandEmpty>
+                        <div className="py-6 text-center text-sm">
+                          <p>No skill found.</p>
+                          <Button 
+                            variant="link" 
+                            className="mt-2"
+                            onClick={() => {
+                              if (skillSearchTerm.trim()) {
+                                addSkill(skillSearchTerm, false);
+                              }
+                            }}
+                          >
+                            <Plus className="h-4 w-4 mr-1" />
+                            Add "{skillSearchTerm}"
+                          </Button>
+                        </div>
+                      </CommandEmpty>
+                      <CommandGroup>
+                        {filteredSkills
+                          .filter(skill => !selectedSkills.includes(skill.name))
+                          .map((skill) => (
+                            <CommandItem
+                              key={skill.id}
+                              value={skill.name}
+                              onSelect={(value) => {
+                                addSkill(value, true);
+                              }}
+                            >
+                              {skill.name}
+                              {skill.category && (
+                                <span className="ml-2 text-xs text-gray-500">
+                                  {skill.category}
+                                </span>
+                              )}
+                            </CommandItem>
+                          ))}
+                      </CommandGroup>
+                      {skillSearchTerm && !filteredSkills.some(s => s.name.toLowerCase() === skillSearchTerm.toLowerCase()) && (
+                        <div className="p-2 border-t">
+                          <Button 
+                            variant="outline" 
+                            className="w-full"
+                            onClick={() => {
+                              addSkill(skillSearchTerm, false);
+                            }}
+                          >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Add "{skillSearchTerm}" as new skill
+                          </Button>
+                        </div>
+                      )}
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
               {selectedSkills.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-3">
@@ -427,6 +712,24 @@ const CreateGigForm: React.FC = () => {
             {/* Equipment Provided */}
             <div>
               <Label>Equipment Provided</Label>
+              <div className="mt-2 mb-3">
+                <Label className="text-sm text-gray-600 mb-2">Select from common equipment:</Label>
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {predefinedEquipment.map((equipment) => (
+                    <Button
+                      key={equipment}
+                      type="button"
+                      variant={equipmentProvided.includes(equipment) ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => addPredefinedEquipment(equipment)}
+                      className="text-xs"
+                    >
+                      {equipment}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+              <Label className="text-sm text-gray-600">Or add custom equipment:</Label>
               <div className="flex gap-2 mt-2">
                 <Input
                   value={newEquipment}
@@ -492,6 +795,153 @@ const CreateGigForm: React.FC = () => {
         </div>
       </form>
     </div>
+      {/* Add Company Dialog */}
+      <Dialog open={showAddCompanyDialog} onOpenChange={setShowAddCompanyDialog}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Add New Company</DialogTitle>
+            <DialogDescription>
+              Create a new company to associate with your gig
+            </DialogDescription>
+          </DialogHeader>
+          
+          <form onSubmit={companyForm.handleSubmit(handleAddCompany)} className="space-y-4">
+            <div>
+              <Label htmlFor="company_name">Company Name*</Label>
+              <Input
+                id="company_name"
+                {...companyForm.register('name')}
+                placeholder="Enter company name"
+              />
+              {companyForm.formState.errors.name && (
+                <p className="text-sm text-red-600 mt-1">
+                  {companyForm.formState.errors.name.message}
+                </p>
+              )}
+            </div>
+            
+            <div>
+              <Label htmlFor="company_description">Description</Label>
+              <Textarea
+                id="company_description"
+                {...companyForm.register('description')}
+                placeholder="Brief description of the company"
+                rows={3}
+              />
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="company_website">Website</Label>
+                <Input
+                  id="company_website"
+                  {...companyForm.register('website_url')}
+                  placeholder="https://example.com"
+                />
+                {companyForm.formState.errors.website_url && (
+                  <p className="text-sm text-red-600 mt-1">
+                    {companyForm.formState.errors.website_url.message}
+                  </p>
+                )}
+              </div>
+              
+              <div>
+                <Label htmlFor="company_email">Contact Email</Label>
+                <Input
+                  id="company_email"
+                  type="email"
+                  {...companyForm.register('contact_email')}
+                  placeholder="contact@example.com"
+                />
+                {companyForm.formState.errors.contact_email && (
+                  <p className="text-sm text-red-600 mt-1">
+                    {companyForm.formState.errors.contact_email.message}
+                  </p>
+                )}
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="company_phone">Contact Phone</Label>
+                <Input
+                  id="company_phone"
+                  {...companyForm.register('contact_phone')}
+                  placeholder="+1 (555) 123-4567"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="company_address">Address</Label>
+                <Input
+                  id="company_address"
+                  {...companyForm.register('address')}
+                  placeholder="123 Main St, City, State"
+                />
+              </div>
+            </div>
+            
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setShowAddCompanyDialog(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={loading}>
+                {loading ? 'Adding...' : 'Add Company'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Add Skill Dialog */}
+      <Dialog open={showAddSkillDialog} onOpenChange={setShowAddSkillDialog}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Add New Skill</DialogTitle>
+            <DialogDescription>
+              Add details for the new skill to be added to the platform
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="skill_name">Skill Name*</Label>
+              <Input
+                id="skill_name"
+                value={newSkillName}
+                onChange={(e) => setNewSkillName(e.target.value)}
+                placeholder="Enter skill name"
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="skill_category">Category</Label>
+              <Select value={newSkillCategory} onValueChange={setNewSkillCategory}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Technical">Technical</SelectItem>
+                  <SelectItem value="Creative">Creative</SelectItem>
+                  <SelectItem value="Management">Management</SelectItem>
+                  <SelectItem value="Post-Production">Post-Production</SelectItem>
+                  <SelectItem value="Safety">Safety</SelectItem>
+                  <SelectItem value="Support">Support</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setShowAddSkillDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddNewSkill} disabled={loading}>
+              {loading ? 'Adding...' : 'Add Skill'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
   );
 };
 
