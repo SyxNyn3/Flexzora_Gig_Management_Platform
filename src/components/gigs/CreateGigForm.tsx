@@ -794,7 +794,6 @@ const CreateGigForm: React.FC = () => {
           </Button>
         </div>
       </form>
-    </div>
       {/* Add Company Dialog */}
       <Dialog open={showAddCompanyDialog} onOpenChange={setShowAddCompanyDialog}>
         <DialogContent className="sm:max-w-[500px]">
@@ -942,6 +941,7 @@ const CreateGigForm: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
   );
 };
 
