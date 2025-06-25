@@ -22,7 +22,8 @@ import {
   Plus,
   Edit,
   FileText,
-  CreditCard
+  CreditCard,
+  X
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -374,55 +375,12 @@ const WorkerPayroll: React.FC<WorkerPayrollProps> = ({ gigId, gigTitle, workers 
                   </div>
                   <div className="text-lg font-semibold">${payment.net_pay.toLocaleString()}</div>
                   <div className="text-sm text-gray-500">
-                      size="sm" 
-                      variant="outline"
-                      onClick={() => {
-                        const paymentDialog = document.getElementById(`payment-dialog-${payment.id}`);
-                        if (paymentDialog) {
-                          (paymentDialog as HTMLDialogElement).showModal();
-                        }
-                      }}
-                    <div className="text-xs text-gray-500">
-                      Process Payment
-                    </div>
-                  )}
-                  
-                  {/* Payment Dialog */}
-                  <dialog id={`payment-dialog-${payment.id}`} className="modal p-0 rounded-lg shadow-xl max-w-md w-full">
-                    <div className="p-6">
-                      <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-lg font-medium">Process Payment</h3>
-                        <button 
-                          onClick={() => {
-                            const paymentDialog = document.getElementById(`payment-dialog-${payment.id}`);
-                            if (paymentDialog) {
-                              (paymentDialog as HTMLDialogElement).close();
-                            }
-                          }}
-                          className="text-gray-500 hover:text-gray-700"
-                        >
-                          <X className="h-5 w-5" />
-                        </button>
-                      </div>
-                      
-                      <StripePaymentForm
-                        amount={payment.net_pay}
-                        description={`Payment for ${payment.worker_name} - ${payment.gig?.title || 'Services'}`}
-                        metadata={{
-                          paymentId: payment.id,
-                          workerId: payment.worker_id,
-                          gigId: payment.gig_id || '',
-                        }}
-                        onPaymentSuccess={(paymentIntentId) => {
-                          updatePaymentStatus(payment.id, 'paid');
-                          const paymentDialog = document.getElementById(`payment-dialog-${payment.id}`);
-                          if (paymentDialog) {
-                            (paymentDialog as HTMLDialogElement).close();
-                          }
-                        }}
-                      />
-                    </div>
-                  </dialog>
+                    {payment.paid_at ? (
+                      `Paid on ${format(new Date(payment.paid_at), 'MMM d, yyyy')}`
+                    ) : (
+                      'Not paid yet'
+                    )}
+                  </div>
                 </div>
 
                 {profile?.role === 'company' && payment.status !== 'paid' && (
