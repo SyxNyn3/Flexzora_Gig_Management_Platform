@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase, isDemoMode } from '@/lib/supabase';
 import { toast } from 'sonner';
+import { storeAuthData } from '@/lib/auth';
 import { Mail, Apple, Chrome, ArrowLeft, Shield, CheckCircle } from 'lucide-react';
 
 const signInSchema = z.object({
@@ -71,7 +72,12 @@ const AuthForm: React.FC = () => {
       if (error) {
         console.error('Sign in error:', error);
         setError(error.message);
-      } else {
+      } else { 
+        // Store auth data in localStorage for persistence
+        if (data?.session && data?.user) {
+          storeAuthData(data.session, data.user, null);
+        }
+        
         toast.success('Signed in successfully!');
         navigate('/dashboard');
       }
@@ -103,7 +109,12 @@ const AuthForm: React.FC = () => {
       if (error) {
         console.error('Sign up error:', error);
         setError(error.message);
-      } else {
+      } else { 
+        // Store auth data in localStorage for persistence
+        if (data?.session && data?.user) {
+          storeAuthData(data.session, data.user, null);
+        }
+        
         toast.success('Account created successfully!');
         navigate('/dashboard');
       }

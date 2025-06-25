@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { Database } from './types';
+import { getStoredAuthData } from './auth';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -11,11 +12,28 @@ if (!supabaseUrl || !supabaseKey) {
 export const supabase = createClient<Database>(
   supabaseUrl || 'https://demo.supabase.co',
   supabaseKey || 'demo-key',
-  {
+  { 
     auth: {
       autoRefreshToken: true,
       persistSession: true,
-      detectSessionInUrl: true
+      detectSessionInUrl: true,
+      storage: {
+        getItem: (key) => {
+          // For auth-related keys, use our custom storage
+          if (key.includes('supabase.auth')) {
+            const { accessToken, refreshToken } = getStoredAuthData();
+            if (key.includes('access_token') && accessToken) {
+              return accessToken;
+            }
+            if (key.includes('refresh_token') && refreshToken) {
+              return refreshToken;
+            }
+          }
+          return localStorage.getItem(key);
+        },
+        setItem: (key, value) => localStorage.setItem(key, value),
+        removeItem: (key) => localStorage.removeItem(key)
+      }
     },
     realtime: {
       params: {

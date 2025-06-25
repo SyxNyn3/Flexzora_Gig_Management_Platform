@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import { validateSession } from '@/lib/auth';
 import LandingPage from '@/components/landing/LandingPage';
 import Layout from '@/components/layout/Layout';
 import AuthForm from '@/components/auth/AuthForm';
@@ -43,8 +44,28 @@ const LoadingSpinner: React.FC = () => (
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
+  const [validating, setValidating] = useState(true);
+  
+  useEffect(() => {
+    const checkSession = async () => {
+      if (!user && !loading) {
+        // Try to validate and refresh the session
+        const isValid = await validateSession();
+        setValidating(false);
+        
+        if (!isValid) {
+          // If session validation fails, redirect to auth
+          navigate('/auth', { replace: true });
+        }
+      } else {
+        setValidating(false);
+      }
+    };
+    
+    checkSession();
+  }, [user, loading]);
 
-  if (loading) {
+  if (loading || validating) {
     return <LoadingSpinner />;
   }
 
@@ -57,8 +78,28 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 
 const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
+  const [validating, setValidating] = useState(true);
+  
+  useEffect(() => {
+    const checkSession = async () => {
+      if (!user && !loading) {
+        // Try to validate the session
+        const isValid = await validateSession();
+        setValidating(false);
+        
+        if (isValid) {
+          // If session is valid but user state is not set yet, wait for auth context to update
+          navigate('/dashboard', { replace: true });
+        }
+      } else {
+        setValidating(false);
+      }
+    };
+    
+    checkSession();
+  }, [user, loading]);
 
-  if (loading) {
+  if (loading || validating) {
     return <LoadingSpinner />;
   }
 

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase, DatabaseService, isDemoMode } from '@/lib/supabase';
+import { storeAuthData, getStoredAuthData, clearAuthData, refreshAuthToken, setupTokenRefresh, validateSession } from '@/lib/auth';
 import { Profile, Database } from '@/lib/types';
 
 interface AuthContextType {
@@ -51,7 +52,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); 
+  const [refreshInterval, setRefreshInterval] = useState<number | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -60,8 +62,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         if (isDemoMode) {
           // In demo mode, check localStorage for demo session
-          const demoSession = localStorage.getItem('flexora-demo-session');
-          if (demoSession && mounted) {
+          const demoSession = localStorage.getItem('flexora-demo-session'); 
+          if (demoSession && mounted) { 
             try {
               const sessionData = JSON.parse(demoSession);
               setUser(sessionData.user);
@@ -77,7 +79,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return;
         }
 
-        const { data: { session }, error } = await supabase.auth.getSession();
+        // First try to restore from localStorage for immediate UI update
+        const { accessToken, user: storedUser, profile: storedProfile } = getStoredAuthData();
+        
+        if (accessToken && storedUser && mounted) {
+          setUser(storedUser as User);
+          if (storedProfile) {
+            setProfile(storedProfile as Profile);
+          }
+        }
+        
+        // Then validate with Supabase
+        const { data: { session: supabaseSession }, error } = await supabase.auth.getSession();
         
         if (!mounted) return;
         
@@ -87,11 +100,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return;
         }
         
-        setSession(session);
-        setUser(session?.user ?? null);
+        setSession(supabaseSession);
+        setUser(supabaseSession?.user ?? null);
         
-        if (session?.user) {
-          await fetchProfile(session.user.id);
+        if (supabaseSession?.user) {
+          // Store the session data
+          storeAuthData(supabaseSession, supabaseSession.user, null);
+          
+          // Set up token refresh
+          const interval = setupTokenRefresh();
+          setRefreshInterval(interval);
+          
+          await fetchProfile(supabaseSession.user.id);
         } else {
           setLoading(false);
         }
@@ -114,6 +134,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.log('Auth state changed:', event, session?.user?.email);
         setSession(session);
         setUser(session?.user ?? null);
+
+        // Store or clear auth data based on session state
+        if (session?.user) {
+          storeAuthData(session, session.user, profile);
+        } else {
+          clearAuthData();
+        }
         
         if (session?.user) {
           await fetchProfile(session.user.id);
@@ -125,6 +152,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       return () => {
         mounted = false;
+        
+        // Clear refresh interval on unmount
+        if (refreshInterval) {
+          clearInterval(refreshInterval);
+        }
+        
         subscription.unsubscribe();
       };
     }
@@ -313,7 +346,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signOut = async () => {
     try {
       if (isDemoMode) {
-        localStorage.removeItem('flexora-demo-session');
+        localStorage.removeItem('flexora-demo-session'); 
         setUser(null);
         setSession(null);
         setProfile(null);
@@ -325,6 +358,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (error) {
         throw error;
+      }
+      
+      // Clear auth data from storage
+      clearAuthData();
+      
+      // Clear refresh interval
+      if (refreshInterval) {
+        clearInterval(refreshInterval);
       }
 
       return { error: null };
@@ -345,7 +386,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         // Update localStorage with new profile data
         const currentSession = localStorage.getItem('flexora-demo-session');
-        if (currentSession) {
+        if (currentSession) { 
           const sessionData = JSON.parse(currentSession);
           sessionData.profile = updatedProfile;
           localStorage.setItem('flexora-demo-session', JSON.stringify(sessionData));
@@ -363,6 +404,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (data) {
         setProfile(data);
+        
+        // Update stored profile data
+        if (user) {
+          const currentSession = await supabase.auth.getSession();
+          if (currentSession.data.session) {
+            storeAuthData(currentSession.data.session, user, data);
+          }
+        }
+      }
+      
+      // Update stored profile data
+      if (user && data) {
+        const currentSession = await supabase.auth.getSession();
+        if (currentSession.data.session) {
+          storeAuthData(currentSession.data.session, user, data);
+        }
       }
 
       return { data, error: null };
