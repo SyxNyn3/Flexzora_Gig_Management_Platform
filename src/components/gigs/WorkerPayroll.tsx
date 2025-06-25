@@ -376,9 +376,9 @@ const WorkerPayroll: React.FC<WorkerPayrollProps> = ({ gigId, gigTitle, workers 
                   <div className="text-lg font-semibold">${payment.net_pay.toLocaleString()}</div>
                   <div className="text-sm text-gray-500">
                     {payment.paid_at ? (
-                      `Paid on ${format(new Date(payment.paid_at), 'MMM d, yyyy')}`
+                      <span>Paid on {format(new Date(payment.paid_at), 'MMM d, yyyy')}</span>
                     ) : (
-                      'Not paid yet'
+                      <span>Created on {format(new Date(payment.created_at), 'MMM d, yyyy')}</span>
                     )}
                   </div>
                 </div>
