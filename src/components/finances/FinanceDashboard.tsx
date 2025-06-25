@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import InvoiceGenerator from './InvoiceGenerator';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { Payment, Expense } from '@/lib/types';
@@ -200,6 +201,7 @@ const FinanceDashboard: React.FC = () => {
           </p>
         </div>
         <div className="flex space-x-2">
+          <InvoiceGenerator />
           <Button variant="outline">
             <Download className="h-4 w-4 mr-2" />
             Export Report
@@ -338,6 +340,9 @@ const FinanceDashboard: React.FC = () => {
                               Due: {format(new Date(payment.due_date), 'MMM d, yyyy')}
                             </p>
                           )}
+                         <div className="mt-2">
+                           <InvoiceGenerator payment={payment} gig={payment.gig} />
+                         </div>
                         </div>
                       </div>
                       <div className="text-right">

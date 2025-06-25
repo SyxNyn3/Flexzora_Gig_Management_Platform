@@ -2,8 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
+import { Input } from '@/components/ui/input'; 
+import { Slider } from '@/components/ui/slider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
@@ -30,6 +32,11 @@ const GigList: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [locationFilter, setLocationFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [skillsFilter, setSkillsFilter] = useState<string[]>([]);
+  const [rateRange, setRateRange] = useState<[number, number]>([0, 100]);
+  const [isRemoteOnly, setIsRemoteOnly] = useState(false);
+  const [dateRange, setDateRange] = useState<string>('all');
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
   useEffect(() => {
     fetchGigs();
@@ -37,7 +44,7 @@ const GigList: React.FC = () => {
 
   useEffect(() => {
     filterGigs();
-  }, [gigs, searchTerm, locationFilter, statusFilter]);
+  }, [gigs, searchTerm, locationFilter, statusFilter, skillsFilter, rateRange, isRemoteOnly, dateRange]);
 
   const fetchGigs = async () => {
     try {
@@ -96,12 +103,64 @@ const GigList: React.FC = () => {
       filtered = filtered.filter(gig => gig.status === statusFilter);
     }
 
+    // Skills filter
+    if (skillsFilter.length > 0) {
+      filtered = filtered.filter(gig => 
+        gig.skills_required && skillsFilter.some(skill => 
+          gig.skills_required?.includes(skill)
+        )
+      );
+    }
+
+    // Rate filter
+    if (rateRange[0] > 0 || rateRange[1] < 100) {
+      filtered = filtered.filter(gig => 
+        gig.hourly_rate && 
+        gig.hourly_rate >= rateRange[0] && 
+        gig.hourly_rate <= rateRange[1]
+      );
+    }
+
+    // Remote filter
+    if (isRemoteOnly) {
+      filtered = filtered.filter(gig => gig.is_remote);
+    }
+
+    // Date range filter
+    if (dateRange !== 'all') {
+      const now = new Date();
+      let startDate: Date;
+      
+      switch (dateRange) {
+        case 'today':
+          startDate = new Date();
+          startDate.setHours(0, 0, 0, 0);
+          filtered = filtered.filter(gig => new Date(gig.start_date) >= startDate);
+          break;
+        case 'this-week':
+          startDate = new Date();
+          startDate.setDate(now.getDate() - now.getDay()); // Start of week (Sunday)
+          startDate.setHours(0, 0, 0, 0);
+          filtered = filtered.filter(gig => new Date(gig.start_date) >= startDate);
+          break;
+        case 'this-month':
+          startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+          filtered = filtered.filter(gig => new Date(gig.start_date) >= startDate);
+          break;
+      }
+    }
+
     setFilteredGigs(filtered);
   };
 
   const getUniqueLocations = () => {
     const locations = gigs.map(gig => gig.location);
     return [...new Set(locations)].sort();
+  };
+  
+  const getUniqueSkills = () => {
+    const allSkills = gigs.flatMap(gig => gig.skills_required || []);
+    return [...new Set(allSkills)].sort();
   };
 
   const handleApplyToGig = (gigId: string) => {
@@ -137,7 +196,7 @@ const GigList: React.FC = () => {
       {/* Filters */}
       <Card className="mb-8">
         <CardContent className="pt-6">
-          <div className="flex flex-col md:flex-row gap-4">
+          <div className="flex flex-col gap-4">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
               <Input
@@ -147,29 +206,118 @@ const GigList: React.FC = () => {
                 className="pl-10"
               />
             </div>
-            <Select value={locationFilter} onValueChange={setLocationFilter}>
-              <SelectTrigger className="w-full md:w-48">
-                <SelectValue placeholder="Location" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Locations</SelectItem>
-                {getUniqueLocations().map(location => (
-                  <SelectItem key={location} value={location}>
-                    {location}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full md:w-48">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="published">Published</SelectItem>
-                <SelectItem value="in_progress">In Progress</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="flex flex-col md:flex-row gap-4">
+              <Select value={locationFilter} onValueChange={setLocationFilter}>
+                <SelectTrigger className="w-full md:w-48">
+                  <SelectValue placeholder="Location" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Locations</SelectItem>
+                  {getUniqueLocations().map(location => (
+                    <SelectItem key={location} value={location}>
+                      {location}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-full md:w-48">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="published">Published</SelectItem>
+                  <SelectItem value="in_progress">In Progress</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button 
+                variant="outline" 
+                onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                className="w-full md:w-auto"
+              >
+                <Filter className="h-4 w-4 mr-2" />
+                {showAdvancedFilters ? 'Hide' : 'Show'} Advanced Filters
+              </Button>
+            </div>
+            
+            {showAdvancedFilters && (
+              <div className="bg-gray-50 p-4 rounded-lg space-y-4 mt-2">
+                <div>
+                  <Label className="mb-2 block">Required Skills</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {getUniqueSkills().map(skill => (
+                      <div key={skill} className="flex items-center space-x-2">
+                        <Checkbox 
+                          id={`skill-${skill}`}
+                          checked={skillsFilter.includes(skill)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setSkillsFilter([...skillsFilter, skill]);
+                            } else {
+                              setSkillsFilter(skillsFilter.filter(s => s !== skill));
+                            }
+                          }}
+                        />
+                        <Label htmlFor={`skill-${skill}`} className="text-sm">
+                          {skill}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                
+                <div>
+                  <Label className="mb-2 block">Hourly Rate Range: ${rateRange[0]} - ${rateRange[1]}</Label>
+                  <Slider
+                    value={rateRange}
+                    min={0}
+                    max={100}
+                    step={5}
+                    onValueChange={(value) => setRateRange(value as [number, number])}
+                    className="w-full"
+                  />
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="remote-only"
+                    checked={isRemoteOnly}
+                    onCheckedChange={(checked) => setIsRemoteOnly(!!checked)}
+                  />
+                  <Label htmlFor="remote-only">Remote Only</Label>
+                </div>
+                
+                <div>
+                  <Label className="mb-2 block">Date Range</Label>
+                  <Select value={dateRange} onValueChange={setDateRange}>
+                    <SelectTrigger className="w-full md:w-48">
+                      <SelectValue placeholder="Date Range" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Dates</SelectItem>
+                      <SelectItem value="today">Today</SelectItem>
+                      <SelectItem value="this-week">This Week</SelectItem>
+                      <SelectItem value="this-month">This Month</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="flex justify-end">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      setSkillsFilter([]);
+                      setRateRange([0, 100]);
+                      setIsRemoteOnly(false);
+                      setDateRange('all');
+                    }}
+                  >
+                    Reset Filters
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

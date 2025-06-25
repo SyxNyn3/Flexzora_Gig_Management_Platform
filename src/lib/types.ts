@@ -91,9 +91,22 @@ export interface Profile {
   experience_years: number;
   portfolio_url?: string;
   linkedin_url?: string;
+  portfolio_items?: PortfolioItem[];
   is_available: boolean;
   created_at: string;
   updated_at: string;
+}
+
+export interface PortfolioItem {
+  id: string;
+  title: string;
+  description?: string;
+  url?: string;
+  image_url?: string;
+  category?: string;
+  date_completed?: string;
+  client?: string;
+  is_featured: boolean;
 }
 
 export interface Company {
@@ -291,6 +304,7 @@ export interface ProfileFormData {
   experience_years?: number;
   portfolio_url?: string;
   linkedin_url?: string;
+  portfolio_items?: PortfolioItem[];
 }
 
 export interface GigFormData {

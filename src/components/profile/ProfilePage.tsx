@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useAuth } from '@/contexts/AuthContext';
 import { DatabaseService, normalizeUrl } from '@/lib/supabase';
 import { useSkills, useWorkerSkills, useCertifications } from '@/hooks/useSupabaseQuery';
-import { WorkerSkill, Certification } from '@/lib/types';
+import { WorkerSkill, Certification, PortfolioItem } from '@/lib/types';
 import { 
   User, 
   Save,
@@ -27,6 +27,7 @@ import { toast } from 'sonner';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import PortfolioSection from './PortfolioSection';
 
 const profileSchema = z.object({
   full_name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -76,6 +77,7 @@ const ProfilePage: React.FC = () => {
   const [showSkillDialog, setShowSkillDialog] = useState(false);
   const [showCertDialog, setShowCertDialog] = useState(false);
   const [editingCert, setEditingCert] = useState<Certification | null>(null);
+  const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>([]);
 
   // Fetch data using custom hooks
   const { data: skills = [] } = useSkills();
@@ -130,6 +132,11 @@ const ProfilePage: React.FC = () => {
         portfolio_url: profile.portfolio_url?.replace(/^https?:\/\//, '') || '',
         linkedin_url: profile.linkedin_url?.replace(/^https?:\/\//, '') || '',
       });
+      
+      // Initialize portfolio items from profile
+      if (profile.portfolio_items) {
+        setPortfolioItems(profile.portfolio_items);
+      }
     }
   }, [profile, form]);
 
@@ -270,6 +277,65 @@ const ProfilePage: React.FC = () => {
       credential_url: cert.credential_url?.replace(/^https?:\/\//, '') || '',
     });
     setShowCertDialog(true);
+  };
+
+  const handleAddPortfolioItem = async (item: Omit<PortfolioItem, 'id'>) => {
+    if (!profile) return;
+    
+    try {
+      const newItem: PortfolioItem = {
+        ...item,
+        id: `portfolio-${Date.now()}`,
+      };
+      
+      const updatedItems = [...portfolioItems, newItem];
+      setPortfolioItems(updatedItems);
+      
+      const { error } = await updateProfile({ portfolio_items: updatedItems });
+      if (error) throw new Error(error);
+      
+      return;
+    } catch (error: any) {
+      console.error('Error adding portfolio item:', error);
+      throw new Error(error.message || 'Failed to add portfolio item');
+    }
+  };
+  
+  const handleUpdatePortfolioItem = async (id: string, updates: Partial<PortfolioItem>) => {
+    if (!profile) return;
+    
+    try {
+      const updatedItems = portfolioItems.map(item => 
+        item.id === id ? { ...item, ...updates } : item
+      );
+      
+      setPortfolioItems(updatedItems);
+      
+      const { error } = await updateProfile({ portfolio_items: updatedItems });
+      if (error) throw new Error(error);
+      
+      return;
+    } catch (error: any) {
+      console.error('Error updating portfolio item:', error);
+      throw new Error(error.message || 'Failed to update portfolio item');
+    }
+  };
+  
+  const handleDeletePortfolioItem = async (id: string) => {
+    if (!profile) return;
+    
+    try {
+      const updatedItems = portfolioItems.filter(item => item.id !== id);
+      setPortfolioItems(updatedItems);
+      
+      const { error } = await updateProfile({ portfolio_items: updatedItems });
+      if (error) throw new Error(error);
+      
+      return;
+    } catch (error: any) {
+      console.error('Error deleting portfolio item:', error);
+      throw new Error(error.message || 'Failed to delete portfolio item');
+    }
   };
 
   const getProficiencyLabel = (level: number) => {
@@ -634,6 +700,16 @@ const ProfilePage: React.FC = () => {
                 )}
               </CardContent>
             </Card>
+          )}
+          
+          {/* Portfolio - Only for workers */}
+          {profile.role === 'worker' && (
+            <PortfolioSection
+              portfolioItems={portfolioItems}
+              onAddItem={handleAddPortfolioItem}
+              onUpdateItem={handleUpdatePortfolioItem}
+              onDeleteItem={handleDeletePortfolioItem}
+            />
           )}
         </div>
       </div>

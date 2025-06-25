@@ -43,6 +43,28 @@ export class DatabaseService {
             full_name: 'Demo User',
             role: 'worker',
             experience_years: 5,
+           portfolio_items: [
+             {
+               id: 'portfolio-1',
+               title: 'Corporate Event Video Production',
+               description: 'Lead camera operator for annual tech conference with multi-camera setup',
+               category: 'Video',
+               client: 'TechCorp Events',
+               date_completed: '2023-11-15',
+               image_url: 'https://images.pexels.com/photos/2608517/pexels-photo-2608517.jpeg',
+               is_featured: true
+             },
+             {
+               id: 'portfolio-2',
+               title: 'Music Festival Lighting Design',
+               description: 'Designed and operated lighting for main stage performances',
+               category: 'Lighting',
+               client: 'SoundWave Festival',
+               date_completed: '2023-08-20',
+               image_url: 'https://images.pexels.com/photos/1190298/pexels-photo-1190298.jpeg',
+               is_featured: false
+             }
+           ],
             is_available: true,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
@@ -96,6 +118,7 @@ export class DatabaseService {
             user_id: userId,
             email: 'demo@flexora.com',
             ...updates,
+           portfolio_items: updates.portfolio_items || [],
             updated_at: new Date().toISOString()
           }, 
           error: null 
