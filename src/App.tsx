@@ -22,6 +22,7 @@ import CompanyIntegrations from '@/components/integrations/CompanyIntegrations';
 import GmailIntegration from '@/components/integrations/GmailIntegration';
 import UnifiedSchedule from '@/components/integrations/UnifiedSchedule';
 import CompanyDashboard from '@/components/integrations/CompanyDashboard';
+import PaymentSuccess from '@/components/payments/PaymentSuccess';
 import SchedulingInterface from '@/components/scheduling/SchedulingInterface';
 
 const queryClient = new QueryClient({
@@ -269,6 +270,16 @@ const AppRoutes: React.FC = () => {
             <ProtectedRoute>
               <Layout>
                 <CompanyDashboard />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/payment-success"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <PaymentSuccess />
               </Layout>
             </ProtectedRoute>
           }

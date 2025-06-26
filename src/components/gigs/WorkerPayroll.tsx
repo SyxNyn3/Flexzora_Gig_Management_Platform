@@ -8,8 +8,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/contexts/AuthContext';
-import StripePaymentForm from '@/components/payments/StripePaymentForm';
+import PaymentProcessor from '@/components/payments/PaymentProcessor';
 import { 
   DollarSign, 
   Users, 
@@ -71,6 +72,8 @@ const WorkerPayroll: React.FC<WorkerPayrollProps> = ({ gigId, gigTitle, workers 
   const [overtimeHours, setOvertimeHours] = useState<string>('');
   const [bonusAmount, setBonusAmount] = useState<string>('');
   const [deductions, setDeductions] = useState<string>('');
+  const [selectedPayment, setSelectedPayment] = useState<WorkerPayment | null>(null);
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -220,6 +223,18 @@ const WorkerPayroll: React.FC<WorkerPayrollProps> = ({ gigId, gigTitle, workers 
     ));
 
     toast.success(`Payment ${status} successfully!`);
+  };
+
+  const handlePaymentSuccess = () => {
+    // Update the payment status in the UI
+    setPayments(prev => prev.map(payment => 
+      payment.id === selectedPayment?.id 
+        ? { ...payment, status: 'paid' as const, paid_at: new Date().toISOString() }
+        : payment
+    ));
+    
+    setShowPaymentDialog(false);
+    toast.success('Payment processed successfully!');
   };
 
   const processAllPayments = async () => {
@@ -398,9 +413,20 @@ const WorkerPayroll: React.FC<WorkerPayrollProps> = ({ gigId, gigTitle, workers 
                       <Button
                         size="sm"
                         onClick={() => updatePaymentStatus(payment.id, 'paid')}
-                        className="bg-green-600 hover:bg-green-700"
+                        className="bg-green-600 hover:bg-green-700 mr-2"
                       >
                         Pay Now
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setSelectedPayment(payment);
+                          setShowPaymentDialog(true);
+                        }}
+                      >
+                        <CreditCard className="h-4 w-4 mr-1" />
+                        Pay with Card
                       </Button>
                     )}
                   </div>
@@ -543,6 +569,51 @@ const WorkerPayroll: React.FC<WorkerPayrollProps> = ({ gigId, gigTitle, workers 
               {loading ? 'Creating...' : 'Create Payment Record'}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Payment Dialog */}
+      <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Process Payment</DialogTitle>
+            <DialogDescription>
+              Complete payment for {selectedPayment?.worker_name || 'worker'}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedPayment && (
+            <div className="py-4">
+              <Alert className="mb-4">
+                <AlertDescription>
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className="font-medium">{selectedPayment.worker_name}</p>
+                      <p className="text-sm text-gray-600">
+                        {selectedPayment.hours_worked} hours at ${selectedPayment.hourly_rate}/hr
+                        {selectedPayment.overtime_hours > 0 && ` + ${selectedPayment.overtime_hours} overtime hours`}
+                      </p>
+                    </div>
+                    <p className="text-xl font-bold">${selectedPayment.net_pay.toLocaleString()}</p>
+                  </div>
+                </AlertDescription>
+              </Alert>
+              
+              <PaymentProcessor 
+                payment={{
+                  id: selectedPayment.id,
+                  worker_id: selectedPayment.worker_id,
+                  amount: selectedPayment.net_pay,
+                  currency: 'USD',
+                  status: 'pending',
+                  created_at: selectedPayment.created_at,
+                  gig_id: selectedPayment.gig_id,
+                  company_id: profile?.id || '',
+                }}
+                onSuccess={handlePaymentSuccess}
+              />
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

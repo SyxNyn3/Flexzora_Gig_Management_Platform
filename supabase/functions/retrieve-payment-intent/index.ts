@@ -8,7 +8,6 @@ if (!stripeSecretKey) {
 
 const stripe = new Stripe(stripeSecretKey, {
   apiVersion: "2023-10-16",
-  typescript: true,
 });
 
 const corsHeaders = {
@@ -40,11 +39,11 @@ serve(async (req) => {
     }
 
     // Parse request body
-    const { amount, currency = "usd", metadata = {}, customer_id = null } = await req.json();
+    const { paymentIntentId } = await req.json();
 
-    if (!amount || amount <= 0) {
+    if (!paymentIntentId) {
       return new Response(
-        JSON.stringify({ error: "Invalid amount" }),
+        JSON.stringify({ error: "No payment intent ID provided" }),
         {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -52,36 +51,19 @@ serve(async (req) => {
       );
     }
 
-    // Create a PaymentIntent with the specified amount and currency
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(amount * 100), // Convert to cents
-      currency: currency.toLowerCase(),
-      metadata: {
-        ...metadata,
-        created_at: new Date().toISOString(),
-      },
-      customer: customer_id || undefined,
-      automatic_payment_methods: {
-        enabled: true,
-      },
-    });
+    // Retrieve the payment intent
+    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
 
-    // Return the client secret
+    // Return the payment intent details
     return new Response(
-      JSON.stringify({ 
-        clientSecret: paymentIntent.client_secret || '',
-        paymentIntentId: paymentIntent.id,
-        amount: paymentIntent.amount,
-        currency: paymentIntent.currency,
-        status: paymentIntent.status
-      }),
+      JSON.stringify(paymentIntent),
       {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       }
     );
   } catch (error) {
-    console.error("Error creating payment intent:", error);
+    console.error("Error retrieving payment intent:", error);
     return new Response(
       JSON.stringify({ error: error.message }),
       {

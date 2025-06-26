@@ -2,8 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import InvoiceGenerator from './InvoiceGenerator';
+import PaymentProcessor from '@/components/payments/PaymentProcessor';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { Payment, Expense } from '@/lib/types';
@@ -44,6 +46,8 @@ const FinanceDashboard: React.FC = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [monthlyData, setMonthlyData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
 
   useEffect(() => {
     if (profile) {
@@ -171,6 +175,11 @@ const FinanceDashboard: React.FC = () => {
     }
 
     setMonthlyData(months);
+  };
+
+  const handlePaymentSuccess = () => {
+    fetchFinanceData();
+    setShowPaymentDialog(false);
   };
 
   const getPaymentStatusColor = (status: string) => {
@@ -340,9 +349,22 @@ const FinanceDashboard: React.FC = () => {
                               Due: {format(new Date(payment.due_date), 'MMM d, yyyy')}
                             </p>
                           )}
-                         <div className="mt-2">
-                           <InvoiceGenerator payment={payment} gig={payment.gig} />
-                         </div>
+                          <div className="mt-2 flex space-x-2">
+                            <InvoiceGenerator payment={payment} gig={payment.gig} />
+                            {payment.status !== 'paid' && profile?.role === 'company' && (
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedPayment(payment);
+                                  setShowPaymentDialog(true);
+                                }}
+                              >
+                                <CreditCard className="h-4 w-4 mr-2" />
+                                Process Payment
+                              </Button>
+                            )}
+                          </div>
                         </div>
                       </div>
                       <div className="text-right">
@@ -365,6 +387,28 @@ const FinanceDashboard: React.FC = () => {
           <ExpenseTracker />
         </TabsContent>
       </Tabs>
+      
+      {/* Payment Dialog */}
+      <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Process Payment</DialogTitle>
+            <DialogDescription>
+              Complete payment for {selectedPayment?.gig?.title || 'this gig'}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedPayment && (
+            <div className="py-4">
+              <PaymentProcessor 
+                payment={selectedPayment} 
+                gig={selectedPayment.gig} 
+                onSuccess={handlePaymentSuccess}
+              />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
