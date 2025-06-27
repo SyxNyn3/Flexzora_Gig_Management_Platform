@@ -73,7 +73,6 @@ const WorkerPayroll: React.FC<WorkerPayrollProps> = ({ gigId, gigTitle, workers 
   const [bonusAmount, setBonusAmount] = useState<string>('');
   const [deductions, setDeductions] = useState<string>('');
   const [selectedPayment, setSelectedPayment] = useState<WorkerPayment | null>(null);
-  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
 
