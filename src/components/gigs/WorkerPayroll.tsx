@@ -409,24 +409,26 @@ const WorkerPayroll: React.FC<WorkerPayrollProps> = ({ gigId, gigTitle, workers 
                       </Button>
                     )}
                     {payment.status === 'approved' && (
-                      <Button
-                        size="sm"
-                        onClick={() => updatePaymentStatus(payment.id, 'paid')}
-                        className="bg-green-600 hover:bg-green-700 mr-2"
-                      >
-                        Pay Now
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setSelectedPayment(payment);
-                          setShowPaymentDialog(true);
-                        }}
-                      >
-                        <CreditCard className="h-4 w-4 mr-1" />
-                        Pay with Card
-                      </Button>
+                      <div className="flex space-x-2">
+                        <Button
+                          size="sm"
+                          onClick={() => updatePaymentStatus(payment.id, 'paid')}
+                          className="bg-green-600 hover:bg-green-700"
+                        >
+                          Pay Now
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setSelectedPayment(payment);
+                            setShowPaymentDialog(true);
+                          }}
+                        >
+                          <CreditCard className="h-4 w-4 mr-1" />
+                          Pay with Card
+                        </Button>
+                      </div>
                     )}
                   </div>
                 )}
