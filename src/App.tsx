@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
-import { validateSession } from '@/lib/auth';
+import { validateSession, isDemoMode } from '@/lib/auth';
 import LandingPage from '@/components/landing/LandingPage';
 import Layout from '@/components/layout/Layout';
 import AuthForm from '@/components/auth/AuthForm';
@@ -45,7 +45,7 @@ const LoadingSpinner: React.FC = () => (
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
-  const [validating, setValidating] = useState(true);
+  const [validating, setValidating] = useState(!isDemoMode);
   
   useEffect(() => {
     const checkSession = async () => {
@@ -79,7 +79,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 
 const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
-  const [validating, setValidating] = useState(true);
+  const [validating, setValidating] = useState(!isDemoMode);
   
   useEffect(() => {
     const checkSession = async () => {

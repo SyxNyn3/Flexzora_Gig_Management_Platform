@@ -113,6 +113,12 @@ export const refreshAuthToken = async (): Promise<boolean> => {
  */
 export const validateSession = async (): Promise<boolean> => {
   try {
+    // In demo mode, check localStorage for demo session
+    if (isDemoMode) {
+      const demoSession = localStorage.getItem('flexora-demo-session');
+      return !!demoSession; // Return true if demo session exists, false otherwise
+    }
+
     const { data: { session }, error } = await supabase.auth.getSession();
     
     if (error) {

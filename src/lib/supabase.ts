@@ -44,7 +44,7 @@ export const supabase = createClient<Database>(
 );
 
 // Helper function to check if we're in demo mode
-export const isDemoMode = !supabaseUrl || !supabaseKey;
+export const isDemoMode = !supabaseUrl || !supabaseKey || supabaseUrl === 'https://demo.supabase.co';
 
 // Type-safe database operations
 export class DatabaseService {
