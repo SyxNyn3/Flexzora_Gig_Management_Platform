@@ -1,5 +1,5 @@
 import { User, Session } from '@supabase/supabase-js';
-import { supabase } from './supabase';
+import { supabase, isDemoMode } from './supabase';
 import { Profile } from './types';
 
 // Token storage keys
