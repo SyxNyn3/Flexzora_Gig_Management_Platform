@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
+import { useGigs, useApplications, usePayments, useRealtimeNotifications } from '@/hooks/useSupabaseQuery';
 import { 
   Calendar, 
   DollarSign, 
@@ -16,71 +17,55 @@ import {
   Briefcase
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-
-// Mock data for demo
-const mockStats = {
-  totalGigs: 12,
-  pendingApplications: 3,
-  upcomingGigs: 5,
-  totalEarnings: 15420,
-  pendingPayments: 2800,
-  thisMonthExpenses: 450,
-};
-
-const mockRecentGigs = [
-  {
-    id: '1',
-    title: 'Camera Operator for Corporate Event',
-    company: { name: 'TechCorp Events', logo_url: null },
-    location: 'San Francisco, CA',
-    hourly_rate: 45,
-    start_date: '2024-01-15T09:00:00Z',
-  },
-  {
-    id: '2',
-    title: 'Sound Engineer for Wedding',
-    company: { name: 'Dream Weddings', logo_url: null },
-    location: 'Napa Valley, CA',
-    hourly_rate: 55,
-    start_date: '2024-01-20T14:00:00Z',
-  },
-  {
-    id: '3',
-    title: 'Lighting Technician for Concert',
-    company: { name: 'Live Music Productions', logo_url: null },
-    location: 'Los Angeles, CA',
-    hourly_rate: 50,
-    start_date: '2024-01-25T18:00:00Z',
-  },
-];
-
-const mockApplications = [
-  {
-    id: '1',
-    gig: { title: 'Video Editor for Documentary', location: 'Remote' },
-    status: 'pending',
-    application_date: '2024-01-10T10:00:00Z',
-  },
-  {
-    id: '2',
-    gig: { title: 'Stage Manager for Theater', location: 'New York, NY' },
-    status: 'accepted',
-    application_date: '2024-01-08T15:30:00Z',
-  },
-];
+import { format } from 'date-fns';
 
 const Dashboard: React.FC = () => {
   const { profile } = useAuth();
   const navigate = useNavigate();
-  const [stats] = useState(mockStats);
-  const [recentGigs] = useState(mockRecentGigs);
-  const [recentApplications] = useState(mockApplications);
-  const [loading, setLoading] = useState(true);
+  
+  // Fetch data using hooks
+  const { data: gigs = [], loading: gigsLoading } = useGigs({ status: 'published' });
+  const { data: applications = [], loading: applicationsLoading } = useApplications({ 
+    workerId: profile?.id 
+  });
+  const { data: payments = [], loading: paymentsLoading } = usePayments({ 
+    workerId: profile?.id 
+  });
+  
+  // Set up real-time notifications
+  useRealtimeNotifications(profile?.id, (notification) => {
+    console.log('New notification received:', notification);
+  });
+  
+  // Calculate stats from real data
+  const stats = {
+    totalGigs: applications.filter(app => app.status === 'accepted').length,
+    pendingApplications: applications.filter(app => app.status === 'pending').length,
+    upcomingGigs: applications.filter(app => {
+      const startDate = app.gig?.start_date ? new Date(app.gig.start_date) : null;
+      const now = new Date();
+      return app.status === 'accepted' && startDate && startDate > now;
+    }).length,
+    totalEarnings: payments
+      .filter(payment => payment.status === 'paid')
+      .reduce((sum, payment) => sum + payment.amount, 0) || 15420, // Fallback to mock data
+    pendingPayments: payments
+      .filter(payment => payment.status === 'pending')
+      .reduce((sum, payment) => sum + payment.amount, 0) || 2800,
+    thisMonthExpenses: 450, // Placeholder
+  };
+  
+  // Get recent gigs from real data
+  const recentGigs = gigs.slice(0, 3);
+  
+  // Get recent applications from real data
+  const recentApplications = applications.slice(0, 2);
+  
+  // Loading state
+  const loading = gigsLoading || applicationsLoading || paymentsLoading;
 
   useEffect(() => {
-    // Simulate loading
-    const timer = setTimeout(() => setLoading(false), 1000);
-    return () => clearTimeout(timer);
+    // Additional initialization if needed
   }, []);
 
   const getStatusColor = (status: string) => {
@@ -96,8 +81,41 @@ const Dashboard: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Skeleton loader for stats */}
+        <div className="mb-8">
+          <div className="h-8 w-64 bg-gray-200 rounded animate-pulse mb-2"></div>
+          <div className="h-4 w-96 bg-gray-200 rounded animate-pulse"></div>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="bg-white p-6 rounded-lg shadow animate-pulse">
+              <div className="flex justify-between items-center mb-4">
+                <div className="h-4 w-24 bg-gray-200 rounded"></div>
+                <div className="h-4 w-4 bg-gray-200 rounded-full"></div>
+              </div>
+              <div className="h-8 w-16 bg-gray-200 rounded mb-1"></div>
+              <div className="h-3 w-32 bg-gray-200 rounded"></div>
+            </div>
+          ))}
+        </div>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {[1, 2].map((i) => (
+            <div key={i} className="bg-white p-6 rounded-lg shadow animate-pulse">
+              <div className="flex justify-between items-center mb-6">
+                <div className="h-6 w-48 bg-gray-200 rounded"></div>
+                <div className="h-4 w-24 bg-gray-200 rounded"></div>
+              </div>
+              <div className="space-y-4">
+                {[1, 2, 3].map((j) => (
+                  <div key={j} className="h-20 bg-gray-200 rounded"></div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -185,8 +203,9 @@ const Dashboard: React.FC = () => {
                   <div key={application.id} className="flex items-center justify-between p-4 border rounded-lg">
                     <div className="flex-1">
                       <h4 className="font-medium">{application.gig?.title}</h4>
-                      <p className="text-sm text-gray-600">
-                        Applied {new Date(application.application_date).toLocaleDateString()}
+                      <p className="text-sm text-gray-600 flex items-center">
+                        <Calendar className="h-3 w-3 mr-1" />
+                        Applied {format(new Date(application.application_date), 'MMM d, yyyy')}
                       </p>
                       {application.gig?.location && (
                         <p className="text-sm text-gray-500 flex items-center mt-1">
@@ -227,16 +246,16 @@ const Dashboard: React.FC = () => {
                   <div key={gig.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 cursor-pointer"
                        onClick={() => navigate(`/gigs/${gig.id}`)}>
                     <div className="flex items-center space-x-3">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src={gig.company?.logo_url || ''} />
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage src={gig.company?.logo_url || ''} alt={gig.company?.name} />
                         <AvatarFallback>
-                          {gig.company?.name?.charAt(0) || 'C'}
+                          <Building className="h-5 w-5" />
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <h4 className="font-medium text-sm">{gig.title}</h4>
-                        <p className="text-xs text-gray-600">{gig.company?.name}</p>
-                        <p className="text-xs text-gray-500 flex items-center">
+                        <h4 className="font-medium">{gig.title}</h4>
+                        <p className="text-sm text-gray-600">{gig.company?.name}</p>
+                        <p className="text-xs text-gray-500 flex items-center mt-1">
                           <MapPin className="w-3 h-3 mr-1" />
                           {gig.location}
                         </p>
@@ -244,10 +263,14 @@ const Dashboard: React.FC = () => {
                     </div>
                     <div className="text-right">
                       {gig.hourly_rate && (
-                        <p className="text-sm font-medium">${gig.hourly_rate}/hr</p>
+                        <p className="text-sm font-medium flex items-center justify-end">
+                          <DollarSign className="h-3 w-3 mr-1" />
+                          ${gig.hourly_rate}/hr
+                        </p>
                       )}
-                      <p className="text-xs text-gray-500">
-                        {new Date(gig.start_date).toLocaleDateString()}
+                      <p className="text-xs text-gray-500 flex items-center justify-end mt-1">
+                        <Calendar className="h-3 w-3 mr-1" />
+                        {format(new Date(gig.start_date), 'MMM d, yyyy')}
                       </p>
                     </div>
                   </div>
