@@ -18,7 +18,7 @@ import { format } from 'date-fns';
 
 interface ApplicationCardProps {
   application: any;
-  onViewDetails: (id: string) => void;
+  onViewDetails: (id: string | undefined) => void;
 }
 
 const ApplicationCard: React.FC<ApplicationCardProps> = ({ 
@@ -47,7 +47,7 @@ const ApplicationCard: React.FC<ApplicationCardProps> = ({
     <Card 
       key={application.id} 
       className="hover:shadow-md transition-shadow cursor-pointer"
-      onClick={() => onViewDetails(application.gig.id)}
+      onClick={() => onViewDetails(application.gig?.id)}
     >
       <CardContent className="p-6">
         <div className="flex items-start justify-between">
@@ -57,9 +57,9 @@ const ApplicationCard: React.FC<ApplicationCardProps> = ({
               <div className="flex items-start justify-between mb-3">
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900">
-                    {application.gig.title}
+                    {application.gig?.title || 'Unknown Gig'}
                   </h3>
-                  <p className="text-gray-600">{application.gig.company.name}</p>
+                  <p className="text-gray-600">{application.gig?.company?.name || 'Unknown Company'}</p>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Badge className={getStatusColor(application.status)}>
@@ -74,19 +74,19 @@ const ApplicationCard: React.FC<ApplicationCardProps> = ({
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                 <div className="flex items-center text-sm text-gray-600">
                   <Calendar className="h-4 w-4 mr-2" />
-                  {format(new Date(application.gig.start_date), 'MMM d')}
+                  {application.gig?.start_date ? format(new Date(application.gig.start_date), 'MMM d') : 'TBD'}
                 </div>
                 <div className="flex items-center text-sm text-gray-600">
                   <MapPin className="h-4 w-4 mr-2" />
-                  {application.gig.location}
+                  {application.gig?.location || 'Location TBD'}
                 </div>
                 <div className="flex items-center text-sm text-gray-600">
                   <DollarSign className="h-4 w-4 mr-2" />
-                  ${application.proposed_rate}/hr
+                  ${application.proposed_rate || application.gig?.hourly_rate || '0'}/hr
                 </div>
                 <div className="flex items-center text-sm text-gray-600">
                   <Eye className="h-4 w-4 mr-2" />
-                  {application.views} views
+                  {application.views || 0} views
                 </div>
               </div>
 
@@ -94,7 +94,7 @@ const ApplicationCard: React.FC<ApplicationCardProps> = ({
                 <div className="flex items-center space-x-4 text-sm text-gray-500">
                   <span>Applied {format(new Date(application.application_date), 'MMM d, yyyy')}</span>
                   {application.response_date && (
-                    <span>• Response in {application.response_time}</span>
+                    <span>• Response in {application.response_time || 'N/A'}</span>
                   )}
                 </div>
                 <div className="flex items-center space-x-2">

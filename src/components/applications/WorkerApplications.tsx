@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
-import { useApplications } from '@/hooks/useSupabaseQuery';
+import { useApplications, useRealtimeNotifications } from '@/hooks/useSupabaseQuery';
 import ApplicationCard from './ApplicationCard';
 import { 
   Clock,
@@ -16,86 +16,60 @@ import { useNavigate } from 'react-router-dom';
 const WorkerApplications: React.FC = () => {
   const { profile } = useAuth();
   const navigate = useNavigate();
-  const [selectedTab, setSelectedTab] = useState('all');
+  const [selectedTab, setSelectedTab] = useState<string>('all');
+  const [loading, setLoading] = useState(true);
 
   // Fetch applications
-  const { data: applications = [] } = useApplications({ workerId: profile?.id });
-
-  // Mock enhanced application data
-  const enhancedApplications = [
-    {
-      id: '1',
-      gig: {
-        id: 'gig-1',
-        title: 'Camera Operator for Corporate Event',
-        company: { name: 'TechCorp Events', avatar: '🏢' },
-        location: 'San Francisco, CA',
-        start_date: '2024-01-15T09:00:00Z',
-        hourly_rate: 45
-      },
-      status: 'accepted',
-      application_date: '2024-01-10T10:00:00Z',
-      response_date: '2024-01-12T14:30:00Z',
-      cover_letter: 'I have 5 years of experience in corporate video production...',
-      proposed_rate: 45,
-      notes: 'Welcome to the team! Please arrive 30 minutes early for setup.',
-      views: 12,
-      response_time: '2 days'
-    },
-    {
-      id: '2',
-      gig: {
-        id: 'gig-2',
-        title: 'Sound Engineer for Wedding',
-        company: { name: 'Dream Weddings', avatar: '💒' },
-        location: 'Napa Valley, CA',
-        start_date: '2024-01-20T14:00:00Z',
-        hourly_rate: 55
-      },
-      status: 'pending',
-      application_date: '2024-01-08T15:30:00Z',
-      cover_letter: 'Experienced sound engineer with wedding expertise...',
-      proposed_rate: 55,
-      views: 8,
-      response_time: 'pending'
-    },
-    {
-      id: '3',
-      gig: {
-        id: 'gig-3',
-        title: 'Lighting Technician for Concert',
-        company: { name: 'Live Music Productions', avatar: '🎵' },
-        location: 'Los Angeles, CA',
-        start_date: '2024-01-25T18:00:00Z',
-        hourly_rate: 50
-      },
-      status: 'rejected',
-      application_date: '2024-01-05T12:00:00Z',
-      response_date: '2024-01-07T09:15:00Z',
-      cover_letter: 'Professional lighting technician with concert experience...',
-      proposed_rate: 52,
-      notes: 'Thank you for your interest. We went with someone with more LED experience.',
-      views: 15,
-      response_time: '2 days'
-    },
-    {
-      id: '4',
-      gig: {
-        id: 'gig-4',
-        title: 'Video Editor - Remote Project',
-        company: { name: 'Creative Studios', avatar: '🎬' },
-        location: 'Remote',
-        start_date: '2024-01-18T09:00:00Z',
-        hourly_rate: 40
-      },
-      status: 'pending',
-      application_date: '2024-01-12T11:20:00Z',
-      cover_letter: 'Remote video editing specialist with documentary experience...',
-      proposed_rate: 42,
-      views: 5,
-      response_time: 'pending'
+  const { data: applications = [], loading: applicationsLoading } = useApplications({ workerId: profile?.id });
+  
+  // Set up real-time notifications for application updates
+  useRealtimeNotifications(profile?.id);
+  
+  useEffect(() => {
+    // Set loading to false after a short delay to ensure UI is ready
+    if (!applicationsLoading) {
+      const timer = setTimeout(() => setLoading(false), 500);
+      return () => clearTimeout(timer);
     }
-  ];
+  }, [applicationsLoading]);
+
+  // Enhance applications with additional UI-specific properties
+  const enhancedApplications = applications.map(app => {
+    // Calculate response time if applicable
+    let responseTime = 'pending';
+    if (app.response_date && app.application_date) {
+      const responseDate = new Date(app.response_date);
+      const applicationDate = new Date(app.application_date);
+      const diffTime = Math.abs(responseDate.getTime() - applicationDate.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      responseTime = `${diffDays} day${diffDays !== 1 ? 's' : ''}`;
+    }
+    
+    // Get company avatar based on name
+    const companyName = app.gig?.company?.name || '';
+    let avatar = '🏢'; // Default avatar
+    
+    if (companyName.toLowerCase().includes('wedding')) {
+      avatar = '💒';
+    } else if (companyName.toLowerCase().includes('music') || companyName.toLowerCase().includes('concert')) {
+      avatar = '🎵';
+    } else if (companyName.toLowerCase().includes('studio') || companyName.toLowerCase().includes('film')) {
+      avatar = '🎬';
+    }
+    
+    return {
+      ...app,
+      gig: {
+        ...app.gig,
+        company: {
+          ...app.gig?.company,
+          avatar
+        }
+      },
+      views: Math.floor(Math.random() * 20) + 1, // Random view count for UI
+      response_time: responseTime
+    };
+  });
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -106,18 +80,36 @@ const WorkerApplications: React.FC = () => {
     }
   };
 
-  const filteredApplications = enhancedApplications.filter(app => {
+  // Filter applications based on selected tab
+  const filteredApplications = (enhancedApplications || []).filter(app => {
     if (selectedTab === 'all') return true;
     return app.status === selectedTab;
   });
 
-  const stats = {
-    total: enhancedApplications.length,
-    pending: enhancedApplications.filter(app => app.status === 'pending').length,
-    accepted: enhancedApplications.filter(app => app.status === 'accepted').length,
-    rejected: enhancedApplications.filter(app => app.status === 'rejected').length,
-    responseRate: Math.round((enhancedApplications.filter(app => app.status !== 'pending').length / enhancedApplications.length) * 100)
+  // Calculate application statistics
+  const stats = applications.length > 0 ? {
+    total: applications.length,
+    pending: applications.filter(app => app.status === 'pending').length,
+    accepted: applications.filter(app => app.status === 'accepted').length,
+    rejected: applications.filter(app => app.status === 'rejected').length,
+    responseRate: applications.length > 0 
+      ? Math.round((applications.filter(app => app.status !== 'pending').length / applications.length) * 100) 
+      : 0
+  } : {
+    total: 0,
+    pending: 0,
+    accepted: 0,
+    rejected: 0,
+    responseRate: 0
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-96">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -215,7 +207,7 @@ const WorkerApplications: React.FC = () => {
                 <TabsTrigger value="rejected">Rejected ({stats.rejected})</TabsTrigger>
               </TabsList>
 
-              <TabsContent value={selectedTab} className="mt-6">
+              <TabsContent value={selectedTab || 'all'} className="mt-6">
                 <div className="space-y-4">
                   {filteredApplications.map((application) => (
                     <ApplicationCard 
