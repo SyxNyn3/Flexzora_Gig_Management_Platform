@@ -142,7 +142,7 @@ const FinanceDashboard: React.FC = () => {
     setMonthlyData(months);
   };
 
-  const handlePaymentSuccess = () => {
+  const handlePaymentSuccess = async () => {
     // Update payment status in the database
     try {
       await DatabaseService.updatePaymentStatus(
@@ -320,15 +320,10 @@ const FinanceDashboard: React.FC = () => {
                       <div className="flex items-center space-x-4">
                         <CreditCard className="h-8 w-8 text-gray-400" />
                         <div>
-                      <div key={payment.id || `payment-${Math.random()}`} className="flex items-center justify-between p-4 border rounded-lg">
-                          <p className="text-sm text-gray-600">
-                            {payment.gig?.company?.name}
+                          <h4 className="font-medium">{payment.gig?.title || 'Unknown Gig'}</h4>
+                          <p className="text-xs text-gray-500">
+                            {payment.gig?.company?.name || 'Unknown Company'}
                           </p>
-                            <h4 className="font-medium">{payment.gig?.title || 'Unknown Gig'}</h4>
-                            <p className="text-xs text-gray-500">
-                              {payment.gig?.company?.name || 'Unknown Company'}
-                            </p>
-                          )}
                           <div className="mt-2 flex space-x-2">
                             <InvoiceGenerator payment={payment} gig={payment.gig} />
                             {payment.status !== 'paid' && profile?.role === 'company' && (
