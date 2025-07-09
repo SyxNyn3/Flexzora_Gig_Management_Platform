@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
-import { useGigs, useApplications } from '@/hooks/useSupabaseQuery';
+import { useGigs, useApplications, usePayments, useExpenses, useRealtimeNotifications } from '@/hooks/useSupabaseQuery';
 import { AuthKitButton } from '@/components/integrations/AuthKitButton';
 import { 
   Calendar, 
@@ -28,17 +28,30 @@ import { format, isToday, isTomorrow, addDays } from 'date-fns';
 const WorkerDashboard: React.FC = () => {
   const { profile } = useAuth();
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
   const [greeting, setGreeting] = useState('');
 
   // Fetch data
   const { data: availableGigs = [] } = useGigs({ status: 'published' });
   const { data: myApplications = [] } = useApplications({ workerId: profile?.id });
+  const { data: payments = [] } = usePayments({ workerId: profile?.id });
+  const { data: expenses = [] } = useExpenses({ workerId: profile?.id });
+  
+  // Set up real-time notifications
+  useRealtimeNotifications(profile?.id, (notification) => {
+    // This will automatically show a toast when a new notification arrives
+    console.log('New notification received:', notification);
+  });
 
   useEffect(() => {
     const hour = new Date().getHours();
     if (hour < 12) setGreeting('Good morning');
     else if (hour < 17) setGreeting('Good afternoon');
     else setGreeting('Good evening');
+    
+    // Set loading to false after all data is fetched
+    const timer = setTimeout(() => setLoading(false), 1000);
+    return () => clearTimeout(timer);
   }, []);
 
   // Mock data for demo
@@ -67,17 +80,48 @@ const WorkerDashboard: React.FC = () => {
     }
   ];
 
-  const recentApplications = myApplications.slice(0, 3);
+  // Use real data with fallback to mock data
+  const recentApplications = myApplications.length > 0 
+    ? myApplications.slice(0, 3) 
+    : [
+        {
+          id: '1',
+          gig: { title: 'Video Editor for Documentary', location: 'Remote' },
+          status: 'pending',
+          application_date: '2024-01-10T10:00:00Z',
+        },
+        {
+          id: '2',
+          gig: { title: 'Stage Manager for Theater', location: 'New York, NY' },
+          status: 'accepted',
+          application_date: '2024-01-08T15:30:00Z',
+        },
+      ];
+      
   const todaysGigs = upcomingGigs.filter(gig => isToday(gig.date));
   const tomorrowsGigs = upcomingGigs.filter(gig => isTomorrow(gig.date));
 
+  // Calculate stats from real data
+  const totalEarnings = payments
+    .filter(payment => payment.status === 'paid')
+    .reduce((sum, payment) => sum + payment.amount, 0);
+    
+  const thisMonth = payments
+    .filter(payment => {
+      const paidDate = payment.paid_date ? new Date(payment.paid_date) : null;
+      return payment.status === 'paid' && paidDate && 
+             paidDate.getMonth() === new Date().getMonth() &&
+             paidDate.getFullYear() === new Date().getFullYear();
+    })
+    .reduce((sum, payment) => sum + payment.amount, 0);
+    
   const stats = {
-    totalEarnings: 15420,
-    thisMonth: 3200,
+    totalEarnings: totalEarnings || 15420, // Fallback to mock data if no real data
+    thisMonth: thisMonth || 3200,
     pendingApplications: recentApplications.filter(app => app.status === 'pending').length,
     upcomingGigs: upcomingGigs.length,
-    completedGigs: 28,
-    rating: 4.8
+    completedGigs: payments.filter(p => p.status === 'paid').length || 28,
+    rating: profile?.average_rating || 4.8
   };
 
   const getDateLabel = (date: Date) => {
@@ -96,6 +140,14 @@ const WorkerDashboard: React.FC = () => {
     }
   };
 
+  if (loading && !profile) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+  
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -454,18 +506,18 @@ const WorkerDashboard: React.FC = () => {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">Hours Worked</span>
-                  <span className="font-semibold">96</span>
+                  <span className="font-semibold">{stats.completedGigs * 8}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">Avg. Rating</span>
                   <div className="flex items-center">
-                    <span className="font-semibold mr-1">4.8</span>
+                    <span className="font-semibold mr-1">{stats.rating}</span>
                     <Star className="h-4 w-4 text-yellow-500 fill-current" />
                   </div>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">Response Rate</span>
-                  <span className="font-semibold">98%</span>
+                  <span className="font-semibold">{Math.round((myApplications.length - stats.pendingApplications) / Math.max(myApplications.length, 1) * 100)}%</span>
                 </div>
               </CardContent>
             </Card>

@@ -12,8 +12,9 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/supabase';
+import { supabase, DatabaseService } from '@/lib/supabase';
 import { Expense, Gig } from '@/lib/types';
+import { useExpenses } from '@/hooks/useSupabaseQuery';
 import { 
   Plus, 
   Receipt, 
@@ -45,10 +46,12 @@ interface ExpenseTrackerProps {
 
 const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ gigId }) => {
   const { profile } = useAuth();
-  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const { data: expenses = [], loading: expensesLoading, refetch: refetchExpenses } = useExpenses({ 
+    workerId: profile?.id, 
+    gigId 
+  });
   const [gigs, setGigs] = useState<Gig[]>([]);
   const [showAddDialog, setShowAddDialog] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
   const form = useForm<ExpenseForm>({
@@ -67,44 +70,9 @@ const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ gigId }) => {
 
   useEffect(() => {
     if (profile) {
-      fetchExpenses();
       fetchGigs();
     }
   }, [profile, gigId]);
-
-  const fetchExpenses = async () => {
-    if (!profile) return;
-
-    try {
-      setLoading(true);
-      
-      let query = supabase
-        .from('expenses')
-        .select(`
-          *,
-          gig:gigs(
-            id,
-            title,
-            company:companies(name)
-          )
-        `)
-        .eq('worker_id', profile.id)
-        .order('expense_date', { ascending: false });
-
-      if (gigId) {
-        query = query.eq('gig_id', gigId);
-      }
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-      setExpenses(data || []);
-    } catch (error) {
-      console.error('Error fetching expenses:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const fetchGigs = async () => {
     if (!profile) return;
@@ -136,7 +104,7 @@ const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ gigId }) => {
     setSubmitting(true);
     try {
       const expenseData = {
-        worker_id: profile.id,
+        worker_id: profile.id || '',
         amount: parseFloat(data.amount),
         category: data.category,
         description: data.description,
@@ -148,19 +116,16 @@ const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ gigId }) => {
         currency: 'USD',
       };
 
-      const { error } = await supabase
-        .from('expenses')
-        .insert(expenseData);
+      const { error } = await DatabaseService.addExpense(expenseData);
 
       if (error) throw error;
 
       toast.success('Expense added successfully!');
       setShowAddDialog(false);
       form.reset();
-      await fetchExpenses();
+      await refetchExpenses();
     } catch (error: any) {
-      console.error('Error adding expense:', error);
-      toast.error(error.message || 'Failed to add expense');
+      toast.error(`Failed to add expense: ${error.message || 'Unknown error'}`);
     } finally {
       setSubmitting(false);
     }
@@ -251,7 +216,7 @@ const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ gigId }) => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {loading ? (
+          {expensesLoading ? (
             <div className="flex items-center justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
             </div>
@@ -283,7 +248,7 @@ const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ gigId }) => {
                       <div className="flex items-center space-x-4 mt-2 text-sm text-gray-600">
                         <span>{format(new Date(expense.expense_date), 'MMM d, yyyy')}</span>
                         {expense.gig && (
-                          <span>• {expense.gig.title}</span>
+                          <span>• {expense.gig?.title || 'Unknown Gig'}</span>
                         )}
                       </div>
                     </div>

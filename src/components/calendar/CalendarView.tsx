@@ -11,8 +11,9 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/supabase';
+import { supabase, DatabaseService } from '@/lib/supabase';
 import { Gig, GigApplication } from '@/lib/types';
+import { useCalendarEvents } from '@/hooks/useSupabaseQuery';
 import { 
   Calendar as CalendarIcon, 
   MapPin, 
@@ -68,7 +69,7 @@ interface CalendarReminder {
 const CalendarView: React.FC = () => {
   const { profile } = useAuth();
   const navigate = useNavigate();
-  const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
   const [notes, setNotes] = useState<CalendarNote[]>([]);
   const [reminders, setReminders] = useState<CalendarReminder[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
@@ -77,7 +78,13 @@ const CalendarView: React.FC = () => {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [currentView, setCurrentView] = useState<View>(Views.MONTH);
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [loading, setLoading] = useState(true);
+
+  // Fetch calendar events from Supabase
+  const { data: dbEvents = [], loading: eventsLoading, refetch: refetchEvents } = useCalendarEvents(
+    profile?.id || '',
+    startOfWeek(currentDate).toISOString(),
+    endOfWeek(currentDate).toISOString()
+  );
 
   // Add item form state
   const [addType, setAddType] = useState<'note' | 'reminder'>('note');
@@ -89,73 +96,30 @@ const CalendarView: React.FC = () => {
 
   useEffect(() => {
     if (profile) {
-      fetchCalendarData();
       loadMockNotesAndReminders();
     }
   }, [profile]);
 
-  const fetchCalendarData = async () => {
-    if (!profile) return;
-
-    try {
-      setLoading(true);
-
-      if (profile.role === 'worker') {
-        // Fetch accepted gigs for workers
-        const { data: applications } = await supabase
-          .from('gig_applications')
-          .select(`
-            *,
-            gig:gigs(
-              *,
-              company:companies(name, logo_url)
-            )
-          `)
-          .eq('worker_id', profile.id)
-          .eq('status', 'accepted');
-
-        const workerEvents: CalendarEvent[] = (applications || [])
-          .filter(app => app.gig)
-          .map(app => ({
-            id: app.gig!.id,
-            title: app.gig!.title,
-            start: new Date(app.gig!.start_date),
-            end: new Date(app.gig!.end_date),
-            resource: app.gig!,
-            status: 'accepted',
-            type: 'gig' as const,
-          }));
-
-        setEvents(workerEvents);
-      } else if (profile.role === 'company') {
-        // Fetch company's gigs
-        const { data: gigs } = await supabase
-          .from('gigs')
-          .select(`
-            *,
-            company:companies(name, logo_url)
-          `)
-          .eq('created_by', profile.id)
-          .in('status', ['published', 'in_progress', 'completed']);
-
-        const companyEvents: CalendarEvent[] = (gigs || []).map(gig => ({
-          id: gig.id,
-          title: gig.title,
-          start: new Date(gig.start_date),
-          end: new Date(gig.end_date),
-          resource: gig,
-          status: gig.status,
-          type: 'gig' as const,
-        }));
-
-        setEvents(companyEvents);
-      }
-    } catch (error) {
-      console.error('Error fetching calendar data:', error);
-    } finally {
-      setLoading(false);
+  // Convert database events to calendar events
+  useEffect(() => {
+    if (dbEvents.length > 0) {
+      const formattedEvents: CalendarEvent[] = dbEvents.map(event => ({
+        id: event.id,
+        title: event.title,
+        start: new Date(event.start_time),
+        end: event.end_time ? new Date(event.end_time) : new Date(event.start_time),
+        resource: event,
+        status: event.event_type === 'gig' ? 'confirmed' : 'note',
+        type: event.event_type as 'gig' | 'note' | 'reminder',
+      }));
+      
+      setCalendarEvents(prev => {
+        // Merge with notes and reminders
+        const nonDbEvents = prev.filter(e => e.type === 'note' || e.type === 'reminder');
+        return [...formattedEvents, ...nonDbEvents];
+      });
     }
-  };
+  }, [dbEvents]);
 
   const loadMockNotesAndReminders = () => {
     // Mock notes
@@ -262,7 +226,8 @@ const CalendarView: React.FC = () => {
       created_at: new Date().toISOString(),
     };
 
-    const newEvent: CalendarEvent = {
+    // Create a new calendar event
+    const newCalendarEvent: CalendarEvent = {
       id: `note-${newNote.id}`,
       title: `📝 ${newNote.title}`,
       start: new Date(`${newNote.date}T09:00:00`),
@@ -273,7 +238,7 @@ const CalendarView: React.FC = () => {
     };
 
     setNotes(prev => [...prev, newNote]);
-    setEvents(prev => [...prev, newEvent]);
+    setCalendarEvents(prev => [...prev, newCalendarEvent]);
     resetForm();
     setShowAddDialog(false);
     toast.success('Note added successfully!');
@@ -296,7 +261,7 @@ const CalendarView: React.FC = () => {
       created_at: new Date().toISOString(),
     };
 
-    const newEvent: CalendarEvent = {
+    const newCalendarEvent: CalendarEvent = {
       id: `reminder-${newReminder.id}`,
       title: `🔔 ${newReminder.title}`,
       start: new Date(`${newReminder.date}T${newReminder.time}:00`),
@@ -307,7 +272,7 @@ const CalendarView: React.FC = () => {
     };
 
     setReminders(prev => [...prev, newReminder]);
-    setEvents(prev => [...prev, newEvent]);
+    setCalendarEvents(prev => [...prev, newCalendarEvent]);
     resetForm();
     setShowAddDialog(false);
     toast.success('Reminder added successfully!');
@@ -320,7 +285,7 @@ const CalendarView: React.FC = () => {
       setReminders(prev => prev.filter(reminder => reminder.id !== event.resource.id));
     }
     
-    setEvents(prev => prev.filter(e => e.id !== event.id));
+    setCalendarEvents(prev => prev.filter(e => e.id !== event.id));
     setShowEventDialog(false);
     toast.success(`${event.type === 'note' ? 'Note' : 'Reminder'} deleted successfully!`);
   };
@@ -332,7 +297,7 @@ const CalendarView: React.FC = () => {
         : reminder
     ));
 
-    setEvents(prev => prev.map(event => 
+    setCalendarEvents(prev => prev.map(event => 
       event.id === `reminder-${reminderId}` 
         ? { ...event, status: event.status === 'completed' ? 'medium' : 'completed' }
         : event
@@ -401,7 +366,7 @@ const CalendarView: React.FC = () => {
     }
   };
 
-  if (loading) {
+  if (eventsLoading && !profile) {
     return (
       <div className="flex items-center justify-center min-h-96">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
@@ -428,7 +393,7 @@ const CalendarView: React.FC = () => {
           <div style={{ height: '600px' }}>
             <Calendar
               localizer={localizer}
-              events={events}
+              events={calendarEvents}
               startAccessor="start"
               endAccessor="end"
               onSelectEvent={handleSelectEvent}
@@ -503,7 +468,7 @@ const CalendarView: React.FC = () => {
             <div className="flex flex-wrap gap-4 text-sm">
               <div className="flex items-center">
                 <div className="w-4 h-4 bg-blue-600 rounded mr-2"></div>
-                <span>Published Gigs</span>
+                <span>Gigs</span>
               </div>
               <div className="flex items-center">
                 <div className="w-4 h-4 bg-green-600 rounded mr-2"></div>

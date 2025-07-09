@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { Database } from './types';
 import { getStoredAuthData } from './auth';
+import { toast } from 'sonner';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -592,6 +593,206 @@ export class DatabaseService {
       return { data: null, error: error.message };
     }
   }
+  
+  // Expenses operations
+  static async getExpenses(filters?: { workerId?: string; gigId?: string; startDate?: string; endDate?: string }) {
+    try {
+      if (isDemoMode) {
+        // Return mock data in demo mode
+        return { 
+          data: [
+            {
+              id: 'expense-1',
+              worker_id: 'demo-profile-id',
+              gig_id: 'gig-1',
+              amount: 120.50,
+              currency: 'USD',
+              category: 'travel',
+              description: 'Uber to venue',
+              expense_date: new Date().toISOString().split('T')[0],
+              is_reimbursable: true,
+              is_tax_deductible: true,
+              created_at: new Date().toISOString(),
+              gig: { title: 'Corporate Event Video Production' }
+            },
+            {
+              id: 'expense-2',
+              worker_id: 'demo-profile-id',
+              gig_id: 'gig-2',
+              amount: 45.75,
+              currency: 'USD',
+              category: 'meals',
+              description: 'Lunch during shoot',
+              expense_date: new Date().toISOString().split('T')[0],
+              is_reimbursable: false,
+              is_tax_deductible: true,
+              created_at: new Date().toISOString(),
+              gig: { title: 'Wedding Photography' }
+            }
+          ], 
+          error: null 
+        };
+      }
+
+      let query = supabase
+        .from('expenses')
+        .select(`
+          *,
+          gig:gigs(title)
+        `)
+        .order('expense_date', { ascending: false });
+
+      if (filters?.workerId) {
+        query = query.eq('worker_id', filters.workerId);
+      }
+
+      if (filters?.gigId) {
+        query = query.eq('gig_id', filters.gigId);
+      }
+
+      if (filters?.startDate) {
+        query = query.gte('expense_date', filters.startDate);
+      }
+
+      if (filters?.endDate) {
+        query = query.lte('expense_date', filters.endDate);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        throw new Error(`Failed to fetch expenses: ${error.message}`);
+      }
+
+      return { data: data || [], error: null };
+    } catch (error: any) {
+      return { data: [], error: error.message };
+    }
+  }
+
+  static async addExpense(expenseData: Database['public']['Tables']['expenses']['Insert']) {
+    try {
+      const { data, error } = await supabase
+        .from('expenses')
+        .insert(expenseData)
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(`Failed to add expense: ${error.message}`);
+      }
+
+      return { data, error: null };
+    } catch (error: any) {
+      return { data: null, error: error.message };
+    }
+  }
+
+  // Payments operations
+  static async getPayments(filters?: { workerId?: string; companyId?: string; gigId?: string; status?: string }) {
+    try {
+      if (isDemoMode) {
+        // Return mock data in demo mode
+        return { 
+          data: [
+            {
+              id: 'payment-1',
+              gig_id: 'gig-1',
+              worker_id: 'demo-profile-id',
+              company_id: 'company-1',
+              amount: 450.00,
+              currency: 'USD',
+              status: 'paid',
+              due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+              paid_date: new Date().toISOString().split('T')[0],
+              created_at: new Date().toISOString(),
+              gig: { 
+                title: 'Corporate Event Video Production',
+                company: { name: 'TechCorp Events' }
+              }
+            },
+            {
+              id: 'payment-2',
+              gig_id: 'gig-2',
+              worker_id: 'demo-profile-id',
+              company_id: 'company-2',
+              amount: 550.00,
+              currency: 'USD',
+              status: 'pending',
+              due_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+              created_at: new Date().toISOString(),
+              gig: { 
+                title: 'Wedding Photography',
+                company: { name: 'Dream Weddings' }
+              }
+            }
+          ], 
+          error: null 
+        };
+      }
+
+      let query = supabase
+        .from('payments')
+        .select(`
+          *,
+          gig:gigs(
+            title,
+            company:companies(name)
+          )
+        `)
+        .order('created_at', { ascending: false });
+
+      if (filters?.workerId) {
+        query = query.eq('worker_id', filters.workerId);
+      }
+
+      if (filters?.companyId) {
+        query = query.eq('company_id', filters.companyId);
+      }
+
+      if (filters?.gigId) {
+        query = query.eq('gig_id', filters.gigId);
+      }
+
+      if (filters?.status) {
+        query = query.eq('status', filters.status);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        throw new Error(`Failed to fetch payments: ${error.message}`);
+      }
+
+      return { data: data || [], error: null };
+    } catch (error: any) {
+      return { data: [], error: error.message };
+    }
+  }
+
+  static async updatePaymentStatus(paymentId: string, status: PaymentStatus, paidDate?: string) {
+    try {
+      const updates: any = { status };
+      if (status === 'paid' && paidDate) {
+        updates.paid_date = paidDate;
+      }
+
+      const { data, error } = await supabase
+        .from('payments')
+        .update(updates)
+        .eq('id', paymentId)
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(`Failed to update payment status: ${error.message}`);
+      }
+
+      return { data, error: null };
+    } catch (error: any) {
+      return { data: null, error: error.message };
+    }
+  }
 
   // Real-time subscriptions
   static subscribeToNotifications(userId: string, callback: (payload: any) => void) {
@@ -668,3 +869,6 @@ export const normalizeUrl = (url: string): string => {
   }
   return `https://${url}`;
 };
+
+// Type for PaymentStatus
+export type PaymentStatus = 'pending' | 'paid' | 'overdue' | 'cancelled';

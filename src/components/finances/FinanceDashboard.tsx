@@ -7,9 +7,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import InvoiceGenerator from './InvoiceGenerator';
 import PaymentProcessor from '@/components/payments/PaymentProcessor';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/supabase';
+import { supabase, DatabaseService } from '@/lib/supabase';
 import { Payment, Expense } from '@/lib/types';
 import ExpenseTracker from '@/components/expenses/ExpenseTracker';
+import { usePayments, useExpenses } from '@/hooks/useSupabaseQuery';
 import { 
   DollarSign, 
   TrendingUp, 
@@ -42,61 +43,25 @@ const FinanceDashboard: React.FC = () => {
     monthlyExpenses: 0,
     netIncome: 0,
   });
-  const [payments, setPayments] = useState<Payment[]>([]);
-  const [expenses, setExpenses] = useState<Expense[]>([]);
+  
+  // Use real data hooks
+  const { data: payments = [], loading: paymentsLoading, refetch: refetchPayments } = usePayments({ 
+    workerId: profile?.id 
+  });
+  const { data: expenses = [], loading: expensesLoading } = useExpenses({ 
+    workerId: profile?.id 
+  });
+  
   const [monthlyData, setMonthlyData] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
 
   useEffect(() => {
     if (profile) {
-      fetchFinanceData();
+      calculateStats(payments, expenses);
+      generateMonthlyData(payments, expenses);
     }
-  }, [profile]);
-
-  const fetchFinanceData = async () => {
-    if (!profile) return;
-
-    try {
-      setLoading(true);
-
-      // Fetch payments
-      const { data: paymentsData } = await supabase
-        .from('payments')
-        .select(`
-          *,
-          gig:gigs(
-            title,
-            company:companies(name)
-          )
-        `)
-        .eq('worker_id', profile.id)
-        .order('created_at', { ascending: false });
-
-      // Fetch expenses
-      const { data: expensesData } = await supabase
-        .from('expenses')
-        .select(`
-          *,
-          gig:gigs(title)
-        `)
-        .eq('worker_id', profile.id)
-        .order('expense_date', { ascending: false });
-
-      setPayments(paymentsData || []);
-      setExpenses(expensesData || []);
-
-      // Calculate stats
-      calculateStats(paymentsData || [], expensesData || []);
-      generateMonthlyData(paymentsData || [], expensesData || []);
-
-    } catch (error) {
-      console.error('Error fetching finance data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [profile, payments, expenses]);
 
   const calculateStats = (payments: Payment[], expenses: Expense[]) => {
     const now = new Date();
@@ -178,8 +143,21 @@ const FinanceDashboard: React.FC = () => {
   };
 
   const handlePaymentSuccess = () => {
-    fetchFinanceData();
-    setShowPaymentDialog(false);
+    // Update payment status in the database
+    try {
+      await DatabaseService.updatePaymentStatus(
+        selectedPayment.id, 
+        'paid', 
+        new Date().toISOString().split('T')[0]
+      );
+      
+      // Refresh payments data
+      await refetchPayments();
+      toast.success('Payment processed successfully!');
+    } catch (error: any) {
+      toast.error(`Failed to update payment: ${error.message}`);
+    }
+    
   };
 
   const getPaymentStatusColor = (status: string) => {
@@ -190,6 +168,8 @@ const FinanceDashboard: React.FC = () => {
       default: return 'bg-gray-100 text-gray-800';
     }
   };
+
+  const loading = paymentsLoading || expensesLoading;
 
   if (loading) {
     return (
@@ -340,13 +320,13 @@ const FinanceDashboard: React.FC = () => {
                       <div className="flex items-center space-x-4">
                         <CreditCard className="h-8 w-8 text-gray-400" />
                         <div>
-                          <h4 className="font-medium">{payment.gig?.title}</h4>
+                      <div key={payment.id || `payment-${Math.random()}`} className="flex items-center justify-between p-4 border rounded-lg">
                           <p className="text-sm text-gray-600">
                             {payment.gig?.company?.name}
                           </p>
-                          {payment.due_date && (
+                            <h4 className="font-medium">{payment.gig?.title || 'Unknown Gig'}</h4>
                             <p className="text-xs text-gray-500">
-                              Due: {format(new Date(payment.due_date), 'MMM d, yyyy')}
+                              {payment.gig?.company?.name || 'Unknown Company'}
                             </p>
                           )}
                           <div className="mt-2 flex space-x-2">
