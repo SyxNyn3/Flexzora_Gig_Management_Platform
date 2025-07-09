@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
+import { DatabaseService } from '@/lib/supabase';
 import GigCommunication from '@/components/gigs/GigCommunication';
 import WorkerPayroll from '@/components/gigs/WorkerPayroll';
 import { 
@@ -45,7 +47,7 @@ interface WorkerProfile {
 
 const CompanyDashboard: React.FC = () => {
   const { profile } = useAuth();
-  const [workers, setWorkers] = useState<WorkerProfile[]>([]);
+  const [workers, setWorkers] = useState<WorkerProfile[]>([]); 
   const [filteredWorkers, setFilteredWorkers] = useState<WorkerProfile[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [skillFilter, setSkillFilter] = useState('');
@@ -55,7 +57,24 @@ const CompanyDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadWorkerPool();
+    // Fetch worker profiles from database
+    const fetchWorkers = async () => {
+      try {
+        setLoading(true);
+        
+        // In a real implementation, we would fetch from the database
+        // For now, we'll use the mock data but with a delay to simulate loading
+        setTimeout(() => {
+          loadWorkerPool();
+          setLoading(false);
+        }, 1500);
+      } catch (error) {
+        console.error('Error fetching workers:', error);
+        setLoading(false);
+      }
+    };
+    
+    fetchWorkers();
   }, []);
 
   useEffect(() => {
@@ -264,9 +283,60 @@ const CompanyDashboard: React.FC = () => {
   const allSkills = [...new Set(workers.flatMap(w => w.skills))];
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+    return ( 
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header skeleton */}
+        <div className="mb-8">
+          <div className="h-8 w-64 bg-gray-200 rounded animate-pulse mb-2"></div>
+          <div className="h-4 w-96 bg-gray-200 rounded animate-pulse"></div>
+        </div>
+        
+        {/* Stats skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="bg-white p-6 rounded-lg shadow animate-pulse">
+              <div className="flex items-center">
+                <div className="h-8 w-8 bg-gray-200 rounded-full mr-4"></div>
+                <div>
+                  <div className="h-4 w-32 bg-gray-200 rounded mb-2"></div>
+                  <div className="h-6 w-16 bg-gray-200 rounded"></div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+        
+        {/* Filters skeleton */}
+        <div className="bg-white p-6 rounded-lg shadow mb-6 animate-pulse">
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="h-10 w-64 bg-gray-200 rounded"></div>
+            <div className="h-10 w-32 bg-gray-200 rounded"></div>
+            <div className="h-10 w-32 bg-gray-200 rounded"></div>
+            <div className="h-10 w-32 bg-gray-200 rounded"></div>
+          </div>
+        </div>
+        
+        {/* Workers grid skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div key={i} className="bg-white p-6 rounded-lg shadow animate-pulse">
+              <div className="flex items-start space-x-4">
+                <div className="h-12 w-12 bg-gray-200 rounded-full"></div>
+                <div className="flex-1">
+                  <div className="h-5 w-32 bg-gray-200 rounded mb-2"></div>
+                  <div className="h-4 w-24 bg-gray-200 rounded mb-2"></div>
+                  <div className="h-4 w-full bg-gray-200 rounded mb-2"></div>
+                  <div className="h-4 w-3/4 bg-gray-200 rounded mb-4"></div>
+                  <div className="flex flex-wrap gap-1">
+                    {[1, 2, 3].map((j) => (
+                      <div key={j} className="h-6 w-16 bg-gray-200 rounded"></div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -436,14 +506,14 @@ const CompanyDashboard: React.FC = () => {
                     <div>{worker.email}</div>
                     <div className="flex items-center justify-between">
                       <span>${worker.hourly_rate}/hr</span>
-                      <span>{worker.experience_years} years exp.</span>
+                      <span className="text-gray-500">{worker.experience_years} years exp.</span>
                     </div>
                     <div>{worker.location}</div>
                     <div className="flex items-center justify-between">
                       <span>{worker.total_gigs} gigs</span>
                       <div className="flex items-center">
                         <span className="text-yellow-500">★</span>
-                        <span className="ml-1">{worker.rating}</span>
+                        <span className="ml-1 font-medium">{worker.rating}</span>
                       </div>
                     </div>
                   </div>
@@ -463,7 +533,8 @@ const CompanyDashboard: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="mt-3 text-xs text-gray-500">
+                  <div className="mt-3 text-xs text-gray-500 flex items-center">
+                    <Clock className="h-3 w-3 mr-1" />
                     Last active: {new Date(worker.last_active).toLocaleDateString()}
                   </div>
                 </div>

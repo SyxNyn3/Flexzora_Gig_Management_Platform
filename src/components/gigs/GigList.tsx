@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input'; 
+import { Skeleton } from '@/components/ui/skeleton';
 import { Slider } from '@/components/ui/slider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -10,6 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { Gig } from '@/lib/types';
+import { useGigs } from '@/hooks/useSupabaseQuery';
 import { 
   MapPin, 
   Calendar, 
@@ -26,9 +28,11 @@ import { useNavigate } from 'react-router-dom';
 const GigList: React.FC = () => {
   const { profile } = useAuth();
   const navigate = useNavigate();
-  const [gigs, setGigs] = useState<Gig[]>([]);
+  
+  // Use the hook to fetch gigs
+  const { data: gigs = [], loading: gigsLoading, error } = useGigs({ status: 'published' });
+  
   const [filteredGigs, setFilteredGigs] = useState<Gig[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [locationFilter, setLocationFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -39,45 +43,8 @@ const GigList: React.FC = () => {
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
   useEffect(() => {
-    fetchGigs();
-  }, []);
-
-  useEffect(() => {
     filterGigs();
   }, [gigs, searchTerm, locationFilter, statusFilter, skillsFilter, rateRange, isRemoteOnly, dateRange]);
-
-  const fetchGigs = async () => {
-    try {
-      setLoading(true);
-      
-      const { data, error } = await supabase
-        .from('gigs')
-        .select(`
-          *,
-          company:companies(
-            id,
-            name,
-            logo_url,
-            description
-          ),
-          creator:profiles(
-            id,
-            full_name
-          ),
-          applications:gig_applications(count)
-        `)
-        .eq('status', 'published')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      setGigs(data || []);
-    } catch (error) {
-      console.error('Error fetching gigs:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const filterGigs = () => {
     let filtered = gigs;
@@ -175,10 +142,27 @@ const GigList: React.FC = () => {
     return diffDays;
   };
 
-  if (loading) {
+  if (gigsLoading) {
     return (
-      <div className="flex items-center justify-center min-h-96">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header skeleton */}
+        <div className="mb-8">
+          <Skeleton className="h-8 w-64 mb-2" />
+          <Skeleton className="h-4 w-96" />
+        </div>
+        
+        {/* Filters skeleton */}
+        <Skeleton className="h-32 mb-8" />
+        
+        {/* Results count skeleton */}
+        <Skeleton className="h-6 w-48 mb-6" />
+        
+        {/* Gigs grid skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <Skeleton key={i} className="h-80" />
+          ))}
+        </div>
       </div>
     );
   }

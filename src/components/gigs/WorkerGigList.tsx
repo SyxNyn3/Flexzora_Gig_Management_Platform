@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -29,12 +30,19 @@ import { useNavigate } from 'react-router-dom';
 const WorkerGigList: React.FC = () => {
   const { profile } = useAuth();
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [savedGigs, setSavedGigs] = useState<string[]>([]);
 
   // Fetch gigs
   const { data: allGigs = [] } = useGigs({ status: 'published' });
+
+  useEffect(() => {
+    // Simulate loading delay
+    const timer = setTimeout(() => setLoading(false), 1500);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Mock enhanced gig data
   const enhancedGigs = [
@@ -156,6 +164,56 @@ const WorkerGigList: React.FC = () => {
     return format(date, 'MMM d');
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        {/* Header skeleton */}
+        <div className="bg-white border-b border-gray-200">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <Skeleton className="h-8 w-64 mb-2" />
+                <Skeleton className="h-4 w-96" />
+              </div>
+              <div className="mt-4 sm:mt-0 flex items-center space-x-3">
+                <Skeleton className="h-10 w-24" />
+                <Skeleton className="h-10 w-24" />
+              </div>
+            </div>
+            
+            <div className="mt-6">
+              <Skeleton className="h-10 w-full max-w-md" />
+            </div>
+          </div>
+        </div>
+        
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex flex-col lg:flex-row gap-8">
+            {/* Sidebar skeleton */}
+            <div className="lg:w-80">
+              <Skeleton className="h-96 mb-6" />
+              <Skeleton className="h-64" />
+            </div>
+            
+            {/* Main content skeleton */}
+            <div className="flex-1">
+              <div className="flex items-center justify-between mb-6">
+                <Skeleton className="h-6 w-48" />
+                <Skeleton className="h-6 w-32" />
+              </div>
+              
+              <div className="space-y-4">
+                {[1, 2, 3, 4].map((i) => (
+                  <Skeleton key={i} className="h-40" />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -240,7 +298,7 @@ const WorkerGigList: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">Avg. Rating</span>
                   <div className="flex items-center">
-                    <span className="font-semibold mr-1">4.8</span>
+                    <span className="font-semibold mr-1">{profile?.average_rating || 4.8}</span>
                     <Star className="h-4 w-4 text-yellow-500 fill-current" />
                   </div>
                 </div>
