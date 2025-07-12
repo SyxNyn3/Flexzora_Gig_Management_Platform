@@ -118,7 +118,7 @@ const WorkerDashboard: React.FC = () => {
   const stats = {
     totalEarnings: totalEarnings || 15420, // Fallback to mock data if no real data
     thisMonth: thisMonth || 3200,
-    pendingApplications: recentApplications.filter(app => app.status === 'pending').length,
+    pendingApplications: (recentApplications || []).filter(app => app.status === 'pending').length,
     upcomingGigs: upcomingGigs.length,
     completedGigs: payments.filter(p => p.status === 'paid').length || 28,
     rating: profile?.average_rating || 4.8
