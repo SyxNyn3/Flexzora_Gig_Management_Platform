@@ -138,6 +138,26 @@ export function useNotifications(userId: string) {
   );
 }
 
+// Hook for fetching reviews for a worker
+export function useReviewsForWorker(workerId: string) {
+  if (!workerId) return { data: [], error: 'No worker ID provided', loading: false, refetch: async () => {} };
+  
+  return useSupabaseQuery(
+    () => DatabaseService.getReviewsForWorker(workerId),
+    [workerId]
+  );
+}
+
+// Hook for fetching a single review
+export function useReview(reviewId: string) {
+  if (!reviewId) return { data: null, error: 'No review ID provided', loading: false, refetch: async () => {} };
+  
+  return useSupabaseQuery(
+    () => DatabaseService.getReview(reviewId),
+    [reviewId]
+  );
+}
+
 // Hook for real-time notifications
 export function useRealtimeNotifications(userId: string, onNewNotification?: (notification: any) => void) {
   const [notifications, setNotifications] = useState<any[]>([]);

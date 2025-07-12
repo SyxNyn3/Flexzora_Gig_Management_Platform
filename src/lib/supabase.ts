@@ -797,6 +797,180 @@ export class DatabaseService {
     }
   }
 
+  // Reviews operations
+  static async getReviewsForWorker(workerId: string) {
+    try {
+      if (isDemoMode) {
+        // Return mock data in demo mode
+        return { 
+          data: [
+            {
+              id: 'review-1',
+              worker_id: workerId,
+              reviewer_id: 'reviewer-1',
+              gig_id: 'gig-1',
+              rating: 5,
+              review_text: 'Excellent work! Very professional and delivered high-quality results.',
+              is_public: true,
+              created_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+              reviewer: {
+                full_name: 'Sarah Johnson',
+                avatar_url: '',
+                role: 'company'
+              },
+              gig: {
+                title: 'Corporate Event Video Production'
+              }
+            },
+            {
+              id: 'review-2',
+              worker_id: workerId,
+              reviewer_id: 'reviewer-2',
+              gig_id: 'gig-2',
+              rating: 4,
+              review_text: 'Great communication and reliable. Would hire again.',
+              is_public: true,
+              created_at: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+              reviewer: {
+                full_name: 'Michael Chen',
+                avatar_url: '',
+                role: 'company'
+              },
+              gig: {
+                title: 'Wedding Photography'
+              }
+            }
+          ], 
+          error: null 
+        };
+      }
+
+      const { data, error } = await supabase
+        .from('reviews')
+        .select(`
+          *,
+          reviewer:profiles!reviewer_id(
+            full_name,
+            avatar_url,
+            role
+          ),
+          gig:gigs(
+            title
+          )
+        `)
+        .eq('worker_id', workerId)
+        .eq('is_public', true)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        throw new Error(`Failed to fetch reviews: ${error.message}`);
+      }
+
+      return { data: data || [], error: null };
+    } catch (error: any) {
+      return { data: [], error: error.message };
+    }
+  }
+
+  static async getReview(reviewId: string) {
+    try {
+      const { data, error } = await supabase
+        .from('reviews')
+        .select(`
+          *,
+          reviewer:profiles!reviewer_id(
+            full_name,
+            avatar_url,
+            role
+          ),
+          worker:profiles!worker_id(
+            full_name,
+            avatar_url
+          ),
+          gig:gigs(
+            title
+          )
+        `)
+        .eq('id', reviewId)
+        .single();
+
+      if (error) {
+        throw new Error(`Failed to fetch review: ${error.message}`);
+      }
+
+      return { data, error: null };
+    } catch (error: any) {
+      return { data: null, error: error.message };
+    }
+  }
+
+  static async addReview(reviewData: Database['public']['Tables']['reviews']['Insert']) {
+    try {
+      if (isDemoMode) {
+        // Return mock data in demo mode
+        return { 
+          data: {
+            id: 'review-' + Date.now(),
+            ...reviewData,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }, 
+          error: null 
+        };
+      }
+
+      const { data, error } = await supabase
+        .from('reviews')
+        .insert(reviewData)
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(`Failed to add review: ${error.message}`);
+      }
+
+      return { data, error: null };
+    } catch (error: any) {
+      return { data: null, error: error.message };
+    }
+  }
+
+  static async updateReview(reviewId: string, updates: Database['public']['Tables']['reviews']['Update']) {
+    try {
+      const { data, error } = await supabase
+        .from('reviews')
+        .update(updates)
+        .eq('id', reviewId)
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(`Failed to update review: ${error.message}`);
+      }
+
+      return { data, error: null };
+    } catch (error: any) {
+      return { data: null, error: error.message };
+    }
+  }
+
+  static async deleteReview(reviewId: string) {
+    try {
+      const { error } = await supabase
+        .from('reviews')
+        .delete()
+        .eq('id', reviewId);
+
+      if (error) {
+        throw new Error(`Failed to delete review: ${error.message}`);
+      }
+
+      return { error: null };
+    } catch (error: any) {
+      return { error: error.message };
+    }
+  }
+
   // Real-time subscriptions
   static subscribeToNotifications(userId: string, callback: (payload: any) => void) {
     return supabase
