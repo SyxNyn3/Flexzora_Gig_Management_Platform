@@ -243,3 +243,9 @@ body {
     display: none !important;
   }
 }
+
+/* AuthForm specific styles */
+.auth-form-input-group {
+  position: relative;
+}
+

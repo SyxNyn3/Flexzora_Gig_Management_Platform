@@ -13,7 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase, isDemoMode } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { storeAuthData } from '@/lib/auth';
-import { Mail, Apple, Chrome, ArrowLeft, Shield, CheckCircle } from 'lucide-react';
+import { Mail, Apple, Chrome, ArrowLeft, Shield, CheckCircle, Eye, EyeOff } from 'lucide-react';
 
 const signInSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -39,6 +39,7 @@ const AuthForm: React.FC = () => {
   const [isSignUp, setIsSignUp] = useState(searchParams.get('mode') === 'signup');
   const [loading, setLoading] = useState(false);
   const [socialLoading, setSocialLoading] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const { signIn, signUp } = useAuth();
   const navigate = useNavigate();
@@ -224,7 +225,7 @@ const AuthForm: React.FC = () => {
           Back to Home
         </Button>
 
-        <Card className="shadow-xl border-0">
+        <Card className="shadow-xl border-0 animate-fade-in">
           <CardHeader className="text-center pb-6">
             <div className="flex justify-center mb-4">
               <div className="w-12 h-12 bg-gradient-to-r from-blue-600 to-green-500 rounded-lg flex items-center justify-center">
@@ -383,12 +384,21 @@ const AuthForm: React.FC = () => {
                 <div>
                   <Label htmlFor="password">Password</Label>
                   <Input
-                    id="password"
-                    type="password"
+                    id="password" // Changed type to text for toggle
+                    type={showPassword ? "text" : "password"}
                     {...signUpForm.register('password')}
-                    className="mt-1 h-12"
+                    className="mt-1 h-12 pr-10" // Added pr-10 for icon
                     placeholder="Create a password"
                   />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 p-0"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
                   {signUpForm.formState.errors.password && (
                     <p className="text-sm text-red-600 mt-1">
                       {signUpForm.formState.errors.password.message}
@@ -441,12 +451,21 @@ const AuthForm: React.FC = () => {
                 <div>
                   <Label htmlFor="password">Password</Label>
                   <Input
-                    id="password"
-                    type="password"
+                    id="password" // Changed type to text for toggle
+                    type={showPassword ? "text" : "password"}
                     {...signInForm.register('password')}
-                    className="mt-1 h-12"
+                    className="mt-1 h-12 pr-10" // Added pr-10 for icon
                     placeholder={isDemoMode ? 'password' : 'Enter your password'}
                   />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 p-0"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
                   {signInForm.formState.errors.password && (
                     <p className="text-sm text-red-600 mt-1">
                       {signInForm.formState.errors.password.message}
