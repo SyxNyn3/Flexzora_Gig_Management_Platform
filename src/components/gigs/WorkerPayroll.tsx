@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/contexts/AuthContext';
 import PaymentProcessor from '@/components/payments/PaymentProcessor';
+import ReviewForm from '@/components/reviews/ReviewForm';
 import { 
   DollarSign, 
   Users, 
@@ -23,7 +24,8 @@ import {
   Plus,
   Edit,
   FileText,
-  CreditCard,
+  CreditCard, 
+  Star,
   X
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -75,6 +77,8 @@ const WorkerPayroll: React.FC<WorkerPayrollProps> = ({ gigId, gigTitle, workers 
   const [selectedPayment, setSelectedPayment] = useState<WorkerPayment | null>(null);
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [selectedWorkerForReview, setSelectedWorkerForReview] = useState<string | null>(null);
 
   useEffect(() => {
     loadMockPayments();
@@ -427,6 +431,19 @@ const WorkerPayroll: React.FC<WorkerPayrollProps> = ({ gigId, gigTitle, workers 
                         >
                           <CreditCard className="h-4 w-4 mr-1" />
                           Pay with Card
+                          {payment.status === 'paid' && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setSelectedWorkerForReview(payment.worker_id);
+                                setShowReviewForm(true);
+                              }}
+                            >
+                              <Star className="h-4 w-4 mr-1" />
+                              Review
+                            </Button>
+                          )}
                         </Button>
                       </div>
                     )}
@@ -617,6 +634,40 @@ const WorkerPayroll: React.FC<WorkerPayrollProps> = ({ gigId, gigTitle, workers 
           )}
         </DialogContent>
       </Dialog>
+      
+      {/* Review Form Dialog */}
+      {showReviewForm && selectedWorkerForReview && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg w-full max-w-md">
+            <div className="p-4 border-b flex justify-between items-center">
+              <h3 className="text-lg font-semibold">Write a Review</h3>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-8 w-8 p-0"
+                onClick={() => setShowReviewForm(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="p-4">
+              <ReviewForm 
+                workerId={selectedWorkerForReview} 
+                gigId={gigId}
+                onSuccess={() => {
+                  setShowReviewForm(false);
+                  setSelectedWorkerForReview(null);
+                  toast.success('Review submitted successfully!');
+                }}
+                onCancel={() => {
+                  setShowReviewForm(false);
+                  setSelectedWorkerForReview(null);
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import GigCommunication from './GigCommunication';
 import WorkerPayroll from './WorkerPayroll';
+import ReviewForm from '@/components/reviews/ReviewForm';
 import ConflictDetection from './ConflictDetection';
 import ApplicationsManager from './ApplicationsManager';
 import { 
@@ -68,6 +69,10 @@ const mockWorkers = [
 const GigManagement: React.FC<GigManagementProps> = ({ gigId }) => {
   const { profile } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
+
+  // State for review form
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [selectedWorker, setSelectedWorker] = useState<string | null>(null);
 
   const gig = mockGig;
   const workers = mockWorkers;
@@ -204,7 +209,7 @@ const GigManagement: React.FC<GigManagementProps> = ({ gigId }) => {
                         {worker.name.split(' ').map(n => n[0]).join('')}
                       </span>
                     </div>
-                    <div>
+                    <div className="flex-1">
                       <h4 className="font-medium">{worker.name}</h4>
                       <div className="flex items-center space-x-2">
                         <span className="text-sm text-gray-600">${worker.hourly_rate}/hr</span>
@@ -213,6 +218,18 @@ const GigManagement: React.FC<GigManagementProps> = ({ gigId }) => {
                         </Badge>
                       </div>
                     </div>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedWorker(worker.id);
+                        setShowReviewForm(true);
+                      }}
+                    >
+                      <Star className="h-4 w-4 mr-2" />
+                      Review
+                    </Button>
                   </div>
                 ))}
               </div>
@@ -251,6 +268,39 @@ const GigManagement: React.FC<GigManagementProps> = ({ gigId }) => {
           <ApplicationsManager gigId={gigId} />
         </TabsContent>
       </Tabs>
+      
+      {/* Review Form Dialog */}
+      {showReviewForm && selectedWorker && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg w-full max-w-md">
+            <div className="p-4 border-b flex justify-between items-center">
+              <h3 className="text-lg font-semibold">Write a Review</h3>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-8 w-8 p-0"
+                onClick={() => setShowReviewForm(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="p-4">
+              <ReviewForm 
+                workerId={selectedWorker} 
+                gigId={gigId}
+                onSuccess={() => {
+                  setShowReviewForm(false);
+                  setSelectedWorker(null);
+                }}
+                onCancel={() => {
+                  setShowReviewForm(false);
+                  setSelectedWorker(null);
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

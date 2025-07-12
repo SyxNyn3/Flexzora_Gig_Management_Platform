@@ -12,7 +12,10 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useAuth } from '@/contexts/AuthContext';
 import { DatabaseService, normalizeUrl } from '@/lib/supabase';
 import { useSkills, useWorkerSkills, useCertifications } from '@/hooks/useSupabaseQuery';
+import { useReviewsForWorker } from '@/hooks/useSupabaseQuery';
 import { WorkerSkill, Certification, PortfolioItem } from '@/lib/types';
+import ReviewsList from '@/components/reviews/ReviewsList';
+import ReviewStars from '@/components/reviews/ReviewStars';
 import { 
   User, 
   Save,
@@ -80,10 +83,11 @@ const ProfilePage: React.FC = () => {
   const [editingCert, setEditingCert] = useState<Certification | null>(null);
   const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>([]);
 
-  // Fetch data using custom hooks
+  // Fetch data using custom hooks 
   const { data: skills = [] } = useSkills();
   const { data: workerSkills = [], refetch: refetchWorkerSkills } = useWorkerSkills(profile?.id || '');
   const { data: certifications = [], refetch: refetchCertifications } = useCertifications(profile?.id || '');
+  const { data: reviews = [] } = useReviewsForWorker(profile?.id || '');
 
   const form = useForm<ProfileForm>({
     resolver: zodResolver(profileSchema),
@@ -446,6 +450,21 @@ const ProfilePage: React.FC = () => {
                 <span className="text-sm text-gray-600">Certifications</span>
                 <span className="font-medium">{certifications.length}</span>
               </div>
+              {profile.average_rating && (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Rating</span>
+                  <div className="flex items-center">
+                    <ReviewStars rating={profile.average_rating} size="sm" />
+                    <span className="ml-1 font-medium">{profile.average_rating.toFixed(1)}</span>
+                  </div>
+                </div>
+              )}
+              {profile.review_count > 0 && (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Reviews</span>
+                  <span className="font-medium">{profile.review_count}</span>
+                </div>
+              )}
               {profile.hourly_rate && (
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">Hourly Rate</span>
@@ -454,6 +473,24 @@ const ProfilePage: React.FC = () => {
               )}
             </CardContent>
           </Card>
+          
+          {/* Rating Summary */}
+          {profile.role === 'worker' && profile.review_count > 0 && (
+            <Card className="mt-6">
+              <CardHeader>
+                <CardTitle>Rating Summary</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-center justify-center space-x-2">
+                  <span className="text-3xl font-bold">{profile.average_rating?.toFixed(1) || '0.0'}</span>
+                  <ReviewStars rating={profile.average_rating || 0} size="lg" />
+                </div>
+                <p className="text-center text-sm text-gray-600">
+                  Based on {profile.review_count} {profile.review_count === 1 ? 'review' : 'reviews'}
+                </p>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* Main Content */}
@@ -730,6 +767,21 @@ const ProfilePage: React.FC = () => {
               onUpdateItem={handleUpdatePortfolioItem}
               onDeleteItem={handleDeletePortfolioItem}
             />
+          )}
+          
+          {/* Reviews Section - Only for workers */}
+          {profile.role === 'worker' && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Reviews</CardTitle>
+                <CardDescription>
+                  What others are saying about {profile.full_name}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ReviewsList workerId={profile.id} />
+              </CardContent>
+            </Card>
           )}
         </div>
       </div>

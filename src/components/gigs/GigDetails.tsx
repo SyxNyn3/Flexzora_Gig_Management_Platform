@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
@@ -11,6 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { Gig, GigApplication } from '@/lib/types';
+import ReviewStars from '@/components/reviews/ReviewStars';
 import { 
   MapPin, 
   Calendar, 
@@ -22,7 +24,8 @@ import {
   Send,
   CheckCircle,
   XCircle,
-  AlertCircle
+  AlertCircle,
+  Star
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -33,6 +36,7 @@ const GigDetails: React.FC = () => {
   const navigate = useNavigate();
   const [gig, setGig] = useState<Gig | null>(null);
   const [application, setApplication] = useState<GigApplication | null>(null);
+  const [workerRating, setWorkerRating] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [showApplicationDialog, setShowApplicationDialog] = useState(false);
   const [coverLetter, setCoverLetter] = useState('');
@@ -81,6 +85,26 @@ const GigDetails: React.FC = () => {
     }
   };
 
+  const fetchWorkerRating = async () => {
+    if (!gig?.created_by) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('average_rating')
+        .eq('id', gig.created_by)
+        .single();
+
+      if (error) throw error;
+      
+      if (data && data.average_rating) {
+        setWorkerRating(data.average_rating);
+      }
+    } catch (error) {
+      console.error('Error fetching worker rating:', error);
+    }
+  };
+
   const checkExistingApplication = async () => {
     if (!id || !profile) return;
 
@@ -99,6 +123,10 @@ const GigDetails: React.FC = () => {
       // No existing application found, which is fine
     }
   };
+
+  useEffect(() => {
+    if (gig) fetchWorkerRating();
+  }, [gig]);
 
   const handleApplicationSubmit = async () => {
     if (!gig || !profile) return;
@@ -223,6 +251,21 @@ const GigDetails: React.FC = () => {
                   </Badge>
                 )}
               </div>
+              
+              {/* Creator Info */}
+              {gig.creator && (
+                <div className="mt-4">
+                  <Separator className="my-4" />
+                  <p className="text-sm text-gray-600 mb-2">Posted by:</p>
+                  <div className="flex items-center">
+                    <Avatar className="h-8 w-8 mr-2">
+                      <AvatarFallback>{gig.creator.full_name?.split(' ').map(n => n[0]).join('') || 'U'}</AvatarFallback>
+                    </Avatar>
+                    <span className="font-medium">{gig.creator.full_name}</span>
+                    {workerRating && <ReviewStars rating={workerRating} size="sm" className="ml-2" showText />}
+                  </div>
+                </div>
+              )}
             </CardHeader>
           </Card>
 
@@ -346,7 +389,7 @@ const GigDetails: React.FC = () => {
               )}
             </CardContent>
           </Card>
-
+            
           {/* Apply Button */}
           {profile?.role === 'worker' && !application && (
             <Button 
@@ -357,7 +400,7 @@ const GigDetails: React.FC = () => {
               Apply for this Gig
             </Button>
           )}
-
+            
           {/* Company Info */}
           {gig.company && (
             <Card>
@@ -377,6 +420,31 @@ const GigDetails: React.FC = () => {
                     </a>
                   </Button>
                 )}
+              </CardContent>
+            </Card>
+          )}
+            
+          {/* Worker Rating */}
+          {gig.creator && workerRating && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Star className="h-5 w-5 mr-2 text-yellow-500" />
+                  Worker Rating
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-center mb-2">
+                  <span className="text-2xl font-bold mr-2">{workerRating.toFixed(1)}</span>
+                  <ReviewStars rating={workerRating} size="lg" />
+                </div>
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => navigate(`/profile/${gig.creator.id}`)}
+                >
+                  View Profile & Reviews
+                </Button>
               </CardContent>
             </Card>
           )}
