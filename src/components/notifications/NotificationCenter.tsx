@@ -77,7 +77,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
     }
   };
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const unreadCount = (notifications || []).filter(n => !n.read).length;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
