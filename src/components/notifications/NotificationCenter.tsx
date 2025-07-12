@@ -45,7 +45,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
 
   const markAllAsRead = async () => {
     try {
-      const unreadIds = notifications.filter(n => !n.read).map(n => n.id);
+      const unreadIds = (notifications || []).filter(n => !n.read).map(n => n.id);
       
       if (unreadIds.length === 0) return;
 
