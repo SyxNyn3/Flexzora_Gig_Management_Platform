@@ -293,7 +293,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signIn = async (email: string, password: string) => {
     try {
       if (isDemoMode) {
-        // Demo mode signin - allow any email/password
+        // Demo mode signin - only allow demo credentials
+        if (email !== 'demo@flexora.com' || password !== 'password') {
+          return { 
+            data: null, 
+            error: { message: 'Invalid login credentials. For demo, use demo@flexora.com / password' } 
+          };
+        }
+        
         const mockUser = { id: 'demo-user', email };
         const mockSession = { user: mockUser };
         
@@ -324,7 +331,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) {
         console.error('Supabase signin error:', error);
-        return { data: null, error };
+        return { 
+          data: null, 
+          error: { 
+            message: isDemoMode 
+              ? 'Invalid login credentials. For demo, use demo@flexora.com / password' 
+              : error.message 
+          } 
+        };
       }
 
       // Ensure profile exists after successful signin

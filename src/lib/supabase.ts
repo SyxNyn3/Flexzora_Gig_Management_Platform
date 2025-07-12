@@ -10,6 +10,9 @@ if (!supabaseUrl || !supabaseKey) {
   console.warn('Supabase environment variables not found. Running in demo mode.');
 }
 
+// Force demo mode for this project
+const forceDemoMode = true;
+
 export const supabase = createClient<Database>(
   supabaseUrl || 'https://demo.supabase.co',
   supabaseKey || 'demo-key',
@@ -45,7 +48,7 @@ export const supabase = createClient<Database>(
 );
 
 // Helper function to check if we're in demo mode
-export const isDemoMode = !supabaseUrl || !supabaseKey || supabaseUrl === 'https://demo.supabase.co';
+export const isDemoMode = forceDemoMode || !supabaseUrl || !supabaseKey || supabaseUrl === 'https://demo.supabase.co';
 
 // Type-safe database operations
 export class DatabaseService {

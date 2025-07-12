@@ -46,8 +46,8 @@ const AuthForm: React.FC = () => {
   const signInForm = useForm<SignInForm>({
     resolver: zodResolver(signInSchema),
     defaultValues: {
-      email: isDemoMode ? 'demo@flexora.com' : '',
-      password: isDemoMode ? 'password' : '',
+      email: 'demo@flexora.com',
+      password: 'password',
     },
   });
 
@@ -164,8 +164,39 @@ const AuthForm: React.FC = () => {
     setError('');
 
     try {
-      const { error } = await signIn('demo@flexora.com', 'password');
+      // In demo mode, we'll simulate a successful login
+      if (isDemoMode) {
+        const mockUser = { id: 'demo-user', email: 'demo@flexora.com', role: 'worker' };
+        const mockSession = { user: mockUser };
+        const mockProfile = {
+          id: 'demo-profile-id',
+          user_id: 'demo-user',
+          email: 'demo@flexora.com',
+          full_name: 'Demo User',
+          role: 'worker',
+          experience_years: 5,
+          is_available: true,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        
+        const sessionData = { 
+          user: mockUser, 
+          session: mockSession, 
+          profile: mockProfile 
+        };
+        
+        localStorage.setItem('flexora-demo-session', JSON.stringify(sessionData));
+        
+        // Simulate a delay
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        toast.success('Demo login successful!');
+        navigate('/dashboard');
+        return;
+      }
 
+      const { error } = await signIn('demo@flexora.com', 'password');
       if (error) {
         setError(error.message);
       } else {
@@ -219,14 +250,14 @@ const AuthForm: React.FC = () => {
                 <AlertDescription className="text-blue-800">
                   <div className="space-y-3">
                     <div>
-                      <strong>Demo Mode:</strong> Supabase not configured
+                      <strong>Demo Mode:</strong> Use the demo login to explore the app
                     </div>
                     <Button 
                       onClick={handleDemoLogin}
                       disabled={loading}
                       className="w-full bg-gradient-to-r from-blue-600 to-green-500"
                     >
-                      {loading ? 'Signing In...' : 'Try Demo (No Registration Required)'}
+                      {loading ? 'Signing In...' : 'Try Demo Login'}
                     </Button>
                   </div>
                 </AlertDescription>
@@ -281,7 +312,7 @@ const AuthForm: React.FC = () => {
 
             {/* Error Display */}
             {error && (
-              <Alert className="border-red-200 bg-red-50">
+              <Alert variant="destructive">
                 <AlertDescription className="text-red-800">{error}</AlertDescription>
               </Alert>
             )}
