@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGigs, useApplications, usePayments, useExpenses, useRealtimeNotifications } from '@/hooks/useSupabaseQuery';
 import { AuthKitButton } from '@/components/integrations/AuthKitButton';
+import ReviewStars from '@/components/reviews/ReviewStars';
 import { 
   Calendar, 
   DollarSign, 
@@ -225,6 +226,7 @@ const WorkerDashboard: React.FC = () => {
                   <div className="flex items-center">
                     <p className="text-2xl font-bold">{stats.rating}</p>
                     <Star className="h-5 w-5 text-orange-200 ml-1 fill-current" />
+                    <ReviewStars rating={stats.rating} size="sm" className="ml-1" />
                   </div>
                 </div>
                 <Users className="h-8 w-8 text-orange-200" />
@@ -513,6 +515,7 @@ const WorkerDashboard: React.FC = () => {
                   <div className="flex items-center">
                     <span className="font-semibold mr-1">{stats.rating}</span>
                     <Star className="h-4 w-4 text-yellow-500 fill-current" />
+                    <ReviewStars rating={profile?.average_rating || 4.8} size="sm" className="ml-1" />
                   </div>
                 </div>
                 <div className="flex items-center justify-between">
