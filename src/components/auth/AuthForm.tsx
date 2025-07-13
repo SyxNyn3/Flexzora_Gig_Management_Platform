@@ -11,6 +11,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase, isDemoMode } from '@/lib/supabase';
+import { testAccounts, signInWithTestAccount } from '@/lib/testAccounts';
 import { toast } from 'sonner';
 import { storeAuthData } from '@/lib/auth';
 import { Mail, Apple, Chrome, ArrowLeft, Shield, CheckCircle, Eye, EyeOff } from 'lucide-react';
@@ -167,27 +168,8 @@ const AuthForm: React.FC = () => {
     try {
       // In demo mode, we'll simulate a successful login
       if (isDemoMode) {
-        const mockUser = { id: 'demo-user', email: 'demo@flexzora.com', role: 'worker' };
-        const mockSession = { user: mockUser };
-        const mockProfile = {
-          id: 'demo-profile-id',
-          user_id: 'demo-user',
-          email: 'demo@flexzora.com',
-          full_name: 'FlexZora Demo User',
-          role: 'worker',
-          experience_years: 5,
-          is_available: true,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        };
-        
-        const sessionData = { 
-          user: mockUser, 
-          session: mockSession, 
-          profile: mockProfile 
-        };
-        
-        localStorage.setItem('flexzora-demo-session', JSON.stringify(sessionData));
+        // Use the freelancer account by default
+        const { data: sessionData } = await signInWithTestAccount('freelancer');
         
         // Simulate a delay
         await new Promise(resolve => setTimeout(resolve, 500));
@@ -253,6 +235,11 @@ const AuthForm: React.FC = () => {
                     <div>
                       <strong>Demo Mode:</strong> Use the demo login to explore the app
                     </div>
+                    <div className="bg-blue-50 p-3 rounded-lg text-sm text-blue-800 mt-2">
+                      <strong>Test Accounts:</strong><br/>
+                      <span className="block mt-1">Freelancer: {testAccounts.freelancer.email} / {testAccounts.freelancer.password}</span>
+                      <span className="block mt-1">Company: {testAccounts.company.email} / {testAccounts.company.password}</span>
+                    </div>
                     <Button 
                       onClick={handleDemoLogin}
                       disabled={loading}
@@ -275,6 +262,36 @@ const AuthForm: React.FC = () => {
                   className="w-full h-12 text-gray-700 border-gray-300 hover:bg-gray-50"
                 >
                   {socialLoading === 'google' ? (
+                <div className="flex space-x-2">
+                  <Button 
+                    onClick={async () => {
+                      setLoading(true);
+                      await signInWithTestAccount('freelancer');
+                      toast.success('Freelancer demo login successful!');
+                      navigate('/dashboard');
+                      setLoading(false);
+                    }}
+                    variant="outline"
+                    className="flex-1"
+                    disabled={loading}
+                  >
+                    Freelancer Demo
+                  </Button>
+                  <Button 
+                    onClick={async () => {
+                      setLoading(true);
+                      await signInWithTestAccount('company');
+                      toast.success('Company demo login successful!');
+                      navigate('/dashboard');
+                      setLoading(false);
+                    }}
+                    variant="outline"
+                    className="flex-1"
+                    disabled={loading}
+                  >
+                    Company Demo
+                  </Button>
+                </div>
                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-600"></div>
                   ) : (
                     <>
