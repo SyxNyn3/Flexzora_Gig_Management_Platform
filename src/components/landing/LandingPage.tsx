@@ -25,8 +25,8 @@ const LandingPage: React.FC = () => {
   
   useEffect(() => {
     // Simulate fetching waitlist count - in production this would be a real API call
-    setWaitlistCount(Math.floor(Math.random() * 500) + 1500);
-  }, []);
+    const initialCount = Math.floor(Math.random() * 500) + 1500;
+    setWaitlistCount(initialCount);
 
   const features = [
     {
