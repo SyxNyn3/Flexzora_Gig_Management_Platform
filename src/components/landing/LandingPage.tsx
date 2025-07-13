@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { StickyScrollSection } from './StickyScrollSection';
 import { 
   Calendar, 
   DollarSign, 
@@ -93,7 +94,7 @@ const LandingPage: React.FC = () => {
               <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-green-500 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-lg">F</span>
               </div>
-              <span className="text-xl font-bold text-gray-900">Flexora</span>
+              <span className="text-xl font-bold text-gray-900">FlexZora</span>
             </div>
             <div className="flex items-center space-x-4">
               <Button variant="ghost" onClick={() => navigate('/auth')}>
@@ -304,7 +305,10 @@ const LandingPage: React.FC = () => {
       </section>
 
       {/* Features Section */}
-      <section className="py-20">
+      <StickyScrollSection />
+
+      {/* Core Features Section */}
+      <section className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
@@ -492,7 +496,7 @@ const LandingPage: React.FC = () => {
             </div>
           </div>
           <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
-            <p>&copy; 2024 Flexora. All rights reserved.</p>
+            <p>&copy; 2024 FlexZora. All rights reserved.</p>
           </div>
         </div>
       </footer>

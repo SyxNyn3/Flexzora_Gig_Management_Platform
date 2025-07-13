@@ -56,7 +56,7 @@ const Navbar: React.FC = () => {
                 <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-green-500 rounded-lg flex items-center justify-center">
                   <span className="text-white font-bold text-lg">F</span>
                 </div>
-                <span className="text-xl font-bold text-gray-900">Flexora</span>
+                <span className="text-xl font-bold text-gray-900">FlexZora</span>
               </Link>
               
               {user && (

@@ -3,10 +3,10 @@ import { supabase, isDemoMode } from './supabase';
 import { Profile } from './types';
 
 // Token storage keys
-const AUTH_TOKEN_KEY = 'flexora-auth-token';
-const AUTH_REFRESH_TOKEN_KEY = 'flexora-refresh-token';
-const AUTH_USER_KEY = 'flexora-user';
-const AUTH_PROFILE_KEY = 'flexora-profile';
+const AUTH_TOKEN_KEY = 'flexzora-auth-token';
+const AUTH_REFRESH_TOKEN_KEY = 'flexzora-refresh-token';
+const AUTH_USER_KEY = 'flexzora-user';
+const AUTH_PROFILE_KEY = 'flexzora-profile';
 
 /**
  * Stores authentication data securely in localStorage

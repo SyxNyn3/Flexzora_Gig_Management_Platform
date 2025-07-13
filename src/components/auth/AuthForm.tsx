@@ -47,7 +47,7 @@ const AuthForm: React.FC = () => {
   const signInForm = useForm<SignInForm>({
     resolver: zodResolver(signInSchema),
     defaultValues: {
-      email: 'demo@flexora.com',
+      email: 'demo@flexzora.com',
       password: 'password',
     },
   });
@@ -167,13 +167,13 @@ const AuthForm: React.FC = () => {
     try {
       // In demo mode, we'll simulate a successful login
       if (isDemoMode) {
-        const mockUser = { id: 'demo-user', email: 'demo@flexora.com', role: 'worker' };
+        const mockUser = { id: 'demo-user', email: 'demo@flexzora.com', role: 'worker' };
         const mockSession = { user: mockUser };
         const mockProfile = {
           id: 'demo-profile-id',
           user_id: 'demo-user',
-          email: 'demo@flexora.com',
-          full_name: 'Demo User',
+          email: 'demo@flexzora.com',
+          full_name: 'FlexZora Demo User',
           role: 'worker',
           experience_years: 5,
           is_available: true,
@@ -187,7 +187,7 @@ const AuthForm: React.FC = () => {
           profile: mockProfile 
         };
         
-        localStorage.setItem('flexora-demo-session', JSON.stringify(sessionData));
+        localStorage.setItem('flexzora-demo-session', JSON.stringify(sessionData));
         
         // Simulate a delay
         await new Promise(resolve => setTimeout(resolve, 500));
@@ -197,7 +197,7 @@ const AuthForm: React.FC = () => {
         return;
       }
 
-      const { error } = await signIn('demo@flexora.com', 'password');
+      const { error } = await signIn('demo@flexzora.com', 'password');
       if (error) {
         setError(error.message);
       } else {
@@ -441,7 +441,7 @@ const AuthForm: React.FC = () => {
                     type="email"
                     {...signInForm.register('email')}
                     className="mt-1 h-12"
-                    placeholder={isDemoMode ? 'demo@flexora.com' : 'Enter your email'}
+                    placeholder={isDemoMode ? 'demo@flexzora.com' : 'Enter your email'}
                   />
                   {signInForm.formState.errors.email && (
                     <p className="text-sm text-red-600 mt-1">

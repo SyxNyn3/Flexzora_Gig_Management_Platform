@@ -1,6 +1,6 @@
-# Flexora Development Roadmap
+# FlexZora Development Roadmap
 
-This document outlines the development roadmap for the Flexora platform, breaking down the implementation into phases with clear milestones.
+This document outlines the development roadmap for the FlexZora platform, breaking down the implementation into phases with clear milestones.
 
 ## Phase 1: Foundation (Current)
 

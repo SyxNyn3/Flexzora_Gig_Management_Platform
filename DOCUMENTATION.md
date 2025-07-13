@@ -1,8 +1,8 @@
-# Flexora Platform Documentation
+# FlexZora Platform Documentation
 
 ## Overview
 
-Flexora is a professional gig management platform for production and event workers. It connects freelance professionals with companies, streamlines scheduling, and manages finances in one unified platform.
+FlexZora is a professional gig management platform for production and event workers. It connects freelance professionals with companies, streamlines scheduling, and manages finances in one unified platform.
 
 ## Database Schema
 

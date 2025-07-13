@@ -1,10 +1,10 @@
-# Flexora - Professional Gig Management Platform
+# FlexZora - Professional Gig Management Platform
 
-![Flexora Logo](https://images.pexels.com/photos/1190297/pexels-photo-1190297.jpeg?auto=compress&cs=tinysrgb&w=1200&h=400&dpr=1)
+![FlexZora Logo](https://images.pexels.com/photos/1190297/pexels-photo-1190297.jpeg?auto=compress&cs=tinysrgb&w=1200&h=400&dpr=1)
 
 ## Overview
 
-Flexora is a comprehensive gig management platform designed specifically for freelance professionals in the production and event industry. It connects workers with companies, streamlines scheduling, and manages finances in one unified platform.
+FlexZora is a comprehensive gig management platform designed specifically for freelance professionals in the production and event industry. It connects workers with companies, streamlines scheduling, and manages finances in one unified platform.
 
 ### Key Features
 
@@ -195,4 +195,4 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ---
 
-Built with ❤️ by the Flexora Team
+Built with ❤️ by the FlexZora Team

@@ -61,8 +61,8 @@ export class DatabaseService {
           data: {
             id: 'demo-profile-id',
             user_id: userId,
-            email: 'demo@flexora.com',
-            full_name: 'Demo User',
+            email: 'demo@flexzora.com',
+            full_name: 'FlexZora Demo User',
             role: 'worker',
             experience_years: 5,
            portfolio_items: [

@@ -31,7 +31,7 @@ const createMockProfile = (email: string, role: string = 'worker'): Profile => (
   id: 'demo-user-id',
   user_id: 'demo-user',
   email: email,
-  full_name: role === 'company' ? 'Demo Company' : 'Demo User',
+  full_name: role === 'company' ? 'FlexZora Demo Company' : 'FlexZora Demo User',
   avatar_url: '',
   role: role as any,
   phone: '+1 (555) 123-4567',
@@ -62,7 +62,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         if (isDemoMode) {
           // In demo mode, check localStorage for demo session
-          const demoSession = localStorage.getItem('flexora-demo-session'); 
+          const demoSession = localStorage.getItem('flexzora-demo-session'); 
           if (demoSession && mounted) { 
             try {
               const sessionData = JSON.parse(demoSession);
@@ -209,7 +209,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     if (isDemoMode) {
       // In demo mode, get profile from localStorage
-      const demoSession = localStorage.getItem('flexora-demo-session');
+      const demoSession = localStorage.getItem('flexzora-demo-session');
       if (demoSession) {
         try {
           const sessionData = JSON.parse(demoSession);
@@ -238,7 +238,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           profile: mockProfile 
         };
         
-        localStorage.setItem('flexora-demo-session', JSON.stringify(sessionData));
+        localStorage.setItem('flexzora-demo-session', JSON.stringify(sessionData));
         
         setUser(mockUser as User);
         setSession(mockSession as Session);
@@ -294,10 +294,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       if (isDemoMode) {
         // Demo mode signin - only allow demo credentials
-        if (email !== 'demo@flexora.com' || password !== 'password') {
+        if (email !== 'demo@flexzora.com' || password !== 'password') {
           return { 
             data: null, 
-            error: { message: 'Invalid login credentials. For demo, use demo@flexora.com / password' } 
+            error: { message: 'Invalid login credentials. For demo, use demo@flexzora.com / password' } 
           };
         }
         
@@ -314,7 +314,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           profile: mockProfile 
         };
         
-        localStorage.setItem('flexora-demo-session', JSON.stringify(sessionData));
+        localStorage.setItem('flexzora-demo-session', JSON.stringify(sessionData));
         
         setUser(mockUser as User);
         setSession(mockSession as Session);
@@ -335,7 +335,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           data: null, 
           error: { 
             message: isDemoMode 
-              ? 'Invalid login credentials. For demo, use demo@flexora.com / password' 
+              ? 'Invalid login credentials. For demo, use demo@flexzora.com / password' 
               : error.message 
           } 
         };
@@ -360,7 +360,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signOut = async () => {
     try {
       if (isDemoMode) {
-        localStorage.removeItem('flexora-demo-session'); 
+        localStorage.removeItem('flexzora-demo-session'); 
         setUser(null);
         setSession(null);
         setProfile(null);
@@ -399,11 +399,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setProfile(updatedProfile);
         
         // Update localStorage with new profile data
-        const currentSession = localStorage.getItem('flexora-demo-session');
+        const currentSession = localStorage.getItem('flexzora-demo-session');
         if (currentSession) { 
           const sessionData = JSON.parse(currentSession);
           sessionData.profile = updatedProfile;
-          localStorage.setItem('flexora-demo-session', JSON.stringify(sessionData));
+          localStorage.setItem('flexzora-demo-session', JSON.stringify(sessionData));
         }
         
         console.log('Demo profile updated:', updates);
