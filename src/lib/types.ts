@@ -4,6 +4,8 @@ export type ApplicationStatus = 'pending' | 'accepted' | 'rejected' | 'withdrawn
 export type PaymentStatus = 'pending' | 'paid' | 'overdue' | 'cancelled';
 export type ExpenseCategory = 'travel' | 'equipment' | 'meals' | 'accommodation' | 'other';
 export type IntegrationStatus = 'connected' | 'pending' | 'error' | 'disconnected';
+export type WaitlistRoleInterest = 'worker' | 'company';
+export type WaitlistStatus = 'pending' | 'whitelisted' | 'invited';
 
 export interface Database {
   public: {
@@ -72,6 +74,11 @@ export interface Database {
         Row: CalendarEvent;
         Insert: Omit<CalendarEvent, 'id' | 'created_at' | 'updated_at'>;
         Update: Partial<Omit<CalendarEvent, 'id' | 'created_at' | 'updated_at'>>;
+      };
+      waiting_list: {
+        Row: WaitlistEntry;
+        Insert: Omit<WaitlistEntry, 'id' | 'created_at' | 'referral_count'>;
+        Update: Partial<Omit<WaitlistEntry, 'id' | 'created_at'>>;
       };
     };
   };
@@ -277,6 +284,21 @@ export interface CalendarEvent {
   metadata: any;
   created_at: string;
   updated_at: string;
+}
+
+export interface WaitlistEntry {
+  id: string;
+  email: string;
+  role_interest: WaitlistRoleInterest;
+  production_companies_worked_with?: string;
+  past_communication_methods?: string;
+  desired_features?: string;
+  challenges?: string;
+  referred_by_email?: string;
+  referral_code: string;
+  created_at: string;
+  status: WaitlistStatus;
+  referral_count: number;
 }
 
 // API Response types
