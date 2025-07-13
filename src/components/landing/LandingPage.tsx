@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { StickyScrollSection } from './StickyScrollSection';
 import { Badge } from '@/components/ui/badge';
+import { ConfettiButton } from '@/components/ui/confetti';
 import { 
   Calendar, 
   DollarSign, 
