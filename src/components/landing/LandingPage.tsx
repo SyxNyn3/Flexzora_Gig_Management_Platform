@@ -286,6 +286,13 @@ const LandingPage: React.FC = () => {
               Join the Waitlist
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
+            <Button 
+              variant="outline"
+              onClick={() => navigate('/schedule-demo')}
+              className="mt-4 md:mt-0 md:ml-4"
+            >
+              Schedule a Demo
+            </Button>
           </div>
           
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
@@ -345,6 +352,13 @@ const LandingPage: React.FC = () => {
               Join the Waitlist
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
+            <Button 
+              variant="outline"
+              onClick={() => navigate('/schedule-demo')}
+              className="mt-4 md:mt-0 md:ml-4"
+            >
+              Schedule a Demo
+            </Button>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {features.map((feature, index) => (
@@ -378,6 +392,13 @@ const LandingPage: React.FC = () => {
             >
               Join the Waitlist
               <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+            <Button 
+              variant="outline"
+              onClick={() => navigate('/schedule-demo')}
+              className="mt-4 md:mt-0 md:ml-4"
+            >
+              Schedule a Demo
             </Button>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8 items-center">
@@ -474,9 +495,10 @@ const LandingPage: React.FC = () => {
               Join the Waitlist
               <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
-            <Button 
-              size="lg" 
-              variant="outline" 
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={() => navigate('/schedule-demo')}
               className="text-lg px-8 py-3"
             >
               Schedule a Demo
