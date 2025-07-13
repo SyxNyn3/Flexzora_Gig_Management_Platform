@@ -600,7 +600,13 @@ const CompanyIntegrations: React.FC = () => {
               <Card key={company.name} className="hover:shadow-md transition-shadow">
                 <CardHeader>
                   <div className="flex items-center space-x-3">
-                    <div className="text-2xl">{company.logo}</div>
+                    <div className="h-16 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform duration-300">
+                      <img 
+                        src={company.logo} 
+                        alt={`${company.name} logo`}
+                        className="max-h-full max-w-full object-contain"
+                      />
+                    </div>
                     <div>
                       <CardTitle className="text-lg">{company.name}</CardTitle>
                       <CardDescription>{company.description}</CardDescription>
