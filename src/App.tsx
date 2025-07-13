@@ -5,6 +5,7 @@ import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { validateSession } from '@/lib/auth';
 import { isDemoMode } from '@/lib/supabase';
 import LandingPage from '@/components/landing/LandingPage';
+import WaitlistForm from '@/components/waitlist/WaitlistForm';
 import Layout from '@/components/layout/Layout';
 import AuthForm from '@/components/auth/AuthForm';
 import WorkerDashboard from '@/components/dashboard/WorkerDashboard';
@@ -126,6 +127,10 @@ const AppRoutes: React.FC = () => {
         <Route
           path="/"
           element={<LandingPage />}
+        />
+        <Route
+          path="/waitlist"
+          element={<WaitlistForm />}
         />
         <Route
           path="/auth"

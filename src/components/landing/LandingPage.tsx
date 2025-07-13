@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { StickyScrollSection } from './StickyScrollSection';
+import { Badge } from '@/components/ui/badge';
 import { 
   Calendar, 
   DollarSign, 
@@ -16,9 +17,16 @@ import {
   Shield,
   Clock
 } from 'lucide-react';
+import { useState, useEffect } from 'react';
 
 const LandingPage: React.FC = () => {
   const navigate = useNavigate();
+  const [waitlistCount, setWaitlistCount] = useState<number>(0);
+  
+  useEffect(() => {
+    // Simulate fetching waitlist count - in production this would be a real API call
+    setWaitlistCount(Math.floor(Math.random() * 500) + 1500);
+  }, []);
 
   const features = [
     {
@@ -123,17 +131,23 @@ const LandingPage: React.FC = () => {
                 <span className="bg-gradient-to-r from-blue-600 to-green-500 bg-clip-text text-transparent"> Gigs </span>
                 Like a Pro
               </h1>
-              <p className="text-xl text-gray-600 mb-8 leading-relaxed">
+              <p className="text-xl text-gray-600 mb-6 leading-relaxed">
                 The all-in-one platform for freelance professionals in production and events. 
                 Schedule gigs, track finances, and connect with top companies—all in one place.
               </p>
+              <div className="mb-6">
+                <Badge variant="outline" className="px-4 py-2 text-base font-medium bg-blue-50 border-blue-200 text-blue-700">
+                  <Users className="w-4 h-4 mr-2" />
+                  {waitlistCount.toLocaleString()}+ professionals on the waitlist
+                </Badge>
+              </div>
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                 <Button 
                   size="lg" 
-                  onClick={() => navigate('/auth?mode=signup')}
+                  onClick={() => navigate('/waitlist')}
                   className="bg-gradient-to-r from-blue-600 to-green-500 hover:from-blue-700 hover:to-green-600 text-lg px-8 py-3"
                 >
-                  Start Free Today
+                  Join the Waitlist
                   <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
                 <Button 
@@ -148,15 +162,15 @@ const LandingPage: React.FC = () => {
               <div className="flex items-center justify-center lg:justify-start mt-8 space-x-6 text-sm text-gray-500">
                 <div className="flex items-center">
                   <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
-                  Free to start
+                  Early access
                 </div>
                 <div className="flex items-center">
                   <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
-                  No credit card required
+                  Exclusive pricing
                 </div>
                 <div className="flex items-center">
                   <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
-                  Cancel anytime
+                  Shape the product
                 </div>
               </div>
             </div>
@@ -265,6 +279,13 @@ const LandingPage: React.FC = () => {
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
               From video production to event coordination, Flexora supports all types of gig work in the entertainment and production industry.
             </p>
+            <Button 
+              onClick={() => navigate('/waitlist')}
+              className="mt-6 bg-gradient-to-r from-blue-600 to-green-500 hover:from-blue-700 hover:to-green-600"
+            >
+              Join the Waitlist
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
           </div>
           
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
@@ -317,6 +338,13 @@ const LandingPage: React.FC = () => {
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
               From scheduling to payments, Flexora provides all the tools you need to succeed as a freelance professional.
             </p>
+            <Button 
+              onClick={() => navigate('/waitlist')}
+              className="mt-6 bg-gradient-to-r from-blue-600 to-green-500 hover:from-blue-700 hover:to-green-600"
+            >
+              Join the Waitlist
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {features.map((feature, index) => (
@@ -344,6 +372,13 @@ const LandingPage: React.FC = () => {
             <p className="text-xl text-gray-600">
               Integrate with the production companies you already work with
             </p>
+            <Button 
+              onClick={() => navigate('/waitlist')}
+              className="mt-6 bg-gradient-to-r from-blue-600 to-green-500 hover:from-blue-700 hover:to-green-600"
+            >
+              Join the Waitlist
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8 items-center">
             {companies.map((company, index) => (
@@ -368,6 +403,13 @@ const LandingPage: React.FC = () => {
             <p className="text-xl text-gray-600">
               Four simple steps to transform your freelance workflow
             </p>
+            <Button 
+              onClick={() => navigate('/waitlist')}
+              className="mt-6 bg-gradient-to-r from-blue-600 to-green-500 hover:from-blue-700 hover:to-green-600"
+            >
+              Join the Waitlist
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {steps.map((step, index) => (
@@ -426,10 +468,10 @@ const LandingPage: React.FC = () => {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button 
               size="lg" 
-              onClick={() => navigate('/auth?mode=signup')}
+              onClick={() => navigate('/waitlist')}
               className="bg-gradient-to-r from-blue-600 to-green-500 hover:from-blue-700 hover:to-green-600 text-lg px-8 py-3"
             >
-              Start Your Free Trial
+              Join the Waitlist
               <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
             <Button 
@@ -449,6 +491,14 @@ const LandingPage: React.FC = () => {
               <Clock className="w-4 h-4 text-green-500 mr-2" />
               24/7 support
             </div>
+          </div>
+          
+          {/* Waitlist Counter */}
+          <div className="mt-8 text-center">
+            <Badge variant="outline" className="px-4 py-2 text-base font-medium bg-blue-50 border-blue-200 text-blue-700">
+              <Users className="w-4 h-4 mr-2" />
+              {waitlistCount.toLocaleString()}+ professionals already on the waitlist
+            </Badge>
           </div>
         </div>
       </section>
