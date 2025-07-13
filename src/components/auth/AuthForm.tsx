@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase, isDemoMode } from '@/lib/supabase';
 import { testAccounts, signInWithTestAccount } from '@/lib/testAccounts';
+import { Confetti } from '@/components/ui/confetti';
 import { toast } from 'sonner';
 import { storeAuthData } from '@/lib/auth';
 import { Mail, Apple, Chrome, ArrowLeft, Shield, CheckCircle, Eye, EyeOff } from 'lucide-react';
@@ -43,6 +44,7 @@ const AuthForm: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const { signIn, signUp } = useAuth();
+  const [showConfetti, setShowConfetti] = useState(false);
   const navigate = useNavigate();
 
   const signInForm = useForm<SignInForm>({
@@ -74,14 +76,15 @@ const AuthForm: React.FC = () => {
       if (error) {
         console.error('Sign in error:', error);
         setError(error.message);
-      } else { 
+      } else {
         // Store auth data in localStorage for persistence
         if (data?.session && data?.user) {
           storeAuthData(data.session, data.user, null);
         }
         
+        setShowConfetti(true);
         toast.success('Signed in successfully!');
-        navigate('/dashboard');
+        setTimeout(() => navigate('/dashboard'), 2000);
       }
     } catch (err: any) {
       setError(err.message || 'An error occurred during sign in');
@@ -111,14 +114,15 @@ const AuthForm: React.FC = () => {
       if (error) {
         console.error('Sign up error:', error);
         setError(error.message);
-      } else { 
+      } else {
         // Store auth data in localStorage for persistence
         if (data?.session && data?.user) {
           storeAuthData(data.session, data.user, null);
         }
         
+        setShowConfetti(true);
         toast.success('Account created successfully!');
-        navigate('/dashboard');
+        setTimeout(() => navigate('/dashboard'), 2000);
       }
     } catch (err: any) {
       setError(err.message || 'An error occurred during sign up');
@@ -175,7 +179,8 @@ const AuthForm: React.FC = () => {
         await new Promise(resolve => setTimeout(resolve, 500));
         
         toast.success('Demo login successful!');
-        navigate('/dashboard');
+        setShowConfetti(true);
+        setTimeout(() => navigate('/dashboard'), 2000);
         return;
       }
 
@@ -183,8 +188,9 @@ const AuthForm: React.FC = () => {
       if (error) {
         setError(error.message);
       } else {
+        setShowConfetti(true);
         toast.success('Demo login successful!');
-        navigate('/dashboard');
+        setTimeout(() => navigate('/dashboard'), 2000);
       }
     } catch (err: any) {
       setError(err.message || 'An error occurred during demo login');
@@ -196,6 +202,18 @@ const AuthForm: React.FC = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-green-50 p-4">
+      {showConfetti && (
+        <Confetti
+          className="fixed inset-0 z-50 pointer-events-none"
+          options={{
+            particleCount: 150,
+            spread: 160,
+            origin: { y: 0.2 },
+            gravity: 0.5,
+            colors: ['#3B82F6', '#10B981', '#6366F1', '#F59E0B', '#EF4444'],
+          }}
+        />
+      )}
       <div className="w-full max-w-md">
         {/* Back to Home Button */}
         <Button
