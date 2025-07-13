@@ -25,8 +25,8 @@ const LandingPage: React.FC = () => {
   
   useEffect(() => {
     // Simulate fetching waitlist count - in production this would be a real API call
-    const initialCount = Math.floor(Math.random() * 500) + 1500;
-    setWaitlistCount(initialCount);
+    setWaitlistCount(Math.floor(Math.random() * 500) + 1500);
+  }, []);
 
   const features = [
     {
@@ -476,6 +476,21 @@ const LandingPage: React.FC = () => {
           </div>
         </div>
       </section>
+
+      {/* Floating Waitlist Button */}
+      <div className="fixed bottom-8 right-8 z-50">
+        <ConfettiButton
+          onClick={() => navigate('/waitlist')}
+          className="bg-gradient-to-r from-blue-600 to-green-500 hover:from-blue-700 hover:to-green-600 shadow-lg animate-bounce"
+          options={{
+            particleCount: 80,
+            spread: 100,
+            colors: ['#3B82F6', '#10B981', '#6366F1', '#F59E0B', '#EF4444'],
+          }}
+        >
+          Join Waitlist
+        </ConfettiButton>
+      </div>
 
       {/* CTA Section */}
       <section className="py-20">
