@@ -7,7 +7,7 @@ import { supabase } from './supabase';
 export const testAccounts = {
   company: {
     email: 'company@flexzora.com',
-    password: 'password123',
+    password: 'StageLight2025!',
     profile: {
       full_name: 'TechCorp Events',
       role: 'company',
@@ -20,7 +20,7 @@ export const testAccounts = {
   },
   freelancer: {
     email: 'freelancer@flexzora.com',
-    password: 'password123',
+    password: 'CameraAction2025!',
     profile: {
       full_name: 'Alex Johnson',
       role: 'worker',
