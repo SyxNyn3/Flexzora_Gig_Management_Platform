@@ -29,7 +29,9 @@ import {
   Send, 
   ArrowRight, 
   Sparkles,
-  Clock
+  Clock,
+  DollarSign,
+  Star
 } from 'lucide-react';
 import { toast } from 'sonner';
 
