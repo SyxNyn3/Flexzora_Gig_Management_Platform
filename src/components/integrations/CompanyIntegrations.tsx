@@ -131,7 +131,7 @@ const CompanyIntegrations: React.FC = () => {
       {
         id: '1',
         company_name: 'Rhino Staging',
-        company_logo: '🦏',
+        company_logo: 'https://www.rhinostaging.com/wp-content/uploads/2022/01/Rhino-Logo-Horizontal-White-1.png',
         integration_type: 'api',
         status: 'connected',
         features: {
@@ -157,7 +157,7 @@ const CompanyIntegrations: React.FC = () => {
       {
         id: '2',
         company_name: 'Giglife',
-        company_logo: '🎵',
+        company_logo: 'https://giglife.com/wp-content/uploads/2023/03/giglife-logo.png',
         integration_type: 'oauth',
         status: 'connected',
         features: {
@@ -183,7 +183,7 @@ const CompanyIntegrations: React.FC = () => {
       {
         id: '3',
         company_name: 'Stagehands, Inc.',
-        company_logo: '🎭',
+        company_logo: 'https://stagehandsinc.com/wp-content/uploads/2021/04/stagehands-logo.png',
         integration_type: 'api',
         status: 'error',
         features: {
@@ -600,13 +600,7 @@ const CompanyIntegrations: React.FC = () => {
               <Card key={company.name} className="hover:shadow-md transition-shadow">
                 <CardHeader>
                   <div className="flex items-center space-x-3">
-                    <div className="h-16 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform duration-300">
-                      <img 
-                        src={company.logo} 
-                        alt={`${company.name} logo`}
-                        className="max-h-full max-w-full object-contain"
-                      />
-                    </div>
+                    <div className="text-2xl">{company.logo}</div>
                     <div>
                       <CardTitle className="text-lg">{company.name}</CardTitle>
                       <CardDescription>{company.description}</CardDescription>
