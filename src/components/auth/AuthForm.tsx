@@ -237,8 +237,8 @@ const AuthForm: React.FC = () => {
                     </div>
                     <div className="bg-blue-50 p-3 rounded-lg text-sm text-blue-800 mt-2">
                       <strong>Test Accounts:</strong><br/>
-                      <span className="block mt-1">Freelancer: {testAccounts.freelancer.email} / {testAccounts.freelancer.password}</span>
-                      <span className="block mt-1">Company: {testAccounts.company.email} / {testAccounts.company.password}</span>
+                      <span className="block mt-1">Freelancer: {testAccounts.freelancer.email} / CameraAction2025!</span>
+                      <span className="block mt-1">Company: {testAccounts.company.email} / StageLight2025!</span>
                     </div>
                     <Button 
                       onClick={handleDemoLogin}
@@ -247,6 +247,36 @@ const AuthForm: React.FC = () => {
                     >
                       {loading ? 'Signing In...' : 'Try Demo Login'}
                     </Button>
+                    <div className="flex space-x-2">
+                      <Button 
+                        onClick={async () => {
+                          setLoading(true);
+                          await signInWithTestAccount('freelancer');
+                          toast.success('Freelancer demo login successful!');
+                          navigate('/dashboard');
+                          setLoading(false);
+                        }}
+                        variant="outline"
+                        className="flex-1"
+                        disabled={loading}
+                      >
+                        Freelancer Demo
+                      </Button>
+                      <Button 
+                        onClick={async () => {
+                          setLoading(true);
+                          await signInWithTestAccount('company');
+                          toast.success('Company demo login successful!');
+                          navigate('/dashboard');
+                          setLoading(false);
+                        }}
+                        variant="outline"
+                        className="flex-1"
+                        disabled={loading}
+                      >
+                        Company Demo
+                      </Button>
+                    </div>
                   </div>
                 </AlertDescription>
               </Alert>
@@ -262,39 +292,7 @@ const AuthForm: React.FC = () => {
                   className="w-full h-12 text-gray-700 border-gray-300 hover:bg-gray-50"
                 >
                   {socialLoading === 'google' ? (
-                    <>
-                <div className="flex space-x-2">
-                  <Button 
-                    onClick={async () => {
-                      setLoading(true);
-                      await signInWithTestAccount('freelancer');
-                      toast.success('Freelancer demo login successful!');
-                      navigate('/dashboard');
-                      setLoading(false);
-                    }}
-                    variant="outline"
-                    className="flex-1"
-                    disabled={loading}
-                  >
-                    Freelancer Demo
-                  </Button>
-                  <Button 
-                    onClick={async () => {
-                      setLoading(true);
-                      await signInWithTestAccount('company');
-                      toast.success('Company demo login successful!');
-                      navigate('/dashboard');
-                      setLoading(false);
-                    }}
-                    variant="outline"
-                    className="flex-1"
-                    disabled={loading}
-                  >
-                    Company Demo
-                  </Button>
-                </div>
                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-600"></div>
-                    </>
                   ) : (
                     <>
                       <Chrome className="w-5 h-5 mr-3" />
