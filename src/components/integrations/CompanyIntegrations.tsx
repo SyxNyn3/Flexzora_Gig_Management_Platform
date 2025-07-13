@@ -57,7 +57,7 @@ const PRODUCTION_COMPANIES = [
   {
     name: 'Giglife',
     description: 'Nationwide event staffing and management for venues, AV, and live entertainment',
-    logo: 'https://giglife.com/wp-content/uploads/2023/03/giglife-logo.png',
+    logo: 'https://lirp.cdn-website.com/47b15677/dms3rep/multi/opt/Gig-Life-Logo-8ec652ae-640w.jpg',
     integration_type: 'oauth',
     features: ['scheduling', 'messaging', 'time_tracking'],
     website: 'giglife.com'
