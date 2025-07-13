@@ -262,6 +262,7 @@ const AuthForm: React.FC = () => {
                   className="w-full h-12 text-gray-700 border-gray-300 hover:bg-gray-50"
                 >
                   {socialLoading === 'google' ? (
+                    <>
                 <div className="flex space-x-2">
                   <Button 
                     onClick={async () => {
@@ -293,6 +294,7 @@ const AuthForm: React.FC = () => {
                   </Button>
                 </div>
                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-600"></div>
+                    </>
                   ) : (
                     <>
                       <Chrome className="w-5 h-5 mr-3" />
