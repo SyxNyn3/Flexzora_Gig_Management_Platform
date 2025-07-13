@@ -34,9 +34,12 @@ const WorkerDashboard: React.FC = () => {
 
   // Fetch data
   const { data: availableGigs = [] } = useGigs({ status: 'published' });
-  const { data: myApplications = [] } = useApplications({ workerId: profile?.id });
-  const { data: payments = [] } = usePayments({ workerId: profile?.id });
-  const { data: expenses = [] } = useExpenses({ workerId: profile?.id });
+  const { data: myApplicationsRaw } = useApplications({ workerId: profile?.id });
+  const myApplications = myApplicationsRaw || [];
+  const { data: paymentsRaw } = usePayments({ workerId: profile?.id });
+  const payments = paymentsRaw || [];
+  const { data: expensesRaw } = useExpenses({ workerId: profile?.id });
+  const expenses = expensesRaw || [];
   
   // Set up real-time notifications
   useRealtimeNotifications(profile?.id, (notification) => {
