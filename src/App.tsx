@@ -6,6 +6,7 @@ import { validateSession } from '@/lib/auth';
 import { isDemoMode } from '@/lib/supabase';
 import LandingPage from '@/components/landing/LandingPage';
 import WaitlistForm from '@/components/waitlist/WaitlistForm';
+import ScheduleDemoForm from '@/components/demo/ScheduleDemoForm';
 import Layout from '@/components/layout/Layout';
 import AuthForm from '@/components/auth/AuthForm';
 import WorkerDashboard from '@/components/dashboard/WorkerDashboard';
@@ -131,6 +132,10 @@ const AppRoutes: React.FC = () => {
         <Route
           path="/waitlist"
           element={<WaitlistForm />}
+        />
+        <Route
+          path="/schedule-demo"
+          element={<ScheduleDemoForm />}
         />
         <Route
           path="/auth"
