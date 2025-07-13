@@ -49,7 +49,7 @@ const PRODUCTION_COMPANIES = [
   {
     name: 'Rhino Staging',
     description: 'National event production staffing for corporate, entertainment, and industrial events',
-    logo: '🦏',
+    logo: 'https://www.rhinostaging.com/wp-content/uploads/2022/01/Rhino-Logo-Horizontal-White-1.png',
     integration_type: 'api',
     features: ['scheduling', 'payroll', 'messaging', 'documents'],
     website: 'rhinostaging.com'
@@ -57,7 +57,7 @@ const PRODUCTION_COMPANIES = [
   {
     name: 'Giglife',
     description: 'Nationwide event staffing and management for venues, AV, and live entertainment',
-    logo: '🎵',
+    logo: 'https://giglife.com/wp-content/uploads/2023/03/giglife-logo.png',
     integration_type: 'oauth',
     features: ['scheduling', 'messaging', 'time_tracking'],
     website: 'giglife.com'
@@ -65,7 +65,7 @@ const PRODUCTION_COMPANIES = [
   {
     name: '24/7 Production',
     description: 'Las Vegas-based event production, full-service for special events',
-    logo: '🎰',
+    logo: 'https://247production.com/wp-content/uploads/2022/01/247-logo.png',
     integration_type: 'email',
     features: ['scheduling', 'payroll', 'documents'],
     website: '247production.com'
@@ -73,7 +73,7 @@ const PRODUCTION_COMPANIES = [
   {
     name: 'PCE (Pacific Coast)',
     description: 'Live event production, equipment, and personnel for concerts and large-scale events',
-    logo: '🌊',
+    logo: 'https://cdn.prod.website-files.com/614b7c463bf84a6084938df9/614b889147db0040fdca0444_light%20vector%20no%20tagline.svg',
     integration_type: 'api',
     features: ['scheduling', 'payroll', 'messaging', 'time_tracking'],
     website: 'pce.com'
@@ -81,7 +81,7 @@ const PRODUCTION_COMPANIES = [
   {
     name: 'Crew One Productions',
     description: 'Technical staffing for events/festivals in major US cities',
-    logo: '🎪',
+    logo: 'https://crewone.com/wp-content/uploads/2021/05/crew-one-logo.png',
     integration_type: 'manual',
     features: ['scheduling', 'documents'],
     website: 'crewone.com'
@@ -89,7 +89,7 @@ const PRODUCTION_COMPANIES = [
   {
     name: 'Onstage Systems',
     description: 'Event production, AV, and concert management, serving music and corporate clients',
-    logo: '🎤',
+    logo: 'https://media.licdn.com/dms/image/v2/C4E0BAQHfMcsaVtnf0Q/company-logo_200_200/company-logo_200_200/0/1630575013791/onstage_systems_logo?e=1755129600&v=beta&t=Y7g8XhMNGpsxwk4Ex4qGR134XckjJhno9oWqELzFn64',
     integration_type: 'oauth',
     features: ['scheduling', 'payroll', 'messaging'],
     website: 'onstagesystems.com'
@@ -97,7 +97,7 @@ const PRODUCTION_COMPANIES = [
   {
     name: 'Stagehands, Inc.',
     description: 'Stagehand staffing, payroll, and compliance for theatrical and event venues',
-    logo: '🎭',
+    logo: 'https://stagehandsinc.com/wp-content/uploads/2021/04/stagehands-logo.png',
     integration_type: 'api',
     features: ['scheduling', 'payroll', 'messaging', 'documents', 'time_tracking'],
     website: 'stagehands.com'
@@ -105,7 +105,7 @@ const PRODUCTION_COMPANIES = [
   {
     name: 'G2 Production',
     description: 'Full-service production company for corporate events and entertainment',
-    logo: '⚡',
+    logo: 'https://static.wixstatic.com/media/1917cd_ddfd7743c7ff4e2b98fffc45cce43549~mv2_d_1584_1276_s_2.png/v1/crop/x_0,y_11,w_1584,h_1253/fill/w_288,h_227,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/LOGO_G2_white-letters-01.png',
     integration_type: 'email',
     features: ['scheduling', 'payroll', 'messaging'],
     website: 'g2production.com'
