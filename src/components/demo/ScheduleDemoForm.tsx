@@ -13,7 +13,6 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/lib/supabase';
-import { Confetti } from '@/components/ui/confetti';
 import { 
   Building2, 
   Users, 
@@ -64,7 +63,6 @@ const ScheduleDemoForm: React.FC = () => {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [demoDate, setDemoDate] = useState<string | null>(null);
-  const [showConfetti, setShowConfetti] = useState(false);
   const [demoTime, setDemoTime] = useState<string | null>(null);
 
   const {
@@ -121,7 +119,6 @@ const ScheduleDemoForm: React.FC = () => {
       setDemoDate(data.preferred_date);
       setDemoTime(data.preferred_time);
       setSuccess(true);
-      setShowConfetti(true);
       toast.success('Your demo request has been submitted!');
     } catch (err: any) {
       console.error('Error submitting demo request:', err);
@@ -195,18 +192,6 @@ const ScheduleDemoForm: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 py-16 px-4 sm:px-6 lg:px-8">
-      {showConfetti && (
-        <Confetti
-          className="fixed inset-0 z-50 pointer-events-none"
-          options={{
-            particleCount: 150,
-            spread: 160,
-            origin: { y: 0.2 },
-            gravity: 0.5,
-            colors: ['#3B82F6', '#10B981', '#6366F1', '#F59E0B', '#EF4444'],
-          }}
-        />
-      )}
       <div className="max-w-4xl mx-auto">
         {/* Back to Home Button */}
         <Button

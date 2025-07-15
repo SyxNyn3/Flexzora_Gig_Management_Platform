@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { StickyScrollSection } from './StickyScrollSection';
 import { Badge } from '@/components/ui/badge';
-import { ConfettiButton } from '@/components/ui/confetti';
 import { 
   Calendar, 
   DollarSign, 
@@ -478,19 +477,14 @@ const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* Floating Waitlist Button */}
+      {/* Fixed Waitlist Button */}
       <div className="fixed bottom-8 right-8 z-50">
-        <ConfettiButton
+        <Button
           onClick={() => navigate('/waitlist')}
           className="bg-gradient-to-r from-blue-600 to-green-500 hover:from-blue-700 hover:to-green-600 shadow-lg animate-bounce"
-          options={{
-            particleCount: 80,
-            spread: 100,
-            colors: ['#3B82F6', '#10B981', '#6366F1', '#F59E0B', '#EF4444'],
-          }}
         >
           Join Waitlist
-        </ConfettiButton>
+        </Button>
       </div>
 
       {/* CTA Section */}

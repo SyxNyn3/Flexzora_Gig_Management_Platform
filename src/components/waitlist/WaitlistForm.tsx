@@ -13,7 +13,6 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/lib/supabase';
 import { WaitlistRoleInterest } from '@/lib/types';
-import { Confetti } from '@/components/ui/confetti';
 import { 
   Mail, 
   Users, 
@@ -56,7 +55,6 @@ const WaitlistForm: React.FC = () => {
   const [referralCode, setReferralCode] = useState<string | null>(null);
   const [waitlistCount, setWaitlistCount] = useState<number>(0);
   const [referredBy, setReferredBy] = useState<string | null>(null);
-  const [showConfetti, setShowConfetti] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const {
@@ -112,7 +110,6 @@ const WaitlistForm: React.FC = () => {
       // Set the referral code from the response
       setReferralCode(responseData.referral_code);
       setSuccess(true);
-      setShowConfetti(true);
       toast.success('You have been added to the waitlist!');
     } catch (err: any) {
       console.error('Error submitting to waitlist:', err);
@@ -160,18 +157,6 @@ const WaitlistForm: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 py-16 px-4 sm:px-6 lg:px-8">
-      {showConfetti && (
-        <Confetti
-          className="fixed inset-0 z-50 pointer-events-none"
-          options={{
-            particleCount: 200,
-            spread: 180,
-            origin: { y: 0.2 },
-            gravity: 0.5,
-            colors: ['#3B82F6', '#10B981', '#6366F1', '#F59E0B', '#EF4444'],
-          }}
-        />
-      )}
       <div className="max-w-3xl mx-auto">
         {/* Back to Home Button */}
         <Button
