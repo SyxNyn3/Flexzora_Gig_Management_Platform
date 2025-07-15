@@ -40,26 +40,28 @@ const Dashboard: React.FC = () => {
   // Calculate stats from real data
   const stats = {
     totalGigs: applications.filter(app => app.status === 'accepted').length,
-    pendingApplications: applications.filter(app => app.status === 'pending').length,
-    upcomingGigs: applications.filter(app => {
+    pendingApplications: (applications || []).filter(app => app.status === 'pending').length,
+    upcomingGigs: (applications || []).filter(app => {
       const startDate = app.gig?.start_date ? new Date(app.gig.start_date) : null;
       const now = new Date();
       return app.status === 'accepted' && startDate && startDate > now;
     }).length,
     totalEarnings: payments
-      .filter(payment => payment.status === 'paid')
-      .reduce((sum, payment) => sum + payment.amount, 0) || 15420, // Fallback to mock data
+      ? payments.filter(payment => payment.status === 'paid')
+          .reduce((sum, payment) => sum + payment.amount, 0)
+      : 15420, // Fallback to mock data
     pendingPayments: payments
-      .filter(payment => payment.status === 'pending')
-      .reduce((sum, payment) => sum + payment.amount, 0) || 2800,
+      ? payments.filter(payment => payment.status === 'pending')
+          .reduce((sum, payment) => sum + payment.amount, 0)
+      : 2800,
     thisMonthExpenses: 450, // Placeholder
   };
   
   // Get recent gigs from real data
-  const recentGigs = gigs.slice(0, 3);
+  const recentGigs = (gigs || []).slice(0, 3);
   
   // Get recent applications from real data
-  const recentApplications = applications.slice(0, 2);
+  const recentApplications = (applications || []).slice(0, 2);
   
   // Loading state
   const loading = gigsLoading || applicationsLoading || paymentsLoading;
