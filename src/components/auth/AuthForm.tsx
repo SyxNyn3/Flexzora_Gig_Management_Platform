@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, lazy, Suspense } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -12,10 +12,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase, isDemoMode } from '@/lib/supabase';
 import { testAccounts, signInWithTestAccount } from '@/lib/testAccounts';
-import { Confetti } from '@/components/ui/confetti';
 import { toast } from 'sonner';
 import { storeAuthData } from '@/lib/auth';
 import { Mail, Apple, Chrome, ArrowLeft, Shield, CheckCircle, Eye, EyeOff } from 'lucide-react';
+
+// Dynamically import the Confetti component to prevent issues during initial render
+const Confetti = lazy(() => import('@/components/ui/confetti').then(module => ({ default: module.Confetti })));
 
 const signInSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -203,16 +205,18 @@ const AuthForm: React.FC = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-green-50 p-4">
       {showConfetti && (
-        <Confetti
-          className="fixed inset-0 z-50 pointer-events-none"
-          options={{
-            particleCount: 150,
-            spread: 160,
-            origin: { y: 0.2 },
-            gravity: 0.5,
-            colors: ['#3B82F6', '#10B981', '#6366F1', '#F59E0B', '#EF4444'],
-          }}
-        />
+        <Suspense fallback={null}>
+          <Confetti
+            className="fixed inset-0 z-50 pointer-events-none"
+            options={{
+              particleCount: 150,
+              spread: 160,
+              origin: { y: 0.2 },
+              gravity: 0.5,
+              colors: ['#3B82F6', '#10B981', '#6366F1', '#F59E0B', '#EF4444'],
+            }}
+          />
+        </Suspense>
       )}
       <div className="w-full max-w-md">
         {/* Back to Home Button */}
