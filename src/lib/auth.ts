@@ -1,6 +1,7 @@
 import { User, Session } from '@supabase/supabase-js';
 import { supabase, isDemoMode } from './supabase';
 import { Profile } from './types';
+import { toast } from 'sonner';
 
 // Token storage keys
 const AUTH_TOKEN_KEY = 'flexzora-auth-token';
@@ -156,4 +157,44 @@ export const setupTokenRefresh = () => {
   }, REFRESH_INTERVAL);
   
   return refreshInterval;
+};
+
+/**
+ * Lookup user by username or email
+ */
+export const lookupUserByIdentifier = async (identifier: string): Promise<{ email: string | null; error: string | null }> => {
+  try {
+    if (isDemoMode) {
+      // In demo mode, accept demo credentials
+      if (identifier === 'demo@flexzora.com' || identifier === 'demo' || identifier === 'flexzora') {
+        return { email: 'demo@flexzora.com', error: null };
+      }
+      return { email: null, error: 'User not found in demo mode' };
+    }
+
+    // Check if identifier is an email (contains @)
+    if (identifier.includes('@')) {
+      // It's already an email, return as-is
+      return { email: identifier, error: null };
+    }
+
+    // It's a username, look it up via edge function
+    const { data, error } = await supabase.functions.invoke('lookup-user', {
+      body: { identifier },
+    });
+
+    if (error) {
+      console.error('Error looking up user:', error);
+      return { email: null, error: 'Failed to lookup user' };
+    }
+
+    if (!data || !data.email) {
+      return { email: null, error: 'Username not found' };
+    }
+
+    return { email: data.email, error: null };
+  } catch (error: any) {
+    console.error('Error in lookupUserByIdentifier:', error);
+    return { email: null, error: error.message || 'Unknown error occurred' };
+  }
 };

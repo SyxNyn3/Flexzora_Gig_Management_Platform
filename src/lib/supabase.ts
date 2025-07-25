@@ -62,6 +62,7 @@ export class DatabaseService {
             id: 'demo-profile-id',
             user_id: userId,
             email: 'demo@flexzora.com',
+            username: updates.username || 'demo',
             full_name: 'FlexZora Demo User',
             role: 'worker',
             experience_years: 5,

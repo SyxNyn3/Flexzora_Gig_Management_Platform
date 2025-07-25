@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase, DatabaseService, isDemoMode } from '@/lib/supabase';
 import { storeAuthData, getStoredAuthData, clearAuthData, refreshAuthToken, setupTokenRefresh, validateSession } from '@/lib/auth';
+import { lookupUserByIdentifier } from '@/lib/auth';
 import { Profile, Database } from '@/lib/types';
 
 interface AuthContextType {
@@ -293,11 +294,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signIn = async (email: string, password: string) => {
     try {
       if (isDemoMode) {
-        // Demo mode signin - only allow demo credentials
-        if (email !== 'demo@flexzora.com' || password !== 'password') {
+        // Demo mode signin - allow demo credentials with username or email
+        const validDemoIdentifiers = ['demo@flexzora.com', 'demo', 'flexzora'];
+        if (!validDemoIdentifiers.includes(email) || password !== 'password') {
           return { 
             data: null, 
-            error: { message: 'Invalid login credentials. For demo, use demo@flexzora.com / password' } 
+            error: { message: 'Invalid login credentials. For demo, use demo@flexzora.com (or username: demo) / password' } 
           };
         }
         
@@ -324,8 +326,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { data: { user: mockUser, session: mockSession }, error: null };
       }
 
+      // Look up user by username or email
+      const { email: userEmail, error: lookupError } = await lookupUserByIdentifier(email);
+      
+      if (lookupError) {
+        console.error('User lookup error:', lookupError);
+        return { 
+          data: null, 
+          error: { message: lookupError }
+        };
+      }
+      
+      if (!userEmail) {
+        return { data: null, error: { message: 'User not found' } };
+      }
+
       const { data, error } = await supabase.auth.signInWithPassword({
-        email,
+        email: userEmail, // Use the looked-up email
         password,
       });
 

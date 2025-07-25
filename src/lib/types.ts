@@ -89,6 +89,7 @@ export interface Profile {
   user_id: string;
   email: string;
   full_name: string;
+  username?: string;
   avatar_url?: string;
   role: UserRole;
   phone?: string;
@@ -319,6 +320,7 @@ export interface PaginatedResponse<T> {
 // Form types
 export interface ProfileFormData {
   full_name: string;
+  username?: string;
   phone?: string;
   location?: string;
   bio?: string;

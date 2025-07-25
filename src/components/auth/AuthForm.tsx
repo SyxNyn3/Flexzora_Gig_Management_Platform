@@ -26,6 +26,10 @@ const signUpSchema = z.object({
   password: z.string().min(6, 'Password must be at least 6 characters'),
   confirmPassword: z.string(),
   fullName: z.string().min(2, 'Full name must be at least 2 characters'),
+  username: z.string()
+    .min(3, 'Username must be at least 3 characters')
+    .max(20, 'Username must be less than 20 characters')
+    .regex(/^[a-zA-Z0-9_-]+$/, 'Username can only contain letters, numbers, underscores, and hyphens'),
   role: z.enum(['worker', 'company'], { required_error: 'Please select a role' }),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
@@ -60,6 +64,7 @@ const AuthForm: React.FC = () => {
       password: '',
       confirmPassword: '',
       fullName: '',
+      username: '',
       role: undefined,
     },
   });
@@ -103,8 +108,15 @@ const AuthForm: React.FC = () => {
         return;
       }
 
+      if (!data.username.trim()) {
+        setError('Username is required');
+        setLoading(false);
+        return;
+      }
+
       const { error } = await signUp(data.email, data.password, {
         full_name: data.fullName,
+        username: data.username,
         role: data.role,
       });
 
@@ -206,7 +218,7 @@ const AuthForm: React.FC = () => {
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Home
         </Button>
-
+                placeholder={isDemoMode ? 'demo@flexzora.com or username: demo' : 'Enter your email or username'}
         <Card className="shadow-xl border-0 animate-fade-in">
           <CardHeader className="text-center pb-6">
             <div className="flex justify-center mb-4">
@@ -229,7 +241,7 @@ const AuthForm: React.FC = () => {
             {/* Demo Mode Alert */}
             {isDemoMode && (
               <Alert className="border-blue-200 bg-blue-50">
-                <Shield className="h-4 w-4" />
+                <strong>Demo Mode:</strong> Use demo@flexzora.com (or username: demo) with password: password
                 <AlertDescription className="text-blue-800">
                   <div className="space-y-3">
                     <div>
@@ -350,6 +362,22 @@ const AuthForm: React.FC = () => {
                   {signUpForm.formState.errors.fullName && (
                     <p className="text-sm text-red-600 mt-1">
                       {signUpForm.formState.errors.fullName.message}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <Label htmlFor="username">Username</Label>
+                  <Input
+                    id="username"
+                    type="text"
+                    {...signUpForm.register('username')}
+                    className="mt-1 h-12"
+                    placeholder="Choose a unique username"
+                  />
+                  {signUpForm.formState.errors.username && (
+                    <p className="text-sm text-red-600 mt-1">
+                      {signUpForm.formState.errors.username.message}
                     </p>
                   )}
                 </div>
