@@ -486,7 +486,7 @@ const AuthForm: React.FC = () => {
                     type="email"
                     {...signInForm.register('email')}
                     className="mt-1 h-12"
-                    placeholder={isDemoMode ? 'Any email (e.g., test@demo.com)' : 'Enter your email'}
+                    placeholder="Enter your email"
                   />
                   {signInForm.formState.errors.email && (
                     <p className="text-sm text-red-600 mt-1">
@@ -503,7 +503,7 @@ const AuthForm: React.FC = () => {
                       type={showPassword ? "text" : "password"}
                       {...signInForm.register('password')}
                       className="mt-1 h-12 pr-10"
-                      placeholder={isDemoMode ? 'Any password' : 'Enter your password'}
+                      placeholder="Enter your password"
                     />
                     <Button
                       type="button"
@@ -522,11 +522,6 @@ const AuthForm: React.FC = () => {
                   )}
                 </div>
 
-                {isDemoMode && (
-                  <div className="bg-blue-50 p-3 rounded-lg text-sm text-blue-800">
-                    <strong>Demo Mode:</strong> Enter any email and password to access all features
-                  </div>
-                )}
 
                 <Button 
                   type="submit" 
