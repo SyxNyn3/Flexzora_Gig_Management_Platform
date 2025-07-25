@@ -52,6 +52,12 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   
   useEffect(() => {
     const checkSession = async () => {
+      if (isDemoMode) {
+        // In demo mode, always allow access
+        setValidating(false);
+        return;
+      }
+      
       if (!user && !loading) {
         // Try to validate and refresh the session
         const isValid = await validateSession();
@@ -73,7 +79,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
     return <LoadingSpinner />;
   }
 
-  if (!user) {
+  if (!user && !isDemoMode) {
     return <Navigate to="/auth" replace />;
   }
 
@@ -86,6 +92,12 @@ const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   
   useEffect(() => {
     const checkSession = async () => {
+      if (isDemoMode) {
+        // In demo mode, don't redirect authenticated users
+        setValidating(false);
+        return;
+      }
+      
       if (!user && !loading) {
         // Try to validate the session
         const isValid = await validateSession();
@@ -107,7 +119,7 @@ const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     return <LoadingSpinner />;
   }
 
-  if (user) {
+  if (user && !isDemoMode) {
     return <Navigate to="/dashboard" replace />;
   }
 

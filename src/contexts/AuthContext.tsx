@@ -294,14 +294,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signIn = async (email: string, password: string) => {
     try {
       if (isDemoMode) {
-        // Demo mode signin - allow demo credentials with username or email
-        const validDemoIdentifiers = ['demo@flexzora.com', 'demo', 'flexzora'];
-        if (!validDemoIdentifiers.includes(email) || password !== 'password') {
-          return { 
-            data: null, 
-            error: { message: 'Invalid login credentials. For demo, use demo@flexzora.com (or username: demo) / password' } 
-          };
-        }
+        // Demo mode signin - allow any credentials for easy testing
+        console.log('Demo mode: Allowing access with any credentials');
         
         const mockUser = { id: 'demo-user', email };
         const mockSession = { user: mockUser };

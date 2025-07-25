@@ -241,16 +241,16 @@ const AuthForm: React.FC = () => {
             {/* Demo Mode Alert */}
             {isDemoMode && (
               <Alert className="border-blue-200 bg-blue-50">
-                <strong>Demo Mode:</strong> Use demo@flexzora.com (or username: demo) with password: password
                 <AlertDescription className="text-blue-800">
                   <div className="space-y-3">
                     <div>
-                      <strong>Demo Mode:</strong> Use the demo login to explore the app
+                      <strong>Demo Mode:</strong> Enter any email and password to explore the app
                     </div>
                     <div className="bg-blue-50 p-3 rounded-lg text-sm text-blue-800 mt-2">
                       <strong>Test Accounts:</strong><br/>
                       <span className="block mt-1">Freelancer: {testAccounts.freelancer.email} / CameraAction2025!</span>
                       <span className="block mt-1">Company: {testAccounts.company.email} / StageLight2025!</span>
+                      <span className="block mt-1 font-semibold">Or use ANY email/password combination</span>
                     </div>
                     <Button 
                       onClick={handleDemoLogin}
@@ -486,7 +486,7 @@ const AuthForm: React.FC = () => {
                     type="email"
                     {...signInForm.register('email')}
                     className="mt-1 h-12"
-                    placeholder={isDemoMode ? 'demo@flexzora.com' : 'Enter your email'}
+                    placeholder={isDemoMode ? 'Any email (e.g., test@demo.com)' : 'Enter your email'}
                   />
                   {signInForm.formState.errors.email && (
                     <p className="text-sm text-red-600 mt-1">
@@ -503,7 +503,7 @@ const AuthForm: React.FC = () => {
                       type={showPassword ? "text" : "password"}
                       {...signInForm.register('password')}
                       className="mt-1 h-12 pr-10"
-                      placeholder={isDemoMode ? 'password' : 'Enter your password'}
+                      placeholder={isDemoMode ? 'Any password' : 'Enter your password'}
                     />
                     <Button
                       type="button"
@@ -524,7 +524,7 @@ const AuthForm: React.FC = () => {
 
                 {isDemoMode && (
                   <div className="bg-blue-50 p-3 rounded-lg text-sm text-blue-800">
-                    <strong>Demo Mode:</strong> Use any email and password to explore the platform
+                    <strong>Demo Mode:</strong> Enter any email and password to access all features
                   </div>
                 )}
 

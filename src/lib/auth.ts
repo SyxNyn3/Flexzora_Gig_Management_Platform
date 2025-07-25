@@ -165,11 +165,9 @@ export const setupTokenRefresh = () => {
 export const lookupUserByIdentifier = async (identifier: string): Promise<{ email: string | null; error: string | null }> => {
   try {
     if (isDemoMode) {
-      // In demo mode, accept demo credentials
-      if (identifier === 'demo@flexzora.com' || identifier === 'demo' || identifier === 'flexzora') {
-        return { email: 'demo@flexzora.com', error: null };
-      }
-      return { email: null, error: 'User not found in demo mode' };
+      // In demo mode, accept any identifier as valid
+      const email = identifier.includes('@') ? identifier : `${identifier}@demo.com`;
+      return { email, error: null };
     }
 
     // Check if identifier is an email (contains @)
