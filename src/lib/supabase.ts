@@ -7,15 +7,12 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
-  console.warn('Supabase environment variables not found. Running in demo mode.');
+  console.error('Supabase environment variables not found. Please configure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
 }
 
-// Force demo mode for this project
-const forceDemoMode = true;
-
 export const supabase = createClient<Database>(
-  supabaseUrl || 'https://demo.supabase.co',
-  supabaseKey || 'demo-key',
+  supabaseUrl!,
+  supabaseKey!,
   { 
     auth: {
       autoRefreshToken: true,
@@ -47,55 +44,11 @@ export const supabase = createClient<Database>(
   }
 );
 
-// Helper function to check if we're in demo mode
-export const isDemoMode = forceDemoMode || !supabaseUrl || !supabaseKey || supabaseUrl === 'https://demo.supabase.co';
-
 // Type-safe database operations
 export class DatabaseService {
   // Profile operations
   static async getProfile(userId: string) {
     try {
-      if (isDemoMode) {
-        // In demo mode, return mock data
-        return { 
-          data: {
-            id: 'demo-profile-id',
-            user_id: userId,
-            email: 'demo@flexzora.com',
-            username: updates.username || 'demo',
-            full_name: 'FlexZora Demo User',
-            role: 'worker',
-            experience_years: 5,
-           portfolio_items: [
-             {
-               id: 'portfolio-1',
-               title: 'Corporate Event Video Production',
-               description: 'Lead camera operator for annual tech conference with multi-camera setup',
-               category: 'Video',
-               client: 'TechCorp Events',
-               date_completed: '2023-11-15',
-               image_url: 'https://images.pexels.com/photos/2608517/pexels-photo-2608517.jpeg',
-               is_featured: true
-             },
-             {
-               id: 'portfolio-2',
-               title: 'Music Festival Lighting Design',
-               description: 'Designed and operated lighting for main stage performances',
-               category: 'Lighting',
-               client: 'SoundWave Festival',
-               date_completed: '2023-08-20',
-               image_url: 'https://images.pexels.com/photos/1190298/pexels-photo-1190298.jpeg',
-               is_featured: false
-             }
-           ],
-            is_available: true,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          }, 
-          error: null 
-        };
-      }
-
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -114,10 +67,6 @@ export class DatabaseService {
 
   static async getOrCreateProfile(userId: string): Promise<{ data: Profile | null; error: string | null }> {
     try {
-      if (isDemoMode) {
-        return { data: null, error: 'Demo mode - profiles handled in AuthContext' };
-      }
-
       const { data, error } = await supabase.rpc('get_or_create_profile', { user_id: userId });
       
       if (error) {
@@ -133,21 +82,6 @@ export class DatabaseService {
 
   static async updateProfile(userId: string, updates: Partial<Database['public']['Tables']['profiles']['Update']>) {
     try {
-      if (isDemoMode) {
-        // In demo mode, return mock updated data
-        return { 
-          data: {
-            id: 'demo-profile-id',
-            user_id: userId,
-            email: 'demo@flexora.com',
-            ...updates,
-           portfolio_items: updates.portfolio_items || [],
-            updated_at: new Date().toISOString()
-          }, 
-          error: null 
-        };
-      }
-
       const { data, error } = await supabase
         .from('profiles')
         .update(updates)
@@ -601,43 +535,6 @@ export class DatabaseService {
   // Expenses operations
   static async getExpenses(filters?: { workerId?: string; gigId?: string; startDate?: string; endDate?: string }) {
     try {
-      if (isDemoMode) {
-        // Return mock data in demo mode
-        return { 
-          data: [
-            {
-              id: 'expense-1',
-              worker_id: 'demo-profile-id',
-              gig_id: 'gig-1',
-              amount: 120.50,
-              currency: 'USD',
-              category: 'travel',
-              description: 'Uber to venue',
-              expense_date: new Date().toISOString().split('T')[0],
-              is_reimbursable: true,
-              is_tax_deductible: true,
-              created_at: new Date().toISOString(),
-              gig: { title: 'Corporate Event Video Production' }
-            },
-            {
-              id: 'expense-2',
-              worker_id: 'demo-profile-id',
-              gig_id: 'gig-2',
-              amount: 45.75,
-              currency: 'USD',
-              category: 'meals',
-              description: 'Lunch during shoot',
-              expense_date: new Date().toISOString().split('T')[0],
-              is_reimbursable: false,
-              is_tax_deductible: true,
-              created_at: new Date().toISOString(),
-              gig: { title: 'Wedding Photography' }
-            }
-          ], 
-          error: null 
-        };
-      }
-
       let query = supabase
         .from('expenses')
         .select(`
@@ -695,46 +592,6 @@ export class DatabaseService {
   // Payments operations
   static async getPayments(filters?: { workerId?: string; companyId?: string; gigId?: string; status?: string }) {
     try {
-      if (isDemoMode) {
-        // Return mock data in demo mode
-        return { 
-          data: [
-            {
-              id: 'payment-1',
-              gig_id: 'gig-1',
-              worker_id: 'demo-profile-id',
-              company_id: 'company-1',
-              amount: 450.00,
-              currency: 'USD',
-              status: 'paid',
-              due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-              paid_date: new Date().toISOString().split('T')[0],
-              created_at: new Date().toISOString(),
-              gig: { 
-                title: 'Corporate Event Video Production',
-                company: { name: 'TechCorp Events' }
-              }
-            },
-            {
-              id: 'payment-2',
-              gig_id: 'gig-2',
-              worker_id: 'demo-profile-id',
-              company_id: 'company-2',
-              amount: 550.00,
-              currency: 'USD',
-              status: 'pending',
-              due_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-              created_at: new Date().toISOString(),
-              gig: { 
-                title: 'Wedding Photography',
-                company: { name: 'Dream Weddings' }
-              }
-            }
-          ], 
-          error: null 
-        };
-      }
-
       let query = supabase
         .from('payments')
         .select(`
@@ -801,51 +658,6 @@ export class DatabaseService {
   // Reviews operations
   static async getReviewsForWorker(workerId: string) {
     try {
-      if (isDemoMode) {
-        // Return mock data in demo mode
-        return { 
-          data: [
-            {
-              id: 'review-1',
-              worker_id: workerId,
-              reviewer_id: 'reviewer-1',
-              gig_id: 'gig-1',
-              rating: 5,
-              review_text: 'Excellent work! Very professional and delivered high-quality results.',
-              is_public: true,
-              created_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-              reviewer: {
-                full_name: 'Sarah Johnson',
-                avatar_url: '',
-                role: 'company'
-              },
-              gig: {
-                title: 'Corporate Event Video Production'
-              }
-            },
-            {
-              id: 'review-2',
-              worker_id: workerId,
-              reviewer_id: 'reviewer-2',
-              gig_id: 'gig-2',
-              rating: 4,
-              review_text: 'Great communication and reliable. Would hire again.',
-              is_public: true,
-              created_at: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-              reviewer: {
-                full_name: 'Michael Chen',
-                avatar_url: '',
-                role: 'company'
-              },
-              gig: {
-                title: 'Wedding Photography'
-              }
-            }
-          ], 
-          error: null 
-        };
-      }
-
       const { data, error } = await supabase
         .from('reviews')
         .select(`
@@ -907,19 +719,6 @@ export class DatabaseService {
 
   static async addReview(reviewData: Database['public']['Tables']['reviews']['Insert']) {
     try {
-      if (isDemoMode) {
-        // Return mock data in demo mode
-        return { 
-          data: {
-            id: 'review-' + Date.now(),
-            ...reviewData,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          }, 
-          error: null 
-        };
-      }
-
       const { data, error } = await supabase
         .from('reviews')
         .insert(reviewData)

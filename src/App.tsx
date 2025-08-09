@@ -3,7 +3,6 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { validateSession } from '@/lib/auth';
-import { isDemoMode } from '@/lib/supabase';
 import LandingPage from '@/components/landing/LandingPage';
 import WaitlistForm from '@/components/waitlist/WaitlistForm';
 import ScheduleDemoForm from '@/components/demo/ScheduleDemoForm';
@@ -48,16 +47,10 @@ const LoadingSpinner: React.FC = () => (
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
-  const [validating, setValidating] = useState(!isDemoMode);
+  const [validating, setValidating] = useState(true);
   
   useEffect(() => {
     const checkSession = async () => {
-      if (isDemoMode) {
-        // In demo mode, always allow access
-        setValidating(false);
-        return;
-      }
-      
       if (!user && !loading) {
         // Try to validate and refresh the session
         const isValid = await validateSession();
@@ -79,7 +72,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
     return <LoadingSpinner />;
   }
 
-  if (!user && !isDemoMode) {
+  if (!user) {
     return <Navigate to="/auth" replace />;
   }
 
@@ -88,16 +81,10 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 
 const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
-  const [validating, setValidating] = useState(!isDemoMode);
+  const [validating, setValidating] = useState(true);
   
   useEffect(() => {
     const checkSession = async () => {
-      if (isDemoMode) {
-        // In demo mode, don't redirect authenticated users
-        setValidating(false);
-        return;
-      }
-      
       if (!user && !loading) {
         // Try to validate the session
         const isValid = await validateSession();
@@ -119,7 +106,7 @@ const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     return <LoadingSpinner />;
   }
 
-  if (user && !isDemoMode) {
+  if (user) {
     return <Navigate to="/dashboard" replace />;
   }
 

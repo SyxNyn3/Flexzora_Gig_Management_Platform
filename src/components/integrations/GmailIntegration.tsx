@@ -7,7 +7,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { AuthKitButton } from './AuthKitButton';
 import { Mail, CheckCircle, AlertCircle, RefreshCw, Inbox, Send, Trash, Star, Clock, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
-import { isDemoMode } from '@/lib/supabase';
 
 interface EmailSummary {
   id: string;
@@ -385,15 +384,6 @@ const GmailIntegration: React.FC = () => {
             </Card>
           </div>
 
-          {/* Demo Mode Notice */}
-          {isDemoMode && (
-            <Alert className="bg-blue-50 border-blue-200">
-              <AlertCircle className="h-4 w-4 text-blue-600" />
-              <AlertDescription className="text-blue-800">
-                <strong>Demo Mode:</strong> This is a simulated Gmail integration. In production, this would connect to your actual Gmail account.
-              </AlertDescription>
-            </Alert>
-          )}
         </>
       )}
     </div>

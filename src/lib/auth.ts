@@ -1,5 +1,5 @@
 import { User, Session } from '@supabase/supabase-js';
-import { supabase, isDemoMode } from './supabase';
+import { supabase } from './supabase';
 import { Profile } from './types';
 import { toast } from 'sonner';
 
@@ -114,12 +114,6 @@ export const refreshAuthToken = async (): Promise<boolean> => {
  */
 export const validateSession = async (): Promise<boolean> => {
   try {
-    // In demo mode, check localStorage for demo session
-    if (isDemoMode) {
-      const demoSession = localStorage.getItem('flexora-demo-session');
-      return !!demoSession; // Return true if demo session exists, false otherwise
-    }
-
     const { data: { session }, error } = await supabase.auth.getSession();
     
     if (error) {
@@ -164,12 +158,6 @@ export const setupTokenRefresh = () => {
  */
 export const lookupUserByIdentifier = async (identifier: string): Promise<{ email: string | null; error: string | null }> => {
   try {
-    if (isDemoMode) {
-      // In demo mode, accept any identifier as valid
-      const email = identifier.includes('@') ? identifier : `${identifier}@demo.com`;
-      return { email, error: null };
-    }
-
     // Check if identifier is an email (contains @)
     if (identifier.includes('@')) {
       // It's already an email, return as-is

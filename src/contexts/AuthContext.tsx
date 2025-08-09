@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
-import { supabase, DatabaseService, isDemoMode } from '@/lib/supabase';
+import { supabase, DatabaseService } from '@/lib/supabase';
 import { storeAuthData, getStoredAuthData, clearAuthData, refreshAuthToken, setupTokenRefresh, validateSession } from '@/lib/auth';
 import { lookupUserByIdentifier } from '@/lib/auth';
 import { Profile, Database } from '@/lib/types';
@@ -27,28 +27,6 @@ export const useAuth = () => {
   return context;
 };
 
-// Mock profile for demo mode
-const createMockProfile = (email: string, role: string = 'worker'): Profile => ({
-  id: 'demo-user-id',
-  user_id: 'demo-user',
-  email: email,
-  full_name: role === 'company' ? 'FlexZora Demo Company' : 'FlexZora Demo User',
-  avatar_url: '',
-  role: role as any,
-  phone: '+1 (555) 123-4567',
-  location: 'San Francisco, CA',
-  bio: role === 'company' 
-    ? 'Leading event production company specializing in corporate events and entertainment.'
-    : 'Experienced freelance professional with expertise in video production and event management.',
-  hourly_rate: role === 'worker' ? 45 : undefined,
-  experience_years: role === 'worker' ? 5 : 0,
-  portfolio_url: role === 'worker' ? 'https://demo-portfolio.com' : undefined,
-  linkedin_url: role === 'worker' ? 'https://linkedin.com/in/demo-user' : undefined,
-  is_available: true,
-  created_at: new Date().toISOString(),
-  updated_at: new Date().toISOString(),
-});
-
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -61,25 +39,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const getInitialSession = async () => {
       try {
-        if (isDemoMode) {
-          // In demo mode, check localStorage for demo session
-          const demoSession = localStorage.getItem('flexzora-demo-session'); 
-          if (demoSession && mounted) { 
-            try {
-              const sessionData = JSON.parse(demoSession);
-              setUser(sessionData.user);
-              setSession(sessionData.session);
-              setProfile(sessionData.profile || createMockProfile(sessionData.user.email, sessionData.user.role));
-              console.log('Demo session restored:', sessionData.user.email);
-            } catch (error) {
-              console.error('Error parsing demo session:', error);
-              localStorage.removeItem('flexora-demo-session');
-            }
-          }
-          if (mounted) setLoading(false);
-          return;
-        }
-
         // First try to restore from localStorage for immediate UI update
         const { accessToken, user: storedUser, profile: storedProfile } = getStoredAuthData();
         
@@ -126,45 +85,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     getInitialSession();
 
-    if (!isDemoMode) {
-      const {
-        data: { subscription },
-      } = supabase.auth.onAuthStateChange(async (event, session) => {
-        if (!mounted) return;
-        
-        console.log('Auth state changed:', event, session?.user?.email);
-        setSession(session);
-        setUser(session?.user ?? null);
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!mounted) return;
+      
+      console.log('Auth state changed:', event, session?.user?.email);
+      setSession(session);
+      setUser(session?.user ?? null);
 
-        // Store or clear auth data based on session state
-        if (session?.user) {
-          storeAuthData(session, session.user, profile);
-        } else {
-          clearAuthData();
-        }
-        
-        if (session?.user) {
-          await fetchProfile(session.user.id);
-        } else {
-          setProfile(null);
-          setLoading(false);
-        }
-      });
-
-      return () => {
-        mounted = false;
-        
-        // Clear refresh interval on unmount
-        if (refreshInterval) {
-          clearInterval(refreshInterval);
-        }
-        
-        subscription.unsubscribe();
-      };
-    }
+      // Store or clear auth data based on session state
+      if (session?.user) {
+        storeAuthData(session, session.user, profile);
+      } else {
+        clearAuthData();
+      }
+      
+      if (session?.user) {
+        await fetchProfile(session.user.id);
+      } else {
+        setProfile(null);
+        setLoading(false);
+      }
+    });
 
     return () => {
       mounted = false;
+      
+      // Clear refresh interval on unmount
+      if (refreshInterval) {
+        clearInterval(refreshInterval);
+      }
+      
+      subscription.unsubscribe();
     };
   }, []);
 
@@ -208,47 +161,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const refreshProfile = async () => {
     if (!user) return;
     
-    if (isDemoMode) {
-      // In demo mode, get profile from localStorage
-      const demoSession = localStorage.getItem('flexzora-demo-session');
-      if (demoSession) {
-        try {
-          const sessionData = JSON.parse(demoSession);
-          setProfile(sessionData.profile);
-        } catch (error) {
-          console.error('Error refreshing demo profile:', error);
-        }
-      }
-      return;
-    }
-
     await fetchProfile(user.id);
   };
 
   const signUp = async (email: string, password: string, userData: any) => {
     try {
-      if (isDemoMode) {
-        // Demo mode signup
-        const mockUser = { id: 'demo-user', email, role: userData.role };
-        const mockSession = { user: mockUser };
-        const mockProfile = createMockProfile(email, userData.role);
-        
-        const sessionData = { 
-          user: mockUser, 
-          session: mockSession, 
-          profile: mockProfile 
-        };
-        
-        localStorage.setItem('flexzora-demo-session', JSON.stringify(sessionData));
-        
-        setUser(mockUser as User);
-        setSession(mockSession as Session);
-        setProfile(mockProfile);
-        
-        console.log('Demo signup successful:', email);
-        return { data: { user: mockUser, session: mockSession }, error: null };
-      }
-
       // Validate input data
       if (!userData.full_name || !userData.role) {
         return { 
@@ -293,33 +210,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signIn = async (email: string, password: string) => {
     try {
-      if (isDemoMode) {
-        // Demo mode signin - allow any credentials for easy testing
-        console.log('Demo mode: Allowing access with any credentials');
-        
-        const mockUser = { id: 'demo-user', email };
-        const mockSession = { user: mockUser };
-        
-        // Determine role based on email or default to worker
-        const role = email.includes('company') || email.includes('corp') ? 'company' : 'worker';
-        const mockProfile = createMockProfile(email, role);
-        
-        const sessionData = { 
-          user: mockUser, 
-          session: mockSession, 
-          profile: mockProfile 
-        };
-        
-        localStorage.setItem('flexzora-demo-session', JSON.stringify(sessionData));
-        
-        setUser(mockUser as User);
-        setSession(mockSession as Session);
-        setProfile(mockProfile);
-        
-        console.log('Demo signin successful:', email, 'Role:', role);
-        return { data: { user: mockUser, session: mockSession }, error: null };
-      }
-
       // Look up user by username or email
       const { email: userEmail, error: lookupError } = await lookupUserByIdentifier(email);
       
@@ -342,14 +232,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) {
         console.error('Supabase signin error:', error);
-        return { 
-          data: null, 
-          error: { 
-            message: isDemoMode 
-              ? 'Invalid login credentials. For demo, use demo@flexzora.com / password' 
-              : error.message 
-          } 
-        };
+        return { data: null, error: { message: error.message } };
       }
 
       // Ensure profile exists after successful signin
@@ -370,15 +253,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signOut = async () => {
     try {
-      if (isDemoMode) {
-        localStorage.removeItem('flexzora-demo-session'); 
-        setUser(null);
-        setSession(null);
-        setProfile(null);
-        console.log('Demo signout successful');
-        return { error: null };
-      }
-
       const { error } = await supabase.auth.signOut();
       
       if (error) {
@@ -404,23 +278,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!user) return { error: 'No user logged in' };
 
     try {
-      if (isDemoMode) {
-        // In demo mode, update local profile state and persist to localStorage
-        const updatedProfile = { ...profile, ...updates } as Profile;
-        setProfile(updatedProfile);
-        
-        // Update localStorage with new profile data
-        const currentSession = localStorage.getItem('flexzora-demo-session');
-        if (currentSession) { 
-          const sessionData = JSON.parse(currentSession);
-          sessionData.profile = updatedProfile;
-          localStorage.setItem('flexzora-demo-session', JSON.stringify(sessionData));
-        }
-        
-        console.log('Demo profile updated:', updates);
-        return { data: updatedProfile, error: null };
-      }
-
       const { data, error } = await DatabaseService.updateProfile(user.id, updates);
 
       if (error) {

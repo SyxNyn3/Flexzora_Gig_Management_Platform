@@ -15,16 +15,6 @@ export const createPaymentIntent = async (
   metadata: Record<string, string> = {}
 ): Promise<{ clientSecret: string | null; error: string | null }> => {
   try {
-    // Check if we're in demo mode
-    if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
-      console.log('Demo mode: Simulating payment intent creation');
-      // Simulate a successful response in demo mode
-      return {
-        clientSecret: 'demo_pi_secret_' + Math.random().toString(36).substring(2, 15),
-        error: null
-      };
-    }
-    
     // Call the Supabase Edge Function
     const { data, error } = await supabase.functions.invoke('create-payment-intent', {
       body: { 
@@ -71,17 +61,6 @@ export const createCheckoutSession = async (
   metadata: Record<string, string> = {}
 ): Promise<{ sessionId: string | null; url: string | null; error: string | null }> => {
   try {
-    // Check if we're in demo mode
-    if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
-      console.log('Demo mode: Simulating checkout session creation');
-      // Simulate a successful response in demo mode
-      return {
-        sessionId: 'demo_cs_' + Math.random().toString(36).substring(2, 15),
-        url: `${window.location.origin}/payment-success?demo=true`,
-        error: null
-      };
-    }
-    
     // Call the Supabase Edge Function
     const { data, error } = await supabase.functions.invoke('create-checkout-session', {
       body: { lineItems, successUrl, cancelUrl, metadata },
@@ -111,23 +90,6 @@ export const createCheckoutSession = async (
 // Function to retrieve a payment intent
 export const retrievePaymentIntent = async (paymentIntentId: string): Promise<any> => {
   try {
-    // Check if we're in demo mode
-    if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY || paymentIntentId.startsWith('demo_')) {
-      console.log('Demo mode: Simulating payment intent retrieval');
-      // Simulate a successful response in demo mode
-      return {
-        id: paymentIntentId,
-        amount: 5000, // $50.00
-        currency: 'usd',
-        status: 'succeeded',
-        metadata: {
-          payment_id: 'demo_payment_123',
-          gig_id: 'demo_gig_123',
-          description: 'Demo Payment'
-        }
-      };
-    }
-    
     // Call the Supabase Edge Function
     const { data, error } = await supabase.functions.invoke('retrieve-payment-intent', {
       body: { paymentIntentId },
@@ -147,23 +109,6 @@ export const setupPaymentMethod = async (
   paymentMethodId: string
 ) => {
   try {
-    // Check if we're in demo mode
-    if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
-      console.log('Demo mode: Simulating payment method setup');
-      // Simulate a successful response in demo mode
-      return {
-        success: true,
-        paymentMethod: {
-          id: 'demo_pm_' + Math.random().toString(36).substring(2, 15),
-          type: 'card',
-          card: {
-            brand: 'visa',
-            last4: '4242'
-          }
-        }
-      };
-    }
-    
     // Call the Supabase Edge Function
     const { data, error } = await supabase.functions.invoke('setup-payment-method', {
       body: { customerId, paymentMethodId },
@@ -180,36 +125,6 @@ export const setupPaymentMethod = async (
 // Function to list customer payment methods
 export const listPaymentMethods = async (customerId: string) => {
   try {
-    // Check if we're in demo mode
-    if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
-      console.log('Demo mode: Simulating payment methods listing');
-      // Simulate a successful response in demo mode
-      return {
-        paymentMethods: [
-          {
-            id: 'demo_pm_1',
-            type: 'card',
-            card: {
-              brand: 'visa',
-              last4: '4242',
-              exp_month: 12,
-              exp_year: 2025
-            }
-          },
-          {
-            id: 'demo_pm_2',
-            type: 'card',
-            card: {
-              brand: 'mastercard',
-              last4: '5555',
-              exp_month: 10,
-              exp_year: 2024
-            }
-          }
-        ]
-      };
-    }
-    
     // Call the Supabase Edge Function
     const { data, error } = await supabase.functions.invoke('list-payment-methods', {
       body: { customerId },
@@ -230,17 +145,6 @@ export const createCustomer = async (
   metadata: Record<string, string> = {}
 ) => {
   try {
-    // Check if we're in demo mode
-    if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
-      console.log('Demo mode: Simulating customer creation');
-      // Simulate a successful response in demo mode
-      return {
-        customerId: 'demo_cus_' + Math.random().toString(36).substring(2, 15),
-        email,
-        name
-      };
-    }
-    
     // Call the Supabase Edge Function
     const { data, error } = await supabase.functions.invoke('create-customer', {
       body: { email, name, metadata },
@@ -262,16 +166,6 @@ export const createPaymentLink = async (
   metadata: Record<string, string> = {}
 ) => {
   try {
-    // Check if we're in demo mode
-    if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
-      console.log('Demo mode: Simulating payment link creation');
-      // Simulate a successful response in demo mode
-      return {
-        url: `${window.location.origin}/payment-success?demo=true`,
-        id: 'demo_link_' + Math.random().toString(36).substring(2, 15)
-      };
-    }
-    
     // Call the Supabase Edge Function
     const { data, error } = await supabase.functions.invoke('create-payment-link', {
       body: { amount, currency, description, metadata },

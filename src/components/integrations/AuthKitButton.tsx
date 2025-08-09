@@ -5,7 +5,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { PlusCircle, CheckCircle, AlertCircle, ExternalLink, Zap } from 'lucide-react';
 import { toast } from 'sonner';
-import { isDemoMode } from '@/lib/supabase';
 
 interface AuthKitButtonProps {
   onConnectionSuccess?: (connection: any) => void;
@@ -43,26 +42,6 @@ export function AuthKitButton({ onConnectionSuccess, className = "" }: AuthKitBu
   });
 
   const handleConnect = () => {
-    if (isDemoMode) {
-      // Demo mode simulation
-      const providers = ['Google', 'Gmail', 'Google Calendar', 'Slack', 'Trello', 'Notion'];
-      const randomProvider = providers[Math.floor(Math.random() * providers.length)];
-      setIsConnecting(true);
-      setTimeout(() => {
-        const mockConnection = {
-          id: Date.now().toString(),
-          provider: randomProvider,
-          status: 'connected',
-          connectedAt: new Date().toISOString()
-        };
-        setConnections(prev => [...prev, mockConnection]);
-        setIsConnecting(false);
-        toast.success(`Connected to ${randomProvider} successfully!`);
-        onConnectionSuccess?.(mockConnection);
-      }, 2000);
-      return;
-    }
-
     setIsConnecting(true);
     try {
       open();
@@ -106,18 +85,6 @@ export function AuthKitButton({ onConnectionSuccess, className = "" }: AuthKitBu
                   </Badge>
                 </div>
               ))}
-            </div>
-          )}
-
-          {/* Demo Mode Notice */}
-          {isDemoMode && (
-            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <div className="flex items-center space-x-2">
-                <AlertCircle className="h-4 w-4 text-blue-600" />
-                <p className="text-sm text-blue-800">
-                  <strong>Demo Mode:</strong> This will simulate connecting to external services
-                </p>
-              </div>
             </div>
           )}
 

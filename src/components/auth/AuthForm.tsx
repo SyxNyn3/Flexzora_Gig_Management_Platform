@@ -10,11 +10,10 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase, isDemoMode } from '@/lib/supabase';
-import { testAccounts, signInWithTestAccount } from '@/lib/testAccounts';
+import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { storeAuthData } from '@/lib/auth';
-import { Mail, Apple, Chrome, ArrowLeft, Shield, CheckCircle, Eye, EyeOff } from 'lucide-react';
+import { Mail, Apple, Chrome, ArrowLeft, Shield, CheckCircle, Eye, EyeOff, Sparkles, Lock } from 'lucide-react';
 
 const signInSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -23,7 +22,7 @@ const signInSchema = z.object({
 
 const signUpSchema = z.object({
   email: z.string().email('Invalid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
   confirmPassword: z.string(),
   fullName: z.string().min(2, 'Full name must be at least 2 characters'),
   username: z.string()
@@ -45,6 +44,7 @@ const AuthForm: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [socialLoading, setSocialLoading] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState('');
   const { signIn, signUp } = useAuth();
   const navigate = useNavigate();
@@ -52,8 +52,8 @@ const AuthForm: React.FC = () => {
   const signInForm = useForm<SignInForm>({
     resolver: zodResolver(signInSchema),
     defaultValues: {
-      email: 'demo@flexzora.com',
-      password: 'password',
+      email: '',
+      password: '',
     },
   });
 
@@ -80,13 +80,10 @@ const AuthForm: React.FC = () => {
         console.error('Sign in error:', error);
         setError(error.message);
       } else {
-        // Store auth data in localStorage for persistence
-        if (data?.session && data?.user) {
-          storeAuthData(data.session, data.user, null);
-        }
-        
-        toast.success('Signed in successfully!');
-        setTimeout(() => navigate('/dashboard'), 2000);
+        toast.success('Welcome back!', {
+          description: 'You have been signed in successfully.',
+        });
+        setTimeout(() => navigate('/dashboard'), 1500);
       }
     } catch (err: any) {
       setError(err.message || 'An error occurred during sign in');
@@ -101,7 +98,6 @@ const AuthForm: React.FC = () => {
     setError('');
 
     try {
-      // Validate form data
       if (!data.fullName.trim()) {
         setError('Full name is required');
         setLoading(false);
@@ -124,13 +120,10 @@ const AuthForm: React.FC = () => {
         console.error('Sign up error:', error);
         setError(error.message);
       } else {
-        // Store auth data in localStorage for persistence
-        if (data?.session && data?.user) {
-          storeAuthData(data.session, data.user, null);
-        }
-        
-        toast.success('Account created successfully!');
-        setTimeout(() => navigate('/dashboard'), 2000);
+        toast.success('Account created successfully!', {
+          description: 'Welcome to FlexZora! Your account has been created.',
+        });
+        setTimeout(() => navigate('/dashboard'), 1500);
       }
     } catch (err: any) {
       setError(err.message || 'An error occurred during sign up');
@@ -141,11 +134,6 @@ const AuthForm: React.FC = () => {
   };
 
   const handleSocialLogin = async (provider: 'google' | 'apple') => {
-    if (isDemoMode) {
-      toast.info('Social login not available in demo mode. Use the demo login instead.');
-      return;
-    }
-
     setSocialLoading(provider);
     setError('');
 
@@ -173,224 +161,143 @@ const AuthForm: React.FC = () => {
     }
   };
 
-  const handleDemoLogin = async () => {
-    setLoading(true);
-    setError('');
-
-    try {
-      // In demo mode, we'll simulate a successful login
-      if (isDemoMode) {
-        // Use the freelancer account by default
-        const { data: sessionData } = await signInWithTestAccount('freelancer');
-        
-        // Simulate a delay
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        toast.success('Demo login successful!');
-        setTimeout(() => navigate('/dashboard'), 2000);
-        return;
-      }
-
-      const { error } = await signIn('demo@flexzora.com', 'password');
-      if (error) {
-        setError(error.message);
-      } else {
-        toast.success('Demo login successful!');
-        setTimeout(() => navigate('/dashboard'), 2000);
-      }
-    } catch (err: any) {
-      setError(err.message || 'An error occurred during demo login');
-      console.error('Demo login exception:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-green-50 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-white to-blue-50 p-4">
       <div className="w-full max-w-md">
         {/* Back to Home Button */}
         <Button
           variant="ghost"
           onClick={() => navigate('/')}
-          className="mb-6 text-gray-600 hover:text-gray-900"
+          className="mb-6 text-gray-600 hover:text-gray-900 transition-colors"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Home
         </Button>
-                placeholder={isDemoMode ? 'demo@flexzora.com or username: demo' : 'Enter your email or username'}
-        <Card className="shadow-xl border-0 animate-fade-in">
-          <CardHeader className="text-center pb-6">
-            <div className="flex justify-center mb-4">
-              <div className="w-12 h-12 bg-gradient-to-r from-blue-600 to-green-500 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-2xl">F</span>
+
+        <Card className="shadow-2xl border-0 animate-fade-in backdrop-blur-sm bg-white/95">
+          <CardHeader className="text-center pb-8 pt-8">
+            <div className="flex justify-center mb-6">
+              <div className="relative">
+                <div className="w-16 h-16 bg-gradient-to-r from-blue-600 to-green-500 rounded-xl flex items-center justify-center shadow-lg">
+                  <span className="text-white font-bold text-3xl">F</span>
+                </div>
+                <div className="absolute -top-1 -right-1 w-6 h-6 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
+                  <Sparkles className="w-3 h-3 text-white" />
+                </div>
               </div>
             </div>
-            <CardTitle className="text-2xl font-bold">
-              {isSignUp ? 'Create Your Account' : 'Welcome Back'}
+            <CardTitle className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent mb-2">
+              {isSignUp ? 'Join FlexZora' : 'Welcome Back'}
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-base text-gray-600 max-w-sm mx-auto leading-relaxed">
               {isSignUp 
-                ? 'Join the Flexora community and start managing your gigs' 
-                : 'Sign in to your Flexora account'
+                ? 'Create your account and start managing your gigs like a pro' 
+                : 'Sign in to your FlexZora account and continue your journey'
               }
             </CardDescription>
           </CardHeader>
 
-          <CardContent className="space-y-6">
-            {/* Demo Mode Alert */}
-            {isDemoMode && (
-              <Alert className="border-blue-200 bg-blue-50">
-                <AlertDescription className="text-blue-800">
-                  <div className="space-y-3">
-                    <div>
-                      <strong>Demo Mode:</strong> Enter any email and password to explore the app
-                    </div>
-                    <div className="bg-blue-50 p-3 rounded-lg text-sm text-blue-800 mt-2">
-                      <strong>Test Accounts:</strong><br/>
-                      <span className="block mt-1">Freelancer: {testAccounts.freelancer.email} / CameraAction2025!</span>
-                      <span className="block mt-1">Company: {testAccounts.company.email} / StageLight2025!</span>
-                      <span className="block mt-1 font-semibold">Or use ANY email/password combination</span>
-                    </div>
-                    <Button 
-                      onClick={handleDemoLogin}
-                      disabled={loading}
-                      className="w-full bg-gradient-to-r from-blue-600 to-green-500"
-                    >
-                      {loading ? 'Signing In...' : 'Try Demo Login'}
-                    </Button>
-                    <div className="flex space-x-2">
-                      <Button 
-                        onClick={async () => {
-                          setLoading(true);
-                          await signInWithTestAccount('freelancer');
-                          toast.success('Freelancer demo login successful!');
-                          navigate('/dashboard');
-                          setLoading(false);
-                        }}
-                        variant="outline"
-                        className="flex-1"
-                        disabled={loading}
-                      >
-                        Freelancer Demo
-                      </Button>
-                      <Button 
-                        onClick={async () => {
-                          setLoading(true);
-                          await signInWithTestAccount('company');
-                          toast.success('Company demo login successful!');
-                          navigate('/dashboard');
-                          setLoading(false);
-                        }}
-                        variant="outline"
-                        className="flex-1"
-                        disabled={loading}
-                      >
-                        Company Demo
-                      </Button>
-                    </div>
-                  </div>
-                </AlertDescription>
-              </Alert>
-            )}
-
+          <CardContent className="space-y-6 px-8">
             {/* Social Login Buttons */}
-            {!isDemoMode && (
-              <div className="space-y-3">
-                <Button
-                  variant="outline"
-                  onClick={() => handleSocialLogin('google')}
-                  disabled={socialLoading !== null || loading}
-                  className="w-full h-12 text-gray-700 border-gray-300 hover:bg-gray-50"
-                >
-                  {socialLoading === 'google' ? (
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-600"></div>
-                  ) : (
-                    <>
-                      <Chrome className="w-5 h-5 mr-3" />
-                      Continue with Google
-                    </>
-                  )}
-                </Button>
+            <div className="space-y-3">
+              <Button
+                variant="outline"
+                onClick={() => handleSocialLogin('google')}
+                disabled={socialLoading !== null || loading}
+                className="w-full h-12 text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 font-medium"
+              >
+                {socialLoading === 'google' ? (
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-600"></div>
+                ) : (
+                  <>
+                    <Chrome className="w-5 h-5 mr-3" />
+                    Continue with Google
+                  </>
+                )}
+              </Button>
 
-                <Button
-                  variant="outline"
-                  onClick={() => handleSocialLogin('apple')}
-                  disabled={socialLoading !== null || loading}
-                  className="w-full h-12 text-gray-700 border-gray-300 hover:bg-gray-50"
-                >
-                  {socialLoading === 'apple' ? (
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-600"></div>
-                  ) : (
-                    <>
-                      <Apple className="w-5 h-5 mr-3" />
-                      Continue with Apple
-                    </>
-                  )}
-                </Button>
+              <Button
+                variant="outline"
+                onClick={() => handleSocialLogin('apple')}
+                disabled={socialLoading !== null || loading}
+                className="w-full h-12 text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 font-medium"
+              >
+                {socialLoading === 'apple' ? (
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-600"></div>
+                ) : (
+                  <>
+                    <Apple className="w-5 h-5 mr-3" />
+                    Continue with Apple
+                  </>
+                )}
+              </Button>
 
-                <div className="relative">
-                  <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t border-gray-300" />
-                  </div>
-                  <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-white px-2 text-gray-500">Or continue with email</span>
-                  </div>
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t border-gray-200" />
+                </div>
+                <div className="relative flex justify-center text-sm uppercase">
+                  <span className="bg-white px-4 text-gray-500 font-medium tracking-wide">Or continue with email</span>
                 </div>
               </div>
-            )}
+            </div>
 
             {/* Error Display */}
             {error && (
-              <Alert variant="destructive">
-                <AlertDescription className="text-red-800">{error}</AlertDescription>
+              <Alert variant="destructive" className="bg-red-50 border-red-200">
+                <AlertDescription className="text-red-800 text-sm">{error}</AlertDescription>
               </Alert>
             )}
 
             {/* Email/Password Forms */}
             {isSignUp ? (
-              <form onSubmit={signUpForm.handleSubmit(onSignUp)} className="space-y-4">
-                <div>
-                  <Label htmlFor="fullName">Full Name</Label>
-                  <Input
-                    id="fullName"
-                    type="text"
-                    {...signUpForm.register('fullName')}
-                    className="mt-1 h-12"
-                    placeholder="Enter your full name"
-                  />
-                  {signUpForm.formState.errors.fullName && (
-                    <p className="text-sm text-red-600 mt-1">
-                      {signUpForm.formState.errors.fullName.message}
-                    </p>
-                  )}
+              <form onSubmit={signUpForm.handleSubmit(onSignUp)} className="space-y-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="fullName" className="text-sm font-medium text-gray-700">Full Name</Label>
+                    <Input
+                      id="fullName"
+                      type="text"
+                      {...signUpForm.register('fullName')}
+                      className="mt-1.5 h-11 transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Enter your full name"
+                    />
+                    {signUpForm.formState.errors.fullName && (
+                      <p className="text-sm text-red-600 mt-1">
+                        {signUpForm.formState.errors.fullName.message}
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <Label htmlFor="username" className="text-sm font-medium text-gray-700">Username</Label>
+                    <Input
+                      id="username"
+                      type="text"
+                      {...signUpForm.register('username')}
+                      className="mt-1.5 h-11 transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Choose a unique username"
+                    />
+                    {signUpForm.formState.errors.username && (
+                      <p className="text-sm text-red-600 mt-1">
+                        {signUpForm.formState.errors.username.message}
+                      </p>
+                    )}
+                  </div>
                 </div>
 
                 <div>
-                  <Label htmlFor="username">Username</Label>
-                  <Input
-                    id="username"
-                    type="text"
-                    {...signUpForm.register('username')}
-                    className="mt-1 h-12"
-                    placeholder="Choose a unique username"
-                  />
-                  {signUpForm.formState.errors.username && (
-                    <p className="text-sm text-red-600 mt-1">
-                      {signUpForm.formState.errors.username.message}
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    {...signUpForm.register('email')}
-                    className="mt-1 h-12"
-                    placeholder="Enter your email"
-                  />
+                  <Label htmlFor="email" className="text-sm font-medium text-gray-700">Email</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    <Input
+                      id="email"
+                      type="email"
+                      {...signUpForm.register('email')}
+                      className="mt-1.5 h-11 pl-10 transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Enter your email"
+                    />
+                  </div>
                   {signUpForm.formState.errors.email && (
                     <p className="text-sm text-red-600 mt-1">
                       {signUpForm.formState.errors.email.message}
@@ -399,22 +306,32 @@ const AuthForm: React.FC = () => {
                 </div>
 
                 <div>
-                  <Label htmlFor="role">I am a...</Label>
+                  <Label htmlFor="role" className="text-sm font-medium text-gray-700">I am a...</Label>
                   <Select onValueChange={(value) => signUpForm.setValue('role', value as 'worker' | 'company')}>
-                    <SelectTrigger className="mt-1 h-12">
+                    <SelectTrigger className="mt-1.5 h-11 transition-all duration-200 focus:ring-2 focus:ring-blue-500">
                       <SelectValue placeholder="Select your role" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="worker">
-                        <div className="flex items-center">
-                          <span className="mr-2">👤</span>
-                          Freelance Worker
+                        <div className="flex items-center py-2">
+                          <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+                            <span className="text-lg">👤</span>
+                          </div>
+                          <div>
+                            <div className="font-medium">Freelance Professional</div>
+                            <div className="text-xs text-gray-500">Camera operator, sound engineer, etc.</div>
+                          </div>
                         </div>
                       </SelectItem>
                       <SelectItem value="company">
-                        <div className="flex items-center">
-                          <span className="mr-2">🏢</span>
-                          Company/Employer
+                        <div className="flex items-center py-2">
+                          <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center mr-3">
+                            <span className="text-lg">🏢</span>
+                          </div>
+                          <div>
+                            <div className="font-medium">Company/Employer</div>
+                            <div className="text-xs text-gray-500">Production company, event organizer</div>
+                          </div>
                         </div>
                       </SelectItem>
                     </SelectContent>
@@ -427,20 +344,21 @@ const AuthForm: React.FC = () => {
                 </div>
 
                 <div>
-                  <Label htmlFor="password">Password</Label>
+                  <Label htmlFor="password" className="text-sm font-medium text-gray-700">Password</Label>
                   <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                     <Input
                       id="password"
                       type={showPassword ? "text" : "password"}
                       {...signUpForm.register('password')}
-                      className="mt-1 h-12 pr-10"
-                      placeholder="Create a password"
+                      className="mt-1.5 h-11 pl-10 pr-10 transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Create a strong password"
                     />
                     <Button
                       type="button"
                       variant="ghost"
                       size="sm"
-                      className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 p-0"
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 hover:bg-gray-100"
                       onClick={() => setShowPassword(!showPassword)}
                     >
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -451,17 +369,35 @@ const AuthForm: React.FC = () => {
                       {signUpForm.formState.errors.password.message}
                     </p>
                   )}
+                  <div className="mt-2 space-y-1">
+                    <div className="flex items-center text-xs text-gray-500">
+                      <div className="w-1 h-1 bg-gray-400 rounded-full mr-2"></div>
+                      At least 8 characters
+                    </div>
+                  </div>
                 </div>
 
                 <div>
-                  <Label htmlFor="confirmPassword">Confirm Password</Label>
-                  <Input
-                    id="confirmPassword"
-                    type="password"
-                    {...signUpForm.register('confirmPassword')}
-                    className="mt-1 h-12"
-                    placeholder="Confirm your password"
-                  />
+                  <Label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700">Confirm Password</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    <Input
+                      id="confirmPassword"
+                      type={showConfirmPassword ? "text" : "password"}
+                      {...signUpForm.register('confirmPassword')}
+                      className="mt-1.5 h-11 pl-10 pr-10 transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Confirm your password"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 hover:bg-gray-100"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    >
+                      {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </Button>
+                  </div>
                   {signUpForm.formState.errors.confirmPassword && (
                     <p className="text-sm text-red-600 mt-1">
                       {signUpForm.formState.errors.confirmPassword.message}
@@ -471,23 +407,33 @@ const AuthForm: React.FC = () => {
 
                 <Button 
                   type="submit" 
-                  className="w-full h-12 bg-gradient-to-r from-blue-600 to-green-500 hover:from-blue-700 hover:to-green-600" 
+                  className="w-full h-12 bg-gradient-to-r from-blue-600 to-green-500 hover:from-blue-700 hover:to-green-600 text-white font-semibold text-base shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-[1.02]" 
                   disabled={loading || socialLoading !== null}
                 >
-                  {loading ? 'Creating Account...' : 'Create Account'}
+                  {loading ? (
+                    <div className="flex items-center">
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
+                      Creating Account...
+                    </div>
+                  ) : (
+                    'Create Account'
+                  )}
                 </Button>
               </form>
             ) : (
-              <form onSubmit={signInForm.handleSubmit(onSignIn)} className="space-y-4">
+              <form onSubmit={signInForm.handleSubmit(onSignIn)} className="space-y-5">
                 <div>
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    {...signInForm.register('email')}
-                    className="mt-1 h-12"
-                    placeholder="Enter your email"
-                  />
+                  <Label htmlFor="email" className="text-sm font-medium text-gray-700">Email or Username</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    <Input
+                      id="email"
+                      type="email"
+                      {...signInForm.register('email')}
+                      className="mt-1.5 h-11 pl-10 transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Enter your email or username"
+                    />
+                  </div>
                   {signInForm.formState.errors.email && (
                     <p className="text-sm text-red-600 mt-1">
                       {signInForm.formState.errors.email.message}
@@ -496,20 +442,21 @@ const AuthForm: React.FC = () => {
                 </div>
 
                 <div>
-                  <Label htmlFor="password">Password</Label>
+                  <Label htmlFor="password" className="text-sm font-medium text-gray-700">Password</Label>
                   <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                     <Input
                       id="password"
                       type={showPassword ? "text" : "password"}
                       {...signInForm.register('password')}
-                      className="mt-1 h-12 pr-10"
+                      className="mt-1.5 h-11 pl-10 pr-10 transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="Enter your password"
                     />
                     <Button
                       type="button"
                       variant="ghost"
                       size="sm"
-                      className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 p-0"
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 hover:bg-gray-100"
                       onClick={() => setShowPassword(!showPassword)}
                     >
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -522,64 +469,87 @@ const AuthForm: React.FC = () => {
                   )}
                 </div>
 
-
                 <Button 
                   type="submit" 
-                  className="w-full h-12 bg-gradient-to-r from-blue-600 to-green-500 hover:from-blue-700 hover:to-green-600" 
+                  className="w-full h-12 bg-gradient-to-r from-blue-600 to-green-500 hover:from-blue-700 hover:to-green-600 text-white font-semibold text-base shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-[1.02]" 
                   disabled={loading || socialLoading !== null}
                 >
-                  {loading ? 'Signing In...' : 'Sign In'}
+                  {loading ? (
+                    <div className="flex items-center">
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
+                      Signing In...
+                    </div>
+                  ) : (
+                    'Sign In'
+                  )}
                 </Button>
 
-                {!isDemoMode && (
-                  <div className="text-center">
-                    <Button variant="link" className="text-sm text-gray-600 hover:text-gray-900">
-                      Forgot your password?
-                    </Button>
-                  </div>
-                )}
+                <div className="text-center">
+                  <Button variant="link" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
+                    Forgot your password?
+                  </Button>
+                </div>
               </form>
             )}
 
             {/* Security Features */}
-            {!isDemoMode && (
-              <div className="pt-4 border-t border-gray-200">
-                <div className="flex items-center justify-center space-x-6 text-xs text-gray-500">
-                  <div className="flex items-center">
-                    <Shield className="w-3 h-3 mr-1" />
-                    SSL Encrypted
-                  </div>
-                  <div className="flex items-center">
-                    <CheckCircle className="w-3 h-3 mr-1" />
-                    GDPR Compliant
-                  </div>
+            <div className="pt-4 border-t border-gray-100">
+              <div className="flex items-center justify-center space-x-6 text-xs text-gray-500">
+                <div className="flex items-center">
+                  <Shield className="w-3 h-3 mr-1.5" />
+                  256-bit SSL
+                </div>
+                <div className="flex items-center">
+                  <CheckCircle className="w-3 h-3 mr-1.5" />
+                  GDPR Compliant
+                </div>
+                <div className="flex items-center">
+                  <Lock className="w-3 h-3 mr-1.5" />
+                  SOC 2 Certified
                 </div>
               </div>
-            )}
+            </div>
           </CardContent>
 
-          <CardFooter className="text-center">
+          <CardFooter className="text-center pb-8 px-8">
             <Button
               variant="link"
-              className="w-full"
+              className="w-full text-base"
               onClick={() => setIsSignUp(!isSignUp)}
               disabled={loading || socialLoading !== null}
             >
               {isSignUp 
-                ? 'Already have an account? Sign in' 
-                : "Don't have an account? Sign up"
+                ? (
+                  <span className="text-gray-600">
+                    Already have an account? <span className="text-blue-600 font-medium hover:text-blue-700">Sign in</span>
+                  </span>
+                )
+                : (
+                  <span className="text-gray-600">
+                    Don't have an account? <span className="text-blue-600 font-medium hover:text-blue-700">Sign up</span>
+                  </span>
+                )
               }
             </Button>
           </CardFooter>
         </Card>
 
         {/* Trust Indicators */}
-        <div className="mt-6 text-center">
-          <p className="text-xs text-gray-500 mb-2">Trusted by 10,000+ professionals</p>
-          <div className="flex justify-center space-x-4 text-xs text-gray-400">
-            <span>• Enterprise Security</span>
-            <span>• 99.9% Uptime</span>
-            <span>• 24/7 Support</span>
+        <div className="mt-8 text-center">
+          <p className="text-sm text-gray-500 mb-3 font-medium">Trusted by 10,000+ professionals</p>
+          <div className="flex justify-center space-x-8 text-xs text-gray-400">
+            <div className="flex flex-col items-center">
+              <div className="text-base font-bold text-gray-700">99.9%</div>
+              <span>Uptime</span>
+            </div>
+            <div className="flex flex-col items-center">
+              <div className="text-base font-bold text-gray-700">24/7</div>
+              <span>Support</span>
+            </div>
+            <div className="flex flex-col items-center">
+              <div className="text-base font-bold text-gray-700">256-bit</div>
+              <span>Security</span>
+            </div>
           </div>
         </div>
       </div>
