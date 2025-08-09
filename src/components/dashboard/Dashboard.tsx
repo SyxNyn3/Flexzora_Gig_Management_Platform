@@ -39,7 +39,7 @@ const Dashboard: React.FC = () => {
   
   // Calculate stats from real data
   const stats = {
-    totalGigs: applications.filter(app => app.status === 'accepted').length,
+    totalGigs: (applications || []).filter(app => app.status === 'accepted').length,
     pendingApplications: (applications || []).filter(app => app.status === 'pending').length,
     upcomingGigs: (applications || []).filter(app => {
       const startDate = app.gig?.start_date ? new Date(app.gig.start_date) : null;
