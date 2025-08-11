@@ -392,6 +392,3 @@ const GmailIntegration: React.FC = () => {
 };
 
 export default GmailIntegration;
-
-// Import for the Switch component
-import { Switch } from '@/components/ui/switch';
