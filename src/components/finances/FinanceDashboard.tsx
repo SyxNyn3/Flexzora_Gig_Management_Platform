@@ -146,19 +146,21 @@ const FinanceDashboard: React.FC = () => {
   const handlePaymentSuccess = async () => {
     // Update payment status in the database
     try {
-      await DatabaseService.updatePaymentStatus(
-        selectedPayment.id, 
-        'paid', 
-        new Date().toISOString().split('T')[0]
-      );
+      if (selectedPayment) {
+        await DatabaseService.updatePaymentStatus(
+          selectedPayment.id, 
+          'paid', 
+          new Date().toISOString().split('T')[0]
+        );
+      }
       
       // Refresh payments data
       await refetchPayments();
       toast.success('Payment processed successfully!');
     } catch (error: any) {
-      toast.error(`Failed to update payment: ${error.message}`);
+      console.error('Payment update error:', error);
+      toast.error(`Failed to update payment: ${error.message || 'Unknown error'}`);
     }
-    
   };
 
   const getPaymentStatusColor = (status: string) => {

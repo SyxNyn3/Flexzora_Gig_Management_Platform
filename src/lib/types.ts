@@ -7,6 +7,8 @@ export type IntegrationStatus = 'connected' | 'pending' | 'error' | 'disconnecte
 export type WaitlistRoleInterest = 'worker' | 'company';
 export type WaitlistStatus = 'pending' | 'whitelisted' | 'invited';
 
+export type PaymentStatus = 'pending' | 'paid' | 'overdue' | 'cancelled';
+
 export interface Database {
   public: {
     Tables: {
@@ -79,16 +81,6 @@ export interface Database {
         Row: WaitlistEntry;
         Insert: Omit<WaitlistEntry, 'id' | 'created_at' | 'referral_count'>;
         Update: Partial<Omit<WaitlistEntry, 'id' | 'created_at'>>;
-      };
-      follows: {
-        Row: Follow;
-        Insert: Omit<Follow, 'id' | 'created_at'>;
-        Update: Partial<Omit<Follow, 'id' | 'created_at'>>;
-      };
-      reviews: {
-        Row: Review;
-        Insert: Omit<Review, 'id' | 'created_at' | 'updated_at'>;
-        Update: Partial<Omit<Review, 'id' | 'created_at' | 'updated_at'>>;
       };
     };
   };
@@ -310,28 +302,6 @@ export interface WaitlistEntry {
   created_at: string;
   status: WaitlistStatus;
   referral_count: number;
-}
-
-export interface Follow {
-  id: string;
-  follower_id: string;
-  followed_user_id: string;
-  created_at: string;
-}
-
-export interface Review {
-  id: string;
-  worker_id: string;
-  reviewer_id: string;
-  gig_id?: string;
-  rating: number;
-  review_text: string;
-  is_public: boolean;
-  created_at: string;
-  updated_at: string;
-  reviewer?: Profile;
-  worker?: Profile;
-  gig?: Gig;
 }
 
 // API Response types

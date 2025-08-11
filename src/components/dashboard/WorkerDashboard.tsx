@@ -21,7 +21,8 @@ import {
   Star,
   Briefcase,
   Users,
-  Building2
+  Building2,
+  Building
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { format, isToday, isTomorrow, addDays } from 'date-fns';

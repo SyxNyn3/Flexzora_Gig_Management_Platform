@@ -143,10 +143,8 @@ export function useNotifications(userId: string) {
 export function useReviewsForWorker(workerId: string) {
   if (!workerId) return { data: [], error: 'No worker ID provided', loading: false, refetch: async () => {} };
   
-  return useSupabaseQuery(
-    () => DatabaseService.getReviewsForWorker(workerId),
-    [workerId]
-  );
+  // Return empty data for now since reviews table doesn't exist yet
+  return { data: [], error: null, loading: false, refetch: async () => {} };
 }
 
 // Hook for fetching a single review
