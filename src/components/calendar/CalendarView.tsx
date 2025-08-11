@@ -34,6 +34,23 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 
+// Helper functions for date calculations
+function startOfWeek(date: Date): Date {
+  const result = new Date(date);
+  const day = result.getDay();
+  const diff = result.getDate() - day + (day === 0 ? -6 : 1); // Adjust when day is Sunday
+  result.setDate(diff);
+  result.setHours(0, 0, 0, 0);
+  return result;
+}
+
+function endOfWeek(date: Date): Date {
+  const result = startOfWeek(date);
+  result.setDate(result.getDate() + 6);
+  result.setHours(23, 59, 59, 999);
+  return result;
+}
+
 const localizer = momentLocalizer(moment);
 
 interface CalendarEvent {

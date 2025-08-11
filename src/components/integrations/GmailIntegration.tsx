@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { AuthKitButton } from './AuthKitButton';
 import { Mail, CheckCircle, AlertCircle, RefreshCw, Inbox, Send, Trash, Star, Clock, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
+import { Switch } from '@/components/ui/switch';
 
 interface EmailSummary {
   id: string;

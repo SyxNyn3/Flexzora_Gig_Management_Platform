@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { DatabaseService } from '@/lib/supabase';
 import { ApiResponse } from '@/lib/types';
 import { toast } from 'sonner';
+import { toast } from 'sonner';
 
 export function useSupabaseQuery<T>(
   queryFn: () => Promise<{ data: T | null; error: string | null }>,
