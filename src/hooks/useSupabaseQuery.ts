@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { DatabaseService } from '@/lib/supabase';
 import { ApiResponse } from '@/lib/types';
 import { toast } from 'sonner';
-import { toast } from 'sonner';
 
 export function useSupabaseQuery<T>(
   queryFn: () => Promise<{ data: T | null; error: string | null }>,
@@ -50,11 +49,9 @@ export function useSupabaseQuery<T>(
 }
 
 // Specific hooks for common queries
-export function useProfile(userId: string) {
-  if (!userId) return { data: null, error: 'No user ID provided', loading: false, refetch: async () => {} };
-  
+export function useProfile(userId: string | undefined | null) {
   return useSupabaseQuery(
-    () => DatabaseService.getProfile(userId),
+    () => userId ? DatabaseService.getProfile(userId) : Promise.resolve({ data: null, error: 'No user ID provided' }),
     [userId]
   );
 }
@@ -66,20 +63,16 @@ export function useSkills() {
   );
 }
 
-export function useWorkerSkills(workerId: string) {
-  if (!workerId) return { data: [], error: 'No worker ID provided', loading: false, refetch: async () => {} };
-  
+export function useWorkerSkills(workerId: string | undefined | null) {
   return useSupabaseQuery(
-    () => DatabaseService.getWorkerSkills(workerId),
+    () => workerId ? DatabaseService.getWorkerSkills(workerId) : Promise.resolve({ data: [], error: 'No worker ID provided' }),
     [workerId]
   );
 }
 
-export function useCertifications(workerId: string) {
-  if (!workerId) return { data: [], error: 'No worker ID provided', loading: false, refetch: async () => {} };
-  
+export function useCertifications(workerId: string | undefined | null) {
   return useSupabaseQuery(
-    () => DatabaseService.getCertifications(workerId),
+    () => workerId ? DatabaseService.getCertifications(workerId) : Promise.resolve({ data: [], error: 'No worker ID provided' }),
     [workerId]
   );
 }
@@ -91,11 +84,9 @@ export function useGigs(filters?: { status?: string; location?: string; search?:
   );
 }
 
-export function useGig(gigId: string) {
-  if (!gigId) return { data: null, error: 'No gig ID provided', loading: false, refetch: async () => {} };
-  
+export function useGig(gigId: string | undefined | null) {
   return useSupabaseQuery(
-    () => DatabaseService.getGig(gigId),
+    () => gigId ? DatabaseService.getGig(gigId) : Promise.resolve({ data: null, error: 'No gig ID provided' }),
     [gigId]
   );
 }
@@ -107,11 +98,9 @@ export function useApplications(filters?: { workerId?: string; gigId?: string; s
   );
 }
 
-export function useCalendarEvents(userId: string, startDate?: string, endDate?: string) {
-  if (!userId) return { data: [], error: 'No user ID provided', loading: false, refetch: async () => {} };
-  
+export function useCalendarEvents(userId: string | undefined | null, startDate?: string, endDate?: string) {
   return useSupabaseQuery(
-    () => DatabaseService.getCalendarEvents(userId, startDate, endDate),
+    () => userId ? DatabaseService.getCalendarEvents(userId, startDate, endDate) : Promise.resolve({ data: [], error: 'No user ID provided' }),
     [userId, startDate, endDate]
   );
 }
@@ -130,35 +119,29 @@ export function usePayments(filters?: { workerId?: string; companyId?: string; g
   );
 }
 
-export function useNotifications(userId: string) {
-  if (!userId) return { data: [], error: 'No user ID provided', loading: false, refetch: async () => {} };
-  
+export function useNotifications(userId: string | undefined | null) {
   return useSupabaseQuery(
-    () => DatabaseService.getNotifications(userId),
+    () => userId ? DatabaseService.getNotifications(userId) : Promise.resolve({ data: [], error: 'No user ID provided' }),
     [userId]
   );
 }
 
 // Hook for fetching reviews for a worker
-export function useReviewsForWorker(workerId: string) {
-  if (!workerId) return { data: [], error: 'No worker ID provided', loading: false, refetch: async () => {} };
-  
+export function useReviewsForWorker(workerId: string | undefined | null) {
   // Return empty data for now since reviews table doesn't exist yet
   return { data: [], error: null, loading: false, refetch: async () => {} };
 }
 
 // Hook for fetching a single review
-export function useReview(reviewId: string) {
-  if (!reviewId) return { data: null, error: 'No review ID provided', loading: false, refetch: async () => {} };
-  
+export function useReview(reviewId: string | undefined | null) {
   return useSupabaseQuery(
-    () => DatabaseService.getReview(reviewId),
+    () => reviewId ? DatabaseService.getReview(reviewId) : Promise.resolve({ data: null, error: 'No review ID provided' }),
     [reviewId]
   );
 }
 
 // Hook for real-time notifications
-export function useRealtimeNotifications(userId: string, onNewNotification?: (notification: any) => void) {
+export function useRealtimeNotifications(userId: string | undefined | null, onNewNotification?: (notification: any) => void) {
   const [notifications, setNotifications] = useState<any[]>([]);
   
   useEffect(() => {
