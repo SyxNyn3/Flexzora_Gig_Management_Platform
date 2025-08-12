@@ -8,7 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase, DatabaseService } from '@/lib/supabase';
 import { Notification } from '@/lib/types';
 import { useNotifications, useRealtimeNotifications } from '@/hooks/useSupabaseQuery';
-import { Bell, CheckCircle, AlertCircle, Info, X, BookMarked as MarkAsRead } from 'lucide-react';
+import { Bell, CheckCircle, AlertCircle, Info, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 
@@ -19,16 +19,16 @@ interface NotificationCenterProps {
 
 const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose }) => {
   const { profile } = useAuth();
-  const { data: notifications = [], loading, refetch: refetchNotifications } = useNotifications(profile?.id || '');
+  const { data: notifications = [], loading, refetch: refetchNotifications } = useNotifications(profile?.id);
   
   // Set up real-time notifications
-  useRealtimeNotifications(profile?.id || '');
+  useRealtimeNotifications(profile?.id);
 
   useEffect(() => {
-    if (profile && isOpen) {
+    if (profile?.id && isOpen && refetchNotifications) {
       refetchNotifications();
     }
-  }, [profile, isOpen]);
+  }, [profile?.id, isOpen, refetchNotifications]);
 
   const markAsRead = async (notificationId: string) => {
     try {
@@ -37,7 +37,9 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
       if (error) throw error;
 
       // Refresh notifications
-      refetchNotifications();
+      if (refetchNotifications) {
+        refetchNotifications();
+      }
     } catch (error) {
       console.error('Error marking notification as read:', error);
     }
@@ -55,7 +57,9 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
       }
 
       // Refresh notifications
-      refetchNotifications();
+      if (refetchNotifications) {
+        refetchNotifications();
+      }
 
       toast.success('All notifications marked as read');
     } catch (error) {
