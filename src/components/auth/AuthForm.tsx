@@ -348,6 +348,7 @@ const AuthForm: React.FC = () => {
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                     <Input
+                      name="signup-password"
                       id="password"
                       type={showPassword ? "text" : "password"}
                       {...signUpForm.register('password')}
