@@ -7,8 +7,6 @@ export type IntegrationStatus = 'connected' | 'pending' | 'error' | 'disconnecte
 export type WaitlistRoleInterest = 'worker' | 'company';
 export type WaitlistStatus = 'pending' | 'whitelisted' | 'invited';
 
-export type PaymentStatus = 'pending' | 'paid' | 'overdue' | 'cancelled';
-
 export interface Database {
   public: {
     Tables: {
@@ -88,21 +86,23 @@ export interface Database {
 
 export interface Profile {
   id: string;
-  user_id: string;
+  user_id?: string;
   email: string;
   full_name: string;
   username?: string;
   avatar_url?: string;
-  role: UserRole;
+  role?: UserRole;
   phone?: string;
   location?: string;
   bio?: string;
   hourly_rate?: number;
-  experience_years: number;
+  experience_years?: number;
   portfolio_url?: string;
   linkedin_url?: string;
   portfolio_items?: PortfolioItem[];
-  is_available: boolean;
+  is_available?: boolean;
+  average_rating?: number;
+  review_count?: number;
   created_at: string;
   updated_at: string;
 }
