@@ -19,7 +19,10 @@ interface NotificationCenterProps {
 
 const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose }) => {
   const { profile } = useAuth();
-  const { data: notifications = [], loading, refetch: refetchNotifications } = useNotifications(profile?.id);
+  const { data: notifications, loading, refetch: refetchNotifications } = useNotifications(profile?.id);
+  
+  // Ensure notifications is always an array
+  const safeNotifications = notifications || [];
   
   // Set up real-time notifications
   useRealtimeNotifications(profile?.id);
@@ -47,7 +50,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
 
   const markAllAsRead = async () => {
     try {
-      const unreadIds = (notifications || []).filter(n => !n.read).map(n => n.id);
+      const unreadIds = safeNotifications.filter(n => !n.read).map(n => n.id);
       
       if (unreadIds.length === 0) return;
 
@@ -81,7 +84,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
     }
   };
 
-  const unreadCount = (notifications || []).filter(n => !n.read).length;
+  const unreadCount = safeNotifications.filter(n => !n.read).length || 0;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -117,9 +120,9 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
             <div className="flex items-center justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
             </div>
-          ) : notifications.length > 0 ? (
+          ) : safeNotifications.length > 0 ? (
             <div className="space-y-3">
-              {notifications.map((notification) => (
+              {safeNotifications.map((notification) => (
                 <Card 
                   key={notification.id} 
                   className={`cursor-pointer transition-colors ${
