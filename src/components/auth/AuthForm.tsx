@@ -272,6 +272,7 @@ const AuthForm: React.FC = () => {
                   <div>
                     <Label htmlFor="username" className="text-sm font-medium text-gray-700">Username</Label>
                     <Input
+                      name="username"
                       id="username"
                       type="text"
                       {...signUpForm.register('username')}
@@ -348,7 +349,6 @@ const AuthForm: React.FC = () => {
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                     <Input
-                      name="signup-password"
                       id="password"
                       type={showPassword ? "text" : "password"}
                       {...signUpForm.register('password')}
