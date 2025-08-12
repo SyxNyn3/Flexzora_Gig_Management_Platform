@@ -23,7 +23,7 @@ export function useSupabaseQuery<T>(
         if (result.error !== 'No data found') {
           console.error(`Query error: ${result.error}`);
         }
-        setData(null);
+        setData(result.data);
       } else {
         setData(result.data);
         setError(null);
