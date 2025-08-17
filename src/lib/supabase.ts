@@ -2,6 +2,15 @@ import { createClient } from '@supabase/supabase-js';
 import { Database } from './types';
 import { getStoredAuthData } from './auth';
 
+// Helper function to create a timeout promise
+const createTimeout = (timeoutMs: number, operation: string) => {
+  return new Promise((_, reject) => {
+    setTimeout(() => {
+      reject(new Error(`Operation timed out after ${timeoutMs}ms: ${operation}`));
+    }, timeoutMs);
+  });
+};
+
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
@@ -48,11 +57,17 @@ export class DatabaseService {
   // Profile operations
   static async getProfile(userId: string) {
     try {
-      const { data, error } = await supabase
+      const profileQuery = supabase
         .from('profiles')
         .select('*')
         .eq('user_id', userId)
         .single();
+
+      // Add timeout to prevent hanging
+      const { data, error } = await Promise.race([
+        profileQuery,
+        createTimeout(10000, 'getProfile')
+      ]) as any;
 
       if (error && error.code !== 'PGRST116') {
         throw new Error(`Failed to fetch profile: ${error.message}`);
@@ -66,7 +81,13 @@ export class DatabaseService {
 
   static async getOrCreateProfile(userId: string): Promise<{ data: Profile | null; error: string | null }> {
     try {
-      const { data, error } = await supabase.rpc('get_or_create_profile', { user_id: userId });
+      const profileRpc = supabase.rpc('get_or_create_profile', { user_id: userId });
+      
+      // Add timeout to prevent hanging
+      const { data, error } = await Promise.race([
+        profileRpc,
+        createTimeout(15000, 'getOrCreateProfile')
+      ]) as any;
       
       if (error) {
         console.error('Error getting or creating profile:', error);
