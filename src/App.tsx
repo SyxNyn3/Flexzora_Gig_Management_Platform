@@ -26,6 +26,7 @@ import UnifiedSchedule from '@/components/integrations/UnifiedSchedule';
 import CompanyDashboard from '@/components/integrations/CompanyDashboard';
 import PaymentSuccess from '@/components/payments/PaymentSuccess';
 import SchedulingInterface from '@/components/scheduling/SchedulingInterface';
+import WaitlistVerification from '@/components/waitlist/WaitlistVerification';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -48,6 +49,7 @@ const LoadingSpinner: React.FC = () => (
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
   const [validating, setValidating] = useState(true);
+  const navigate = useNavigate();
   
   useEffect(() => {
     const checkSession = async () => {
@@ -82,6 +84,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
   const [validating, setValidating] = useState(true);
+  const navigate = useNavigate();
   
   useEffect(() => {
     const checkSession = async () => {
@@ -91,8 +94,8 @@ const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         setValidating(false);
         
         if (isValid) {
-          // If session is valid but user state is not set yet, wait for auth context to update
-          // Note: This should use Navigate component instead of navigate function
+          // If session is valid, redirect to dashboard
+          navigate('/dashboard', { replace: true });
         }
       } else {
         setValidating(false);
@@ -100,7 +103,7 @@ const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     };
     
     checkSession();
-  }, [user, loading]);
+  }, [user, loading, navigate]);
 
   if (loading || validating) {
     return <LoadingSpinner />;
@@ -131,6 +134,10 @@ const AppRoutes: React.FC = () => {
         <Route
           path="/waitlist"
           element={<WaitlistForm />}
+        />
+        <Route
+          path="/waitlist/verify"
+          element={<WaitlistVerification />}
         />
         <Route
           path="/schedule-demo"

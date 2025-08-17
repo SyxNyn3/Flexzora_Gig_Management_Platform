@@ -235,14 +235,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { data: null, error: { message: error.message } };
       }
 
-      // Ensure profile exists after successful signin
-      if (data.user) {
-        try {
-          await fetchProfile(data.user.id);
-        } catch (profileError) {
-          console.warn('Profile fetch failed after signin:', profileError);
-        }
-      }
+      // Profile will be fetched automatically via onAuthStateChange
 
       return { data, error: null };
     } catch (error: any) {

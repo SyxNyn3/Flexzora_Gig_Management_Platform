@@ -83,7 +83,8 @@ const AuthForm: React.FC = () => {
         toast.success('Welcome back!', {
           description: 'You have been signed in successfully.',
         });
-        setTimeout(() => navigate('/dashboard'), 1500);
+        // Navigate immediately to prevent blank screen
+        navigate('/dashboard', { replace: true });
       }
     } catch (err: any) {
       setError(err.message || 'An error occurred during sign in');
@@ -123,7 +124,8 @@ const AuthForm: React.FC = () => {
         toast.success('Account created successfully!', {
           description: 'Welcome to FlexZora! Your account has been created.',
         });
-        setTimeout(() => navigate('/dashboard'), 1500);
+        // Navigate immediately to prevent blank screen
+        navigate('/dashboard', { replace: true });
       }
     } catch (err: any) {
       setError(err.message || 'An error occurred during sign up');

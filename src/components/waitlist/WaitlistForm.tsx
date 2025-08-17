@@ -52,10 +52,13 @@ const WaitlistForm: React.FC = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [verificationSent, setVerificationSent] = useState(false);
+  const [userEmail, setUserEmail] = useState<string>('');
   const [referralCode, setReferralCode] = useState<string | null>(null);
   const [waitlistCount, setWaitlistCount] = useState<number>(0);
   const [referredBy, setReferredBy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [verificationError, setVerificationError] = useState<string | null>(null);
 
   const {
     register,
@@ -107,14 +110,49 @@ const WaitlistForm: React.FC = () => {
         throw new Error(responseData.error);
       }
 
-      // Set the referral code from the response
-      setReferralCode(responseData.referral_code);
-      setSuccess(true);
+      // Check if verification is required
+      if (responseData.verification_required) {
+        setUserEmail(data.email);
+        setVerificationSent(true);
+        toast.success('Verification email sent! Please check your inbox.');
+      } else {
+        // Set the referral code from the response
+        setReferralCode(responseData.referral_code);
+        setSuccess(true);
+      }
       toast.success('You have been added to the waitlist!');
     } catch (err: any) {
       console.error('Error submitting to waitlist:', err);
       setError(err.message || 'An error occurred while submitting your information');
       toast.error(err.message || 'Failed to join waitlist');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resendVerification = async () => {
+    if (!userEmail) return;
+    
+    setLoading(true);
+    setVerificationError(null);
+    
+    try {
+      const { data: responseData, error: responseError } = await supabase.functions.invoke('resend-waitlist-verification', {
+        body: { email: userEmail },
+      });
+
+      if (responseError) {
+        throw new Error(responseError.message);
+      }
+
+      if (responseData?.error) {
+        throw new Error(responseData.error);
+      }
+
+      toast.success('Verification email resent!');
+    } catch (err: any) {
+      console.error('Error resending verification:', err);
+      setVerificationError(err.message || 'Failed to resend verification email');
     } finally {
       setLoading(false);
     }
@@ -187,6 +225,63 @@ const WaitlistForm: React.FC = () => {
                 Thanks for joining the FlexZora waitlist. We're excited to have you!
               </CardDescription>
             </CardHeader>
+        ) : verificationSent ? (
+          <Card className="shadow-xl border-0 animate-fade-in">
+            <CardHeader className="text-center pb-6">
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Mail className="w-8 h-8 text-blue-600" />
+              </div>
+              <CardTitle className="text-2xl font-bold">Check Your Email</CardTitle>
+              <CardDescription className="text-lg">
+                We've sent a verification link to {userEmail}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="bg-blue-50 p-6 rounded-lg border border-blue-200">
+                <h3 className="text-lg font-semibold text-blue-800 mb-3">Next Steps</h3>
+                <ol className="space-y-2 text-blue-700">
+                  <li className="flex items-start">
+                    <span className="inline-block w-6 h-6 bg-blue-200 text-blue-800 rounded-full text-sm font-medium mr-3 mt-0.5 text-center leading-6">1</span>
+                    Check your email inbox (and spam folder)
+                  </li>
+                  <li className="flex items-start">
+                    <span className="inline-block w-6 h-6 bg-blue-200 text-blue-800 rounded-full text-sm font-medium mr-3 mt-0.5 text-center leading-6">2</span>
+                    Click the verification link in the email
+                  </li>
+                  <li className="flex items-start">
+                    <span className="inline-block w-6 h-6 bg-blue-200 text-blue-800 rounded-full text-sm font-medium mr-3 mt-0.5 text-center leading-6">3</span>
+                    Complete your waitlist registration
+                  </li>
+                </ol>
+              </div>
+
+              {verificationError && (
+                <Alert className="bg-red-50 border-red-200">
+                  <AlertTriangle className="h-4 w-4 text-red-600" />
+                  <AlertDescription className="text-red-800">{verificationError}</AlertDescription>
+                </Alert>
+              )}
+
+              <div className="text-center">
+                <p className="text-gray-600 mb-4">
+                  Didn't receive the email? Check your spam folder or resend it.
+                </p>
+                <Button 
+                  variant="outline" 
+                  onClick={resendVerification}
+                  disabled={loading}
+                  className="mb-4"
+                >
+                  {loading ? 'Sending...' : 'Resend Verification Email'}
+                </Button>
+                <div>
+                  <Button variant="ghost" onClick={() => navigate('/')}>
+                    Return to Home
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
             <CardContent className="space-y-6">
               <div className="bg-blue-50 p-6 rounded-lg border border-blue-200">
                 <h3 className="text-lg font-semibold text-blue-800 mb-3 flex items-center">

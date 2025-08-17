@@ -74,6 +74,9 @@ serve(async (req) => {
 
     // Generate a unique referral code
     const referralCode = nanoid(10);
+    
+    // Generate a verification token
+    const verificationToken = nanoid(32);
 
     // Check if referred_by_email exists and is valid
     let referredByEmail = requestData.referred_by_email;
@@ -105,6 +108,8 @@ serve(async (req) => {
         challenges: requestData.challenges,
         referred_by_email: referredByEmail,
         referral_code: referralCode,
+        verification_token: verificationToken,
+        status: 'pending', // Will be updated to 'verified' after email verification
       })
       .select()
       .single();
@@ -120,11 +125,31 @@ serve(async (req) => {
       );
     }
 
+    // Send verification email
+    try {
+      const { error: emailError } = await supabase.functions.invoke('send-waitlist-verification', {
+        body: {
+          email: requestData.email,
+          verification_token: verificationToken,
+          referral_code: referralCode
+        }
+      });
+      
+      if (emailError) {
+        console.error('Error sending verification email:', emailError);
+        // Don't fail the whole process if email fails
+      }
+    } catch (emailError) {
+      console.error('Failed to send verification email:', emailError);
+    }
+
     // Return success response with the referral code
     return new Response(
       JSON.stringify({ 
         message: "Successfully added to waitlist", 
-        referral_code: referralCode 
+        referral_code: referralCode,
+        verification_required: true,
+        email: requestData.email
       }),
       {
         status: 200,
