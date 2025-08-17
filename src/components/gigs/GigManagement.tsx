@@ -17,7 +17,9 @@ import {
   Calendar,
   MapPin,
   Clock,
-  Building
+  Building,
+  Star,
+  X
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -66,6 +68,14 @@ const mockWorkers = [
   },
 ];
 
+const mockApplications = [
+  { id: 'app-1', worker_id: 'worker-1', status: 'accepted' },
+  { id: 'app-2', worker_id: 'worker-2', status: 'accepted' },
+  { id: 'app-3', worker_id: 'worker-3', status: 'accepted' },
+  { id: 'app-4', worker_id: 'worker-4', status: 'pending' },
+  { id: 'app-5', worker_id: 'worker-5', status: 'pending' },
+];
+
 const GigManagement: React.FC<GigManagementProps> = ({ gigId }) => {
   const { profile } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
@@ -76,6 +86,8 @@ const GigManagement: React.FC<GigManagementProps> = ({ gigId }) => {
 
   const gig = mockGig;
   const workers = mockWorkers;
+  const applications = mockApplications;
+  const acceptedWorkers = workers.filter(w => w.status === 'accepted' || w.status === 'confirmed');
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -146,7 +158,9 @@ const GigManagement: React.FC<GigManagementProps> = ({ gigId }) => {
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
                       <span className="font-medium">Duration:</span>
-                      <span className="ml-2">10 hours</span>
+                      <span className="ml-2">
+                        {Math.round((new Date(gig.end_date).getTime() - new Date(gig.start_date).getTime()) / (1000 * 60 * 60))} hours
+                      </span>
                     </div>
                     <div>
                       <span className="font-medium">Hourly Rate:</span>
@@ -158,7 +172,7 @@ const GigManagement: React.FC<GigManagementProps> = ({ gigId }) => {
                     </div>
                     <div>
                       <span className="font-medium">Workers Assigned:</span>
-                      <span className="ml-2">{workers.length}</span>
+                      <span className="ml-2">{acceptedWorkers.length}</span>
                     </div>
                   </div>
                 </CardContent>
@@ -173,19 +187,24 @@ const GigManagement: React.FC<GigManagementProps> = ({ gigId }) => {
                 <CardContent className="space-y-4">
                   <div className="flex justify-between">
                     <span className="text-gray-600">Total Budget</span>
-                    <span className="font-medium">${(gig.hourly_rate * 10 * workers.length).toLocaleString()}</span>
+                    <span className="font-medium">
+                      ${gig.hourly_rate && acceptedWorkers.length 
+                        ? (gig.hourly_rate * Math.round((new Date(gig.end_date).getTime() - new Date(gig.start_date).getTime()) / (1000 * 60 * 60)) * acceptedWorkers.length).toLocaleString()
+                        : 'TBD'
+                      }
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Applications</span>
-                    <span className="font-medium">12</span>
+                    <span className="font-medium">{applications.length}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Confirmed Workers</span>
-                    <span className="font-medium">{workers.filter(w => w.status === 'confirmed').length}</span>
+                    <span className="font-medium">{acceptedWorkers.filter(w => w.status === 'confirmed').length}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Pending Confirmations</span>
-                    <span className="font-medium">{workers.filter(w => w.status === 'accepted').length}</span>
+                    <span className="font-medium">{acceptedWorkers.filter(w => w.status === 'accepted').length}</span>
                   </div>
                 </CardContent>
               </Card>
@@ -202,7 +221,7 @@ const GigManagement: React.FC<GigManagementProps> = ({ gigId }) => {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {workers.map((worker) => (
+                {acceptedWorkers.map((worker) => (
                   <div key={worker.id} className="flex items-center space-x-3 p-3 border rounded-lg">
                     <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
                       <span className="text-blue-600 font-medium">
@@ -241,7 +260,7 @@ const GigManagement: React.FC<GigManagementProps> = ({ gigId }) => {
           <GigCommunication 
             gigId={gigId}
             gigTitle={gig.title}
-            workers={workers}
+            workers={acceptedWorkers}
           />
         </TabsContent>
 
@@ -249,7 +268,7 @@ const GigManagement: React.FC<GigManagementProps> = ({ gigId }) => {
           <WorkerPayroll 
             gigId={gigId}
             gigTitle={gig.title}
-            workers={workers}
+            workers={acceptedWorkers}
           />
         </TabsContent>
 
@@ -260,7 +279,7 @@ const GigManagement: React.FC<GigManagementProps> = ({ gigId }) => {
             gigStartDate={gig.start_date}
             gigEndDate={gig.end_date}
             gigLocation={gig.location}
-            workers={workers}
+            workers={acceptedWorkers}
           />
         </TabsContent>
 

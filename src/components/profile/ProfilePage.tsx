@@ -75,7 +75,7 @@ type SkillForm = z.infer<typeof skillSchema>;
 type CertificationForm = z.infer<typeof certificationSchema>;
 
 const ProfilePage: React.FC = () => {
-  const { profile, updateProfile } = useAuth();
+  const { profile, updateProfile, refreshProfile } = useAuth();
   const [loading, setLoading] = useState(false);
   const [showSkillDialog, setShowSkillDialog] = useState(false);
   const [showCertDialog, setShowCertDialog] = useState(false);
