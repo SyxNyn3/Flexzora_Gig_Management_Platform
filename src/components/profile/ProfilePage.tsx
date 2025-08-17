@@ -158,6 +158,9 @@ const ProfilePage: React.FC = () => {
       const { error } = await updateProfile(updates);
       if (error) throw new Error(error);
 
+      // Refresh profile to ensure UI is updated with latest data
+      await refreshProfile();
+      
       toast.success('Profile updated successfully!');
     } catch (error: any) {
       console.error('Error updating profile:', error);

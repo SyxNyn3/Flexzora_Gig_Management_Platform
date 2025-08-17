@@ -126,6 +126,30 @@ export function useNotifications(userId: string | undefined | null) {
   );
 }
 
+// Hook for fetching companies
+export function useCompanies() {
+  return useSupabaseQuery(
+    () => DatabaseService.getCompanies(),
+    []
+  );
+}
+
+// Hook for fetching availability for a worker
+export function useAvailability(workerId: string | undefined | null) {
+  return useSupabaseQuery(
+    () => workerId ? DatabaseService.getAvailability(workerId) : Promise.resolve({ data: [], error: 'No worker ID provided' }),
+    [workerId]
+  );
+}
+
+// Hook for fetching company integrations
+export function useCompanyIntegrations(workerId: string | undefined | null) {
+  return useSupabaseQuery(
+    () => workerId ? DatabaseService.getCompanyIntegrations(workerId) : Promise.resolve({ data: [], error: 'No worker ID provided' }),
+    [workerId]
+  );
+}
+
 // Hook for fetching reviews for a worker
 export function useReviewsForWorker(workerId: string | undefined | null) {
   // Return empty data for now since reviews table doesn't exist yet

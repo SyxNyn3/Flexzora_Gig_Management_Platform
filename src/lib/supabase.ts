@@ -815,6 +815,152 @@ export class DatabaseService {
     }
   }
 
+  // Company operations
+  static async getCompanies() {
+    try {
+      const { data, error } = await supabase
+        .from('companies')
+        .select('*')
+        .order('name');
+
+      if (error) {
+        throw new Error(`Failed to fetch companies: ${error.message}`);
+      }
+
+      return { data: data || [], error: null };
+    } catch (error: any) {
+      return { data: [], error: error.message };
+    }
+  }
+
+  static async createCompany(companyData: Database['public']['Tables']['companies']['Insert']) {
+    try {
+      const { data, error } = await supabase
+        .from('companies')
+        .insert(companyData)
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(`Failed to create company: ${error.message}`);
+      }
+
+      return { data, error: null };
+    } catch (error: any) {
+      return { data: null, error: error.message };
+    }
+  }
+
+  // Availability operations
+  static async getAvailability(workerId: string) {
+    try {
+      const { data, error } = await supabase
+        .from('availability')
+        .select('*')
+        .eq('worker_id', workerId)
+        .order('start_time');
+
+      if (error) {
+        throw new Error(`Failed to fetch availability: ${error.message}`);
+      }
+
+      return { data: data || [], error: null };
+    } catch (error: any) {
+      return { data: [], error: error.message };
+    }
+  }
+
+  static async addAvailability(availabilityData: Database['public']['Tables']['availability']['Insert']) {
+    try {
+      const { data, error } = await supabase
+        .from('availability')
+        .insert(availabilityData)
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(`Failed to add availability: ${error.message}`);
+      }
+
+      return { data, error: null };
+    } catch (error: any) {
+      return { data: null, error: error.message };
+    }
+  }
+
+  // Company integration operations
+  static async getCompanyIntegrations(workerId: string) {
+    try {
+      const { data, error } = await supabase
+        .from('company_integrations')
+        .select('*')
+        .eq('worker_id', workerId)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        throw new Error(`Failed to fetch integrations: ${error.message}`);
+      }
+
+      return { data: data || [], error: null };
+    } catch (error: any) {
+      return { data: [], error: error.message };
+    }
+  }
+
+  static async addCompanyIntegration(integrationData: Database['public']['Tables']['company_integrations']['Insert']) {
+    try {
+      const { data, error } = await supabase
+        .from('company_integrations')
+        .insert(integrationData)
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(`Failed to add integration: ${error.message}`);
+      }
+
+      return { data, error: null };
+    } catch (error: any) {
+      return { data: null, error: error.message };
+    }
+  }
+
+  static async updateCompanyIntegration(integrationId: string, updates: Database['public']['Tables']['company_integrations']['Update']) {
+    try {
+      const { data, error } = await supabase
+        .from('company_integrations')
+        .update(updates)
+        .eq('id', integrationId)
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(`Failed to update integration: ${error.message}`);
+      }
+
+      return { data, error: null };
+    } catch (error: any) {
+      return { data: null, error: error.message };
+    }
+  }
+
+  static async deleteCompanyIntegration(integrationId: string) {
+    try {
+      const { error } = await supabase
+        .from('company_integrations')
+        .delete()
+        .eq('id', integrationId);
+
+      if (error) {
+        throw new Error(`Failed to delete integration: ${error.message}`);
+      }
+
+      return { error: null };
+    } catch (error: any) {
+      return { error: error.message };
+    }
+  }
+
   // Real-time subscriptions
   static subscribeToNotifications(userId: string, callback: (payload: any) => void) {
     return supabase
