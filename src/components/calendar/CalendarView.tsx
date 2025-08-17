@@ -293,7 +293,6 @@ const CalendarView: React.FC = () => {
       toast.error(error.message || 'Failed to update reminder');
     }
   };
-    };
 
   const resetForm = () => {
     setTitle('');
