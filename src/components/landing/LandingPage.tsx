@@ -109,7 +109,7 @@ const LandingPage: React.FC = () => {
                 Sign In
               </Button>
               <Button onClick={() => navigate('/auth?mode=signup')} className="bg-gradient-to-r from-blue-600 to-green-500">
-                Get Started
+                Sign Up
               </Button>
             </div>
           </div>

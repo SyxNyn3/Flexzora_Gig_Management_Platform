@@ -180,7 +180,7 @@ const Navbar: React.FC = () => {
                   <Button variant="ghost" onClick={() => navigate('/auth')}>
                     Sign In
                   </Button>
-                  <Button onClick={() => navigate('/auth?mode=signup')}>
+                  <Button onClick={() => navigate('/auth?mode=signup')} className="bg-gradient-to-r from-blue-600 to-green-500">
                     Sign Up
                   </Button>
                 </div>
