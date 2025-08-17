@@ -94,6 +94,8 @@ const SchedulingInterface: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [conflicts, setConflicts] = useState<ConflictDetection[]>([]);
   const [loading, setLoading] = useState(false);
+  const [is24Hour, setIs24Hour] = useState(true);
+  const [tempEventId, setTempEventId] = useState<string | null>(null);
 
   // Mock data
   const [teamMembers] = useState<TeamMember[]>([
@@ -202,8 +204,9 @@ const SchedulingInterface: React.FC = () => {
 
   // Event management
   const createEvent = (startTime: Date, endTime: Date, assignedTo: string[] = []) => {
+    const eventId = Date.now().toString();
     const newEvent: ScheduleEvent = {
-      id: Date.now().toString(),
+      id: eventId,
       title: 'New Appointment',
       start: startTime,
       end: endTime,
@@ -216,6 +219,7 @@ const SchedulingInterface: React.FC = () => {
     };
     
     setEvents(prev => [...prev, newEvent]);
+    setTempEventId(eventId);
     setSelectedEvent(newEvent);
     setShowEventDialog(true);
   };
@@ -229,6 +233,7 @@ const SchedulingInterface: React.FC = () => {
   const deleteEvent = (eventId: string) => {
     setEvents(prev => prev.filter(event => event.id !== eventId));
     setShowEventDialog(false);
+    setTempEventId(null);
     toast.success('Event deleted successfully');
   };
 
@@ -293,12 +298,15 @@ const SchedulingInterface: React.FC = () => {
   const generateTimeSlots = () => {
     const slots = [];
     const startHour = 8;
-    const endHour = 18;
+    const endHour = 24; // Go to end of day
     
-    for (let hour = startHour; hour < endHour; hour++) {
+    for (let hour = startHour; hour <= endHour; hour++) {
       for (let minute = 0; minute < 60; minute += timeIncrement) {
+        // Skip the last iteration to avoid going past 24:00
+        if (hour === 24 && minute > 0) break;
+        
         slots.push({
-          time: `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`,
+          time: formatTime(hour, minute),
           hour,
           minute
         });
@@ -306,6 +314,26 @@ const SchedulingInterface: React.FC = () => {
     }
     
     return slots;
+  };
+
+  // Format time based on 12/24 hour preference
+  const formatTime = (hour: number, minute: number) => {
+    if (is24Hour) {
+      return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+    } else {
+      const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+      const ampm = hour >= 12 ? 'PM' : 'AM';
+      return `${displayHour}:${minute.toString().padStart(2, '0')} ${ampm}`;
+    }
+  };
+
+  // Format time for display
+  const formatDisplayTime = (date: Date) => {
+    if (is24Hour) {
+      return format(date, 'HH:mm');
+    } else {
+      return format(date, 'h:mm a');
+    }
   };
 
   // Get events for current view
@@ -591,7 +619,7 @@ const SchedulingInterface: React.FC = () => {
             {timeSlots.map((slot) => (
               <div key={slot.time} className="grid grid-cols-8 border-b border-gray-100">
                 <div className="p-2 text-xs text-gray-500 border-r border-gray-200 text-right pr-4">
-                  {slot.minute === 0 ? slot.time : ''}
+                  {slot.minute === 0 ? formatTime(slot.hour, slot.minute) : ''}
                 </div>
                 {weekDays.map((day) => (
                   <div
@@ -659,7 +687,7 @@ const SchedulingInterface: React.FC = () => {
             {timeSlots.map((slot) => (
               <div key={slot.time} className="flex border-b border-gray-100">
                 <div className="w-20 p-2 text-xs text-gray-500 border-r border-gray-200 text-right pr-4">
-                  {slot.minute === 0 ? slot.time : ''}
+                  {slot.minute === 0 ? formatTime(slot.hour, slot.minute) : ''}
                 </div>
                 <div
                   className="flex-1 relative min-h-[60px] hover:bg-gray-50 cursor-pointer"
@@ -818,7 +846,7 @@ const SchedulingInterface: React.FC = () => {
           {event.title}
         </div>
         <div className="text-xs text-gray-600 truncate">
-          {format(event.start, 'HH:mm')} - {format(event.end, 'HH:mm')}
+          {formatDisplayTime(event.start)} - {formatDisplayTime(event.end)}
         </div>
         {event.client && (
           <div className="text-xs text-gray-500 truncate">
@@ -867,8 +895,20 @@ const SchedulingInterface: React.FC = () => {
     const saveChanges = () => {
       updateEvent(selectedEvent.id, localEvent);
       setShowEventDialog(false);
+      setTempEventId(null);
       toast.success('Event updated successfully');
     };
+    
+    // Handle cancel - remove temp event if it was just created
+    const handleCancel = () => {
+      if (tempEventId && selectedEvent.id === tempEventId) {
+        // This is a newly created event that hasn't been saved, remove it
+        setEvents(prev => prev.filter(event => event.id !== tempEventId));
+        setTempEventId(null);
+      }
+      setShowEventDialog(false);
+    };
+    
     return (
       <Dialog open={showEventDialog} onOpenChange={setShowEventDialog}>
         <DialogContent className="sm:max-w-[600px]">
@@ -990,7 +1030,7 @@ const SchedulingInterface: React.FC = () => {
               <Trash2 className="h-4 w-4 mr-2" />
               Delete
             </Button>
-            <Button variant="outline" onClick={() => setShowEventDialog(false)}>
+            <Button variant="outline" onClick={handleCancel}>
               Cancel
             </Button>
             <Button onClick={saveChanges}>
@@ -1030,6 +1070,32 @@ const SchedulingInterface: React.FC = () => {
                   <SelectItem value="60">60 minutes</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+
+            <div>
+              <Label>Time Format</Label>
+              <div className="flex items-center space-x-4 mt-2">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    id="format-12"
+                    name="timeFormat"
+                    checked={!is24Hour}
+                    onChange={() => setIs24Hour(false)}
+                  />
+                  <Label htmlFor="format-12" className="text-sm">12-hour (AM/PM)</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    id="format-24"
+                    name="timeFormat"
+                    checked={is24Hour}
+                    onChange={() => setIs24Hour(true)}
+                  />
+                  <Label htmlFor="format-24" className="text-sm">24-hour (Military)</Label>
+                </div>
+              </div>
             </div>
 
             <div>
