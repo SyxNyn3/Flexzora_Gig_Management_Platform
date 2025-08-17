@@ -87,8 +87,6 @@ const CalendarView: React.FC = () => {
   const { profile } = useAuth();
   const navigate = useNavigate();
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
-  const [notes, setNotes] = useState<CalendarNote[]>([]);
-  const [reminders, setReminders] = useState<CalendarReminder[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showEventDialog, setShowEventDialog] = useState(false);
@@ -113,7 +111,7 @@ const CalendarView: React.FC = () => {
 
   useEffect(() => {
     if (profile) {
-      loadMockNotesAndReminders();
+      // Calendar events are already loaded via useCalendarEvents hook
     }
   }, [profile]);
 
@@ -130,85 +128,9 @@ const CalendarView: React.FC = () => {
         type: event.event_type as 'gig' | 'note' | 'reminder',
       }));
       
-      setCalendarEvents(prev => {
-        // Merge with notes and reminders
-        const nonDbEvents = prev.filter(e => e.type === 'note' || e.type === 'reminder');
-        return [...formattedEvents, ...nonDbEvents];
-      });
+      setCalendarEvents(formattedEvents);
     }
   }, [dbEvents]);
-
-  const loadMockNotesAndReminders = () => {
-    // Mock notes
-    const mockNotes: CalendarNote[] = [
-      {
-        id: '1',
-        title: 'Equipment Check',
-        content: 'Remember to check all camera equipment before the corporate event',
-        date: '2024-01-14',
-        color: '#10B981',
-        created_at: new Date().toISOString(),
-      },
-      {
-        id: '2',
-        title: 'Client Meeting',
-        content: 'Discuss project requirements and timeline with TechCorp',
-        date: '2024-01-16',
-        color: '#8B5CF6',
-        created_at: new Date().toISOString(),
-      }
-    ];
-
-    // Mock reminders
-    const mockReminders: CalendarReminder[] = [
-      {
-        id: '1',
-        title: 'Submit Invoice',
-        description: 'Submit invoice for last week\'s wedding photography gig',
-        date: '2024-01-17',
-        time: '10:00',
-        priority: 'high',
-        completed: false,
-        created_at: new Date().toISOString(),
-      },
-      {
-        id: '2',
-        title: 'Equipment Maintenance',
-        description: 'Schedule maintenance for lighting equipment',
-        date: '2024-01-20',
-        time: '14:00',
-        priority: 'medium',
-        completed: false,
-        created_at: new Date().toISOString(),
-      }
-    ];
-
-    setNotes(mockNotes);
-    setReminders(mockReminders);
-
-    // Add notes and reminders to events
-    const noteEvents: CalendarEvent[] = mockNotes.map(note => ({
-      id: `note-${note.id}`,
-      title: `📝 ${note.title}`,
-      start: new Date(`${note.date}T09:00:00`),
-      end: new Date(`${note.date}T09:30:00`),
-      resource: note,
-      status: 'note',
-      type: 'note' as const,
-    }));
-
-    const reminderEvents: CalendarEvent[] = mockReminders.map(reminder => ({
-      id: `reminder-${reminder.id}`,
-      title: `🔔 ${reminder.title}`,
-      start: new Date(`${reminder.date}T${reminder.time}:00`),
-      end: new Date(`${reminder.date}T${reminder.time}:00`),
-      resource: reminder,
-      status: reminder.completed ? 'completed' : reminder.priority,
-      type: 'reminder' as const,
-    }));
-
-    setEvents(prev => [...prev, ...noteEvents, ...reminderEvents]);
-  };
 
   const handleSelectEvent = (event: CalendarEvent) => {
     setSelectedEvent(event);
@@ -234,31 +156,43 @@ const CalendarView: React.FC = () => {
       return;
     }
 
-    const newNote: CalendarNote = {
-      id: Date.now().toString(),
-      title,
-      content,
-      date: format(selectedDate, 'yyyy-MM-dd'),
-      color: noteColor,
-      created_at: new Date().toISOString(),
-    };
+    if (!profile) {
+      toast.error('User not logged in');
+      return;
+    }
 
-    // Create a new calendar event
-    const newCalendarEvent: CalendarEvent = {
-      id: `note-${newNote.id}`,
-      title: `📝 ${newNote.title}`,
-      start: new Date(`${newNote.date}T09:00:00`),
-      end: new Date(`${newNote.date}T09:30:00`),
-      resource: newNote,
-      status: 'note',
-      type: 'note',
-    };
-
-    setNotes(prev => [...prev, newNote]);
-    setCalendarEvents(prev => [...prev, newCalendarEvent]);
-    resetForm();
-    setShowAddDialog(false);
-    toast.success('Note added successfully!');
+    try {
+      const eventData = {
+        user_id: profile.id,
+        title: `📝 ${title}`,
+        description: content,
+        event_type: 'note',
+        start_time: new Date(`${format(selectedDate, 'yyyy-MM-dd')}T09:00:00`).toISOString(),
+        end_time: new Date(`${format(selectedDate, 'yyyy-MM-dd')}T09:30:00`).toISOString(),
+        all_day: false,
+        color: noteColor,
+        metadata: {
+          type: 'note',
+          content: content,
+          color: noteColor
+        }
+      };
+      
+      const { data, error } = await DatabaseService.createCalendarEvent(eventData);
+      
+      if (error) {
+        throw new Error(error);
+      }
+      
+      // Refetch events to update the calendar
+      await refetchEvents();
+      resetForm();
+      setShowAddDialog(false);
+      toast.success('Note added successfully!');
+    } catch (error: any) {
+      console.error('Error adding note:', error);
+      toast.error(error.message || 'Failed to add note');
+    }
   };
 
   const addReminder = async () => {
@@ -267,61 +201,99 @@ const CalendarView: React.FC = () => {
       return;
     }
 
-    const newReminder: CalendarReminder = {
-      id: Date.now().toString(),
-      title,
-      description: content,
-      date: format(selectedDate, 'yyyy-MM-dd'),
-      time: reminderTime,
-      priority: reminderPriority,
-      completed: false,
-      created_at: new Date().toISOString(),
-    };
-
-    const newCalendarEvent: CalendarEvent = {
-      id: `reminder-${newReminder.id}`,
-      title: `🔔 ${newReminder.title}`,
-      start: new Date(`${newReminder.date}T${newReminder.time}:00`),
-      end: new Date(`${newReminder.date}T${newReminder.time}:00`),
-      resource: newReminder,
-      status: newReminder.priority,
-      type: 'reminder',
-    };
-
-    setReminders(prev => [...prev, newReminder]);
-    setCalendarEvents(prev => [...prev, newCalendarEvent]);
-    resetForm();
-    setShowAddDialog(false);
-    toast.success('Reminder added successfully!');
-  };
-
-  const deleteItem = (event: CalendarEvent) => {
-    if (event.type === 'note') {
-      setNotes(prev => prev.filter(note => note.id !== event.resource.id));
-    } else if (event.type === 'reminder') {
-      setReminders(prev => prev.filter(reminder => reminder.id !== event.resource.id));
+    if (!profile) {
+      toast.error('User not logged in');
+      return;
     }
-    
-    setCalendarEvents(prev => prev.filter(e => e.id !== event.id));
-    setShowEventDialog(false);
-    toast.success(`${event.type === 'note' ? 'Note' : 'Reminder'} deleted successfully!`);
+
+    try {
+      const eventData = {
+        user_id: profile.id,
+        title: `🔔 ${title}`,
+        description: content,
+        event_type: 'reminder',
+        start_time: new Date(`${format(selectedDate, 'yyyy-MM-dd')}T${reminderTime}:00`).toISOString(),
+        end_time: new Date(`${format(selectedDate, 'yyyy-MM-dd')}T${reminderTime}:00`).toISOString(),
+        all_day: false,
+        color: getPriorityColor(reminderPriority),
+        metadata: {
+          type: 'reminder',
+          time: reminderTime,
+          priority: reminderPriority,
+          completed: false,
+          description: content
+        }
+      };
+      
+      const { data, error } = await DatabaseService.createCalendarEvent(eventData);
+      
+      if (error) {
+        throw new Error(error);
+      }
+      
+      // Refetch events to update the calendar
+      await refetchEvents();
+      resetForm();
+      setShowAddDialog(false);
+      toast.success('Reminder added successfully!');
+    } catch (error: any) {
+      console.error('Error adding reminder:', error);
+      toast.error(error.message || 'Failed to add reminder');
+    }
   };
 
-  const toggleReminderComplete = (reminderId: string) => {
-    setReminders(prev => prev.map(reminder => 
-      reminder.id === reminderId 
-        ? { ...reminder, completed: !reminder.completed }
-        : reminder
-    ));
-
-    setCalendarEvents(prev => prev.map(event => 
-      event.id === `reminder-${reminderId}` 
-        ? { ...event, status: event.status === 'completed' ? 'medium' : 'completed' }
-        : event
-    ));
-
-    toast.success('Reminder updated!');
+  const getPriorityColor = (priority: 'low' | 'medium' | 'high') => {
+    switch (priority) {
+      case 'high': return '#EF4444';
+      case 'medium': return '#F59E0B';
+      case 'low': return '#10B981';
+      default: return '#3B82F6';
+    }
   };
+
+  const deleteItem = async (event: CalendarEvent) => {
+    try {
+      const { error } = await DatabaseService.deleteCalendarEvent(event.id);
+      
+      if (error) {
+        throw new Error(error);
+      }
+      
+      // Refetch events to update the calendar
+      await refetchEvents();
+      setShowEventDialog(false);
+      toast.success(`${event.type === 'note' ? 'Note' : 'Reminder'} deleted successfully!`);
+    } catch (error: any) {
+      console.error('Error deleting event:', error);
+      toast.error(error.message || 'Failed to delete event');
+    }
+  };
+
+  const toggleReminderComplete = async (event: CalendarEvent) => {
+    try {
+      const currentCompleted = event.resource.metadata?.completed || false;
+      const updates = {
+        metadata: {
+          ...event.resource.metadata,
+          completed: !currentCompleted
+        }
+      };
+      
+      const { error } = await DatabaseService.updateCalendarEvent(event.id, updates);
+      
+      if (error) {
+        throw new Error(error);
+      }
+      
+      // Refetch events to update the calendar
+      await refetchEvents();
+      toast.success('Reminder updated!');
+    } catch (error: any) {
+      console.error('Error updating reminder:', error);
+      toast.error(error.message || 'Failed to update reminder');
+    }
+  };
+    };
 
   const resetForm = () => {
     setTitle('');
@@ -537,9 +509,9 @@ const CalendarView: React.FC = () => {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => toggleReminderComplete((selectedEvent.resource as CalendarReminder).id)}
+                        onClick={() => toggleReminderComplete(selectedEvent)}
                       >
-                        {(selectedEvent.resource as CalendarReminder).completed ? 'Mark Incomplete' : 'Mark Complete'}
+                        {selectedEvent.resource.metadata?.completed ? 'Mark Incomplete' : 'Mark Complete'}
                       </Button>
                     )}
                     <Button

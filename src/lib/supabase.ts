@@ -651,6 +651,30 @@ export class DatabaseService {
     }
   }
 
+  static async addPayment(paymentData: Database['public']['Tables']['payments']['Insert']) {
+    try {
+      const { data, error } = await supabase
+        .from('payments')
+        .insert(paymentData)
+        .select(`
+          *,
+          gig:gigs(
+            title,
+            company:companies(name)
+          )
+        `)
+        .single();
+
+      if (error) {
+        throw new Error(`Failed to add payment: ${error.message}`);
+      }
+
+      return { data, error: null };
+    } catch (error: any) {
+      return { data: null, error: error.message };
+    }
+  }
+
   static async updatePaymentStatus(paymentId: string, status: PaymentStatus, paidDate?: string) {
     try {
       const updates: any = { status };

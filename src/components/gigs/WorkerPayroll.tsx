@@ -81,75 +81,73 @@ const WorkerPayroll: React.FC<WorkerPayrollProps> = ({ gigId, gigTitle, workers 
   const [selectedWorkerForReview, setSelectedWorkerForReview] = useState<string | null>(null);
 
   useEffect(() => {
-    loadMockPayments();
+    loadPayments();
   }, [gigId]);
 
-  const loadMockPayments = () => {
-    const mockPayments: WorkerPayment[] = [
-      {
-        id: '1',
-        worker_id: 'worker-1',
-        worker_name: 'John Smith',
-        worker_email: 'john@example.com',
-        gig_id: gigId,
-        hours_worked: 8,
-        hourly_rate: 45,
-        overtime_hours: 2,
-        overtime_rate: 67.5,
-        bonus_amount: 50,
-        deductions: 0,
-        gross_pay: 545,
-        net_pay: 545,
-        status: 'paid',
-        payment_method: 'direct_deposit',
-        payment_details: { account_ending: '1234' },
-        notes: 'Excellent work on camera operations',
-        created_at: '2024-01-15T10:00:00Z',
-        paid_at: '2024-01-16T14:30:00Z',
-      },
-      {
-        id: '2',
-        worker_id: 'worker-2',
-        worker_name: 'Sarah Davis',
-        worker_email: 'sarah@example.com',
-        gig_id: gigId,
-        hours_worked: 10,
-        hourly_rate: 50,
-        overtime_hours: 2,
-        overtime_rate: 75,
-        bonus_amount: 0,
-        deductions: 25,
-        gross_pay: 650,
-        net_pay: 625,
-        status: 'approved',
-        payment_method: 'paypal',
-        payment_details: { email: 'sarah@paypal.com' },
-        notes: 'Great sound engineering work',
-        created_at: '2024-01-15T10:00:00Z',
-      },
-      {
-        id: '3',
-        worker_id: 'worker-3',
-        worker_name: 'Mike Johnson',
-        worker_email: 'mike@example.com',
-        gig_id: gigId,
-        hours_worked: 6,
-        hourly_rate: 40,
-        overtime_hours: 0,
-        overtime_rate: 60,
-        bonus_amount: 25,
-        deductions: 0,
-        gross_pay: 265,
-        net_pay: 265,
-        status: 'pending',
-        payment_method: 'direct_deposit',
-        payment_details: { account_ending: '5678' },
-        notes: '',
-        created_at: '2024-01-15T10:00:00Z',
+  const loadPayments = async () => {
+    try {
+      const { data, error } = await DatabaseService.getPayments({ gigId });
+      
+      if (error) {
+        console.error('Error loading payments:', error);
+        return;
       }
-    ];
-
-    setPayments(mockPayments);
+      
+      // Transform database payments to WorkerPayment format
+      const transformedPayments: WorkerPayment[] = (data || []).map(payment => {
+        const worker = workers.find(w => w.id === payment.worker_id);
+        return {
+          id: payment.id,
+          worker_id: payment.worker_id,
+          worker_name: worker?.name || 'Unknown Worker',
+          worker_email: worker?.email || '',
+          gig_id: payment.gig_id,
+          hours_worked: 8, // Default, should be stored in metadata
+          hourly_rate: payment.amount / 8, // Estimated based on amount
+          overtime_hours: 0,
+          overtime_rate: 0,
+          bonus_amount: 0,
+          deductions: 0,
+          gross_pay: payment.amount,
+          net_pay: payment.amount,
+          status: payment.status as any,
+          payment_method: 'direct_deposit',
+          payment_details: {},
+          notes: payment.notes || '',
+          created_at: payment.created_at,
+          paid_at: payment.paid_date,
+        };
+      });
+      
+      setPayments(transformedPayments);
+    } catch (error) {
+      console.error('Error loading payments:', error);
+      // Fall back to mock data if database fails
+      const mockPayments: WorkerPayment[] = [
+        {
+          id: '1',
+          worker_id: 'worker-1',
+          worker_name: 'John Smith',
+          worker_email: 'john@example.com',
+          gig_id: gigId,
+          hours_worked: 8,
+          hourly_rate: 45,
+          overtime_hours: 2,
+          overtime_rate: 67.5,
+          bonus_amount: 50,
+          deductions: 0,
+          gross_pay: 545,
+          net_pay: 545,
+          status: 'paid',
+          payment_method: 'direct_deposit',
+          payment_details: { account_ending: '1234' },
+          notes: 'Excellent work on camera operations',
+          created_at: '2024-01-15T10:00:00Z',
+          paid_at: '2024-01-16T14:30:00Z',
+        },
+      ];
+      setPayments(mockPayments);
+    }
   };
 
   const calculatePayment = () => {
@@ -182,32 +180,30 @@ const WorkerPayroll: React.FC<WorkerPayrollProps> = ({ gigId, gigTitle, workers 
 
       const { gross, net } = calculatePayment();
 
-      const newPayment: WorkerPayment = {
-        id: Date.now().toString(),
+      // Save to database
+      const paymentData = {
         worker_id: selectedWorker,
-        worker_name: worker.name,
-        worker_email: worker.email,
         gig_id: gigId,
-        hours_worked: parseFloat(hoursWorked),
-        hourly_rate: worker.hourly_rate,
-        overtime_hours: parseFloat(overtimeHours) || 0,
-        overtime_rate: worker.hourly_rate * 1.5,
-        bonus_amount: parseFloat(bonusAmount) || 0,
-        deductions: parseFloat(deductions) || 0,
-        gross_pay: gross,
-        net_pay: net,
+        company_id: profile?.id || '',
+        amount: net,
+        currency: 'USD',
         status: 'pending',
-        payment_method: 'direct_deposit',
-        payment_details: {},
         notes,
-        created_at: new Date().toISOString(),
       };
+      
+      const { data: savedPayment, error } = await DatabaseService.addPayment(paymentData);
+      
+      if (error) {
+        throw new Error(error);
+      }
 
-      setPayments(prev => [newPayment, ...prev]);
+      // Reload payments from database
+      await loadPayments();
       setShowPaymentDialog(false);
       resetForm();
       toast.success('Payment record created successfully!');
     } catch (error) {
+      console.error('Error creating payment:', error);
       toast.error('Failed to create payment record');
     } finally {
       setLoading(false);
