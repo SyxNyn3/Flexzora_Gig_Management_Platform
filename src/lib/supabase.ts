@@ -66,7 +66,7 @@ export class DatabaseService {
       // Add timeout to prevent hanging
       const { data, error } = await Promise.race([
         profileQuery,
-        createTimeout(30000, 'getProfile')
+        createTimeout(60000, 'getProfile')
       ]) as any;
 
       if (error && error.code !== 'PGRST116') {
