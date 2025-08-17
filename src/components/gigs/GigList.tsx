@@ -49,6 +49,11 @@ const GigList: React.FC = () => {
 
   const filterGigs = () => {
     let filtered = gigs;
+   
+   // Ensure gigs is always an array to prevent null reference errors
+   if (!filtered || !Array.isArray(filtered)) {
+     filtered = [];
+   }
 
     // Search filter
     if (searchTerm) {
