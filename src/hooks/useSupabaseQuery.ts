@@ -20,7 +20,7 @@ export function useSupabaseQuery<T>(
       
       if (result.error) {
         setError(result.error);
-        if (result.error !== 'No data found') {
+        if (result.error !== 'No data found' && result.error !== 'No user ID provided') {
           console.error(`Query error: ${result.error}`);
         }
         setData(result.data);
