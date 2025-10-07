@@ -1,7 +1,7 @@
 import { BaseAgent, MessageBus } from '../../services/BaseAgent';
 import { AgentConfig, AgentTask, ScheduleOptimization, ScheduleConflict, ScheduleRecommendation } from '../../types';
 import { supabase } from '@/lib/supabase';
-import { addHours, differenceInHours, parseISO, isWithinInterval } from 'date-fns';
+import { differenceInHours, parseISO } from 'date-fns';
 
 export class SchedulingAgent extends BaseAgent {
   private messageBus: MessageBus;

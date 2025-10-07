@@ -1,18 +1,11 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { useApplications, useRealtimeNotifications } from '@/hooks/useSupabaseQuery';
 import ApplicationCard from './ApplicationCard';
-import { 
-  Clock,
-  MessageSquare,
-  TrendingUp,
-  AlertCircle,
-  CheckCircle,
-  XCircle
-} from 'lucide-react';
+import { Clock, MessageSquare, CircleCheck as CheckCircle, Circle as XCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const WorkerApplications: React.FC = () => {
@@ -36,7 +29,7 @@ const WorkerApplications: React.FC = () => {
   }, [applicationsLoading]);
 
   // Enhance applications with additional UI-specific properties
-  const enhancedApplications = applications.map(app => {
+  const enhancedApplications = (applications || []).map(app => {
     // Calculate response time if applicable
     let responseTime = 'pending';
     if (app.response_date && app.application_date) {
@@ -73,15 +66,6 @@ const WorkerApplications: React.FC = () => {
     };
   });
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'accepted': return 'bg-green-100 text-green-800 border-green-200';
-      case 'rejected': return 'bg-red-100 text-red-800 border-red-200';
-      case 'pending': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
-
   // Filter applications based on selected tab
   const filteredApplications = (enhancedApplications || []).filter(app => {
     if (selectedTab === 'all') return true;
@@ -89,13 +73,13 @@ const WorkerApplications: React.FC = () => {
   });
 
   // Calculate application statistics
-  const stats = applications.length > 0 ? {
-    total: applications.length,
-    pending: applications.filter(app => app.status === 'pending').length,
-    accepted: applications.filter(app => app.status === 'accepted').length,
-    rejected: applications.filter(app => app.status === 'rejected').length,
-    responseRate: applications.length > 0 
-      ? Math.round((applications.filter(app => app.status !== 'pending').length / applications.length) * 100) 
+  const stats = (applications || []).length > 0 ? {
+    total: (applications || []).length,
+    pending: (applications || []).filter(app => app.status === 'pending').length,
+    accepted: (applications || []).filter(app => app.status === 'accepted').length,
+    rejected: (applications || []).filter(app => app.status === 'rejected').length,
+    responseRate: (applications || []).length > 0
+      ? Math.round(((applications || []).filter(app => app.status !== 'pending').length / (applications || []).length) * 100)
       : 0
   } : {
     total: 0,

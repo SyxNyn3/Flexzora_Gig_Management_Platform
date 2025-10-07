@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { Database } from './types';
+import { Database, Profile } from './types';
 import { getStoredAuthData } from './auth';
 
 // Helper function to create a timeout promise

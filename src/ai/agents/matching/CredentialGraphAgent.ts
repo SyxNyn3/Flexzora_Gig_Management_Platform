@@ -240,7 +240,6 @@ export class CredentialGraphAgent extends BaseAgent {
       .single();
 
     const reviewAverage = profile?.average_rating || 0;
-    const reviewCount = profile?.review_count || 0;
 
     const reliability = Math.min(1, (completedGigs / Math.max(10, completedGigs)) * completionRate);
     const skillQuality = (reviewAverage / 5);

@@ -173,7 +173,6 @@ export class SmartMatchingAgent extends BaseAgent {
       return 0;
     }
 
-    const workerSkillNames = workerSkills.map(ws => ws.skill?.name.toLowerCase());
     const requiredSkills = gig.skills_required.map((s: string) => s.toLowerCase());
 
     let matchedSkills = 0;

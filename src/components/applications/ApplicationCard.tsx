@@ -2,18 +2,7 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { 
-  CheckCircle, 
-  XCircle, 
-  Clock, 
-  MapPin,
-  DollarSign,
-  Calendar,
-  Eye,
-  ArrowRight,
-  MessageSquare
-} from 'lucide-react';
+import { CircleCheck as CheckCircle, Circle as XCircle, Clock, MapPin, DollarSign, Calendar, Eye, MessageSquare } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface ApplicationCardProps {

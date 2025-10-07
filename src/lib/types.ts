@@ -80,6 +80,16 @@ export interface Database {
         Insert: Omit<WaitlistEntry, 'id' | 'created_at' | 'referral_count'>;
         Update: Partial<Omit<WaitlistEntry, 'id' | 'created_at'>>;
       };
+      portfolio_items: {
+        Row: PortfolioItem;
+        Insert: Omit<PortfolioItem, 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Omit<PortfolioItem, 'id' | 'created_at' | 'updated_at'>>;
+      };
+      reviews: {
+        Row: Review;
+        Insert: Omit<Review, 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Omit<Review, 'id' | 'created_at' | 'updated_at'>>;
+      };
     };
   };
 }
@@ -109,6 +119,7 @@ export interface Profile {
 
 export interface PortfolioItem {
   id: string;
+  worker_id: string;
   title: string;
   description?: string;
   url?: string;
@@ -117,6 +128,19 @@ export interface PortfolioItem {
   date_completed?: string;
   client?: string;
   is_featured: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Review {
+  id: string;
+  gig_id?: string;
+  reviewer_id: string;
+  reviewee_id: string;
+  rating: number;
+  comment?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Company {

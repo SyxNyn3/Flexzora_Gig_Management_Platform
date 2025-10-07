@@ -183,8 +183,6 @@ export class RouteOptimizationAgent extends BaseAgent {
   }
 
   private parseLocation(address: string): Location {
-    const parts = address.split(',').map(p => p.trim());
-
     const latitude = 40.7128 + (Math.random() - 0.5) * 0.1;
     const longitude = -74.0060 + (Math.random() - 0.5) * 0.1;
 
@@ -239,7 +237,7 @@ export class RouteOptimizationAgent extends BaseAgent {
   }
 
   private async assessWeatherImpact(
-    location: Location,
+    _location: Location,
     time: Date
   ): Promise<'none' | 'minor' | 'moderate' | 'severe'> {
     const month = time.getMonth();

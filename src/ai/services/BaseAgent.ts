@@ -171,5 +171,4 @@ export class InMemoryMessageBus implements MessageBus {
   }
 }
 
-
 export { BaseAgent }

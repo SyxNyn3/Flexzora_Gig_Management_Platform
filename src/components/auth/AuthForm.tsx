@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -12,8 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
-import { storeAuthData } from '@/lib/auth';
-import { Mail, Apple, Chrome, ArrowLeft, Shield, CheckCircle, Eye, EyeOff, Sparkles, Lock } from 'lucide-react';
+import { Mail, Apple, Chrome, ArrowLeft, Shield, CircleCheck as CheckCircle, Eye, EyeOff, Sparkles, Lock } from 'lucide-react';
 
 const signInSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -274,7 +273,6 @@ const AuthForm: React.FC = () => {
                   <div>
                     <Label htmlFor="username" className="text-sm font-medium text-gray-700">Username</Label>
                     <Input
-                      name="username"
                       id="username"
                       type="text"
                       {...signUpForm.register('username')}
