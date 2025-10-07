@@ -1,20 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGigs, useApplications, usePayments, useExpenses, useRealtimeNotifications } from '@/hooks/useSupabaseQuery';
-import { AuthKitButton } from '@/components/integrations/AuthKitButton';
 import ReviewStars from '@/components/reviews/ReviewStars';
-import { 
-  Calendar, 
-  DollarSign, 
+import {
+  Calendar,
+  DollarSign,
   Clock,
   MapPin,
   TrendingUp,
   Bell,
-  Plus,
   ArrowRight,
   CheckCircle,
   AlertCircle,
@@ -22,7 +20,7 @@ import {
   Briefcase,
   Users,
   Building2,
-  Building
+  Mail
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { format, isToday, isTomorrow, addDays } from 'date-fns';
@@ -40,7 +38,6 @@ const WorkerDashboard: React.FC = () => {
   const { data: paymentsRaw } = usePayments({ workerId: profile?.id });
   const payments = paymentsRaw || [];
   const { data: expensesRaw } = useExpenses({ workerId: profile?.id });
-  const expenses = expensesRaw || [];
   
   // Set up real-time notifications
   useRealtimeNotifications(profile?.id, (notification) => {
@@ -340,7 +337,7 @@ const WorkerDashboard: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {availableGigs.slice(0, 3).map((gig) => (
+                  {(availableGigs || []).slice(0, 3).map((gig) => (
                     <div 
                       key={gig.id} 
                       className="p-4 border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors cursor-pointer"
@@ -426,7 +423,7 @@ const WorkerDashboard: React.FC = () => {
                             Applied {format(new Date(application.application_date), 'MMM d')}
                           </p>
                         </div>
-                        <Badge className={getStatusColor(application.status)} size="sm">
+                        <Badge className={getStatusColor(application.status)}>
                           {application.status}
                         </Badge>
                       </div>

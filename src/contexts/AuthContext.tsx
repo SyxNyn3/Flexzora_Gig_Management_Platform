@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase, DatabaseService } from '@/lib/supabase';
-import { storeAuthData, getStoredAuthData, clearAuthData, refreshAuthToken, setupTokenRefresh, validateSession } from '@/lib/auth';
+import { storeAuthData, getStoredAuthData, clearAuthData, setupTokenRefresh } from '@/lib/auth';
 import { lookupUserByIdentifier } from '@/lib/auth';
 import { Profile, Database } from '@/lib/types';
 
@@ -69,7 +69,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           
           // Set up token refresh
           const interval = setupTokenRefresh();
-          setRefreshInterval(interval);
+          setRefreshInterval(interval as unknown as number);
           
           await fetchProfile(supabaseSession.user.id);
         } else {
@@ -128,16 +128,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       try {
         // First try to get existing profile
-        let result = await DatabaseService.getProfile(userId);
+        const result = await DatabaseService.getProfile(userId);
         profileData = result.data;
         error = result.error;
         
         // If profile doesn't exist, try to create it
         if (!profileData && !error) {
           console.log('Profile not found, attempting to create...');
-          result = await DatabaseService.getOrCreateProfile(userId);
-          profileData = result.data;
-          error = result.error;
+          const createResult = await DatabaseService.getOrCreateProfile(userId);
+          profileData = createResult.data;
+          error = createResult.error;
         }
       } catch (err) {
         console.log('Profile not found, will create one on first update');

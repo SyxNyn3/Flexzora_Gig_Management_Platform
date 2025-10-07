@@ -13,22 +13,20 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/lib/supabase';
-import { 
-  Building2, 
-  Users, 
-  Calendar, 
-  DollarSign, 
-  MessageSquare, 
-  FileText, 
-  Clock, 
-  CheckCircle, 
-  AlertTriangle, 
-  ArrowRight, 
-  Mail, 
-  Phone, 
-  Globe, 
-  Upload, 
-  Info
+import {
+  Building2,
+  Users,
+  Calendar,
+  DollarSign,
+  MessageSquare,
+  Clock,
+  CheckCircle,
+  AlertTriangle,
+  ArrowRight,
+  Mail,
+  Phone,
+  Globe,
+  Star
 } from 'lucide-react';
 import { toast } from 'sonner';
 

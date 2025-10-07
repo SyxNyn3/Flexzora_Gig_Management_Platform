@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, momentLocalizer, View, Views } from 'react-big-calendar';
 import moment from 'moment';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -9,24 +9,20 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase, DatabaseService } from '@/lib/supabase';
-import { Gig, GigApplication } from '@/lib/types';
+import { DatabaseService } from '@/lib/supabase';
+import { Gig } from '@/lib/types';
 import { useCalendarEvents } from '@/hooks/useSupabaseQuery';
 import { 
-  Calendar as CalendarIcon, 
-  MapPin, 
-  Clock, 
+  Calendar as CalendarIcon,
+  MapPin,
+  Clock,
   Users,
   DollarSign,
-  Building,
   Plus,
   Bell,
   FileText,
   Save,
-  X,
-  Edit,
   Trash2
 } from 'lucide-react';
 import { format } from 'date-fns';
@@ -117,7 +113,7 @@ const CalendarView: React.FC = () => {
 
   // Convert database events to calendar events
   useEffect(() => {
-    if (dbEvents.length > 0) {
+    if (dbEvents && dbEvents.length > 0) {
       const formattedEvents: CalendarEvent[] = dbEvents.map(event => ({
         id: event.id,
         title: event.title,
@@ -166,7 +162,7 @@ const CalendarView: React.FC = () => {
         user_id: profile.id,
         title: `📝 ${title}`,
         description: content,
-        event_type: 'note',
+        event_type: 'note' as const,
         start_time: new Date(`${format(selectedDate, 'yyyy-MM-dd')}T09:00:00`).toISOString(),
         end_time: new Date(`${format(selectedDate, 'yyyy-MM-dd')}T09:30:00`).toISOString(),
         all_day: false,
@@ -178,7 +174,7 @@ const CalendarView: React.FC = () => {
         }
       };
       
-      const { data, error } = await DatabaseService.createCalendarEvent(eventData);
+      const { error } = await DatabaseService.createCalendarEvent(eventData);
       
       if (error) {
         throw new Error(error);
@@ -211,7 +207,7 @@ const CalendarView: React.FC = () => {
         user_id: profile.id,
         title: `🔔 ${title}`,
         description: content,
-        event_type: 'reminder',
+        event_type: 'reminder' as const,
         start_time: new Date(`${format(selectedDate, 'yyyy-MM-dd')}T${reminderTime}:00`).toISOString(),
         end_time: new Date(`${format(selectedDate, 'yyyy-MM-dd')}T${reminderTime}:00`).toISOString(),
         all_day: false,
@@ -225,7 +221,7 @@ const CalendarView: React.FC = () => {
         }
       };
       
-      const { data, error } = await DatabaseService.createCalendarEvent(eventData);
+      const { error } = await DatabaseService.createCalendarEvent(eventData);
       
       if (error) {
         throw new Error(error);
@@ -271,10 +267,11 @@ const CalendarView: React.FC = () => {
 
   const toggleReminderComplete = async (event: CalendarEvent) => {
     try {
-      const currentCompleted = event.resource.metadata?.completed || false;
+      const metadata = (event.resource as any).metadata || {};
+      const currentCompleted = metadata.completed || false;
       const updates = {
         metadata: {
-          ...event.resource.metadata,
+          ...metadata,
           completed: !currentCompleted
         }
       };
@@ -510,7 +507,7 @@ const CalendarView: React.FC = () => {
                         variant="outline"
                         onClick={() => toggleReminderComplete(selectedEvent)}
                       >
-                        {selectedEvent.resource.metadata?.completed ? 'Mark Incomplete' : 'Mark Complete'}
+                        {((selectedEvent.resource as any).metadata?.completed) ? 'Mark Incomplete' : 'Mark Complete'}
                       </Button>
                     )}
                     <Button

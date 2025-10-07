@@ -8,12 +8,13 @@ import { Skeleton } from '@/components/ui/skeleton';
 import InvoiceGenerator from './InvoiceGenerator';
 import PaymentProcessor from '@/components/payments/PaymentProcessor';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase, DatabaseService } from '@/lib/supabase';
+import { DatabaseService } from '@/lib/supabase';
 import { Payment, Expense } from '@/lib/types';
 import ExpenseTracker from '@/components/expenses/ExpenseTracker';
 import { usePayments, useExpenses } from '@/hooks/useSupabaseQuery';
-import { DollarSign, TrendingUp, TrendingDown, Calendar, Download, Plus, CircleAlert as AlertCircle, CreditCard } from 'lucide-react';
+import { DollarSign, TrendingUp, Download, CircleAlert as AlertCircle, CreditCard } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
+import { toast } from 'sonner';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 
 interface FinanceStats {
@@ -50,8 +51,8 @@ const FinanceDashboard: React.FC = () => {
 
   useEffect(() => {
     if (profile) {
-      calculateStats(payments, expenses);
-      generateMonthlyData(payments, expenses);
+      calculateStats(payments || [], expenses || []);
+      generateMonthlyData(payments || [], expenses || []);
     }
   }, [profile, payments, expenses]);
 
@@ -351,8 +352,8 @@ const FinanceDashboard: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {payments.length > 0 ? (
-                  payments.slice(0, 10).map((payment) => (
+                {(payments || []).length > 0 ? (
+                  (payments || []).slice(0, 10).map((payment) => (
                     <div key={payment.id} className="flex items-center justify-between p-4 border rounded-lg">
                       <div className="flex items-center space-x-4">
                         <CreditCard className="h-8 w-8 text-gray-400" />

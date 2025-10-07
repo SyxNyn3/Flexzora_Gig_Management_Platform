@@ -170,5 +170,3 @@ export class InMemoryMessageBus implements MessageBus {
     this.subscribers.delete(agentId);
   }
 }
-
-export { BaseAgent }

@@ -12,17 +12,14 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase, DatabaseService } from '@/lib/supabase';
-import { Expense, Gig } from '@/lib/types';
+import { DatabaseService, supabase } from '@/lib/supabase';
+import { Gig } from '@/lib/types';
 import { useExpenses } from '@/hooks/useSupabaseQuery';
-import { 
-  Plus, 
-  Receipt, 
+import {
+  Plus,
+  Receipt,
   DollarSign,
-  Calendar,
-  Tag,
-  FileText,
-  Upload
+  FileText
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -91,8 +88,8 @@ const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ gigId }) => {
         .eq('worker_id', profile.id)
         .eq('status', 'accepted');
 
-      const gigData = applications?.map(app => app.gig).filter(Boolean) || [];
-      setGigs(gigData as Gig[]);
+      const gigData = (applications?.map(app => app.gig).filter(Boolean) || []) as unknown as Gig[];
+      setGigs(gigData);
     } catch (error) {
       console.error('Error fetching gigs:', error);
     }
@@ -109,10 +106,10 @@ const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ gigId }) => {
         category: data.category,
         description: data.description,
         expense_date: data.expense_date,
-        gig_id: data.gig_id || null,
+        gig_id: data.gig_id || undefined,
         is_reimbursable: data.is_reimbursable,
         is_tax_deductible: data.is_tax_deductible,
-        notes: data.notes || null,
+        notes: data.notes || undefined,
         currency: 'USD',
       };
 
@@ -141,11 +138,11 @@ const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ gigId }) => {
     }
   };
 
-  const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
-  const reimbursableExpenses = expenses
+  const totalExpenses = (expenses || []).reduce((sum, expense) => sum + expense.amount, 0);
+  const reimbursableExpenses = (expenses || [])
     .filter(expense => expense.is_reimbursable)
     .reduce((sum, expense) => sum + expense.amount, 0);
-  const taxDeductibleExpenses = expenses
+  const taxDeductibleExpenses = (expenses || [])
     .filter(expense => expense.is_tax_deductible)
     .reduce((sum, expense) => sum + expense.amount, 0);
 
@@ -175,7 +172,7 @@ const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ gigId }) => {
           <CardContent>
             <div className="text-2xl font-bold">${totalExpenses.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">
-              {expenses.length} expense{expenses.length !== 1 ? 's' : ''} recorded
+              {(expenses || []).length} expense{(expenses || []).length !== 1 ? 's' : ''} recorded
             </p>
           </CardContent>
         </Card>
@@ -220,9 +217,9 @@ const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ gigId }) => {
             <div className="flex items-center justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
             </div>
-          ) : expenses.length > 0 ? (
+          ) : (expenses || []).length > 0 ? (
             <div className="space-y-4">
-              {expenses.map((expense) => (
+              {(expenses || []).map((expense) => (
                 <div key={expense.id} className="flex items-center justify-between p-4 border rounded-lg">
                   <div className="flex items-center space-x-4">
                     <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
