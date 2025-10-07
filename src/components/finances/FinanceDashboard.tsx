@@ -165,10 +165,10 @@ const FinanceDashboard: React.FC = () => {
 
   const getPaymentStatusColor = (status: string) => {
     switch (status) {
-      case 'paid': return 'bg-green-100 text-green-800';
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'overdue': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'paid': return 'bg-success-lighter text-success';
+      case 'pending': return 'bg-warning-lighter text-warning-dark';
+      case 'overdue': return 'bg-destructive-lighter text-destructive-dark';
+      default: return 'bg-muted text-muted-foreground';
     }
   };
 
@@ -297,12 +297,19 @@ const FinanceDashboard: React.FC = () => {
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
               <AreaChart data={monthlyData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <Tooltip formatter={(value: number) => [`$${value.toLocaleString()}`, '']} />
-                <Area type="monotone" dataKey="earnings" stackId="1" stroke="#3B82F6" fill="#3B82F6" fillOpacity={0.6} />
-                <Area type="monotone" dataKey="expenses" stackId="2" stroke="#EF4444" fill="#EF4444" fillOpacity={0.6} />
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" />
+                <YAxis stroke="hsl(var(--muted-foreground))" />
+                <Tooltip
+                  formatter={(value: number) => [`$${value.toLocaleString()}`, '']}
+                  contentStyle={{
+                    backgroundColor: 'hsl(var(--card))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '8px'
+                  }}
+                />
+                <Area type="monotone" dataKey="earnings" stackId="1" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.5} />
+                <Area type="monotone" dataKey="expenses" stackId="2" stroke="hsl(var(--destructive))" fill="hsl(var(--destructive))" fillOpacity={0.5} />
               </AreaChart>
             </ResponsiveContainer>
           </CardContent>
@@ -318,11 +325,18 @@ const FinanceDashboard: React.FC = () => {
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={monthlyData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <Tooltip formatter={(value: number) => [`$${value.toLocaleString()}`, 'Net Income']} />
-                <Bar dataKey="net" fill="#10B981" />
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" />
+                <YAxis stroke="hsl(var(--muted-foreground))" />
+                <Tooltip
+                  formatter={(value: number) => [`$${value.toLocaleString()}`, 'Net Income']}
+                  contentStyle={{
+                    backgroundColor: 'hsl(var(--card))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '8px'
+                  }}
+                />
+                <Bar dataKey="net" fill="hsl(var(--secondary))" radius={[8, 8, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
