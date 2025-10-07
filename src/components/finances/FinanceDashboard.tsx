@@ -12,16 +12,7 @@ import { supabase, DatabaseService } from '@/lib/supabase';
 import { Payment, Expense } from '@/lib/types';
 import ExpenseTracker from '@/components/expenses/ExpenseTracker';
 import { usePayments, useExpenses } from '@/hooks/useSupabaseQuery';
-import { 
-  DollarSign, 
-  TrendingUp, 
-  TrendingDown,
-  Calendar,
-  Download,
-  Plus,
-  AlertCircle,
-  CreditCard
-} from 'lucide-react';
+import { DollarSign, TrendingUp, TrendingDown, Calendar, Download, Plus, CircleAlert as AlertCircle, CreditCard } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 
