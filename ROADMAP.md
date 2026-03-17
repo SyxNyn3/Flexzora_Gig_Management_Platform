@@ -189,8 +189,8 @@ This document outlines the development roadmap for the FlexZora platform, breaki
 | Milestone | Target Date | Status | Notes |
 |-----------|-------------|--------|-------|
 | Foundation Complete | Current | In Progress | Basic functionality implemented |
-| Core Functionality | Q3 2025 | Not Started | Worker and company experience |
-| Advanced Features | Q4 2025 | Not Started | Financial, calendar, integrations |
+| Core Functionality | Q3 2025 | In Progress | Worker and company experience |
+| Advanced Features | Q4 2025 | In Progress | Financial, calendar, integrations |
 | Enhancement & Optimization | Q1 2026 | Not Started | Communication, analytics |
 | Enterprise & Scale | Q2 2026 | Not Started | Team management, performance |
 | Future Vision | Q4 2026 | Not Started | AI, marketplace, community |
