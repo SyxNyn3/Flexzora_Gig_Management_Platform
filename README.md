@@ -1,10 +1,12 @@
-# FlexZora - Professional Gig Management Platform
+# FlexZora (Rebranding to ShiftZora / RosterFlux) - Multi-Vertical Gig Management Platform
 
 ![FlexZora Logo](https://images.pexels.com/photos/1190297/pexels-photo-1190297.jpeg?auto=compress&cs=tinysrgb&w=1200&h=400&dpr=1)
 
+> 📢 **Strategic Notice**: The platform is currently undergoing an active, comprehensive update to make its scheduling, shift matching, and worker rostering engines completely industry-agnostic. While originally designed for live production crews, the new core is built to scale fluidly into healthcare, retail, security staffing, and corporate freelance management.
+
 ## Overview
 
-FlexZora is a comprehensive gig management platform designed specifically for freelance professionals in the production and event industry. It connects workers with companies, streamlines scheduling, and manages finances in one unified platform.
+This platform is a highly adaptive, multi-vertical gig and shift management engine built for coordinators, managers, and freelance professionals. It connects dynamic labor workforces with corporate clients, automates complex scheduling conflicts, tracks real-time availability, and handles secure end-to-end payment processing in one dark, industrial-styled command center.
 
 ### Key Features
 
