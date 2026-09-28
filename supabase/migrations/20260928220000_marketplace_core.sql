@@ -1,0 +1,697 @@
+/*
+  # Marketplace Core: Events, Shifts, Rosters, Timesheets, Escrow & Invoices
+
+  Turns the gig board into a two-sided crew marketplace for live-event production.
+
+  1. Geospatial
+    - Enables PostGIS; adds `geo` (geography point) to profiles and venues
+    - `nearby_shifts(lat, lng, radius_m)` RPC for radius search
+
+  2. New Tables
+    - `certification_types`  canonical credential catalog (OSHA-10/30, ETCP Rigger, Forklift...)
+    - `venues`               physical sites with geofence radius
+    - `events`               multi-day productions owned by a company
+    - `shifts`               modular labor calls inside an event (skill tier, headcount, window, rate)
+    - `shift_assignments`    offers/applications/bookings between a shift and a worker
+    - `preferred_rosters`    company "trusted crew" lists (match boost + first-wave broadcast)
+    - `overtime_rules`       regional OT rules (daily/weekly thresholds, multipliers)
+    - `timesheets`           geofenced clock-in/out, computed regular/OT hours, approval flow
+    - `escrow_deposits`      funds held per event
+    - `invoices`             contractor invoices auto-generated on timesheet approval
+    - `payouts`              transfer records (Stripe Connect) per invoice
+
+  3. Functions
+    - `validate_clock_event` geofence + window validation
+    - `approve_timesheet`    one-click approval: computes pay, creates invoice, debits escrow, queues payout
+    - `worker_reliability`   rolling no-show / completion metrics used by the matching engine
+
+  4. Security
+    - RLS on every table; companies manage their own events, workers manage their own bookings/timesheets
+*/
+
+CREATE EXTENSION IF NOT EXISTS postgis;
+
+-- ---------------------------------------------------------------------------
+-- Enums
+-- ---------------------------------------------------------------------------
+DO $$ BEGIN
+  CREATE TYPE event_status AS ENUM ('draft', 'published', 'in_progress', 'completed', 'cancelled');
+EXCEPTION WHEN duplicate_object THEN null; END $$;
+
+DO $$ BEGIN
+  CREATE TYPE shift_status AS ENUM ('draft', 'open', 'filled', 'in_progress', 'completed', 'cancelled');
+EXCEPTION WHEN duplicate_object THEN null; END $$;
+
+DO $$ BEGIN
+  CREATE TYPE assignment_status AS ENUM (
+    'offered',      -- direct-book offer sent by company
+    'applied',      -- worker applied from marketplace
+    'confirmed',    -- both sides agreed; worker is booked
+    'declined',     -- worker declined offer
+    'rejected',     -- company rejected application
+    'withdrawn',    -- worker pulled out after confirming
+    'no_show',      -- worker did not clock in
+    'completed'
+  );
+EXCEPTION WHEN duplicate_object THEN null; END $$;
+
+DO $$ BEGIN
+  CREATE TYPE assignment_source AS ENUM ('direct_book', 'roster_broadcast', 'public_marketplace');
+EXCEPTION WHEN duplicate_object THEN null; END $$;
+
+DO $$ BEGIN
+  CREATE TYPE timesheet_status AS ENUM ('open', 'submitted', 'approved', 'disputed', 'paid');
+EXCEPTION WHEN duplicate_object THEN null; END $$;
+
+DO $$ BEGIN
+  CREATE TYPE invoice_status AS ENUM ('draft', 'issued', 'paid', 'void');
+EXCEPTION WHEN duplicate_object THEN null; END $$;
+
+DO $$ BEGIN
+  CREATE TYPE payout_status AS ENUM ('queued', 'processing', 'paid', 'failed');
+EXCEPTION WHEN duplicate_object THEN null; END $$;
+
+DO $$ BEGIN
+  CREATE TYPE escrow_status AS ENUM ('pending', 'funded', 'partially_released', 'released', 'refunded');
+EXCEPTION WHEN duplicate_object THEN null; END $$;
+
+-- ---------------------------------------------------------------------------
+-- Profile geolocation + payout account
+-- ---------------------------------------------------------------------------
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS latitude double precision;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS longitude double precision;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS geo geography(Point, 4326);
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS travel_radius_km integer DEFAULT 80;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS day_rate numeric(10,2);
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS stripe_connect_account_id text;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS payouts_enabled boolean DEFAULT false;
+
+CREATE OR REPLACE FUNCTION sync_profile_geo() RETURNS trigger AS $$
+BEGIN
+  IF NEW.latitude IS NOT NULL AND NEW.longitude IS NOT NULL THEN
+    NEW.geo := ST_SetSRID(ST_MakePoint(NEW.longitude, NEW.latitude), 4326)::geography;
+  END IF;
+  RETURN NEW;
+END $$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS profiles_sync_geo ON profiles;
+CREATE TRIGGER profiles_sync_geo BEFORE INSERT OR UPDATE OF latitude, longitude ON profiles
+  FOR EACH ROW EXECUTE FUNCTION sync_profile_geo();
+
+CREATE INDEX IF NOT EXISTS profiles_geo_idx ON profiles USING GIST (geo);
+
+-- ---------------------------------------------------------------------------
+-- Certification catalog (gatekeeper credentials)
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS certification_types (
+  code text PRIMARY KEY,
+  name text NOT NULL,
+  issuing_body text,
+  category text NOT NULL, -- safety | rigging | equipment | electrical | medical
+  requires_expiry boolean DEFAULT true,
+  created_at timestamptz DEFAULT now()
+);
+
+INSERT INTO certification_types (code, name, issuing_body, category) VALUES
+  ('OSHA_10',        'OSHA 10-Hour General Industry',      'OSHA',   'safety'),
+  ('OSHA_30',        'OSHA 30-Hour General Industry',      'OSHA',   'safety'),
+  ('ETCP_ARENA',     'ETCP Certified Rigger – Arena',      'ESTA',   'rigging'),
+  ('ETCP_THEATRE',   'ETCP Certified Rigger – Theatre',    'ESTA',   'rigging'),
+  ('ETCP_ELECTRIC',  'ETCP Entertainment Electrician',     'ESTA',   'electrical'),
+  ('FORKLIFT',       'Powered Industrial Truck (Forklift)','OSHA',   'equipment'),
+  ('AERIAL_LIFT',    'Aerial / Scissor Lift Operator',     'ANSI',   'equipment'),
+  ('CPR_FIRST_AID',  'CPR / First Aid',                    'Red Cross','medical'),
+  ('FALL_PROTECT',   'Fall Protection Competent Person',   'OSHA',   'safety')
+ON CONFLICT (code) DO NOTHING;
+
+ALTER TABLE certifications ADD COLUMN IF NOT EXISTS cert_type_code text REFERENCES certification_types(code);
+ALTER TABLE certifications ADD COLUMN IF NOT EXISTS verified boolean DEFAULT false;
+ALTER TABLE certifications ADD COLUMN IF NOT EXISTS verified_at timestamptz;
+CREATE INDEX IF NOT EXISTS certifications_type_idx ON certifications (worker_id, cert_type_code) WHERE is_active;
+
+-- ---------------------------------------------------------------------------
+-- Venues
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS venues (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  company_id uuid REFERENCES companies(id) ON DELETE CASCADE,
+  name text NOT NULL,
+  address text NOT NULL,
+  city text,
+  region text,
+  country text DEFAULT 'US',
+  latitude double precision NOT NULL,
+  longitude double precision NOT NULL,
+  geo geography(Point, 4326),
+  geofence_radius_m integer NOT NULL DEFAULT 250,
+  load_in_notes text,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+
+CREATE OR REPLACE FUNCTION sync_venue_geo() RETURNS trigger AS $$
+BEGIN
+  NEW.geo := ST_SetSRID(ST_MakePoint(NEW.longitude, NEW.latitude), 4326)::geography;
+  RETURN NEW;
+END $$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS venues_sync_geo ON venues;
+CREATE TRIGGER venues_sync_geo BEFORE INSERT OR UPDATE OF latitude, longitude ON venues
+  FOR EACH ROW EXECUTE FUNCTION sync_venue_geo();
+
+CREATE INDEX IF NOT EXISTS venues_geo_idx ON venues USING GIST (geo);
+CREATE INDEX IF NOT EXISTS venues_company_idx ON venues (company_id);
+
+-- ---------------------------------------------------------------------------
+-- Overtime rules (regional)
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS overtime_rules (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  code text UNIQUE NOT NULL,
+  name text NOT NULL,
+  region text,
+  daily_ot_after_hours numeric(4,2) DEFAULT 8,
+  daily_dt_after_hours numeric(4,2),          -- double-time threshold (CA = 12)
+  weekly_ot_after_hours numeric(5,2) DEFAULT 40,
+  ot_multiplier numeric(3,2) DEFAULT 1.5,
+  dt_multiplier numeric(3,2) DEFAULT 2.0,
+  minimum_call_hours numeric(4,2) DEFAULT 4,  -- industry-standard 4-hour minimum
+  meal_penalty_after_hours numeric(4,2),      -- optional meal-break penalty trigger
+  created_at timestamptz DEFAULT now()
+);
+
+INSERT INTO overtime_rules (code, name, region, daily_ot_after_hours, daily_dt_after_hours, weekly_ot_after_hours, ot_multiplier, dt_multiplier, minimum_call_hours, meal_penalty_after_hours) VALUES
+  ('US_FLSA',  'US Federal (FLSA)',        'US',    NULL, NULL, 40, 1.5, 2.0, 4, NULL),
+  ('US_CA',    'California',               'US-CA', 8,    12,   40, 1.5, 2.0, 4, 6),
+  ('US_NV',    'Nevada',                   'US-NV', 8,    NULL, 40, 1.5, 2.0, 4, NULL),
+  ('IATSE_STD','IATSE-style Event Standard','US',   8,    12,   40, 1.5, 2.0, 5, 5)
+ON CONFLICT (code) DO NOTHING;
+
+-- ---------------------------------------------------------------------------
+-- Events
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS events (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  company_id uuid NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+  venue_id uuid REFERENCES venues(id) ON DELETE SET NULL,
+  created_by uuid REFERENCES profiles(id) ON DELETE SET NULL,
+  name text NOT NULL,
+  event_type text NOT NULL DEFAULT 'concert', -- concert | corporate | festival | theatre | broadcast
+  description text,
+  starts_on date NOT NULL,
+  ends_on date NOT NULL,
+  status event_status DEFAULT 'draft',
+  budget_cap numeric(12,2),
+  overtime_rule_code text REFERENCES overtime_rules(code) DEFAULT 'US_FLSA',
+  platform_fee_pct numeric(5,2) DEFAULT 12.00,
+  color text DEFAULT '#3B82F6',
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now(),
+  CHECK (ends_on >= starts_on)
+);
+
+CREATE INDEX IF NOT EXISTS events_company_idx ON events (company_id, starts_on);
+
+-- ---------------------------------------------------------------------------
+-- Shifts
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS shifts (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  event_id uuid NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+  title text NOT NULL,                      -- "Load-in", "Show Call", "Load-out"
+  role_name text NOT NULL,                  -- "Ground Rigger", "A2", "Stagehand"
+  skill_id uuid REFERENCES skills(id),
+  min_proficiency integer DEFAULT 1 CHECK (min_proficiency BETWEEN 1 AND 5),
+  required_cert_codes text[] DEFAULT '{}',  -- gatekeeper certifications
+  headcount integer NOT NULL DEFAULT 1 CHECK (headcount > 0),
+  starts_at timestamptz NOT NULL,
+  ends_at timestamptz NOT NULL,
+  hourly_rate numeric(10,2) NOT NULL,
+  status shift_status DEFAULT 'draft',
+  broadcast_stage text DEFAULT 'none',      -- none | roster | public
+  roster_broadcast_at timestamptz,
+  public_broadcast_at timestamptz,
+  notes text,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now(),
+  CHECK (ends_at > starts_at)
+);
+
+CREATE INDEX IF NOT EXISTS shifts_event_idx ON shifts (event_id, starts_at);
+CREATE INDEX IF NOT EXISTS shifts_open_idx ON shifts (starts_at) WHERE status = 'open';
+
+-- ---------------------------------------------------------------------------
+-- Shift assignments (offers / applications / bookings)
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS shift_assignments (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  shift_id uuid NOT NULL REFERENCES shifts(id) ON DELETE CASCADE,
+  worker_id uuid NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  status assignment_status NOT NULL DEFAULT 'applied',
+  source assignment_source NOT NULL DEFAULT 'public_marketplace',
+  match_score numeric(5,2),
+  match_breakdown jsonb,
+  offered_rate numeric(10,2),
+  responded_at timestamptz,
+  confirmed_at timestamptz,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now(),
+  UNIQUE (shift_id, worker_id)
+);
+
+CREATE INDEX IF NOT EXISTS shift_assignments_worker_idx ON shift_assignments (worker_id, status);
+CREATE INDEX IF NOT EXISTS shift_assignments_shift_idx ON shift_assignments (shift_id, status);
+
+-- Keep shift status in sync with confirmed headcount
+CREATE OR REPLACE FUNCTION sync_shift_fill_status() RETURNS trigger AS $$
+DECLARE
+  v_shift_id uuid := COALESCE(NEW.shift_id, OLD.shift_id);
+  v_confirmed integer;
+  v_headcount integer;
+BEGIN
+  SELECT count(*) INTO v_confirmed FROM shift_assignments
+    WHERE shift_id = v_shift_id AND status = 'confirmed';
+  SELECT headcount INTO v_headcount FROM shifts WHERE id = v_shift_id;
+  UPDATE shifts SET
+    status = CASE
+      WHEN status IN ('in_progress', 'completed', 'cancelled', 'draft') THEN status
+      WHEN v_confirmed >= v_headcount THEN 'filled'::shift_status
+      ELSE 'open'::shift_status END,
+    updated_at = now()
+  WHERE id = v_shift_id;
+  RETURN NULL;
+END $$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS shift_assignments_fill ON shift_assignments;
+CREATE TRIGGER shift_assignments_fill AFTER INSERT OR UPDATE OF status OR DELETE ON shift_assignments
+  FOR EACH ROW EXECUTE FUNCTION sync_shift_fill_status();
+
+-- ---------------------------------------------------------------------------
+-- Preferred rosters ("trusted crew")
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS preferred_rosters (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  company_id uuid NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+  worker_id uuid NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  tier text NOT NULL DEFAULT 'preferred', -- preferred | core | blocked
+  notes text,
+  added_by uuid REFERENCES profiles(id),
+  created_at timestamptz DEFAULT now(),
+  UNIQUE (company_id, worker_id)
+);
+
+CREATE INDEX IF NOT EXISTS preferred_rosters_company_idx ON preferred_rosters (company_id, tier);
+
+-- ---------------------------------------------------------------------------
+-- Timesheets
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS timesheets (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  assignment_id uuid NOT NULL UNIQUE REFERENCES shift_assignments(id) ON DELETE CASCADE,
+  shift_id uuid NOT NULL REFERENCES shifts(id) ON DELETE CASCADE,
+  worker_id uuid NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  clock_in_at timestamptz,
+  clock_in_lat double precision,
+  clock_in_lng double precision,
+  clock_in_distance_m numeric(10,2),
+  clock_in_verified boolean DEFAULT false,
+  clock_out_at timestamptz,
+  clock_out_lat double precision,
+  clock_out_lng double precision,
+  clock_out_distance_m numeric(10,2),
+  clock_out_verified boolean DEFAULT false,
+  break_minutes integer DEFAULT 0,
+  regular_hours numeric(6,2) DEFAULT 0,
+  overtime_hours numeric(6,2) DEFAULT 0,
+  doubletime_hours numeric(6,2) DEFAULT 0,
+  gross_pay numeric(10,2) DEFAULT 0,
+  status timesheet_status DEFAULT 'open',
+  worker_notes text,
+  manager_notes text,
+  approved_by uuid REFERENCES profiles(id),
+  approved_at timestamptz,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS timesheets_worker_idx ON timesheets (worker_id, status);
+CREATE INDEX IF NOT EXISTS timesheets_shift_idx ON timesheets (shift_id, status);
+
+-- ---------------------------------------------------------------------------
+-- Escrow, invoices, payouts
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS escrow_deposits (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  event_id uuid NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+  company_id uuid NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+  amount numeric(12,2) NOT NULL CHECK (amount > 0),
+  released_amount numeric(12,2) NOT NULL DEFAULT 0,
+  currency text DEFAULT 'USD',
+  status escrow_status DEFAULT 'pending',
+  stripe_payment_intent_id text,
+  funded_at timestamptz,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS escrow_event_idx ON escrow_deposits (event_id);
+
+CREATE SEQUENCE IF NOT EXISTS invoice_number_seq;
+
+CREATE TABLE IF NOT EXISTS invoices (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  invoice_number text UNIQUE NOT NULL DEFAULT ('FLX-' || to_char(now(), 'YYYY') || '-' || lpad(nextval('invoice_number_seq')::text, 6, '0')),
+  timesheet_id uuid UNIQUE REFERENCES timesheets(id) ON DELETE SET NULL,
+  worker_id uuid NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  company_id uuid NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+  event_id uuid REFERENCES events(id) ON DELETE SET NULL,
+  line_items jsonb NOT NULL DEFAULT '[]'::jsonb,
+  subtotal numeric(10,2) NOT NULL,
+  platform_fee numeric(10,2) NOT NULL DEFAULT 0,
+  total numeric(10,2) NOT NULL,
+  currency text DEFAULT 'USD',
+  status invoice_status DEFAULT 'issued',
+  tax_year integer NOT NULL DEFAULT extract(year FROM now())::integer,
+  issued_at timestamptz DEFAULT now(),
+  paid_at timestamptz,
+  created_at timestamptz DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS invoices_worker_year_idx ON invoices (worker_id, tax_year);
+CREATE INDEX IF NOT EXISTS invoices_company_idx ON invoices (company_id, status);
+
+CREATE TABLE IF NOT EXISTS payouts (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  invoice_id uuid NOT NULL UNIQUE REFERENCES invoices(id) ON DELETE CASCADE,
+  worker_id uuid NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  amount numeric(10,2) NOT NULL,
+  currency text DEFAULT 'USD',
+  method text NOT NULL DEFAULT 'ach', -- ach | instant
+  status payout_status DEFAULT 'queued',
+  stripe_transfer_id text,
+  failure_reason text,
+  expected_arrival_at timestamptz,
+  paid_at timestamptz,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS payouts_worker_idx ON payouts (worker_id, status);
+
+-- ---------------------------------------------------------------------------
+-- updated_at triggers
+-- ---------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION touch_updated_at() RETURNS trigger AS $$
+BEGIN NEW.updated_at := now(); RETURN NEW; END $$ LANGUAGE plpgsql;
+
+DO $$
+DECLARE t text;
+BEGIN
+  FOREACH t IN ARRAY ARRAY['venues','events','shifts','shift_assignments','timesheets','escrow_deposits','payouts']
+  LOOP
+    EXECUTE format('DROP TRIGGER IF EXISTS %I_touch ON %I', t, t);
+    EXECUTE format('CREATE TRIGGER %I_touch BEFORE UPDATE ON %I FOR EACH ROW EXECUTE FUNCTION touch_updated_at()', t, t);
+  END LOOP;
+END $$;
+
+-- ---------------------------------------------------------------------------
+-- RPC: nearby open shifts (radius search)
+-- ---------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION nearby_shifts(p_lat double precision, p_lng double precision, p_radius_m integer DEFAULT 80000)
+RETURNS TABLE (shift_id uuid, distance_m double precision)
+LANGUAGE sql STABLE AS $$
+  SELECT s.id, ST_Distance(v.geo, ST_SetSRID(ST_MakePoint(p_lng, p_lat), 4326)::geography)
+  FROM shifts s
+  JOIN events e ON e.id = s.event_id
+  JOIN venues v ON v.id = e.venue_id
+  WHERE s.status = 'open'
+    AND s.starts_at > now()
+    AND ST_DWithin(v.geo, ST_SetSRID(ST_MakePoint(p_lng, p_lat), 4326)::geography, p_radius_m)
+  ORDER BY 2;
+$$;
+
+-- ---------------------------------------------------------------------------
+-- RPC: worker reliability (feeds Historical Performance weight)
+-- ---------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION worker_reliability(p_worker_id uuid)
+RETURNS TABLE (completed integer, no_shows integer, withdrawn integer, reliability_rate numeric, avg_rating numeric)
+LANGUAGE sql STABLE AS $$
+  WITH a AS (
+    SELECT
+      count(*) FILTER (WHERE status = 'completed')::integer AS completed,
+      count(*) FILTER (WHERE status = 'no_show')::integer AS no_shows,
+      count(*) FILTER (WHERE status = 'withdrawn')::integer AS withdrawn
+    FROM shift_assignments WHERE worker_id = p_worker_id
+  ), r AS (
+    SELECT avg(rating)::numeric(3,2) AS avg_rating FROM reviews WHERE reviewee_id = p_worker_id
+  )
+  SELECT a.completed, a.no_shows, a.withdrawn,
+    CASE WHEN a.completed + a.no_shows + a.withdrawn = 0 THEN NULL
+         ELSE round(a.completed::numeric / (a.completed + a.no_shows + a.withdrawn), 3) END,
+    r.avg_rating
+  FROM a, r;
+$$;
+
+-- ---------------------------------------------------------------------------
+-- RPC: geofenced clock in / out
+-- ---------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION validate_clock_event(
+  p_assignment_id uuid,
+  p_kind text,                 -- 'in' | 'out'
+  p_lat double precision,
+  p_lng double precision
+) RETURNS timesheets
+LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+  v_assignment shift_assignments%ROWTYPE;
+  v_shift shifts%ROWTYPE;
+  v_venue venues%ROWTYPE;
+  v_distance numeric;
+  v_within boolean;
+  v_ts timesheets%ROWTYPE;
+  v_caller uuid;
+BEGIN
+  SELECT id INTO v_caller FROM profiles WHERE user_id = auth.uid();
+  SELECT * INTO v_assignment FROM shift_assignments WHERE id = p_assignment_id;
+  IF v_assignment.id IS NULL THEN RAISE EXCEPTION 'Assignment not found'; END IF;
+  IF v_assignment.worker_id <> v_caller THEN RAISE EXCEPTION 'Not your assignment'; END IF;
+  IF v_assignment.status <> 'confirmed' THEN RAISE EXCEPTION 'Assignment is not confirmed'; END IF;
+
+  SELECT * INTO v_shift FROM shifts WHERE id = v_assignment.shift_id;
+  SELECT v.* INTO v_venue FROM venues v JOIN events e ON e.venue_id = v.id WHERE e.id = v_shift.event_id;
+
+  IF v_venue.id IS NULL THEN
+    v_distance := NULL; v_within := true;  -- venue not geocoded; accept but leave unverified
+  ELSE
+    v_distance := ST_Distance(v_venue.geo, ST_SetSRID(ST_MakePoint(p_lng, p_lat), 4326)::geography);
+    v_within := v_distance <= v_venue.geofence_radius_m;
+  END IF;
+
+  INSERT INTO timesheets (assignment_id, shift_id, worker_id)
+    VALUES (p_assignment_id, v_shift.id, v_assignment.worker_id)
+    ON CONFLICT (assignment_id) DO NOTHING;
+  SELECT * INTO v_ts FROM timesheets WHERE assignment_id = p_assignment_id;
+
+  IF p_kind = 'in' THEN
+    IF v_ts.clock_in_at IS NOT NULL THEN RAISE EXCEPTION 'Already clocked in'; END IF;
+    IF now() < v_shift.starts_at - interval '60 minutes' THEN RAISE EXCEPTION 'Too early to clock in'; END IF;
+    IF NOT v_within THEN RAISE EXCEPTION 'Outside venue geofence (% m away, limit % m)', round(v_distance), v_venue.geofence_radius_m; END IF;
+    UPDATE timesheets SET clock_in_at = now(), clock_in_lat = p_lat, clock_in_lng = p_lng,
+      clock_in_distance_m = v_distance, clock_in_verified = (v_venue.id IS NOT NULL)
+      WHERE id = v_ts.id RETURNING * INTO v_ts;
+    UPDATE shifts SET status = 'in_progress' WHERE id = v_shift.id AND status IN ('open','filled');
+  ELSIF p_kind = 'out' THEN
+    IF v_ts.clock_in_at IS NULL THEN RAISE EXCEPTION 'Not clocked in'; END IF;
+    IF v_ts.clock_out_at IS NOT NULL THEN RAISE EXCEPTION 'Already clocked out'; END IF;
+    UPDATE timesheets SET clock_out_at = now(), clock_out_lat = p_lat, clock_out_lng = p_lng,
+      clock_out_distance_m = v_distance, clock_out_verified = (v_venue.id IS NOT NULL AND v_within),
+      status = 'submitted'
+      WHERE id = v_ts.id RETURNING * INTO v_ts;
+  ELSE
+    RAISE EXCEPTION 'Unknown clock kind %', p_kind;
+  END IF;
+
+  RETURN v_ts;
+END $$;
+
+-- ---------------------------------------------------------------------------
+-- RPC: approve timesheet -> compute OT, invoice, escrow release, payout
+-- ---------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION approve_timesheet(
+  p_timesheet_id uuid,
+  p_break_minutes integer DEFAULT NULL,
+  p_payout_method text DEFAULT 'ach'
+) RETURNS invoices
+LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+  v_ts timesheets%ROWTYPE;
+  v_shift shifts%ROWTYPE;
+  v_event events%ROWTYPE;
+  v_rule overtime_rules%ROWTYPE;
+  v_caller uuid;
+  v_worked numeric;
+  v_reg numeric; v_ot numeric; v_dt numeric;
+  v_gross numeric; v_fee numeric;
+  v_invoice invoices%ROWTYPE;
+  v_escrow escrow_deposits%ROWTYPE;
+BEGIN
+  SELECT id INTO v_caller FROM profiles WHERE user_id = auth.uid();
+  SELECT * INTO v_ts FROM timesheets WHERE id = p_timesheet_id;
+  IF v_ts.id IS NULL THEN RAISE EXCEPTION 'Timesheet not found'; END IF;
+  IF v_ts.status NOT IN ('submitted','disputed') THEN RAISE EXCEPTION 'Timesheet is % and cannot be approved', v_ts.status; END IF;
+
+  SELECT * INTO v_shift FROM shifts WHERE id = v_ts.shift_id;
+  SELECT * INTO v_event FROM events WHERE id = v_shift.event_id;
+  IF NOT EXISTS (SELECT 1 FROM companies c WHERE c.id = v_event.company_id AND c.created_by = v_caller) THEN
+    RAISE EXCEPTION 'Only the hiring company can approve this timesheet';
+  END IF;
+  SELECT * INTO v_rule FROM overtime_rules WHERE code = COALESCE(v_event.overtime_rule_code, 'US_FLSA');
+
+  v_worked := GREATEST(
+    extract(epoch FROM (v_ts.clock_out_at - v_ts.clock_in_at)) / 3600.0 - COALESCE(p_break_minutes, v_ts.break_minutes, 0) / 60.0,
+    COALESCE(v_rule.minimum_call_hours, 0));
+
+  -- daily split: regular / OT / DT
+  v_dt := CASE WHEN v_rule.daily_dt_after_hours IS NOT NULL THEN GREATEST(v_worked - v_rule.daily_dt_after_hours, 0) ELSE 0 END;
+  v_ot := CASE WHEN v_rule.daily_ot_after_hours IS NOT NULL THEN GREATEST(v_worked - v_dt - v_rule.daily_ot_after_hours, 0) ELSE 0 END;
+  v_reg := v_worked - v_ot - v_dt;
+
+  v_gross := round(v_reg * v_shift.hourly_rate
+                 + v_ot * v_shift.hourly_rate * v_rule.ot_multiplier
+                 + v_dt * v_shift.hourly_rate * v_rule.dt_multiplier, 2);
+  v_fee := round(v_gross * COALESCE(v_event.platform_fee_pct, 0) / 100.0, 2);
+
+  UPDATE timesheets SET
+    break_minutes = COALESCE(p_break_minutes, break_minutes),
+    regular_hours = round(v_reg, 2), overtime_hours = round(v_ot, 2), doubletime_hours = round(v_dt, 2),
+    gross_pay = v_gross, status = 'approved', approved_by = v_caller, approved_at = now()
+  WHERE id = v_ts.id;
+
+  UPDATE shift_assignments SET status = 'completed' WHERE id = v_ts.assignment_id;
+
+  INSERT INTO invoices (timesheet_id, worker_id, company_id, event_id, line_items, subtotal, platform_fee, total)
+  VALUES (
+    v_ts.id, v_ts.worker_id, v_event.company_id, v_event.id,
+    jsonb_build_array(
+      jsonb_build_object('description', v_shift.role_name || ' – ' || v_shift.title || ' (regular)', 'hours', round(v_reg,2), 'rate', v_shift.hourly_rate, 'amount', round(v_reg * v_shift.hourly_rate, 2)),
+      jsonb_build_object('description', 'Overtime x' || v_rule.ot_multiplier, 'hours', round(v_ot,2), 'rate', v_shift.hourly_rate * v_rule.ot_multiplier, 'amount', round(v_ot * v_shift.hourly_rate * v_rule.ot_multiplier, 2)),
+      jsonb_build_object('description', 'Double time x' || v_rule.dt_multiplier, 'hours', round(v_dt,2), 'rate', v_shift.hourly_rate * v_rule.dt_multiplier, 'amount', round(v_dt * v_shift.hourly_rate * v_rule.dt_multiplier, 2))
+    ),
+    v_gross, v_fee, v_gross
+  ) RETURNING * INTO v_invoice;
+
+  -- release from escrow if funded
+  SELECT * INTO v_escrow FROM escrow_deposits WHERE event_id = v_event.id AND status IN ('funded','partially_released')
+    ORDER BY created_at LIMIT 1 FOR UPDATE;
+  IF v_escrow.id IS NOT NULL THEN
+    UPDATE escrow_deposits SET
+      released_amount = released_amount + v_gross,
+      status = CASE WHEN released_amount + v_gross >= amount THEN 'released'::escrow_status ELSE 'partially_released'::escrow_status END
+    WHERE id = v_escrow.id;
+  END IF;
+
+  INSERT INTO payouts (invoice_id, worker_id, amount, method, expected_arrival_at)
+  VALUES (v_invoice.id, v_ts.worker_id, v_gross, p_payout_method,
+    CASE WHEN p_payout_method = 'instant' THEN now() + interval '30 minutes' ELSE now() + interval '2 days' END);
+
+  RETURN v_invoice;
+END $$;
+
+-- ---------------------------------------------------------------------------
+-- RLS
+-- ---------------------------------------------------------------------------
+ALTER TABLE certification_types ENABLE ROW LEVEL SECURITY;
+ALTER TABLE venues ENABLE ROW LEVEL SECURITY;
+ALTER TABLE overtime_rules ENABLE ROW LEVEL SECURITY;
+ALTER TABLE events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE shifts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE shift_assignments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE preferred_rosters ENABLE ROW LEVEL SECURITY;
+ALTER TABLE timesheets ENABLE ROW LEVEL SECURITY;
+ALTER TABLE escrow_deposits ENABLE ROW LEVEL SECURITY;
+ALTER TABLE invoices ENABLE ROW LEVEL SECURITY;
+ALTER TABLE payouts ENABLE ROW LEVEL SECURITY;
+
+CREATE OR REPLACE FUNCTION current_profile_id() RETURNS uuid
+LANGUAGE sql STABLE SECURITY DEFINER AS $$ SELECT id FROM profiles WHERE user_id = auth.uid() $$;
+
+CREATE OR REPLACE FUNCTION owns_company(p_company_id uuid) RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER AS $$
+  SELECT EXISTS (SELECT 1 FROM companies c WHERE c.id = p_company_id AND c.created_by = current_profile_id())
+$$;
+
+DROP POLICY IF EXISTS "cert types readable" ON certification_types;
+CREATE POLICY "cert types readable" ON certification_types FOR SELECT TO authenticated USING (true);
+
+DROP POLICY IF EXISTS "ot rules readable" ON overtime_rules;
+CREATE POLICY "ot rules readable" ON overtime_rules FOR SELECT TO authenticated USING (true);
+
+DROP POLICY IF EXISTS "venues readable" ON venues;
+CREATE POLICY "venues readable" ON venues FOR SELECT TO authenticated USING (true);
+DROP POLICY IF EXISTS "venues managed by company" ON venues;
+CREATE POLICY "venues managed by company" ON venues FOR ALL TO authenticated
+  USING (owns_company(company_id)) WITH CHECK (owns_company(company_id));
+
+DROP POLICY IF EXISTS "events readable" ON events;
+CREATE POLICY "events readable" ON events FOR SELECT TO authenticated
+  USING (status <> 'draft' OR owns_company(company_id));
+DROP POLICY IF EXISTS "events managed by company" ON events;
+CREATE POLICY "events managed by company" ON events FOR ALL TO authenticated
+  USING (owns_company(company_id)) WITH CHECK (owns_company(company_id));
+
+DROP POLICY IF EXISTS "shifts readable" ON shifts;
+CREATE POLICY "shifts readable" ON shifts FOR SELECT TO authenticated
+  USING (status <> 'draft' OR EXISTS (SELECT 1 FROM events e WHERE e.id = event_id AND owns_company(e.company_id)));
+DROP POLICY IF EXISTS "shifts managed by company" ON shifts;
+CREATE POLICY "shifts managed by company" ON shifts FOR ALL TO authenticated
+  USING (EXISTS (SELECT 1 FROM events e WHERE e.id = event_id AND owns_company(e.company_id)))
+  WITH CHECK (EXISTS (SELECT 1 FROM events e WHERE e.id = event_id AND owns_company(e.company_id)));
+
+DROP POLICY IF EXISTS "assignments visible to parties" ON shift_assignments;
+CREATE POLICY "assignments visible to parties" ON shift_assignments FOR SELECT TO authenticated
+  USING (worker_id = current_profile_id()
+     OR EXISTS (SELECT 1 FROM shifts s JOIN events e ON e.id = s.event_id WHERE s.id = shift_id AND owns_company(e.company_id)));
+DROP POLICY IF EXISTS "workers apply" ON shift_assignments;
+CREATE POLICY "workers apply" ON shift_assignments FOR INSERT TO authenticated
+  WITH CHECK (worker_id = current_profile_id() AND status = 'applied'
+     OR EXISTS (SELECT 1 FROM shifts s JOIN events e ON e.id = s.event_id WHERE s.id = shift_id AND owns_company(e.company_id)));
+DROP POLICY IF EXISTS "parties update assignment" ON shift_assignments;
+CREATE POLICY "parties update assignment" ON shift_assignments FOR UPDATE TO authenticated
+  USING (worker_id = current_profile_id()
+     OR EXISTS (SELECT 1 FROM shifts s JOIN events e ON e.id = s.event_id WHERE s.id = shift_id AND owns_company(e.company_id)));
+
+DROP POLICY IF EXISTS "roster visible to company and member" ON preferred_rosters;
+CREATE POLICY "roster visible to company and member" ON preferred_rosters FOR SELECT TO authenticated
+  USING (owns_company(company_id) OR worker_id = current_profile_id());
+DROP POLICY IF EXISTS "roster managed by company" ON preferred_rosters;
+CREATE POLICY "roster managed by company" ON preferred_rosters FOR ALL TO authenticated
+  USING (owns_company(company_id)) WITH CHECK (owns_company(company_id));
+
+DROP POLICY IF EXISTS "timesheets visible to parties" ON timesheets;
+CREATE POLICY "timesheets visible to parties" ON timesheets FOR SELECT TO authenticated
+  USING (worker_id = current_profile_id()
+     OR EXISTS (SELECT 1 FROM shifts s JOIN events e ON e.id = s.event_id WHERE s.id = shift_id AND owns_company(e.company_id)));
+DROP POLICY IF EXISTS "workers edit own open timesheets" ON timesheets;
+CREATE POLICY "workers edit own open timesheets" ON timesheets FOR UPDATE TO authenticated
+  USING (worker_id = current_profile_id() AND status IN ('open','submitted'));
+DROP POLICY IF EXISTS "company edits timesheets" ON timesheets;
+CREATE POLICY "company edits timesheets" ON timesheets FOR UPDATE TO authenticated
+  USING (EXISTS (SELECT 1 FROM shifts s JOIN events e ON e.id = s.event_id WHERE s.id = shift_id AND owns_company(e.company_id)));
+
+DROP POLICY IF EXISTS "escrow visible to company" ON escrow_deposits;
+CREATE POLICY "escrow visible to company" ON escrow_deposits FOR ALL TO authenticated
+  USING (owns_company(company_id)) WITH CHECK (owns_company(company_id));
+
+DROP POLICY IF EXISTS "invoices visible to parties" ON invoices;
+CREATE POLICY "invoices visible to parties" ON invoices FOR SELECT TO authenticated
+  USING (worker_id = current_profile_id() OR owns_company(company_id));
+
+DROP POLICY IF EXISTS "payouts visible to parties" ON payouts;
+CREATE POLICY "payouts visible to parties" ON payouts FOR SELECT TO authenticated
+  USING (worker_id = current_profile_id()
+     OR EXISTS (SELECT 1 FROM invoices i WHERE i.id = invoice_id AND owns_company(i.company_id)));
+
+GRANT EXECUTE ON FUNCTION nearby_shifts(double precision, double precision, integer) TO authenticated;
+GRANT EXECUTE ON FUNCTION worker_reliability(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION validate_clock_event(uuid, text, double precision, double precision) TO authenticated;
+GRANT EXECUTE ON FUNCTION approve_timesheet(uuid, integer, text) TO authenticated;

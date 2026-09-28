@@ -28,7 +28,9 @@ const Navbar: React.FC = () => {
 
   const workerNavItems = [
     { path: '/dashboard', label: 'Dashboard', icon: Briefcase },
-    { path: '/gigs', label: 'Gigs', icon: Calendar },
+    { path: '/shifts', label: 'Shifts', icon: Calendar },
+    { path: '/payouts', label: 'Payouts', icon: DollarSign },
+    { path: '/gigs', label: 'Gigs', icon: Briefcase },
     { path: '/applications', label: 'Applications', icon: MessageSquare },
     { path: '/integrations', label: 'Integrations', icon: LinkIcon },
     { path: '/schedule', label: 'Schedule', icon: CalendarDays },
@@ -37,10 +39,11 @@ const Navbar: React.FC = () => {
 
   const companyNavItems = [
     { path: '/dashboard', label: 'Dashboard', icon: Briefcase },
-    { path: '/gigs', label: 'Gigs', icon: Calendar },
+    { path: '/events', label: 'Events', icon: CalendarDays },
+    { path: '/timesheets', label: 'Timesheets', icon: Calendar },
+    { path: '/roster', label: 'Roster', icon: Users },
+    { path: '/gigs', label: 'Gigs', icon: Briefcase },
     { path: '/workforce', label: 'Workforce', icon: Users },
-    { path: '/applications', label: 'Applications', icon: MessageSquare },
-    { path: '/schedule', label: 'Schedule', icon: CalendarDays },
     { path: '/finances', label: 'Finances', icon: DollarSign },
   ];
 

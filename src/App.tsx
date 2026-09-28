@@ -27,6 +27,12 @@ import CompanyDashboard from '@/components/integrations/CompanyDashboard';
 import PaymentSuccess from '@/components/payments/PaymentSuccess';
 import SchedulingInterface from '@/components/scheduling/SchedulingInterface';
 import WaitlistVerification from '@/components/waitlist/WaitlistVerification';
+import EventsPage from '@/pages/company/EventsPage';
+import EventDetailPage from '@/pages/company/EventDetailPage';
+import TimesheetApprovalPage from '@/pages/company/TimesheetApprovalPage';
+import RosterPage from '@/pages/company/RosterPage';
+import ShiftMarketplacePage from '@/pages/worker/ShiftMarketplacePage';
+import PayoutsPage from '@/pages/worker/PayoutsPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -297,6 +303,66 @@ const AppRoutes: React.FC = () => {
             <ProtectedRoute>
               <Layout>
                 <PaymentSuccess />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/events"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <EventsPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/events/:eventId"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <EventDetailPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/timesheets"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <TimesheetApprovalPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/roster"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <RosterPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/shifts"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <ShiftMarketplacePage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/payouts"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <PayoutsPage />
               </Layout>
             </ProtectedRoute>
           }
