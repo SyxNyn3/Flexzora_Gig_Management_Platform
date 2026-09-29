@@ -53,6 +53,20 @@ serve(async (req) => {
       .single();
 
     if (lookupError || !waitlistEntry) {
+      // Token already consumed (link opened twice): report success idempotently
+      const { data: verifiedEntry } = await supabase
+        .from("waiting_list")
+        .select("referral_code")
+        .eq("email", email)
+        .eq("status", "verified")
+        .is("verification_token", null)
+        .maybeSingle();
+      if (verifiedEntry) {
+        return new Response(
+          JSON.stringify({ message: "Email already verified", referral_code: verifiedEntry.referral_code, already_verified: true }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
       return new Response(
         JSON.stringify({ error: "Invalid verification token or email" }),
         {
