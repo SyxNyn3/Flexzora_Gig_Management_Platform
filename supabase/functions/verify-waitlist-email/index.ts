@@ -24,10 +24,15 @@ serve(async (req) => {
   }
 
   try {
-    // Parse query parameters
+    // Accept token/email from the query string (email link) or a JSON body (client invoke)
     const url = new URL(req.url);
-    const token = url.searchParams.get('token');
-    const email = url.searchParams.get('email');
+    let token = url.searchParams.get('token');
+    let email = url.searchParams.get('email');
+    if ((!token || !email) && req.method === 'POST') {
+      const body = await req.json().catch(() => ({}));
+      token = token || body.token || null;
+      email = email || body.email || null;
+    }
     
     if (!token || !email) {
       return new Response(
