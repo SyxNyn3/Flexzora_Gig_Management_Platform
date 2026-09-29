@@ -23,7 +23,7 @@ import {
   VenueFormData,
   WorkerSkill,
 } from '@/lib/types';
-import { MatchResult, MatchWorkerInput, rankWorkersForShift } from './matchScore';
+import { BookedWindow, MatchResult, MatchWorkerInput, rankWorkersForShift } from './matchScore';
 import { projectedShiftCost, FLSA_DEFAULT, OvertimePolicy } from './overtime';
 
 type Result<T> = { data: T; error: string | null };
@@ -54,6 +54,8 @@ export interface EventBudgetSummary {
 }
 
 const DEFAULT_PLATFORM_FEE_PCT = 12;
+/** Assignment states a company may re-offer over; anything live (applied/offered/confirmed…) is left alone. */
+const REOFFERABLE = new Set<AssignmentStatus>(['declined', 'withdrawn', 'rejected']);
 
 type EventRow = ProductionEvent & { budget?: { budget_cap: number | null; platform_fee_pct: number } | null };
 
@@ -326,15 +328,15 @@ export class MarketplaceService {
     }
   }
 
-  static async applyToShift(shiftId: string, workerId: string, match?: MatchResult): Promise<Result<ShiftAssignment | null>> {
+  static async applyToShift(shift: Pick<Shift, 'id' | 'broadcast_stage'>, workerId: string, match?: MatchResult): Promise<Result<ShiftAssignment | null>> {
     try {
       const { data, error } = await supabase
         .from('shift_assignments')
         .insert({
-          shift_id: shiftId,
+          shift_id: shift.id,
           worker_id: workerId,
           status: 'applied',
-          source: 'public_marketplace',
+          source: shift.broadcast_stage === 'roster' ? 'roster_broadcast' : 'public_marketplace',
           match_score: match?.score,
           match_breakdown: match?.breakdown,
         })
@@ -349,22 +351,33 @@ export class MarketplaceService {
 
   static async directBook(shiftId: string, workerId: string, match: MatchResult, offeredRate?: number): Promise<Result<ShiftAssignment | null>> {
     try {
-      const { data, error } = await supabase
+      const { data: existing, error: existingError } = await supabase
         .from('shift_assignments')
-        .upsert(
-          {
+        .select('id, status')
+        .eq('shift_id', shiftId)
+        .eq('worker_id', workerId)
+        .maybeSingle();
+      if (existingError) throw existingError;
+
+      const terms = { status: 'offered' as const, match_score: match.score, match_breakdown: match.breakdown, offered_rate: offeredRate };
+      if (!existing) {
+        const { data, error } = await supabase
+          .from('shift_assignments')
+          .insert({
             shift_id: shiftId,
             worker_id: workerId,
-            status: 'offered',
             source: match.breakdown.roster > 0 ? 'roster_broadcast' : 'direct_book',
-            match_score: match.score,
-            match_breakdown: match.breakdown,
-            offered_rate: offeredRate,
-          },
-          { onConflict: 'shift_id,worker_id' },
-        )
-        .select()
-        .single();
+            ...terms,
+          })
+          .select()
+          .single();
+        if (error) throw error;
+        return ok(data);
+      }
+      if (!REOFFERABLE.has(existing.status as AssignmentStatus)) {
+        return fail(null, new Error(`Worker already has a ${existing.status} assignment on this call`));
+      }
+      const { data, error } = await supabase.from('shift_assignments').update(terms).eq('id', existing.id).select().single();
       if (error) throw error;
       return ok(data);
     } catch (e) {
@@ -449,7 +462,7 @@ export class MarketplaceService {
   /** Builds match inputs for every available worker and ranks them for the given shift. */
   static async rankCandidates(shift: Shift, companyId: string): Promise<Result<(MatchResult & { worker: Profile })[]>> {
     try {
-      const [workersRes, certsRes, skillsRes, bookingsRes, historyRes, rosterRes] = await Promise.all([
+      const [workersRes, certsRes, skillsRes, bookingsRes, historyRes, rosterRes, blockedRes] = await Promise.all([
         supabase.from('profiles').select('*').eq('role', 'worker').eq('is_available', true),
         supabase.from('certifications').select('worker_id, cert_type_code, is_active, expiration_date, verified').eq('is_active', true),
         supabase.from('worker_skills').select('worker_id, skill_id, proficiency_level'),
@@ -460,10 +473,17 @@ export class MarketplaceService {
           .gte('shift.ends_at', new Date(new Date(shift.starts_at).getTime() - 7 * 86_400_000).toISOString()),
         supabase.from('shift_assignments').select('worker_id, status').in('status', ['completed', 'no_show', 'withdrawn']),
         supabase.from('preferred_rosters').select('worker_id, tier').eq('company_id', companyId),
+        supabase
+          .from('availability')
+          .select('worker_id, start_time, end_time')
+          .eq('is_available', false)
+          .lte('start_time', shift.ends_at)
+          .gte('end_time', shift.starts_at),
       ]);
-      for (const r of [workersRes, certsRes, skillsRes, bookingsRes, historyRes, rosterRes]) {
+      for (const r of [workersRes, certsRes, skillsRes, bookingsRes, historyRes, rosterRes, blockedRes]) {
         if (r.error) throw r.error;
       }
+      const blockedByWorker = groupBy(blockedRes.data ?? [], (b) => b.worker_id as string);
 
       const workers = (workersRes.data ?? []) as Profile[];
       const certsByWorker = groupBy(certsRes.data ?? [], (c) => c.worker_id as string);
@@ -486,6 +506,7 @@ export class MarketplaceService {
           certifications: (certsByWorker.get(w.id) ?? []) as Pick<Certification, 'cert_type_code' | 'is_active' | 'expiration_date' | 'verified'>[],
           skills: (skillsByWorker.get(w.id) ?? []) as Pick<WorkerSkill, 'skill_id' | 'proficiency_level'>[],
           bookedWindows: (bookingsByWorker.get(w.id) ?? []).map((b) => b.shift),
+          unavailableWindows: (blockedByWorker.get(w.id) ?? []).map(toWindow),
           avgRating: w.average_rating ?? null,
           reliabilityRate: history.length ? completed / (completed + bad) : null,
           completedShifts: completed,
@@ -514,15 +535,16 @@ export class MarketplaceService {
   /** Match score for a single worker against many shifts (worker-side marketplace view). */
   static async scoreShiftsForWorker(workerId: string, shifts: Shift[]): Promise<Result<Map<string, MatchResult>>> {
     try {
-      const [profileRes, certsRes, skillsRes, bookingsRes, historyRes, rosterRes] = await Promise.all([
+      const [profileRes, certsRes, skillsRes, bookingsRes, historyRes, rosterRes, blockedRes] = await Promise.all([
         supabase.from('profiles').select('*').eq('id', workerId).single(),
         supabase.from('certifications').select('cert_type_code, is_active, expiration_date, verified').eq('worker_id', workerId).eq('is_active', true),
         supabase.from('worker_skills').select('skill_id, proficiency_level').eq('worker_id', workerId),
         supabase.from('shift_assignments').select('shift:shifts!inner(starts_at, ends_at)').eq('worker_id', workerId).eq('status', 'confirmed'),
         supabase.from('shift_assignments').select('status').eq('worker_id', workerId).in('status', ['completed', 'no_show', 'withdrawn']),
         supabase.from('preferred_rosters').select('company_id, tier').eq('worker_id', workerId),
+        supabase.from('availability').select('start_time, end_time').eq('worker_id', workerId).eq('is_available', false),
       ]);
-      for (const r of [profileRes, certsRes, skillsRes, bookingsRes, historyRes, rosterRes]) {
+      for (const r of [profileRes, certsRes, skillsRes, bookingsRes, historyRes, rosterRes, blockedRes]) {
         if (r.error) throw r.error;
       }
       const w = profileRes.data as Profile;
@@ -538,6 +560,7 @@ export class MarketplaceService {
         certifications: (certsRes.data ?? []) as Pick<Certification, 'cert_type_code' | 'is_active' | 'expiration_date' | 'verified'>[],
         skills: (skillsRes.data ?? []) as Pick<WorkerSkill, 'skill_id' | 'proficiency_level'>[],
         bookedWindows: bookings,
+        unavailableWindows: (blockedRes.data ?? []).map(toWindow),
         avgRating: w.average_rating ?? null,
         reliabilityRate: history.length ? completed / history.length : null,
         completedShifts: completed,
@@ -763,6 +786,8 @@ export class MarketplaceService {
       .subscribe();
   }
 }
+
+const toWindow = (a: { start_time: string; end_time: string }): BookedWindow => ({ starts_at: a.start_time, ends_at: a.end_time });
 
 function groupBy<T>(rows: T[], key: (row: T) => string): Map<string, T[]> {
   const map = new Map<string, T[]>();

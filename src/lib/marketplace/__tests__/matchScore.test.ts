@@ -90,6 +90,14 @@ describe('weighted score', () => {
     expect(r.score).toBeLessThan(75);
   });
 
+  it('zeroes availability on a declared unavailable window', () => {
+    const r = calculateMatch(
+      baseWorker({ unavailableWindows: [{ starts_at: '2026-10-12T08:00:00Z', ends_at: '2026-10-12T16:00:00Z' }] }),
+      shift,
+    );
+    expect(r.breakdown.availability).toBe(0);
+  });
+
   it('penalises tight turnarounds without zeroing', () => {
     const r = calculateMatch(
       baseWorker({ bookedWindows: [{ starts_at: '2026-10-12T16:30:00Z', ends_at: '2026-10-12T22:00:00Z' }] }),

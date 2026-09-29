@@ -14,6 +14,9 @@ interface Props {
   refreshKey: number;
 }
 
+const ESCROW_POLL_MS = 3000;
+const ESCROW_POLL_MAX_TICKS = 20;
+
 const Stat: React.FC<{ icon: React.ReactNode; label: string; value: string; sub?: string; warn?: boolean }> = ({ icon, label, value, sub, warn }) => (
   <Card>
     <CardContent className="p-4 flex items-start gap-3">
@@ -40,11 +43,32 @@ const BudgetSummary: React.FC<Props> = ({ event, refreshKey }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [event.id, refreshKey]);
 
+  // Back from Stripe Checkout: the webhook funds the deposit asynchronously, so poll the
+  // budget until the funded balance moves (or give up after a minute).
   useEffect(() => {
     const outcome = new URLSearchParams(window.location.search).get('escrow');
-    if (outcome === 'funded') toast.success('Payment received — escrow balance updates as soon as Stripe confirms the deposit');
     if (outcome === 'cancelled') toast.info('Escrow deposit cancelled; no funds were taken');
-  }, []);
+    if (outcome !== 'funded') return;
+    toast.success('Payment received — waiting for Stripe to confirm the deposit');
+    let baseline: number | null = null;
+    let ticks = 0;
+    const timer = window.setInterval(async () => {
+      const { data } = await MarketplaceService.getEventBudget(event);
+      if (!data) return;
+      if (baseline === null) {
+        baseline = data.escrowFunded;
+        return;
+      }
+      ticks += 1;
+      if (data.escrowFunded > baseline || ticks >= ESCROW_POLL_MAX_TICKS) {
+        window.clearInterval(timer);
+        setSummary(data);
+        if (data.escrowFunded > baseline) toast.success('Escrow deposit confirmed');
+      }
+    }, ESCROW_POLL_MS);
+    return () => window.clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [event.id]);
 
   const fund = async () => {
     const n = Number(amount);

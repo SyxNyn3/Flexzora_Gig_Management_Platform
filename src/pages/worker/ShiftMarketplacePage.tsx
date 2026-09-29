@@ -57,7 +57,7 @@ const ShiftMarketplacePage: React.FC = () => {
     shifts.refetch();
   };
 
-  const apply = (shift: Shift) => profile && act(shift.id, () => MarketplaceService.applyToShift(shift.id, profile.id, scores.get(shift.id)), 'Application sent');
+  const apply = (shift: Shift) => profile && act(shift.id, () => MarketplaceService.applyToShift(shift, profile.id, scores.get(shift.id)), 'Application sent');
   const respond = (a: ShiftAssignment, r: 'confirmed' | 'declined') =>
     act(a.id, () => MarketplaceService.respondToOffer(a.id, r), r === 'confirmed' ? 'Booked! Added to your schedule' : 'Offer declined');
 

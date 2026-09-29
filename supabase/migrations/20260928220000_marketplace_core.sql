@@ -128,6 +128,34 @@ ON CONFLICT (code) DO NOTHING;
 ALTER TABLE certifications ADD COLUMN IF NOT EXISTS cert_type_code text REFERENCES certification_types(code);
 ALTER TABLE certifications ADD COLUMN IF NOT EXISTS verified boolean DEFAULT false;
 ALTER TABLE certifications ADD COLUMN IF NOT EXISTS verified_at timestamptz;
+
+-- `verified` is set by platform review (service role), never by the credential owner;
+-- editing the substance of a verified credential sends it back for review.
+CREATE OR REPLACE FUNCTION guard_certification_verification() RETURNS trigger AS $$
+BEGIN
+  IF current_user NOT IN ('authenticated', 'anon') THEN RETURN NEW; END IF;
+  IF TG_OP = 'INSERT' THEN
+    NEW.verified := false;
+    NEW.verified_at := NULL;
+  ELSIF NEW.verified IS DISTINCT FROM OLD.verified OR NEW.verified_at IS DISTINCT FROM OLD.verified_at THEN
+    RAISE EXCEPTION 'Credential verification is set by platform review';
+  ELSIF OLD.verified AND (
+        NEW.name IS DISTINCT FROM OLD.name
+     OR NEW.cert_type_code IS DISTINCT FROM OLD.cert_type_code
+     OR NEW.issuing_organization IS DISTINCT FROM OLD.issuing_organization
+     OR NEW.issue_date IS DISTINCT FROM OLD.issue_date
+     OR NEW.expiration_date IS DISTINCT FROM OLD.expiration_date
+     OR NEW.credential_id IS DISTINCT FROM OLD.credential_id
+     OR NEW.credential_url IS DISTINCT FROM OLD.credential_url) THEN
+    NEW.verified := false;
+    NEW.verified_at := NULL;
+  END IF;
+  RETURN NEW;
+END $$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS certifications_verification_guard ON certifications;
+CREATE TRIGGER certifications_verification_guard BEFORE INSERT OR UPDATE ON certifications
+  FOR EACH ROW EXECUTE FUNCTION guard_certification_verification();
 CREATE INDEX IF NOT EXISTS certifications_type_idx ON certifications (worker_id, cert_type_code) WHERE is_active;
 
 -- Map credentials entered by name before the catalog existed onto canonical codes
@@ -284,15 +312,36 @@ CREATE TABLE IF NOT EXISTS shift_assignments (
 CREATE INDEX IF NOT EXISTS shift_assignments_worker_idx ON shift_assignments (worker_id, status);
 CREATE INDEX IF NOT EXISTS shift_assignments_shift_idx ON shift_assignments (shift_id, status);
 
--- Keep shift status in sync with confirmed headcount
-CREATE OR REPLACE FUNCTION sync_shift_fill_status() RETURNS trigger AS $$
+-- Headcount helpers. Booked = confirmed or already completed (a crew member whose
+-- timesheet was approved early still occupied the slot).
+CREATE OR REPLACE FUNCTION shift_booked_count(p_shift_id uuid, p_exclude_assignment uuid DEFAULT NULL) RETURNS integer
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+  SELECT count(*)::integer FROM shift_assignments
+  WHERE shift_id = p_shift_id AND status IN ('confirmed', 'completed')
+    AND (p_exclude_assignment IS NULL OR id <> p_exclude_assignment)
+$$;
+
+-- Serialises bookings per shift (advisory lock) and reports whether one more
+-- confirmation fits under headcount.
+CREATE OR REPLACE FUNCTION shift_has_room(p_shift_id uuid, p_exclude_assignment uuid DEFAULT NULL) RETURNS boolean
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE v_headcount integer;
+BEGIN
+  PERFORM pg_advisory_xact_lock(hashtext('shift_booking:' || p_shift_id::text));
+  SELECT headcount INTO v_headcount FROM shifts WHERE id = p_shift_id;
+  RETURN shift_booked_count(p_shift_id, p_exclude_assignment) < COALESCE(v_headcount, 0);
+END $$;
+
+-- Keep shift status in sync with booked headcount. Definer: fires for worker-side
+-- transitions too, which must count assignments the worker cannot read.
+CREATE OR REPLACE FUNCTION sync_shift_fill_status() RETURNS trigger
+SECURITY DEFINER SET search_path = public AS $$
 DECLARE
   v_shift_id uuid := COALESCE(NEW.shift_id, OLD.shift_id);
   v_confirmed integer;
   v_headcount integer;
 BEGIN
-  SELECT count(*) INTO v_confirmed FROM shift_assignments
-    WHERE shift_id = v_shift_id AND status = 'confirmed';
+  v_confirmed := shift_booked_count(v_shift_id);
   SELECT headcount INTO v_headcount FROM shifts WHERE id = v_shift_id;
   UPDATE shifts SET
     status = CASE
@@ -322,11 +371,16 @@ BEGIN
 
   v_company := owns_shift(OLD.shift_id);
 
+  IF NEW.status = 'confirmed' AND OLD.status <> 'confirmed' AND NOT shift_has_room(OLD.shift_id, OLD.id) THEN
+    RAISE EXCEPTION 'This call is already fully staffed';
+  END IF;
+
   IF v_company THEN
     IF NOT (NEW.status = OLD.status
          OR (OLD.status = 'applied'   AND NEW.status IN ('confirmed', 'rejected'))
          OR (OLD.status = 'offered'   AND NEW.status = 'rejected')
-         OR (OLD.status = 'confirmed' AND NEW.status IN ('no_show', 'rejected'))) THEN
+         OR (OLD.status = 'confirmed' AND NEW.status IN ('no_show', 'rejected'))
+         OR (OLD.status IN ('declined', 'withdrawn', 'rejected') AND NEW.status = 'offered')) THEN
       RAISE EXCEPTION 'Company cannot move assignment from % to %', OLD.status, NEW.status;
     END IF;
   ELSIF OLD.worker_id = current_profile_id() THEN
@@ -349,6 +403,19 @@ END $$ LANGUAGE plpgsql;
 DROP TRIGGER IF EXISTS shift_assignments_guard ON shift_assignments;
 CREATE TRIGGER shift_assignments_guard BEFORE UPDATE ON shift_assignments
   FOR EACH ROW EXECUTE FUNCTION guard_assignment_update();
+
+CREATE OR REPLACE FUNCTION guard_assignment_insert() RETURNS trigger AS $$
+BEGIN
+  IF current_user NOT IN ('authenticated', 'anon') THEN RETURN NEW; END IF;
+  IF NEW.status = 'confirmed' AND NOT shift_has_room(NEW.shift_id) THEN
+    RAISE EXCEPTION 'This call is already fully staffed';
+  END IF;
+  RETURN NEW;
+END $$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS shift_assignments_guard_insert ON shift_assignments;
+CREATE TRIGGER shift_assignments_guard_insert BEFORE INSERT ON shift_assignments
+  FOR EACH ROW EXECUTE FUNCTION guard_assignment_insert();
 
 -- ---------------------------------------------------------------------------
 -- Preferred rosters ("trusted crew")
@@ -693,6 +760,9 @@ BEGIN
   -- weekly threshold: regular hours already approved for this company in the same
   -- ISO workweek consume the cap; the remainder of this shift is promoted to OT.
   IF v_rule.weekly_ot_after_hours IS NOT NULL THEN
+    -- serialise approvals per worker+company so concurrent calls cannot both read the
+    -- same prior total and each pay straight time past the cap
+    PERFORM pg_advisory_xact_lock(hashtext('weekly_ot:' || v_ts.worker_id::text || ':' || v_event.company_id::text));
     SELECT COALESCE(sum(t.regular_hours), 0) INTO v_prior_weekly
     FROM timesheets t
     JOIN shifts s ON s.id = t.shift_id
@@ -921,6 +991,14 @@ GRANT EXECUTE ON FUNCTION nearby_shifts(double precision, double precision, inte
 GRANT EXECUTE ON FUNCTION worker_reliability(uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION worker_can_see_shift(uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION owns_event(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION shift_booked_count(uuid, uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION shift_has_room(uuid, uuid) TO authenticated;
+
+-- Hiring companies see only the windows a worker has blocked out (no free-time detail),
+-- so matching can zero availability on declared conflicts.
+DROP POLICY IF EXISTS "companies see blocked availability" ON availability;
+CREATE POLICY "companies see blocked availability" ON availability FOR SELECT TO authenticated
+  USING (is_available = false AND EXISTS (SELECT 1 FROM companies c WHERE c.created_by = current_profile_id()));
 GRANT EXECUTE ON FUNCTION owns_shift(uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION is_party_to_shift(uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION validate_clock_event(uuid, text, double precision, double precision) TO authenticated;
