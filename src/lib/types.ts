@@ -529,10 +529,11 @@ export interface ProductionEvent {
   starts_on: string;
   ends_on: string;
   status: EventStatus;
-  budget_cap?: number;
   overtime_rule_code: string;
-  platform_fee_pct: number;
   color: string;
+  /** From event_budgets; only present for the owning company. */
+  budget_cap?: number;
+  platform_fee_pct?: number;
   created_at: string;
   updated_at: string;
   venue?: Venue;

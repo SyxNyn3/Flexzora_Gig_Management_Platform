@@ -39,7 +39,7 @@ const ShiftForm: React.FC<Props> = ({ eventDate, skills, certTypes, initial, onS
 
   const pickRole = (role: string) => {
     const certs = new Set(form.required_cert_codes);
-    if (RIGGING_ROLES.includes(role)) certs.add('ETCP_RIGGING_ARENA');
+    if (RIGGING_ROLES.includes(role)) certs.add('ETCP_ARENA');
     if (role === 'Forklift Operator') certs.add('FORKLIFT');
     setForm((f) => ({ ...f, role_name: role, title: f.title || role, required_cert_codes: Array.from(certs) }));
   };

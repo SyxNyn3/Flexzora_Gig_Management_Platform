@@ -40,17 +40,22 @@ const BudgetSummary: React.FC<Props> = ({ event, refreshKey }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [event.id, refreshKey]);
 
+  useEffect(() => {
+    const outcome = new URLSearchParams(window.location.search).get('escrow');
+    if (outcome === 'funded') toast.success('Payment received — escrow balance updates as soon as Stripe confirms the deposit');
+    if (outcome === 'cancelled') toast.info('Escrow deposit cancelled; no funds were taken');
+  }, []);
+
   const fund = async () => {
     const n = Number(amount);
     if (!n || n <= 0) return;
     setSaving(true);
-    const { error } = await MarketplaceService.fundEscrow(event.id, event.company_id, n);
-    setSaving(false);
-    if (error) return toast.error(error);
-    toast.success(`${money(n)} deposited to escrow`);
-    setOpen(false);
-    setAmount('');
-    load();
+    const { data, error } = await MarketplaceService.fundEscrow(event, n);
+    if (error || !data) {
+      setSaving(false);
+      return toast.error(error ?? 'Could not start the deposit');
+    }
+    window.location.assign(data.checkoutUrl);
   };
 
   if (!summary) return null;
@@ -96,7 +101,8 @@ const BudgetSummary: React.FC<Props> = ({ event, refreshKey }) => {
                   <strong>{money(Math.max(0, summary.projectedLabor - summary.approvedLabor - (summary.escrowFunded - summary.escrowReleased)))}</strong>
                 </p>
                 <Input type="number" min={1} step="100" placeholder="Amount (USD)" value={amount} onChange={(e) => setAmount(e.target.value)} />
-                <Button onClick={fund} disabled={saving || !amount}>{saving ? 'Depositing…' : 'Deposit'}</Button>
+                <Button onClick={fund} disabled={saving || !amount}>{saving ? 'Redirecting to Stripe…' : 'Continue to payment'}</Button>
+                <p className="text-xs text-gray-500">You will be taken to Stripe Checkout; the balance updates once the payment settles.</p>
               </DialogContent>
             </Dialog>
           </div>

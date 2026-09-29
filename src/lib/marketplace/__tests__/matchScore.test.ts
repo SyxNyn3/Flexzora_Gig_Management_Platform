@@ -35,13 +35,29 @@ describe('gatekeeper', () => {
     expect(r.reasons[0]).toMatch(/ETCP_ARENA/);
   });
 
-  it('rejects expired certifications', () => {
+  it('rejects certifications that expire before the call date', () => {
     const r = calculateMatch(
-      baseWorker({ certifications: [{ cert_type_code: 'ETCP_ARENA', is_active: true, expiration_date: '2020-01-01', verified: true }] }),
+      baseWorker({ certifications: [{ cert_type_code: 'ETCP_ARENA', is_active: true, expiration_date: '2026-09-30', verified: true }] }),
       shift,
-      new Date('2026-10-01'),
     );
     expect(r.score).toBe(0);
+    expect(r.reasons.join()).toMatch(/expires before this call/);
+  });
+
+  it('accepts a certification that expires on the call date', () => {
+    const r = calculateMatch(
+      baseWorker({ certifications: [{ cert_type_code: 'ETCP_ARENA', is_active: true, expiration_date: '2026-10-12', verified: true }] }),
+      shift,
+    );
+    expect(r.breakdown.gatekeeperPassed).toBe(true);
+  });
+
+  it('accepts a certification with no expiration', () => {
+    const r = calculateMatch(
+      baseWorker({ certifications: [{ cert_type_code: 'ETCP_ARENA', is_active: true, expiration_date: undefined, verified: true }] }),
+      shift,
+    );
+    expect(r.breakdown.gatekeeperPassed).toBe(true);
   });
 
   it('rejects skill tier below minimum', () => {

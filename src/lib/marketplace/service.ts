@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { createCheckoutSession } from '@/lib/stripe';
 import {
   AssignmentStatus,
   BroadcastStage,
@@ -50,6 +51,16 @@ export interface EventBudgetSummary {
   shiftsFilled: number;
   headcountRequired: number;
   headcountConfirmed: number;
+}
+
+const DEFAULT_PLATFORM_FEE_PCT = 12;
+
+type EventRow = ProductionEvent & { budget?: { budget_cap: number | null; platform_fee_pct: number } | null };
+
+/** event_budgets is owner-only; surface it on the event when the caller could read it. */
+function flattenBudget(row: EventRow): ProductionEvent {
+  const { budget, ...event } = row;
+  return { ...event, budget_cap: budget?.budget_cap ?? undefined, platform_fee_pct: budget?.platform_fee_pct ?? undefined };
 }
 
 export class MarketplaceService {
@@ -104,11 +115,11 @@ export class MarketplaceService {
     try {
       const { data, error } = await supabase
         .from('events')
-        .select('*, venue:venues(*), shifts:shifts(*, assignments:shift_assignments(id, status))')
+        .select('*, budget:event_budgets(budget_cap, platform_fee_pct), venue:venues(*), shifts:shifts(*, assignments:shift_assignments(id, status))')
         .eq('company_id', companyId)
         .order('starts_on', { ascending: true });
       if (error) throw error;
-      return ok(data ?? []);
+      return ok(((data ?? []) as ProductionEvent[]).map(flattenBudget));
     } catch (e) {
       return fail([], e);
     }
@@ -118,11 +129,11 @@ export class MarketplaceService {
     try {
       const { data, error } = await supabase
         .from('events')
-        .select(`*, venue:venues(*), company:companies(*), shifts:shifts(*, skill:skills(*), assignments:shift_assignments(*, worker:profiles(*)))`)
+        .select(`*, budget:event_budgets(budget_cap, platform_fee_pct), venue:venues(*), company:companies(*), shifts:shifts(*, skill:skills(*), assignments:shift_assignments(*, worker:profiles(*)))`)
         .eq('id', eventId)
         .single();
       if (error) throw error;
-      const event = data as ProductionEvent;
+      const event = flattenBudget(data as ProductionEvent);
       event.shifts = (event.shifts ?? []).sort((a, b) => a.starts_at.localeCompare(b.starts_at));
       return ok(event);
     } catch (e) {
@@ -132,21 +143,25 @@ export class MarketplaceService {
 
   static async createEvent(companyId: string, createdBy: string, form: EventFormData): Promise<Result<ProductionEvent | null>> {
     try {
+      const { budget_cap, ...eventFields } = form;
       const { data, error } = await supabase
         .from('events')
         .insert({
-          ...form,
+          ...eventFields,
           venue_id: form.venue_id || undefined,
           company_id: companyId,
           created_by: createdBy,
           status: 'draft',
-          platform_fee_pct: 12,
           color: '#3B82F6',
         })
         .select()
         .single();
       if (error) throw error;
-      return ok(data);
+      const { error: budgetErr } = await supabase
+        .from('event_budgets')
+        .insert({ event_id: data.id, budget_cap: budget_cap ?? null, platform_fee_pct: DEFAULT_PLATFORM_FEE_PCT });
+      if (budgetErr) throw budgetErr;
+      return ok({ ...data, budget_cap, platform_fee_pct: DEFAULT_PLATFORM_FEE_PCT });
     } catch (e) {
       return fail(null, e);
     }
@@ -180,11 +195,20 @@ export class MarketplaceService {
   }
 
   // ---------------------------------------------------------------- shifts
-  static async createShift(eventId: string, form: ShiftFormData): Promise<Result<Shift | null>> {
+  /** Calls added to an already-published event go straight to the roster wave; drafts wait for publish. */
+  static async createShift(event: Pick<ProductionEvent, 'id' | 'status'>, form: ShiftFormData): Promise<Result<Shift | null>> {
     try {
+      const live = event.status !== 'draft';
       const { data, error } = await supabase
         .from('shifts')
-        .insert({ ...form, skill_id: form.skill_id || undefined, event_id: eventId, status: 'draft', broadcast_stage: 'none' })
+        .insert({
+          ...form,
+          skill_id: form.skill_id || undefined,
+          event_id: event.id,
+          status: live ? 'open' : 'draft',
+          broadcast_stage: live ? 'roster' : 'none',
+          roster_broadcast_at: live ? new Date().toISOString() : undefined,
+        })
         .select()
         .single();
       if (error) throw error;
@@ -559,7 +583,7 @@ export class MarketplaceService {
     try {
       let q = supabase
         .from('timesheets')
-        .select('*, worker:profiles(*), shift:shifts!inner(*, event:events!inner(*, venue:venues(*)))')
+        .select('*, worker:profiles(*), assignment:shift_assignments(offered_rate), shift:shifts!inner(*, event:events!inner(*, venue:venues(*)))')
         .eq('shift.event.company_id', companyId)
         .order('clock_in_at', { ascending: false });
       if (statuses?.length) q = q.in('status', statuses);
@@ -653,24 +677,36 @@ export class MarketplaceService {
   }
 
   /** Records an escrow deposit. `paymentIntentId` links it to the Stripe PaymentIntent created by the checkout edge function. */
-  static async fundEscrow(eventId: string, companyId: string, amount: number, paymentIntentId?: string): Promise<Result<EscrowDeposit | null>> {
+  /**
+   * Opens a pending deposit and hands the company to Stripe Checkout. The deposit only
+   * becomes `funded` when the `stripe-webhook` edge function confirms the payment via
+   * `mark_escrow_funded`, so approvals can never draw on money that was not collected.
+   */
+  static async fundEscrow(event: Pick<ProductionEvent, 'id' | 'company_id' | 'name'>, amount: number): Promise<Result<{ deposit: EscrowDeposit; checkoutUrl: string } | null>> {
     try {
-      const { data, error } = await supabase
+      const { data: deposit, error } = await supabase
         .from('escrow_deposits')
-        .insert({
-          event_id: eventId,
-          company_id: companyId,
-          amount,
-          released_amount: 0,
-          currency: 'USD',
-          status: 'funded',
-          stripe_payment_intent_id: paymentIntentId,
-          funded_at: new Date().toISOString(),
-        })
+        .insert({ event_id: event.id, company_id: event.company_id, amount, released_amount: 0, currency: 'USD', status: 'pending' })
         .select()
         .single();
       if (error) throw error;
-      return ok(data);
+
+      const returnTo = `${window.location.origin}/events/${event.id}`;
+      const checkout = await createCheckoutSession(
+        [{
+          price_data: {
+            currency: 'usd',
+            product_data: { name: `Escrow deposit – ${event.name}`, description: 'Held in escrow and released to crew as timesheets are approved' },
+            unit_amount: Math.round(amount * 100),
+          },
+          quantity: 1,
+        }],
+        `${returnTo}?escrow=funded`,
+        `${returnTo}?escrow=cancelled`,
+        { escrow_deposit_id: deposit.id, event_id: event.id, company_id: event.company_id },
+      );
+      if (checkout.error || !checkout.url) throw new Error(checkout.error ?? 'Stripe Checkout did not return a URL');
+      return ok({ deposit: deposit as EscrowDeposit, checkoutUrl: checkout.url });
     } catch (e) {
       return fail(null, e);
     }

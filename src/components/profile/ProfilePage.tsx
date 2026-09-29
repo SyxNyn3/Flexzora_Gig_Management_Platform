@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useAuth } from '@/contexts/AuthContext';
 import { DatabaseService, normalizeUrl } from '@/lib/supabase';
 import { useSkills, useWorkerSkills, useCertifications } from '@/hooks/useSupabaseQuery';
+import { useCertificationTypes } from '@/hooks/useMarketplace';
 import { WorkerSkill, Certification, PortfolioItem } from '@/lib/types';
 import ReviewsList from '@/components/reviews/ReviewsList';
 import ReviewStars from '@/components/reviews/ReviewStars';
@@ -57,7 +58,10 @@ const skillSchema = z.object({
   years_experience: z.number().min(0).max(50),
 });
 
+const OTHER_CERT_TYPE = '__other__';
+
 const certificationSchema = z.object({
+  cert_type_code: z.string().optional(),
   name: z.string().min(2, 'Certification name is required'),
   issuing_organization: z.string().optional(),
   issue_date: z.string().optional(),
@@ -86,6 +90,7 @@ const ProfilePage: React.FC = () => {
   const { data: skills = [] } = useSkills();
   const { data: workerSkills = [], refetch: refetchWorkerSkills } = useWorkerSkills(profile?.id || '');
   const { data: certifications = [], refetch: refetchCertifications } = useCertifications(profile?.id || '');
+  const certTypes = useCertificationTypes();
   const { data: reviews = [] } = useReviewsForWorker(profile?.id || '');
 
   const form = useForm<ProfileForm>({
@@ -231,6 +236,7 @@ const ProfilePage: React.FC = () => {
     try {
       const certData = {
         worker_id: profile.id,
+        cert_type_code: data.cert_type_code && data.cert_type_code !== OTHER_CERT_TYPE ? data.cert_type_code : undefined,
         name: data.name,
         issuing_organization: data.issuing_organization || undefined,
         issue_date: data.issue_date || undefined,
@@ -276,6 +282,7 @@ const ProfilePage: React.FC = () => {
   const editCertification = (cert: Certification) => {
     setEditingCert(cert);
     certForm.reset({
+      cert_type_code: cert.cert_type_code || OTHER_CERT_TYPE,
       name: cert.name,
       issuing_organization: cert.issuing_organization || '',
       issue_date: cert.issue_date || '',
@@ -703,7 +710,12 @@ const ProfilePage: React.FC = () => {
                         <div className="flex items-start space-x-3 flex-1">
                           <Award className="h-5 w-5 text-blue-600 mt-1" />
                           <div className="flex-1">
-                            <h4 className="font-medium">{cert.name}</h4>
+                            <h4 className="font-medium flex items-center gap-2">
+                              {cert.name}
+                              {cert.cert_type_code && (
+                                <Badge variant="outline" className="text-[10px]">{cert.cert_type_code}</Badge>
+                              )}
+                            </h4>
                             {cert.issuing_organization && (
                               <p className="text-sm text-gray-600">{cert.issuing_organization}</p>
                             )}
@@ -872,6 +884,36 @@ const ProfilePage: React.FC = () => {
           </DialogHeader>
           
           <form onSubmit={certForm.handleSubmit(onAddCertification)} className="space-y-4">
+            <div>
+              <Label>Credential type</Label>
+              <Select
+                value={certForm.watch('cert_type_code') || undefined}
+                onValueChange={(value) => {
+                  certForm.setValue('cert_type_code', value);
+                  const type = certTypes.data.find((t) => t.code === value);
+                  if (type) {
+                    certForm.setValue('name', type.name);
+                    if (type.issuing_body && !certForm.getValues('issuing_organization')) {
+                      certForm.setValue('issuing_organization', type.issuing_body);
+                    }
+                  }
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Pick a recognized credential (unlocks gated calls)" />
+                </SelectTrigger>
+                <SelectContent>
+                  {certTypes.data.map((t) => (
+                    <SelectItem key={t.code} value={t.code}>{t.name}</SelectItem>
+                  ))}
+                  <SelectItem value={OTHER_CERT_TYPE}>Other / not in catalog</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-gray-500 mt-1">
+                Calls that require a credential (e.g. ETCP for rigging) only match certifications linked to a catalog type.
+              </p>
+            </div>
+
             <div>
               <Label htmlFor="cert_name">Certification Name</Label>
               <Input

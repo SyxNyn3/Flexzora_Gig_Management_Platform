@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
+import { format, startOfISOWeek } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -46,10 +46,23 @@ const TimesheetApprovalPage: React.FC = () => {
     return { review: by(['submitted', 'disputed']), live: by(['open']), settled: by(['approved', 'paid']) };
   }, [sheets.data]);
 
+  const rateFor = (t: Timesheet) => Number(t.assignment?.offered_rate ?? t.shift?.hourly_rate ?? 0);
+
+  /** Regular hours already approved for this worker in the same ISO workweek — mirrors approve_timesheet(). */
+  const weeklyHoursBefore = (t: Timesheet) => {
+    if (!t.clock_in_at) return 0;
+    const week = startOfISOWeek(new Date(t.clock_in_at)).getTime();
+    return sheets.data
+      .filter((o) => o.id !== t.id && o.worker_id === t.worker_id && (o.status === 'approved' || o.status === 'paid') && o.clock_in_at)
+      .filter((o) => startOfISOWeek(new Date(o.clock_in_at!)).getTime() === week)
+      .reduce((sum, o) => sum + Number(o.regular_hours ?? 0), 0);
+  };
+
   const preview = (t: Timesheet) => {
     if (!t.clock_in_at || !t.clock_out_at) return null;
     const brk = breaks[t.id] != null ? Number(breaks[t.id]) : t.break_minutes;
-    return calculateShiftPay(t.clock_in_at, t.clock_out_at, brk, Number(t.shift?.hourly_rate ?? 0), ruleFor(t.shift?.event?.overtime_rule_code));
+    const rule = { ...ruleFor(t.shift?.event?.overtime_rule_code), weekly_hours_before_shift: weeklyHoursBefore(t) };
+    return calculateShiftPay(t.clock_in_at, t.clock_out_at, brk, rateFor(t), rule);
   };
 
   const approve = async (t: Timesheet, method: PayoutMethod) => {
@@ -88,7 +101,7 @@ const TimesheetApprovalPage: React.FC = () => {
               <p className="text-sm text-gray-600">
                 {t.shift?.title} · {t.shift?.event?.name}
               </p>
-              <p className="text-xs text-gray-500">{t.clock_in_at && format(new Date(t.clock_in_at), 'EEE MMM d')} · ${Number(t.shift?.hourly_rate ?? 0).toFixed(2)}/hr</p>
+              <p className="text-xs text-gray-500">{t.clock_in_at && format(new Date(t.clock_in_at), 'EEE MMM d')} · ${rateFor(t).toFixed(2)}/hr{t.assignment?.offered_rate != null && ' (negotiated)'}</p>
             </div>
             <div className="text-sm space-y-1">
               <div className="flex items-center gap-2">

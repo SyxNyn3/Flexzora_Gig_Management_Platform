@@ -42,7 +42,7 @@ const EventDetailPage: React.FC = () => {
     setSubmitting(true);
     const res = shiftDialog.editing
       ? await MarketplaceService.updateShift(shiftDialog.editing.id, form)
-      : await MarketplaceService.createShift(eventId, form);
+      : await MarketplaceService.createShift(event.data!, form);
     setSubmitting(false);
     if (res.error) return toast.error(res.error);
     toast.success(shiftDialog.editing ? 'Shift updated' : 'Shift added');

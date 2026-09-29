@@ -80,13 +80,18 @@ Worker taps Clock in ─▶ browser GPS ─▶ validate_clock_event(assignment, 
 Worker taps Clock out ─▶ same check ─▶ timesheet.status = 'submitted'
 Manager reviews ─▶ sees GPS distance, auto OT preview (regional rule), adjusts break
 Manager clicks Approve & pay ─▶ approve_timesheet(timesheet, break, 'instant'|'ach')  [single transaction]
-   ├─ splits hours: regular / OT / DT via overtime_rules (daily + weekly thresholds, min-call)
+   ├─ rate = COALESCE(assignment.offered_rate, shift.hourly_rate)   (negotiated direct-book rate wins)
+   ├─ splits hours: regular / OT / DT via overtime_rules — daily thresholds, min-call, then the
+   │  weekly threshold using regular hours already approved for this company in the same ISO week
+   ├─ draws gross from funded escrow_deposits oldest-first; ABORTS if the event is under-funded
    ├─ timesheets.status = 'approved', gross_pay computed
-   ├─ invoices: INV-YYYY-000001, line_items[], subtotal, platform_fee, total, tax_year
-   ├─ escrow_deposits.released_amount += total (status → partially_released / released)
+   ├─ invoices: INV-YYYY-000001, line_items[], subtotal, platform_fee (from event_budgets), total, tax_year
    ├─ payouts: method, status queued, expected_arrival (instant = now, ACH = +2 days)
    └─ shift_assignments.status = 'completed'
 Stripe Connect webhook (Phase 1.4) ─▶ payouts.status = paid, invoices.status = paid, timesheets.status = paid
+
+Escrow funding:  Fund escrow ─▶ escrow_deposits (status pending) ─▶ Stripe Checkout (metadata.escrow_deposit_id)
+                 ─▶ stripe-webhook edge fn verifies signature ─▶ mark_escrow_funded() [service role only] ─▶ status funded
 ```
 
 Regional overtime rules shipped: `US_FLSA` (40 h weekly ×1.5), `CA_DAILY` (8 h ×1.5, 12 h ×2, 4 h min call), `IATSE_STD` (8 h ×1.5, 12 h ×2, 40 h weekly, 5 h min call). Rule is selected per event.
@@ -105,7 +110,8 @@ Regional overtime rules shipped: `US_FLSA` (40 h weekly ×1.5), `CA_DAILY` (8 h 
 | 1.1 | Geofenced clock-in/out; regional OT calculator; timesheet approval & dispute | **Done** |
 | 1.1 | Approve → escrow release → invoice → payout record; worker earnings ledger & CSV | **Done** |
 | 1.2 | Push + SMS notifications (Twilio) for offers, confirmations, clock reminders, approvals — Edge Function on `shift_assignments` / `timesheets` triggers | Next |
-| 1.2 | Stripe Connect Express onboarding for workers (`profiles.stripe_connect_account_id`), escrow funding via PaymentIntent, Transfer on approval, webhook → `payouts.status` | Next |
+| 1.2 | Escrow funding via Stripe Checkout + `stripe-webhook` → `mark_escrow_funded` | **Done** |
+| 1.2 | Stripe Connect Express onboarding for workers (`profiles.stripe_connect_account_id`), Transfer on approval, webhook → `payouts.status` | Next |
 | 1.3 | Certification verification workflow (document upload → admin review → `verified_at`); expiry reminders 60/30/7 days | Next |
 | 1.3 | Drag-and-drop crew between calls on `RosterBoard`; shift templates ("Arena load-in pack") | Next |
 | 1.4 | Company-side 1099-NEC export; worker annual earnings statement PDF | Next |
@@ -138,6 +144,7 @@ erDiagram
   companies ||--o{ events : "company_id"
   venues ||--o{ events : "venue_id"
   overtime_rules ||--o{ events : "overtime_rule_code"
+  events ||--|| event_budgets : "event_id (owner-only)"
   events ||--o{ shifts : "event_id"
   skills ||--o{ shifts : "skill_id"
   shifts ||--o{ shift_assignments : "shift_id"
@@ -205,8 +212,11 @@ erDiagram
     date starts_on
     date ends_on
     event_status status
-    numeric budget_cap
     text overtime_rule_code FK
+  }
+  event_budgets {
+    uuid event_id PK,FK
+    numeric budget_cap
     numeric platform_fee_pct
   }
   shifts {
@@ -290,12 +300,13 @@ erDiagram
 
 **Key relationships**
 - A *shift* is the unit of hiring; an *assignment* is one worker × one shift (unique). An assignment has exactly one *timesheet*; an approved timesheet has exactly one *invoice*; an invoice has one *payout*.
-- *Escrow* is per event and drawn down by invoice totals.
+- *Escrow* is per event and drawn down by invoice totals across deposits (oldest first); approval is refused when the funded balance cannot cover the invoice.
+- Budget cap and platform fee live in `event_budgets` so a worker who can read a published event never sees the company's commercial terms.
 - Certification codes on `shifts.required_cert_codes` reference `certification_types.code`, and matching joins through `certifications.cert_type_code` — so adding a new credential is a single row insert, no code change.
 
-**Security (RLS)**: companies read/write only their own venues, events, shifts, rosters, escrow; workers see `open` shifts on `published` events (roster-only stage filtered to roster members in the service layer and enforceable in policy), their own assignments/timesheets/invoices/payouts. Clock and approval mutations go through `SECURITY DEFINER` RPCs that re-check ownership.
+**Security (RLS)**: companies read/write only their own venues, events, shifts, rosters, budgets; workers can read a shift (and its event/venue) only when `worker_can_see_shift()` says so — `open`/`filled`, event not draft, `public` stage or `roster` stage with the worker on that company's roster and not blocked — or when they hold an assignment on it. Workers may only insert `applied` rows on shifts they can see that are still `open`. Row-transition triggers (`guard_assignment_update`, `guard_timesheet_update`) restrict direct updates to each party's legal moves (worker: offered→confirmed/declined, applied/confirmed→withdrawn; company: applied→confirmed/rejected, confirmed→no_show) and make clock stamps, GPS evidence and computed pay read-only outside the RPCs. Escrow rows can only be opened as `pending` by the company; `mark_escrow_funded` is callable by the service role (Stripe webhook) alone. Clock and approval mutations go through `SECURITY DEFINER` RPCs that re-check ownership.
 
-**RPCs**: `nearby_shifts(lat,lng,radius_m)` (PostGIS radius search), `worker_reliability(worker_id)`, `validate_clock_event(...)`, `approve_timesheet(...)`.
+**RPCs**: `nearby_shifts(lat,lng,radius_m)` (PostGIS radius search), `worker_reliability(worker_id)`, `validate_clock_event(...)`, `approve_timesheet(...)`, `mark_escrow_funded(...)` (service role), `worker_can_see_shift(shift_id)`.
 
 ---
 
@@ -448,6 +459,7 @@ src/lib/marketplace/matchScore.ts                         gatekeeper + 30/30/20/
 src/lib/marketplace/overtime.ts                           splitHours / calculatePay / projectedShiftCost
 src/lib/marketplace/geo.ts                                haversine, checkGeofence, getCurrentPosition
 src/lib/marketplace/service.ts                            MarketplaceService — all Supabase I/O + realtime
+supabase/functions/stripe-webhook/index.ts                Stripe Checkout → mark_escrow_funded (escrow confirmation)
 src/lib/marketplace/__tests__/                            vitest coverage of the engines
 src/hooks/useMarketplace.ts                               data hooks (company, events, shifts, rosters, payouts)
 src/pages/company/{EventsPage,EventDetailPage,TimesheetApprovalPage,RosterPage}.tsx

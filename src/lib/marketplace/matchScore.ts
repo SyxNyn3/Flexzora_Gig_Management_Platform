@@ -61,7 +61,20 @@ export function windowsOverlap(a: BookedWindow, b: BookedWindow, bufferMinutes =
   return aStart < new Date(b.ends_at).getTime() && aEnd > new Date(b.starts_at).getTime();
 }
 
-export function checkGatekeeper(worker: MatchWorkerInput, shift: MatchShiftInput, now = new Date()): { passed: boolean; reasons: string[] } {
+/**
+ * A credential covers a call when its expiration calendar date is on or after the
+ * call's start date. Date-only expirations ("2026-10-12") are read in local time so
+ * the credential stays valid through the whole of its last day.
+ */
+export function certificationCoversShift(expirationDate: string | null | undefined, shiftStartsAt: string): boolean {
+  if (!expirationDate) return true;
+  const exp = /^\d{4}-\d{2}-\d{2}$/.test(expirationDate)
+    ? new Date(`${expirationDate}T23:59:59.999`)
+    : new Date(expirationDate);
+  return exp.getTime() >= new Date(shiftStartsAt).getTime();
+}
+
+export function checkGatekeeper(worker: MatchWorkerInput, shift: MatchShiftInput): { passed: boolean; reasons: string[] } {
   const reasons: string[] = [];
 
   if (worker.rosterTier === 'blocked') {
@@ -69,10 +82,11 @@ export function checkGatekeeper(worker: MatchWorkerInput, shift: MatchShiftInput
   }
 
   for (const code of shift.required_cert_codes ?? []) {
-    const cert = worker.certifications.find(
-      (c) => c.cert_type_code === code && c.is_active && (!c.expiration_date || new Date(c.expiration_date) >= now),
-    );
-    if (!cert) reasons.push(`Missing required certification: ${code}`);
+    const matching = worker.certifications.filter((c) => c.cert_type_code === code && c.is_active);
+    if (matching.length === 0) reasons.push(`Missing required certification: ${code}`);
+    else if (!matching.some((c) => certificationCoversShift(c.expiration_date, shift.starts_at))) {
+      reasons.push(`Certification ${code} expires before this call`);
+    }
   }
 
   if (shift.skill_id) {
@@ -125,8 +139,8 @@ export function rosterScore(worker: MatchWorkerInput): number {
   }
 }
 
-export function calculateMatch(worker: MatchWorkerInput, shift: MatchShiftInput, now = new Date()): MatchResult {
-  const gate = checkGatekeeper(worker, shift, now);
+export function calculateMatch(worker: MatchWorkerInput, shift: MatchShiftInput): MatchResult {
+  const gate = checkGatekeeper(worker, shift);
   const { score: proximity, distanceKm: dist } = proximityScore(worker, shift);
   const availability = availabilityScore(worker, shift);
   const performance = performanceScore(worker);
@@ -165,8 +179,8 @@ export function calculateMatch(worker: MatchWorkerInput, shift: MatchShiftInput,
   return { workerId: worker.id, shiftId: shift.id, score, breakdown, reasons };
 }
 
-export function rankWorkersForShift(workers: MatchWorkerInput[], shift: MatchShiftInput, now = new Date()): MatchResult[] {
+export function rankWorkersForShift(workers: MatchWorkerInput[], shift: MatchShiftInput): MatchResult[] {
   return workers
-    .map((w) => calculateMatch(w, shift, now))
+    .map((w) => calculateMatch(w, shift))
     .sort((a, b) => b.score - a.score || (a.breakdown.distanceKm ?? Infinity) - (b.breakdown.distanceKm ?? Infinity));
 }
