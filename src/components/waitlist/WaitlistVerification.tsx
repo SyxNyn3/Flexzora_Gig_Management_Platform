@@ -9,9 +9,7 @@ import {
   CheckCircle, 
   AlertTriangle, 
   Loader2, 
-  Mail,
   ArrowRight,
-  Users,
   Copy,
   Twitter,
   Linkedin,
@@ -23,9 +21,9 @@ const WaitlistVerification: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const [verified, setVerified] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [referralCode, setReferralCode] = useState<string | null>(null);
+  const [referralStatus, setReferralStatus] = useState<{ position: number; referral_count: number; beta_tester: boolean } | null>(null);
   const [alreadyVerified, setAlreadyVerified] = useState(false);
 
   useEffect(() => {
@@ -56,12 +54,15 @@ const WaitlistVerification: React.FC = () => {
           setAlreadyVerified(true);
         }
 
-        setVerified(true);
         setReferralCode(data?.referral_code);
+        if (data?.referral_code) {
+          const { data: status } = await supabase.rpc('waitlist_referral_status', { p_code: data.referral_code });
+          setReferralStatus(status);
+        }
         toast.success('Email verified successfully!');
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('Email verification error:', err);
-        setError(err.message || 'Failed to verify email');
+        setError(err instanceof Error ? err.message : 'Failed to verify email');
       } finally {
         setLoading(false);
       }
@@ -190,6 +191,12 @@ const WaitlistVerification: React.FC = () => {
                 <p className="text-blue-700 mb-4">
                   Share your unique referral link to move up in the waitlist faster!
                 </p>
+                {referralStatus && (
+                  <div className="mb-4 text-blue-800">
+                    <strong>You're #{referralStatus.position} in line</strong> · {referralStatus.referral_count} referrals
+                    {referralStatus.beta_tester && <Badge className="ml-2">Founding beta tester</Badge>}
+                  </div>
+                )}
                 <div className="bg-white p-3 rounded-md flex items-center justify-between border border-blue-200 mb-4">
                   <code className="text-sm font-mono text-blue-800 truncate">
                     {window.location.origin}/waitlist?ref={referralCode}

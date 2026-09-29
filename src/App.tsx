@@ -27,6 +27,7 @@ import CompanyDashboard from '@/components/integrations/CompanyDashboard';
 import PaymentSuccess from '@/components/payments/PaymentSuccess';
 import SchedulingInterface from '@/components/scheduling/SchedulingInterface';
 import WaitlistVerification from '@/components/waitlist/WaitlistVerification';
+import WaitlistAdminPage from '@/pages/admin/WaitlistAdminPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -68,7 +69,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
     };
     
     checkSession();
-  }, [user, loading]);
+  }, [user, loading, navigate]);
 
   if (loading || validating) {
     return <LoadingSpinner />;
@@ -116,6 +117,14 @@ const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return <>{children}</>;
 };
 
+const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user, profile, loading } = useAuth();
+  if (loading) return <LoadingSpinner />;
+  if (!user) return <Navigate to="/auth" replace />;
+  if (profile?.role !== 'admin') return <Navigate to="/dashboard" replace />;
+  return <>{children}</>;
+};
+
 const AppRoutes: React.FC = () => {
   const { profile } = useAuth();
 
@@ -138,6 +147,16 @@ const AppRoutes: React.FC = () => {
         <Route
           path="/waitlist/verify"
           element={<WaitlistVerification />}
+        />
+        <Route
+          path="/admin/waitlist"
+          element={
+            <AdminRoute>
+              <Layout>
+                <WaitlistAdminPage />
+              </Layout>
+            </AdminRoute>
+          }
         />
         <Route
           path="/schedule-demo"

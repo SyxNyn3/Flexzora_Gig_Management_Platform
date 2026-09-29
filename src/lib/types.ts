@@ -5,7 +5,7 @@ export type PaymentStatus = 'pending' | 'paid' | 'overdue' | 'cancelled';
 export type ExpenseCategory = 'travel' | 'equipment' | 'meals' | 'accommodation' | 'other';
 export type IntegrationStatus = 'connected' | 'pending' | 'error' | 'disconnected';
 export type WaitlistRoleInterest = 'worker' | 'company';
-export type WaitlistStatus = 'pending' | 'whitelisted' | 'invited';
+export type WaitlistStatus = 'pending' | 'whitelisted' | 'invited' | 'verified';
 
 export interface Database {
   public: {
@@ -206,7 +206,7 @@ export interface Gig {
   equipment_provided?: string[];
   special_requirements?: string;
   is_remote: boolean;
-  contact_info?: any;
+  contact_info?: unknown;
   created_at: string;
   updated_at: string;
   company?: Company;
@@ -281,7 +281,7 @@ export interface Notification {
   type: string;
   read: boolean;
   action_url?: string;
-  metadata?: any;
+  metadata?: unknown;
   created_at: string;
 }
 
@@ -291,8 +291,8 @@ export interface CompanyIntegration {
   company_name: string;
   integration_type: string;
   status: IntegrationStatus;
-  credentials?: any;
-  settings: any;
+  credentials?: unknown;
+  settings: unknown;
   last_sync?: string;
   created_at: string;
   updated_at: string;
@@ -308,7 +308,7 @@ export interface CalendarEvent {
   end_time?: string;
   all_day: boolean;
   color: string;
-  metadata: any;
+  metadata: unknown;
   created_at: string;
   updated_at: string;
 }
@@ -326,6 +326,16 @@ export interface WaitlistEntry {
   created_at: string;
   status: WaitlistStatus;
   referral_count: number;
+  market_city?: string;
+  crew_roles: string[];
+  company_type?: string;
+  events_per_month: number | null;
+  typical_crew_size: number | null;
+  pain_points: string[];
+  beta_tester: boolean;
+  heard_from?: string;
+  utm_source?: string;
+  notes?: string;
 }
 
 // API Response types

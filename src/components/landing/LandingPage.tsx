@@ -17,16 +17,11 @@ import {
   Shield,
   Clock
 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useWaitlistStats } from '@/hooks/useWaitlistStats';
 
 const LandingPage: React.FC = () => {
   const navigate = useNavigate();
-  const [waitlistCount, setWaitlistCount] = useState<number>(0);
-  
-  useEffect(() => {
-    // Simulate fetching waitlist count - in production this would be a real API call
-    setWaitlistCount(Math.floor(Math.random() * 500) + 1500);
-  }, []);
+  const { total: waitlistCount } = useWaitlistStats();
 
   const features = [
     {
@@ -138,7 +133,7 @@ const LandingPage: React.FC = () => {
               <div className="mb-6">
                 <Badge variant="outline" className="px-4 py-2 text-base font-medium bg-blue-50 border-blue-200 text-blue-700">
                   <Users className="w-4 h-4 mr-2" />
-                  {waitlistCount.toLocaleString()}+ professionals on the waitlist
+                  {waitlistCount.toLocaleString()} crew & companies already lined up
                 </Badge>
               </div>
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
@@ -147,7 +142,7 @@ const LandingPage: React.FC = () => {
                   onClick={() => navigate('/waitlist')}
                   className="bg-gradient-to-r from-blue-600 to-green-500 hover:from-blue-700 hover:to-green-600 text-lg px-8 py-3"
                 >
-                  Join the Waitlist
+                  Join the Founding Crew
                   <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
                 <Button 
@@ -159,6 +154,7 @@ const LandingPage: React.FC = () => {
                   Sign In
                 </Button>
               </div>
+              <p className="mt-3 text-sm text-gray-500">Built for load-in, show call and load-out — for production companies and the crews they book.</p>
               <div className="flex items-center justify-center lg:justify-start mt-8 space-x-6 text-sm text-gray-500">
                 <div className="flex items-center">
                   <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
@@ -283,7 +279,7 @@ const LandingPage: React.FC = () => {
               onClick={() => navigate('/waitlist')}
               className="mt-6 bg-gradient-to-r from-blue-600 to-green-500 hover:from-blue-700 hover:to-green-600"
             >
-              Join the Waitlist
+              Join the Founding Crew
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
             <Button 
@@ -349,7 +345,7 @@ const LandingPage: React.FC = () => {
               onClick={() => navigate('/waitlist')}
               className="mt-6 bg-gradient-to-r from-blue-600 to-green-500 hover:from-blue-700 hover:to-green-600"
             >
-              Join the Waitlist
+              Join the Founding Crew
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
             <Button 
@@ -390,7 +386,7 @@ const LandingPage: React.FC = () => {
               onClick={() => navigate('/waitlist')}
               className="mt-6 bg-gradient-to-r from-blue-600 to-green-500 hover:from-blue-700 hover:to-green-600"
             >
-              Join the Waitlist
+              Join the Founding Crew
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
             <Button 
@@ -483,7 +479,7 @@ const LandingPage: React.FC = () => {
           onClick={() => navigate('/waitlist')}
           className="bg-gradient-to-r from-blue-600 to-green-500 hover:from-blue-700 hover:to-green-600 shadow-lg animate-bounce"
         >
-          Join Waitlist
+          Join the Founding Crew
         </Button>
       </div>
 
@@ -502,7 +498,7 @@ const LandingPage: React.FC = () => {
               onClick={() => navigate('/waitlist')}
               className="bg-gradient-to-r from-blue-600 to-green-500 hover:from-blue-700 hover:to-green-600 text-lg px-8 py-3"
             >
-              Join the Waitlist
+              Join the Founding Crew
               <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
             <Button
@@ -529,7 +525,7 @@ const LandingPage: React.FC = () => {
           <div className="mt-8 text-center">
             <Badge variant="outline" className="px-4 py-2 text-base font-medium bg-blue-50 border-blue-200 text-blue-700">
               <Users className="w-4 h-4 mr-2" />
-              {waitlistCount.toLocaleString()}+ professionals already on the waitlist
+              {waitlistCount.toLocaleString()} crew & companies already lined up
             </Badge>
           </div>
         </div>
