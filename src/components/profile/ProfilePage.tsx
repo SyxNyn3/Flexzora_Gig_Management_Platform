@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { DatabaseService, normalizeUrl } from '@/lib/supabase';
-import { useSkills, useWorkerSkills, useCertifications } from '@/hooks/useSupabaseQuery';
+import { useSkills, useWorkerSkills, useCertifications, useReviewsForWorker } from '@/hooks/useSupabaseQuery';
 import { useCertificationTypes } from '@/hooks/useMarketplace';
 import { WorkerSkill, Certification, PortfolioItem } from '@/lib/types';
 import ReviewsList from '@/components/reviews/ReviewsList';
