@@ -27,6 +27,7 @@ import CompanyDashboard from '@/components/integrations/CompanyDashboard';
 import PaymentSuccess from '@/components/payments/PaymentSuccess';
 import SchedulingInterface from '@/components/scheduling/SchedulingInterface';
 import WaitlistVerification from '@/components/waitlist/WaitlistVerification';
+import WaitlistAdminPage from '@/pages/admin/WaitlistAdminPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -50,14 +51,14 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   const { user, loading } = useAuth();
   const [validating, setValidating] = useState(true);
   const navigate = useNavigate();
-  
+
   useEffect(() => {
     const checkSession = async () => {
       if (!user && !loading) {
         // Try to validate and refresh the session
         const isValid = await validateSession();
         setValidating(false);
-        
+
         if (!isValid) {
           // If session validation fails, redirect to auth
           navigate('/auth', { replace: true });
@@ -66,9 +67,9 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
         setValidating(false);
       }
     };
-    
+
     checkSession();
-  }, [user, loading]);
+  }, [user, loading, navigate]);
 
   if (loading || validating) {
     return <LoadingSpinner />;
@@ -85,14 +86,14 @@ const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
   const [validating, setValidating] = useState(true);
   const navigate = useNavigate();
-  
+
   useEffect(() => {
     const checkSession = async () => {
       if (!user && !loading) {
         // Try to validate the session
         const isValid = await validateSession();
         setValidating(false);
-        
+
         if (isValid) {
           // If session is valid, redirect to dashboard
           navigate('/dashboard', { replace: true });
@@ -101,7 +102,7 @@ const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         setValidating(false);
       }
     };
-    
+
     checkSession();
   }, [user, loading, navigate]);
 
@@ -116,6 +117,14 @@ const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return <>{children}</>;
 };
 
+const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user, profile, loading } = useAuth();
+  if (loading) return <LoadingSpinner />;
+  if (!user) return <Navigate to="/auth" replace />;
+  if (profile?.role !== 'admin') return <Navigate to="/dashboard" replace />;
+  return <>{children}</>;
+};
+
 const AppRoutes: React.FC = () => {
   const { profile } = useAuth();
 
@@ -127,22 +136,20 @@ const AppRoutes: React.FC = () => {
   return (
     <Router>
       <Routes>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/waitlist" element={<WaitlistForm />} />
+        <Route path="/waitlist/verify" element={<WaitlistVerification />} />
         <Route
-          path="/"
-          element={<LandingPage />}
+          path="/admin/waitlist"
+          element={
+            <AdminRoute>
+              <Layout>
+                <WaitlistAdminPage />
+              </Layout>
+            </AdminRoute>
+          }
         />
-        <Route
-          path="/waitlist"
-          element={<WaitlistForm />}
-        />
-        <Route
-          path="/waitlist/verify"
-          element={<WaitlistVerification />}
-        />
-        <Route
-          path="/schedule-demo"
-          element={<ScheduleDemoForm />}
-        />
+        <Route path="/schedule-demo" element={<ScheduleDemoForm />} />
         <Route
           path="/auth"
           element={

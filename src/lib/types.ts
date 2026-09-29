@@ -5,7 +5,7 @@ export type PaymentStatus = 'pending' | 'paid' | 'overdue' | 'cancelled';
 export type ExpenseCategory = 'travel' | 'equipment' | 'meals' | 'accommodation' | 'other';
 export type IntegrationStatus = 'connected' | 'pending' | 'error' | 'disconnected';
 export type WaitlistRoleInterest = 'worker' | 'company';
-export type WaitlistStatus = 'pending' | 'whitelisted' | 'invited';
+export type WaitlistStatus = 'pending' | 'whitelisted' | 'invited' | 'verified';
 
 export interface Database {
   public: {
@@ -326,6 +326,16 @@ export interface WaitlistEntry {
   created_at: string;
   status: WaitlistStatus;
   referral_count: number;
+  market_city?: string;
+  crew_roles: string[];
+  company_type?: string;
+  events_per_month: number | null;
+  typical_crew_size: number | null;
+  pain_points: string[];
+  beta_tester: boolean;
+  heard_from?: string;
+  utm_source?: string;
+  notes?: string;
 }
 
 // API Response types

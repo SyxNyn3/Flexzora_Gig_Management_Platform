@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
-import { Bell, Calendar, DollarSign, Settings, LogOut, User, Briefcase, Plus, MessageSquare, Building2, Users, Link as LinkIcon, CalendarDays, Mail } from 'lucide-react';
+import { Bell, Calendar, DollarSign, LogOut, User, Briefcase, Plus, MessageSquare, Building2, Users, Link as LinkIcon, CalendarDays, Mail } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import NotificationCenter from '@/components/notifications/NotificationCenter';
 
@@ -44,7 +44,11 @@ const Navbar: React.FC = () => {
     { path: '/finances', label: 'Finances', icon: DollarSign },
   ];
 
-  const navItems = profile?.role === 'company' ? companyNavItems : workerNavItems;
+  const navItems = profile?.role === 'company'
+    ? companyNavItems
+    : profile?.role === 'admin'
+      ? [...workerNavItems, { path: '/admin/waitlist', label: 'Waitlist', icon: Users }]
+      : workerNavItems;
 
   return (
     <>
