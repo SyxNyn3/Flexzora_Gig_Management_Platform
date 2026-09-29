@@ -4,18 +4,19 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { StickyScrollSection } from './StickyScrollSection';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Calendar, 
-  DollarSign, 
-  Building2, 
-  Users, 
-  TrendingUp, 
+import { cn } from '@/lib/utils';
+import {
+  Calendar,
+  DollarSign,
+  Building2,
+  Users,
+  TrendingUp,
   CheckCircle,
   ArrowRight,
   Star,
   Zap,
   Shield,
-  Clock
+  Clock,
 } from 'lucide-react';
 import { useWaitlistStats } from '@/hooks/useWaitlistStats';
 
@@ -28,20 +29,20 @@ const LandingPage: React.FC = () => {
       icon: Calendar,
       title: 'Smart Scheduling',
       description: 'Unified calendar with conflict detection and automatic sync across all your connected companies.',
-      color: 'text-blue-600'
+      color: 'text-blue-600',
     },
     {
       icon: DollarSign,
       title: 'Financial Tracking',
       description: 'Track earnings, expenses, and payments with detailed analytics and tax-ready reports.',
-      color: 'text-green-600'
+      color: 'text-green-600',
     },
     {
       icon: Building2,
       title: 'Company Integrations',
       description: 'Connect with major production companies like Rhino Staging, Giglife, and more.',
-      color: 'text-purple-600'
-    }
+      color: 'text-purple-600',
+    },
   ];
 
   const companies = [
@@ -50,7 +51,7 @@ const LandingPage: React.FC = () => {
     { name: 'PCE', logo: '🌊' },
     { name: 'Stagehands Inc.', logo: '🎭' },
     { name: 'G2 Production', logo: '⚡' },
-    { name: 'Onstage Systems', logo: '🎤' }
+    { name: 'Onstage Systems', logo: '🎤' },
   ];
 
   const steps = [
@@ -58,33 +59,33 @@ const LandingPage: React.FC = () => {
       number: '01',
       title: 'Create Your Profile',
       description: 'Set up your professional profile with skills, experience, and certifications.',
-      icon: Users
+      icon: Users,
     },
     {
       number: '02',
       title: 'Connect Companies',
       description: 'Link your accounts with production companies for seamless gig management.',
-      icon: Building2
+      icon: Building2,
     },
     {
       number: '03',
       title: 'Manage Gigs',
       description: 'View all your gigs in one place with smart scheduling and conflict detection.',
-      icon: Calendar
+      icon: Calendar,
     },
     {
       number: '04',
       title: 'Track Earnings',
       description: 'Monitor payments, expenses, and generate reports for tax season.',
-      icon: TrendingUp
-    }
+      icon: TrendingUp,
+    },
   ];
 
   const stats = [
     { number: '10,000+', label: 'Active Professionals' },
     { number: '50+', label: 'Partner Companies' },
     { number: '99.9%', label: 'Uptime' },
-    { number: '$2M+', label: 'Payments Processed' }
+    { number: '$2M+', label: 'Payments Processed' },
   ];
 
   return (
@@ -103,7 +104,10 @@ const LandingPage: React.FC = () => {
               <Button variant="ghost" onClick={() => navigate('/auth')}>
                 Sign In
               </Button>
-              <Button onClick={() => navigate('/auth?mode=signup')} className="bg-gradient-to-r from-blue-600 to-green-500">
+              <Button
+                onClick={() => navigate('/auth?mode=signup')}
+                className="bg-gradient-to-r from-blue-600 to-green-500"
+              >
                 Sign Up
               </Button>
             </div>
@@ -123,38 +127,41 @@ const LandingPage: React.FC = () => {
               </div>
               <h1 className="text-4xl lg:text-6xl font-bold text-gray-900 leading-tight mb-6">
                 Manage Your
-                <span className="bg-gradient-to-r from-blue-600 to-green-500 bg-clip-text text-transparent"> Gigs </span>
+                <span className="bg-gradient-to-r from-blue-600 to-green-500 bg-clip-text text-transparent">
+                  {' '}
+                  Gigs{' '}
+                </span>
                 Like a Pro
               </h1>
               <p className="text-xl text-gray-600 mb-6 leading-relaxed">
-                The all-in-one platform for freelance professionals in production and events. 
-                Schedule gigs, track finances, and connect with top companies—all in one place.
+                The all-in-one platform for freelance professionals in production and events. Schedule gigs, track
+                finances, and connect with top companies—all in one place.
               </p>
               <div className="mb-6">
-                <Badge variant="outline" className="px-4 py-2 text-base font-medium bg-blue-50 border-blue-200 text-blue-700">
+                <Badge
+                  variant="outline"
+                  className="px-4 py-2 text-base font-medium bg-blue-50 border-blue-200 text-blue-700"
+                >
                   <Users className="w-4 h-4 mr-2" />
                   {waitlistCount.toLocaleString()} crew & companies already lined up
                 </Badge>
               </div>
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                <Button 
-                  size="lg" 
+                <Button
+                  size="lg"
                   onClick={() => navigate('/waitlist')}
                   className="bg-gradient-to-r from-blue-600 to-green-500 hover:from-blue-700 hover:to-green-600 text-lg px-8 py-3"
                 >
                   Join the Founding Crew
                   <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
-                <Button 
-                  size="lg" 
-                  variant="outline" 
-                  onClick={() => navigate('/auth')}
-                  className="text-lg px-8 py-3"
-                >
+                <Button size="lg" variant="outline" onClick={() => navigate('/auth')} className="text-lg px-8 py-3">
                   Sign In
                 </Button>
               </div>
-              <p className="mt-3 text-sm text-gray-500">Built for load-in, show call and load-out — for production companies and the crews they book.</p>
+              <p className="mt-3 text-sm text-gray-500">
+                Built for load-in, show call and load-out — for production companies and the crews they book.
+              </p>
               <div className="flex items-center justify-center lg:justify-start mt-8 space-x-6 text-sm text-gray-500">
                 <div className="flex items-center">
                   <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
@@ -170,14 +177,14 @@ const LandingPage: React.FC = () => {
                 </div>
               </div>
             </div>
-            
+
             {/* Image Grid Showcase */}
             <div className="relative grid grid-cols-2 gap-4">
               {/* Main large image - Video Production */}
               <div className="col-span-2 relative group">
-                <img 
-                  src="https://images.pexels.com/photos/66134/pexels-photo-66134.jpeg?auto=compress&cs=tinysrgb&w=800" 
-                  alt="Video production and camera work" 
+                <img
+                  src="https://images.pexels.com/photos/66134/pexels-photo-66134.jpeg?auto=compress&cs=tinysrgb&w=800"
+                  alt="Video production and camera work"
                   className="w-full h-64 object-cover rounded-2xl shadow-xl group-hover:shadow-2xl transition-all duration-300"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent rounded-2xl"></div>
@@ -186,12 +193,12 @@ const LandingPage: React.FC = () => {
                   <p className="text-sm opacity-90">Camera operators, directors, editors</p>
                 </div>
               </div>
-              
+
               {/* Sound Engineering */}
               <div className="relative group">
-                <img 
-                  src="https://images.pexels.com/photos/164938/pexels-photo-164938.jpeg?auto=compress&cs=tinysrgb&w=400" 
-                  alt="Sound engineering and audio mixing" 
+                <img
+                  src="https://images.pexels.com/photos/164938/pexels-photo-164938.jpeg?auto=compress&cs=tinysrgb&w=400"
+                  alt="Sound engineering and audio mixing"
                   className="w-full h-48 object-cover rounded-xl shadow-lg group-hover:shadow-xl transition-all duration-300"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent rounded-xl"></div>
@@ -200,12 +207,12 @@ const LandingPage: React.FC = () => {
                   <p className="text-xs opacity-90">Audio mixing, live sound</p>
                 </div>
               </div>
-              
+
               {/* Lighting Design */}
               <div className="relative group">
-                <img 
-                  src="https://images.pexels.com/photos/1190297/pexels-photo-1190297.jpeg?auto=compress&cs=tinysrgb&w=400" 
-                  alt="Stage lighting and design" 
+                <img
+                  src="https://images.pexels.com/photos/1190297/pexels-photo-1190297.jpeg?auto=compress&cs=tinysrgb&w=400"
+                  alt="Stage lighting and design"
                   className="w-full h-48 object-cover rounded-xl shadow-lg group-hover:shadow-xl transition-all duration-300"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent rounded-xl"></div>
@@ -214,12 +221,12 @@ const LandingPage: React.FC = () => {
                   <p className="text-xs opacity-90">Stage lighting, LED systems</p>
                 </div>
               </div>
-              
+
               {/* Event Coordination */}
               <div className="col-span-2 relative group">
-                <img 
-                  src="https://images.pexels.com/photos/1190298/pexels-photo-1190298.jpeg?auto=compress&cs=tinysrgb&w=800" 
-                  alt="Event coordination and management" 
+                <img
+                  src="https://images.pexels.com/photos/1190298/pexels-photo-1190298.jpeg?auto=compress&cs=tinysrgb&w=800"
+                  alt="Event coordination and management"
                   className="w-full h-40 object-cover rounded-xl shadow-lg group-hover:shadow-xl transition-all duration-300"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent rounded-xl"></div>
@@ -228,12 +235,12 @@ const LandingPage: React.FC = () => {
                   <p className="text-xs opacity-90">Project management, logistics, crew coordination</p>
                 </div>
               </div>
-              
+
               {/* Stage Management */}
               <div className="relative group">
-                <img 
-                  src="https://images.pexels.com/photos/1105666/pexels-photo-1105666.jpeg?auto=compress&cs=tinysrgb&w=400" 
-                  alt="Stage management and setup" 
+                <img
+                  src="https://images.pexels.com/photos/1105666/pexels-photo-1105666.jpeg?auto=compress&cs=tinysrgb&w=400"
+                  alt="Stage management and setup"
                   className="w-full h-32 object-cover rounded-xl shadow-lg group-hover:shadow-xl transition-all duration-300"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent rounded-xl"></div>
@@ -242,12 +249,12 @@ const LandingPage: React.FC = () => {
                   <p className="text-xs opacity-90">Setup, rigging, safety</p>
                 </div>
               </div>
-              
+
               {/* Photography */}
               <div className="relative group">
-                <img 
-                  src="https://images.pexels.com/photos/1983032/pexels-photo-1983032.jpeg?auto=compress&cs=tinysrgb&w=400" 
-                  alt="Professional photography" 
+                <img
+                  src="https://images.pexels.com/photos/1983032/pexels-photo-1983032.jpeg?auto=compress&cs=tinysrgb&w=400"
+                  alt="Professional photography"
                   className="w-full h-32 object-cover rounded-xl shadow-lg group-hover:shadow-xl transition-all duration-300"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent rounded-xl"></div>
@@ -256,7 +263,7 @@ const LandingPage: React.FC = () => {
                   <p className="text-xs opacity-90">Events, portraits, commercial</p>
                 </div>
               </div>
-              
+
               {/* Floating elements for visual interest */}
               <div className="absolute -top-4 -right-4 w-72 h-72 bg-gradient-to-r from-blue-400 to-green-400 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
               <div className="absolute -bottom-8 -left-4 w-72 h-72 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
@@ -269,28 +276,23 @@ const LandingPage: React.FC = () => {
       <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">
-              Built for Every Type of Professional
-            </h2>
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">Built for Every Type of Professional</h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              From video production to event coordination, Flexora supports all types of gig work in the entertainment and production industry.
+              From video production to event coordination, Flexora supports all types of gig work in the entertainment
+              and production industry.
             </p>
-            <Button 
+            <Button
               onClick={() => navigate('/waitlist')}
               className="mt-6 bg-gradient-to-r from-blue-600 to-green-500 hover:from-blue-700 hover:to-green-600"
             >
               Join the Founding Crew
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
-            <Button 
-              variant="outline"
-              onClick={() => navigate('/schedule-demo')}
-              className="mt-4 md:mt-0 md:ml-4"
-            >
+            <Button variant="outline" onClick={() => navigate('/schedule-demo')} className="mt-4 md:mt-0 md:ml-4">
               Schedule a Demo
             </Button>
           </div>
-          
+
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
             {[
               { icon: '🎥', title: 'Video Production', desc: 'Camera ops, directors' },
@@ -298,7 +300,7 @@ const LandingPage: React.FC = () => {
               { icon: '💡', title: 'Lighting Design', desc: 'Stage lighting, LED' },
               { icon: '📸', title: 'Photography', desc: 'Events, commercial' },
               { icon: '🎭', title: 'Stage Management', desc: 'Setup, rigging' },
-              { icon: '📋', title: 'Event Coordination', desc: 'Project management' }
+              { icon: '📋', title: 'Event Coordination', desc: 'Project management' },
             ].map((category, index) => (
               <div key={index} className="text-center group hover:scale-105 transition-transform duration-300">
                 <div className="text-4xl mb-3 group-hover:scale-110 transition-transform duration-300">
@@ -318,9 +320,7 @@ const LandingPage: React.FC = () => {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
             {stats.map((stat, index) => (
               <div key={index} className="text-center">
-                <div className="text-3xl lg:text-4xl font-bold text-gray-900 mb-2">
-                  {stat.number}
-                </div>
+                <div className="text-3xl lg:text-4xl font-bold text-gray-900 mb-2">{stat.number}</div>
                 <div className="text-gray-600">{stat.label}</div>
               </div>
             ))}
@@ -339,20 +339,17 @@ const LandingPage: React.FC = () => {
               Everything you need to manage your freelance career
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              From scheduling to payments, Flexora provides all the tools you need to succeed as a freelance professional.
+              From scheduling to payments, Flexora provides all the tools you need to succeed as a freelance
+              professional.
             </p>
-            <Button 
+            <Button
               onClick={() => navigate('/waitlist')}
               className="mt-6 bg-gradient-to-r from-blue-600 to-green-500 hover:from-blue-700 hover:to-green-600"
             >
               Join the Founding Crew
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
-            <Button 
-              variant="outline"
-              onClick={() => navigate('/schedule-demo')}
-              className="mt-4 md:mt-0 md:ml-4"
-            >
+            <Button variant="outline" onClick={() => navigate('/schedule-demo')} className="mt-4 md:mt-0 md:ml-4">
               Schedule a Demo
             </Button>
           </div>
@@ -360,7 +357,9 @@ const LandingPage: React.FC = () => {
             {features.map((feature, index) => (
               <Card key={index} className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg">
                 <CardContent className="p-8 text-center">
-                  <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-50 ${feature.color} mb-6 group-hover:scale-110 transition-transform duration-300`}>
+                  <div
+                    className={`inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-50 ${feature.color} mb-6 group-hover:scale-110 transition-transform duration-300`}
+                  >
                     <feature.icon className="w-8 h-8" />
                   </div>
                   <h3 className="text-xl font-semibold text-gray-900 mb-4">{feature.title}</h3>
@@ -376,24 +375,16 @@ const LandingPage: React.FC = () => {
       <section className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
-              Connect with industry leaders
-            </h2>
-            <p className="text-xl text-gray-600">
-              Integrate with the production companies you already work with
-            </p>
-            <Button 
+            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">Connect with industry leaders</h2>
+            <p className="text-xl text-gray-600">Integrate with the production companies you already work with</p>
+            <Button
               onClick={() => navigate('/waitlist')}
               className="mt-6 bg-gradient-to-r from-blue-600 to-green-500 hover:from-blue-700 hover:to-green-600"
             >
               Join the Founding Crew
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
-            <Button 
-              variant="outline"
-              onClick={() => navigate('/schedule-demo')}
-              className="mt-4 md:mt-0 md:ml-4"
-            >
+            <Button variant="outline" onClick={() => navigate('/schedule-demo')} className="mt-4 md:mt-0 md:ml-4">
               Schedule a Demo
             </Button>
           </div>
@@ -414,13 +405,9 @@ const LandingPage: React.FC = () => {
       <section className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
-              Get started in minutes
-            </h2>
-            <p className="text-xl text-gray-600">
-              Four simple steps to transform your freelance workflow
-            </p>
-            <Button 
+            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">Get started in minutes</h2>
+            <p className="text-xl text-gray-600">Four simple steps to transform your freelance workflow</p>
+            <Button
               onClick={() => navigate('/waitlist')}
               className="mt-6 bg-gradient-to-r from-blue-600 to-green-500 hover:from-blue-700 hover:to-green-600"
             >
@@ -432,7 +419,14 @@ const LandingPage: React.FC = () => {
             {steps.map((step, index) => (
               <div key={index} className="relative text-center group">
                 <div className="relative">
-                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-r from-blue-600 to-green-500 text-white font-bold text-lg mb-6 group-hover:scale-110 transition-transform duration-300">
+                  <div
+                    className={cn(
+                      'inline-flex items-center justify-center w-16 h-16',
+                      'rounded-full bg-gradient-to-r from-blue-600 to-green-500',
+                      'text-white font-bold text-lg mb-6 group-hover:scale-110',
+                      'transition-transform duration-300',
+                    )}
+                  >
                     {step.number}
                   </div>
                   {index < steps.length - 1 && (
@@ -456,13 +450,13 @@ const LandingPage: React.FC = () => {
             ))}
           </div>
           <blockquote className="text-2xl lg:text-3xl font-medium text-white mb-8 leading-relaxed">
-            "As a sound engineer working with multiple production companies, Flexora keeps me organized and ensures I never double-book. 
-            My earnings have increased 40% since I started using it."
+            "As a sound engineer working with multiple production companies, Flexora keeps me organized and ensures I
+            never double-book. My earnings have increased 40% since I started using it."
           </blockquote>
           <div className="flex items-center justify-center space-x-4">
-            <img 
-              src="https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=100" 
-              alt="Sarah Chen" 
+            <img
+              src="https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=100"
+              alt="Sarah Chen"
               className="w-12 h-12 rounded-full"
             />
             <div className="text-left">
@@ -493,8 +487,8 @@ const LandingPage: React.FC = () => {
             Join thousands of professionals who trust Flexora to manage their gigs and grow their business.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button 
-              size="lg" 
+            <Button
+              size="lg"
               onClick={() => navigate('/waitlist')}
               className="bg-gradient-to-r from-blue-600 to-green-500 hover:from-blue-700 hover:to-green-600 text-lg px-8 py-3"
             >
@@ -520,10 +514,13 @@ const LandingPage: React.FC = () => {
               24/7 support
             </div>
           </div>
-          
+
           {/* Waitlist Counter */}
           <div className="mt-8 text-center">
-            <Badge variant="outline" className="px-4 py-2 text-base font-medium bg-blue-50 border-blue-200 text-blue-700">
+            <Badge
+              variant="outline"
+              className="px-4 py-2 text-base font-medium bg-blue-50 border-blue-200 text-blue-700"
+            >
               <Users className="w-4 h-4 mr-2" />
               {waitlistCount.toLocaleString()} crew & companies already lined up
             </Badge>
@@ -557,19 +554,51 @@ const LandingPage: React.FC = () => {
             <div>
               <h3 className="font-semibold mb-4">Product</h3>
               <ul className="space-y-2 text-gray-400">
-                <li><a href="#" className="hover:text-white transition-colors">Features</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Pricing</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Integrations</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">API</a></li>
+                <li>
+                  <a href="#" className="hover:text-white transition-colors">
+                    Features
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-white transition-colors">
+                    Pricing
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-white transition-colors">
+                    Integrations
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-white transition-colors">
+                    API
+                  </a>
+                </li>
               </ul>
             </div>
             <div>
               <h3 className="font-semibold mb-4">Support</h3>
               <ul className="space-y-2 text-gray-400">
-                <li><a href="#" className="hover:text-white transition-colors">Help Center</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Contact Us</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Status</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Community</a></li>
+                <li>
+                  <a href="#" className="hover:text-white transition-colors">
+                    Help Center
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-white transition-colors">
+                    Contact Us
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-white transition-colors">
+                    Status
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-white transition-colors">
+                    Community
+                  </a>
+                </li>
               </ul>
             </div>
           </div>

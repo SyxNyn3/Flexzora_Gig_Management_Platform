@@ -5,16 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/lib/supabase';
-import { 
-  CheckCircle, 
-  AlertTriangle, 
-  Loader2, 
-  ArrowRight,
-  Copy,
-  Twitter,
-  Linkedin,
-  Share2
-} from 'lucide-react';
+import { CheckCircle, AlertTriangle, Loader2, ArrowRight, Copy, Twitter, Linkedin, Share2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const WaitlistVerification: React.FC = () => {
@@ -23,7 +14,11 @@ const WaitlistVerification: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [referralCode, setReferralCode] = useState<string | null>(null);
-  const [referralStatus, setReferralStatus] = useState<{ position: number; referral_count: number; beta_tester: boolean } | null>(null);
+  const [referralStatus, setReferralStatus] = useState<{
+    position: number;
+    referral_count: number;
+    beta_tester: boolean;
+  } | null>(null);
   const [alreadyVerified, setAlreadyVerified] = useState(false);
 
   useEffect(() => {
@@ -39,7 +34,7 @@ const WaitlistVerification: React.FC = () => {
 
       try {
         const { data, error: verifyError } = await supabase.functions.invoke('verify-waitlist-email', {
-          body: { token, email }
+          body: { token, email },
         });
 
         if (verifyError) {
@@ -73,7 +68,7 @@ const WaitlistVerification: React.FC = () => {
 
   const copyReferralLink = () => {
     if (!referralCode) return;
-    
+
     const link = `${window.location.origin}/waitlist?ref=${referralCode}`;
     navigator.clipboard.writeText(link);
     toast.success('Referral link copied to clipboard!');
@@ -81,20 +76,27 @@ const WaitlistVerification: React.FC = () => {
 
   const shareOnTwitter = () => {
     if (!referralCode) return;
-    
+
     const link = `${window.location.origin}/waitlist?ref=${referralCode}`;
-    const text = encodeURIComponent(`I just joined the waitlist for @FlexZora, a new platform for freelance professionals in production and events! Join me and get early access: ${link}`);
+    const text = encodeURIComponent(
+      `I just joined the waitlist for @FlexZora, a new platform for freelance professionals in production and events! Join me and get early access: ${link}`,
+    );
     window.open(`https://twitter.com/intent/tweet?text=${text}`, '_blank');
   };
 
   const shareOnLinkedIn = () => {
     if (!referralCode) return;
-    
+
     const link = `${window.location.origin}/waitlist?ref=${referralCode}`;
     const url = encodeURIComponent(link);
     const title = encodeURIComponent('Join the FlexZora Waitlist');
-    const summary = encodeURIComponent('FlexZora is a new platform for freelance professionals in production and events. Join the waitlist for early access!');
-    window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${url}&title=${title}&summary=${summary}`, '_blank');
+    const summary = encodeURIComponent(
+      'FlexZora is a new platform for freelance professionals in production and events. Join the waitlist for early access!',
+    );
+    window.open(
+      `https://www.linkedin.com/sharing/share-offsite/?url=${url}&title=${title}&summary=${summary}`,
+      '_blank',
+    );
   };
 
   if (loading) {
@@ -123,24 +125,20 @@ const WaitlistVerification: React.FC = () => {
                 <AlertTriangle className="w-8 h-8 text-red-600" />
               </div>
               <CardTitle className="text-2xl font-bold">Verification Failed</CardTitle>
-              <CardDescription className="text-lg">
-                We couldn't verify your email address
-              </CardDescription>
+              <CardDescription className="text-lg">We couldn't verify your email address</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <Alert variant="destructive">
                 <AlertTriangle className="h-4 w-4" />
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
-              
+
               <div className="text-center space-y-4">
                 <p className="text-gray-600">
                   This could happen if the verification link has expired or has already been used.
                 </p>
                 <div className="flex flex-col space-y-2">
-                  <Button onClick={() => navigate('/waitlist')}>
-                    Try Joining Again
-                  </Button>
+                  <Button onClick={() => navigate('/waitlist')}>Try Joining Again</Button>
                   <Button variant="outline" onClick={() => navigate('/')}>
                     Return to Home
                   </Button>
@@ -165,10 +163,9 @@ const WaitlistVerification: React.FC = () => {
               {alreadyVerified ? 'Already Verified!' : 'Email Verified!'}
             </CardTitle>
             <CardDescription className="text-lg">
-              {alreadyVerified 
+              {alreadyVerified
                 ? 'Your email was already verified. Welcome back!'
-                : 'Thank you for verifying your email address.'
-              }
+                : 'Thank you for verifying your email address.'}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -188,12 +185,11 @@ const WaitlistVerification: React.FC = () => {
                   <Share2 className="w-5 h-5 mr-2" />
                   Earn Priority Access
                 </h3>
-                <p className="text-blue-700 mb-4">
-                  Share your unique referral link to move up in the waitlist faster!
-                </p>
+                <p className="text-blue-700 mb-4">Share your unique referral link to move up in the waitlist faster!</p>
                 {referralStatus && (
                   <div className="mb-4 text-blue-800">
-                    <strong>You're #{referralStatus.position} in line</strong> · {referralStatus.referral_count} referrals
+                    <strong>You're #{referralStatus.position} in line</strong> · {referralStatus.referral_count}{' '}
+                    referrals
                     {referralStatus.beta_tester && <Badge className="ml-2">Founding beta tester</Badge>}
                   </div>
                 )}
