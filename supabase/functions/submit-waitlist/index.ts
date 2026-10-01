@@ -110,6 +110,15 @@ serve(async (req) => {
         referral_code: referralCode,
         verification_token: verificationToken,
         status: 'pending', // Will be updated to 'verified' after email verification
+        market_city: requestData.market_city,
+        crew_roles: Array.isArray(requestData.crew_roles) ? requestData.crew_roles : [],
+        company_type: requestData.company_type,
+        events_per_month: Number(requestData.events_per_month) || null,
+        typical_crew_size: Number(requestData.typical_crew_size) || null,
+        pain_points: Array.isArray(requestData.pain_points) ? requestData.pain_points : [],
+        beta_tester: Boolean(requestData.beta_tester),
+        heard_from: requestData.heard_from,
+        utm_source: requestData.utm_source,
       })
       .select()
       .single();
