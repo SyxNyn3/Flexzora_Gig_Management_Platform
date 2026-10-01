@@ -49,8 +49,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         }
         
-        // Then validate with Supabase
-        const { data: { session: supabaseSession }, error } = await supabase.auth.getSession();
+        // Then validate with Supabase — bound the wait so a stalled refresh-token
+        // exchange can't leave users on "Loading Flexora…" forever
+        const sessionResult = await Promise.race([
+          supabase.auth.getSession(),
+          new Promise<null>((resolve) => setTimeout(() => resolve(null), 8000)),
+        ]);
+        if (!mounted) return;
+        if (!sessionResult) {
+          clearAuthData();
+          setSession(null);
+          setUser(null);
+          setLoading(false);
+          return;
+        }
+        const { data: { session: supabaseSession }, error } = sessionResult;
         
         if (!mounted) return;
         

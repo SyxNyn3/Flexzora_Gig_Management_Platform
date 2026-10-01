@@ -14,6 +14,7 @@ interface AuthKitButtonProps {
 export function AuthKitButton({ onConnectionSuccess, className = "" }: AuthKitButtonProps) {
   const [isConnecting, setIsConnecting] = useState(false);
   const [connections, setConnections] = useState<any[]>([]);
+  const isDemoMode = !import.meta.env.VITE_SUPABASE_URL;
 
   const { open } = useAuthKit({
     token: {

@@ -43,10 +43,11 @@ interface ExpenseTrackerProps {
 
 const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ gigId }) => {
   const { profile } = useAuth();
-  const { data: expenses = [], loading: expensesLoading, refetch: refetchExpenses } = useExpenses({ 
+  const { data: expensesData, loading: expensesLoading, refetch: refetchExpenses } = useExpenses({ 
     workerId: profile?.id, 
     gigId 
   });
+  const expenses = expensesData ?? [];
   const [gigs, setGigs] = useState<Gig[]>([]);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [submitting, setSubmitting] = useState(false);
