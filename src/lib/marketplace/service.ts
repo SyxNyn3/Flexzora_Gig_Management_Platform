@@ -31,7 +31,12 @@ type Result<T> = { data: T; error: string | null };
 const ok = <T>(data: T): Result<T> => ({ data, error: null });
 const fail = <T>(fallback: T, error: unknown): Result<T> => ({
   data: fallback,
-  error: error instanceof Error ? error.message : String(error),
+  error:
+    error instanceof Error
+      ? error.message
+      : error && typeof error === 'object' && 'message' in error && typeof error.message === 'string'
+        ? error.message
+        : String(error),
 });
 
 const SHIFT_WITH_CONTEXT = `
@@ -424,7 +429,7 @@ export class MarketplaceService {
     try {
       const { data, error } = await supabase
         .from('preferred_rosters')
-        .select('*, worker:profiles(*)')
+        .select('*, worker:profiles!preferred_rosters_worker_id_fkey(*)')
         .eq('company_id', companyId)
         .order('tier');
       if (error) throw error;
@@ -606,7 +611,7 @@ export class MarketplaceService {
     try {
       let q = supabase
         .from('timesheets')
-        .select('*, worker:profiles(*), assignment:shift_assignments(offered_rate), shift:shifts!inner(*, event:events!inner(*, venue:venues(*)))')
+        .select('*, worker:profiles!timesheets_worker_id_fkey(*), assignment:shift_assignments(offered_rate), shift:shifts!inner(*, event:events!inner(*, venue:venues(*)))')
         .eq('shift.event.company_id', companyId)
         .order('clock_in_at', { ascending: false });
       if (statuses?.length) q = q.in('status', statuses);

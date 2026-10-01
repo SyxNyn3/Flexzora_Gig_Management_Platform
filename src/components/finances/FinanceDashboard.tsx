@@ -38,12 +38,14 @@ const FinanceDashboard: React.FC = () => {
   });
   
   // Use real data hooks
-  const { data: payments = [], loading: paymentsLoading, refetch: refetchPayments } = usePayments({ 
+  const { data: paymentsData, loading: paymentsLoading, refetch: refetchPayments } = usePayments({ 
     workerId: profile?.id 
   });
-  const { data: expenses = [], loading: expensesLoading } = useExpenses({ 
+  const { data: expensesData, loading: expensesLoading } = useExpenses({ 
     workerId: profile?.id 
   });
+  const payments = paymentsData ?? [];
+  const expenses = expensesData ?? [];
   
   const [monthlyData, setMonthlyData] = useState<any[]>([]);
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
