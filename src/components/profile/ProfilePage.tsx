@@ -87,9 +87,9 @@ const ProfilePage: React.FC = () => {
   const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>([]);
 
   // Fetch data using custom hooks 
-  const { data: skills = [] } = useSkills();
-  const { data: workerSkills = [], refetch: refetchWorkerSkills } = useWorkerSkills(profile?.id || '');
-  const { data: certifications = [], refetch: refetchCertifications } = useCertifications(profile?.id || '');
+  const { data: skills } = useSkills();
+  const { data: workerSkills, refetch: refetchWorkerSkills } = useWorkerSkills(profile?.id || '');
+  const { data: certifications, refetch: refetchCertifications } = useCertifications(profile?.id || '');
   const certTypes = useCertificationTypes();
   const { data: reviews = [] } = useReviewsForWorker(profile?.id || '');
 
@@ -180,7 +180,7 @@ const ProfilePage: React.FC = () => {
 
     try {
       // Check if skill already exists
-      const existingSkill = workerSkills.find(ws => 
+      const existingSkill = (workerSkills ?? []).find(ws => 
         ws.skill?.name.toLowerCase() === data.skill_name.toLowerCase()
       );
 
@@ -190,7 +190,7 @@ const ProfilePage: React.FC = () => {
       }
 
       // Find or create skill
-      let skillId = skills.find(s => s.name.toLowerCase() === data.skill_name.toLowerCase())?.id;
+      let skillId = (skills ?? []).find(s => s.name.toLowerCase() === data.skill_name.toLowerCase())?.id;
       
       if (!skillId) {
         // For demo mode or if skill doesn't exist, create a mock skill ID
@@ -453,11 +453,11 @@ const ProfilePage: React.FC = () => {
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-600">Skills</span>
-                <span className="font-medium">{workerSkills.length}</span>
+                <span className="font-medium">{(workerSkills ?? []).length}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-600">Certifications</span>
-                <span className="font-medium">{certifications.length}</span>
+                <span className="font-medium">{(certifications ?? []).length}</span>
               </div>
               {profile.average_rating && (
                 <div className="flex items-center justify-between">
@@ -642,9 +642,9 @@ const ProfilePage: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {workerSkills.length > 0 ? (
+                  {(workerSkills ?? []).length > 0 ? (
                     <div className="grid grid-cols-1 gap-3">
-                      {workerSkills.map((workerSkill) => (
+                      {(workerSkills ?? []).map((workerSkill) => (
                         <div
                           key={workerSkill.id}
                           className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
@@ -703,9 +703,9 @@ const ProfilePage: React.FC = () => {
                 </div>
               </CardHeader>
               <CardContent>
-                {certifications.length > 0 ? (
+                {(certifications ?? []).length > 0 ? (
                   <div className="space-y-4">
-                    {certifications.map((cert) => (
+                    {(certifications ?? []).map((cert) => (
                       <div key={cert.id} className="flex items-start justify-between p-4 border rounded-lg">
                         <div className="flex items-start space-x-3 flex-1">
                           <Award className="h-5 w-5 text-blue-600 mt-1" />
