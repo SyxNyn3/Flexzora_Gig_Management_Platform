@@ -22,7 +22,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
-import { Company, Skill, DatabaseService } from '@/lib/types';
+import { Company, Skill } from '@/lib/types';
 import { 
   Plus, 
   X, 

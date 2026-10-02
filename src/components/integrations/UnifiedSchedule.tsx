@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { AuthKitButton } from './AuthKitButton';
 import { Calendar, AlertTriangle, Clock, MapPin, Building2, DollarSign, CheckCircle, XCircle, FolderSync as Sync, Filter, Download, Eye, EyeOff } from 'lucide-react';
 import { format, isWithinInterval, parseISO, startOfWeek, endOfWeek, addDays } from 'date-fns';
+import { toast } from 'sonner';
 
 interface UnifiedGig {
   id: string;
@@ -50,13 +51,13 @@ const UnifiedSchedule: React.FC = () => {
     const mockGigs: UnifiedGig[] = [
       {
         id: '1',
-        title: 'Corporate Event Setup',
+        title: 'Load-In & Rigging Call — Main Stage',
         company_name: 'Rhino Staging',
         company_logo: '🦏',
-        location: 'San Francisco, CA',
+        location: 'Stadium Main Stage',
         start_date: '2024-01-15T08:00:00Z',
         end_date: '2024-01-15T18:00:00Z',
-        hourly_rate: 45,
+        hourly_rate: 48,
         status: 'confirmed',
         source: 'rhino',
         conflict_level: 'none',
@@ -64,29 +65,29 @@ const UnifiedSchedule: React.FC = () => {
       },
       {
         id: '2',
-        title: 'Concert Sound Check',
+        title: 'Show Call / System Ops — Keynote',
         company_name: 'Giglife',
         company_logo: '🎵',
-        location: 'Oakland, CA',
+        location: 'Convention Center Ballroom C',
         start_date: '2024-01-15T19:00:00Z',
         end_date: '2024-01-15T23:00:00Z',
-        hourly_rate: 50,
+        hourly_rate: 55,
         status: 'confirmed',
         source: 'giglife',
         conflict_level: 'medium',
         travel_time: 45,
-        notes: 'Tight schedule - 1 hour travel time between venues',
+        notes: 'Tight turnaround — 1 hour travel between Stadium and Ballroom C',
         sync_status: 'synced'
       },
       {
         id: '3',
-        title: 'Theater Production',
+        title: 'Strike & Load-Out — Arena Deck',
         company_name: 'Stagehands, Inc.',
         company_logo: '🎭',
-        location: 'San Francisco, CA',
+        location: 'Stadium Main Stage',
         start_date: '2024-01-16T14:00:00Z',
         end_date: '2024-01-16T22:00:00Z',
-        hourly_rate: 48,
+        hourly_rate: 46,
         status: 'pending',
         source: 'stagehands',
         conflict_level: 'none',
@@ -94,48 +95,48 @@ const UnifiedSchedule: React.FC = () => {
       },
       {
         id: '4',
-        title: 'Wedding Photography',
-        company_name: 'Dream Weddings',
-        company_logo: '💒',
-        location: 'Napa Valley, CA',
+        title: 'Video Wall Lead — Gala Show Call',
+        company_name: 'PCE',
+        company_logo: '🌊',
+        location: 'Convention Center Ballroom C',
         start_date: '2024-01-17T10:00:00Z',
         end_date: '2024-01-17T20:00:00Z',
-        hourly_rate: 55,
+        hourly_rate: 58,
         status: 'confirmed',
-        source: 'other',
+        source: 'pce',
         conflict_level: 'none',
         sync_status: 'synced'
       },
       {
         id: '5',
-        title: 'Equipment Load-in',
+        title: 'Load-In & Rigging Call — Truss Build',
         company_name: 'PCE',
         company_logo: '🌊',
-        location: 'San Jose, CA',
+        location: 'Convention Center Ballroom C',
         start_date: '2024-01-18T06:00:00Z',
         end_date: '2024-01-18T10:00:00Z',
-        hourly_rate: 42,
+        hourly_rate: 44,
         status: 'confirmed',
         source: 'pce',
         conflict_level: 'low',
         travel_time: 60,
-        notes: 'Early morning start - plan travel time',
+        notes: 'Early call — plan travel time for 6 AM dock check-in',
         sync_status: 'synced'
       },
       {
         id: '6',
-        title: 'Festival Setup',
+        title: 'Show Call / System Ops — Festival Main',
         company_name: 'Giglife',
         company_logo: '🎵',
         location: 'Golden Gate Park, SF',
         start_date: '2024-01-18T12:00:00Z',
         end_date: '2024-01-18T20:00:00Z',
-        hourly_rate: 50,
+        hourly_rate: 55,
         status: 'confirmed',
         source: 'giglife',
         conflict_level: 'high',
         travel_time: 30,
-        notes: 'CONFLICT: Overlaps with PCE gig - need to choose',
+        notes: 'CONFLICT: Overlaps with PCE truss build — need to choose',
         sync_status: 'error'
       }
     ];

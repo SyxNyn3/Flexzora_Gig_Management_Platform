@@ -102,86 +102,86 @@ const SchedulingInterface: React.FC = () => {
     {
       id: '1',
       name: 'Sarah Johnson',
-      email: 'sarah@company.com',
+      email: 'sarah@rhinostaging.com',
       avatar_url: '',
-      role: 'Project Manager',
-      color: '#3B82F6',
+      role: 'Production Manager',
+      color: '#F59E0B',
       isAvailable: true,
-      workingHours: { start: '09:00', end: '17:00', days: [1, 2, 3, 4, 5] }
+      workingHours: { start: '06:00', end: '18:00', days: [1, 2, 3, 4, 5, 6] }
     },
     {
       id: '2',
-      name: 'Mike Chen',
-      email: 'mike@company.com',
+      name: 'Marcus Webb',
+      email: 'marcus.webb@flexzora.dev',
       avatar_url: '',
-      role: 'Developer',
+      role: 'A1 Audio Engineer',
       color: '#10B981',
       isAvailable: true,
-      workingHours: { start: '10:00', end: '18:00', days: [1, 2, 3, 4, 5] }
+      workingHours: { start: '08:00', end: '22:00', days: [1, 2, 3, 4, 5, 6] }
     },
     {
       id: '3',
-      name: 'Emily Davis',
-      email: 'emily@company.com',
+      name: 'Priya Raman',
+      email: 'priya.raman@flexzora.dev',
       avatar_url: '',
-      role: 'Designer',
+      role: 'L2 Lighting Tech',
       color: '#8B5CF6',
       isAvailable: false,
-      workingHours: { start: '09:00', end: '17:00', days: [1, 2, 3, 4, 5] }
+      workingHours: { start: '08:00', end: '22:00', days: [1, 2, 3, 4, 5, 6] }
     },
     {
       id: '4',
-      name: 'Alex Rodriguez',
-      email: 'alex@company.com',
+      name: 'Devon Carter',
+      email: 'devon.carter@flexzora.dev',
       avatar_url: '',
-      role: 'Consultant',
-      color: '#F59E0B',
+      role: 'Video Wall Lead',
+      color: '#3B82F6',
       isAvailable: true,
-      workingHours: { start: '08:00', end: '16:00', days: [1, 2, 3, 4, 5] }
+      workingHours: { start: '07:00', end: '19:00', days: [1, 2, 3, 4, 5, 6, 0] }
     }
   ]);
 
   const [events, setEvents] = useState<ScheduleEvent[]>([
     {
       id: '1',
-      title: 'Client Meeting - Project Kickoff',
-      description: 'Initial project discussion and requirements gathering',
-      start: new Date(2024, 0, 15, 10, 0),
-      end: new Date(2024, 0, 15, 11, 30),
+      title: 'Load-In & Rigging Call — Ballroom C',
+      description: 'Truss build, motor points, LED wall assembly. All blacks + steel-toes, dock door 4.',
+      start: new Date(2024, 0, 15, 7, 0),
+      end: new Date(2024, 0, 15, 15, 0),
       type: 'meeting',
       status: 'confirmed',
-      assignedTo: ['1', '2'],
-      client: { name: 'John Smith', email: 'john@client.com', phone: '+1 555-0123' },
-      location: 'Conference Room A',
+      assignedTo: ['1', '2', '3'],
+      client: { name: 'Rhino Staging', email: 'ops@rhinostaging.com', phone: '+1 555-0123' },
+      location: 'Convention Center Ballroom C',
       isRecurring: false,
-      color: '#3B82F6',
+      color: '#F59E0B',
       priority: 'high'
     },
     {
       id: '2',
-      title: 'Design Review',
-      description: 'Review wireframes and mockups',
-      start: new Date(2024, 0, 15, 14, 0),
-      end: new Date(2024, 0, 15, 15, 0),
+      title: 'Show Call / System Ops — Keynote',
+      description: 'Run FOH, lighting console, and video wall for the general session',
+      start: new Date(2024, 0, 15, 16, 0),
+      end: new Date(2024, 0, 15, 23, 0),
       type: 'meeting',
       status: 'pending',
-      assignedTo: ['3'],
-      location: 'Design Studio',
+      assignedTo: ['2', '4'],
+      location: 'Convention Center Ballroom C',
       isRecurring: false,
       color: '#8B5CF6',
-      priority: 'medium'
+      priority: 'high'
     },
     {
       id: '3',
-      title: 'Development Sprint Planning',
-      description: 'Plan next sprint tasks and timeline',
-      start: new Date(2024, 0, 16, 9, 0),
-      end: new Date(2024, 0, 16, 10, 30),
+      title: 'Strike & Load-Out — Stadium Main Stage',
+      description: 'Break the rig, count steel, load trucks back to the shop',
+      start: new Date(2024, 0, 16, 8, 0),
+      end: new Date(2024, 0, 16, 14, 0),
       type: 'meeting',
       status: 'confirmed',
-      assignedTo: ['2', '4'],
-      location: 'Virtual - Zoom',
-      isRecurring: true,
+      assignedTo: ['1', '3', '4'],
+      location: 'Stadium Main Stage',
+      isRecurring: false,
       color: '#10B981',
       priority: 'high'
     }

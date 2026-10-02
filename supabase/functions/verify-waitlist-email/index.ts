@@ -24,10 +24,15 @@ serve(async (req) => {
   }
 
   try {
-    // Parse query parameters
+    // Accept token/email from the query string (email link) or a JSON body (client invoke)
     const url = new URL(req.url);
-    const token = url.searchParams.get('token');
-    const email = url.searchParams.get('email');
+    let token = url.searchParams.get('token');
+    let email = url.searchParams.get('email');
+    if ((!token || !email) && req.method === 'POST') {
+      const body = await req.json().catch(() => ({}));
+      token = token || body.token || null;
+      email = email || body.email || null;
+    }
     
     if (!token || !email) {
       return new Response(
@@ -48,6 +53,22 @@ serve(async (req) => {
       .single();
 
     if (lookupError || !waitlistEntry) {
+      // Token already consumed (link opened twice): report success idempotently.
+      // No referral_code in this response — a code must only be issued to the
+      // token holder, never to an arbitrary email+token submission.
+      const { data: verifiedEntry } = await supabase
+        .from("waiting_list")
+        .select("id")
+        .eq("email", email)
+        .eq("status", "verified")
+        .is("verification_token", null)
+        .maybeSingle();
+      if (verifiedEntry) {
+        return new Response(
+          JSON.stringify({ message: "Email already verified", already_verified: true }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
       return new Response(
         JSON.stringify({ error: "Invalid verification token or email" }),
         {

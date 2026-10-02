@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
-import { Bell, Calendar, DollarSign, Settings, LogOut, User, Briefcase, Plus, MessageSquare, Building2, Users, Link as LinkIcon, CalendarDays, Mail } from 'lucide-react';
+import { Bell, Calendar, DollarSign, LogOut, User, Briefcase, Plus, MessageSquare, Building2, Users, Link as LinkIcon, CalendarDays, Mail } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import NotificationCenter from '@/components/notifications/NotificationCenter';
 
@@ -28,7 +28,9 @@ const Navbar: React.FC = () => {
 
   const workerNavItems = [
     { path: '/dashboard', label: 'Dashboard', icon: Briefcase },
-    { path: '/gigs', label: 'Gigs', icon: Calendar },
+    { path: '/shifts', label: 'Shifts', icon: Calendar },
+    { path: '/payouts', label: 'Payouts', icon: DollarSign },
+    { path: '/gigs', label: 'Gigs', icon: Briefcase },
     { path: '/applications', label: 'Applications', icon: MessageSquare },
     { path: '/integrations', label: 'Integrations', icon: LinkIcon },
     { path: '/schedule', label: 'Schedule', icon: CalendarDays },
@@ -37,14 +39,19 @@ const Navbar: React.FC = () => {
 
   const companyNavItems = [
     { path: '/dashboard', label: 'Dashboard', icon: Briefcase },
-    { path: '/gigs', label: 'Gigs', icon: Calendar },
+    { path: '/events', label: 'Events', icon: CalendarDays },
+    { path: '/timesheets', label: 'Timesheets', icon: Calendar },
+    { path: '/roster', label: 'Roster', icon: Users },
+    { path: '/gigs', label: 'Gigs', icon: Briefcase },
     { path: '/workforce', label: 'Workforce', icon: Users },
-    { path: '/applications', label: 'Applications', icon: MessageSquare },
-    { path: '/schedule', label: 'Schedule', icon: CalendarDays },
     { path: '/finances', label: 'Finances', icon: DollarSign },
   ];
 
-  const navItems = profile?.role === 'company' ? companyNavItems : workerNavItems;
+  const navItems = profile?.role === 'company'
+    ? companyNavItems
+    : profile?.role === 'admin'
+      ? [...workerNavItems, { path: '/admin/waitlist', label: 'Waitlist', icon: Users }]
+      : workerNavItems;
 
   return (
     <>
@@ -142,7 +149,7 @@ const Navbar: React.FC = () => {
                             {profile?.email}
                           </p>
                           <Badge variant="outline" className="w-fit mt-1">
-                            {profile?.role?.charAt(0).toUpperCase() + profile?.role?.slice(1)}
+                            {profile?.role ? profile.role.charAt(0).toUpperCase() + profile.role.slice(1) : 'User'}
                           </Badge>
                         </div>
                       </DropdownMenuLabel>

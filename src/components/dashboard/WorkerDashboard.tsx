@@ -60,25 +60,25 @@ const WorkerDashboard: React.FC = () => {
   const upcomingGigs = [
     {
       id: '1',
-      title: 'Corporate Event Setup',
-      company: 'TechCorp Events',
+      title: 'Load-In & Rigging Call',
+      company: 'Rhino Staging',
       date: new Date(),
-      time: '9:00 AM - 5:00 PM',
-      location: 'San Francisco, CA',
-      rate: 45,
+      time: '7:00 AM - 3:00 PM',
+      location: 'Stadium Main Stage',
+      rate: 48,
       status: 'confirmed',
-      avatar: '🏢'
+      avatar: '🏟️'
     },
     {
       id: '2',
-      title: 'Wedding Photography',
-      company: 'Dream Weddings',
+      title: 'Show Call / System Ops',
+      company: 'Giglife',
       date: addDays(new Date(), 1),
-      time: '2:00 PM - 10:00 PM',
-      location: 'Napa Valley, CA',
+      time: '4:00 PM - 12:00 AM',
+      location: 'Convention Center Ballroom C',
       rate: 55,
       status: 'confirmed',
-      avatar: '💒'
+      avatar: '🎛️'
     }
   ];
 
@@ -88,13 +88,13 @@ const WorkerDashboard: React.FC = () => {
     : [
         {
           id: '1',
-          gig: { title: 'Video Editor for Documentary', location: 'Remote' },
+          gig: { title: 'L2 Lighting Tech — Festival Main Stage', location: 'Golden Gate Park' },
           status: 'pending',
           application_date: '2024-01-10T10:00:00Z',
         },
         {
           id: '2',
-          gig: { title: 'Stage Manager for Theater', location: 'New York, NY' },
+          gig: { title: 'Strike & Load-Out — Arena Rigging Crew', location: 'Stadium Main Stage' },
           status: 'accepted',
           application_date: '2024-01-08T15:30:00Z',
         },

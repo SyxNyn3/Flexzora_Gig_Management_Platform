@@ -1,450 +1,401 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { StickyScrollSection } from './StickyScrollSection';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Calendar, 
-  DollarSign, 
-  Building2, 
-  Users, 
-  TrendingUp, 
+import {
+  Calendar,
+  DollarSign,
+  Building2,
+  Users,
+  TrendingUp,
   CheckCircle,
   ArrowRight,
   Star,
   Zap,
   Shield,
-  Clock
+  Clock,
+  HardHat,
+  Radio,
+  Lightbulb,
+  AudioLines,
+  MonitorPlay,
+  Award,
 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useWaitlistStats } from '@/hooks/useWaitlistStats';
+
+const roles = [
+  { icon: AudioLines, title: 'A1 Audio Engineer', desc: 'FOH & system ops' },
+  { icon: Lightbulb, title: 'L2 Lighting Tech', desc: 'Consoles & LED rigs' },
+  { icon: MonitorPlay, title: 'Video Wall Lead', desc: 'Playback & processing' },
+  { icon: HardHat, title: 'Stagehand', desc: 'Load-in, deck, strike' },
+  { icon: Radio, title: 'RF / Comms Tech', desc: 'Coordination & wireless' },
+  { icon: Award, title: 'ETCP Arena Rigger', desc: 'Certified rigging calls' },
+];
+
+const callTypes = [
+  'Load-In & Rigging Call',
+  'Show Call / System Ops',
+  'Strike & Load-Out',
+];
+
+const certifications = ['ETCP Arena Rigger', 'OSHA-30', 'Boom Lift Operator'];
+
+const features = [
+  {
+    icon: Calendar,
+    title: 'Unified Call Sheet',
+    description:
+      'Every shift across every production company in one calendar — conflict detection flags a Show Call before it collides with a load-in.',
+  },
+  {
+    icon: DollarSign,
+    title: 'Escrow-Backed Pay',
+    description:
+      'Companies fund escrow when they book. Approved timesheets release payouts automatically — no more chasing invoices after strike.',
+  },
+  {
+    icon: Building2,
+    title: 'Direct Production Network',
+    description:
+      'Connect with the staging companies already calling you. Roster broadcasts, crew offers, and gig comms in one place.',
+  },
+  {
+    icon: Shield,
+    title: 'Credential Gatekeeping',
+    description:
+      'ETCP, OSHA-30, and lift certifications are verified on your profile — companies see them before the offer goes out.',
+  },
+  {
+    icon: Clock,
+    title: 'Geofenced Timesheets',
+    description:
+      'Clock in from the dock. GPS-verified timesheets mean hours are approved faster and disputes disappear.',
+  },
+  {
+    icon: TrendingUp,
+    title: 'Match Scoring',
+    description:
+      'Open calls rank by fit — your rate, certs, distance to the venue, and past ratings decide who surfaces first.',
+  },
+];
+
+const companies = [
+  'Rhino Staging',
+  'Giglife',
+  'PCE',
+  'Stagehands Inc.',
+  'G2 Production',
+  'Onstage Systems',
+];
+
+const steps = [
+  {
+    number: '01',
+    title: 'Build your crew card',
+    description: 'Rate, certifications, and availability — your profile is the credential companies check first.',
+  },
+  {
+    number: '02',
+    title: 'Link your companies',
+    description: 'Connect the production accounts you already work with so calls land in one feed.',
+  },
+  {
+    number: '03',
+    title: 'Take the call',
+    description: 'Accept gigs, see the venue, call time, and escrow status before you pack the truck.',
+  },
+  {
+    number: '04',
+    title: 'Clock out, get paid',
+    description: 'Approved timesheets release escrowed pay automatically. Track every dollar to tax season.',
+  },
+];
 
 const LandingPage: React.FC = () => {
   const navigate = useNavigate();
-  const [waitlistCount, setWaitlistCount] = useState<number>(0);
-  
-  useEffect(() => {
-    // Simulate fetching waitlist count - in production this would be a real API call
-    setWaitlistCount(Math.floor(Math.random() * 500) + 1500);
-  }, []);
-
-  const features = [
-    {
-      icon: Calendar,
-      title: 'Smart Scheduling',
-      description: 'Unified calendar with conflict detection and automatic sync across all your connected companies.',
-      color: 'text-blue-600'
-    },
-    {
-      icon: DollarSign,
-      title: 'Financial Tracking',
-      description: 'Track earnings, expenses, and payments with detailed analytics and tax-ready reports.',
-      color: 'text-green-600'
-    },
-    {
-      icon: Building2,
-      title: 'Company Integrations',
-      description: 'Connect with major production companies like Rhino Staging, Giglife, and more.',
-      color: 'text-purple-600'
-    }
-  ];
-
-  const companies = [
-    { name: 'Rhino Staging', logo: '🦏' },
-    { name: 'Giglife', logo: '🎵' },
-    { name: 'PCE', logo: '🌊' },
-    { name: 'Stagehands Inc.', logo: '🎭' },
-    { name: 'G2 Production', logo: '⚡' },
-    { name: 'Onstage Systems', logo: '🎤' }
-  ];
-
-  const steps = [
-    {
-      number: '01',
-      title: 'Create Your Profile',
-      description: 'Set up your professional profile with skills, experience, and certifications.',
-      icon: Users
-    },
-    {
-      number: '02',
-      title: 'Connect Companies',
-      description: 'Link your accounts with production companies for seamless gig management.',
-      icon: Building2
-    },
-    {
-      number: '03',
-      title: 'Manage Gigs',
-      description: 'View all your gigs in one place with smart scheduling and conflict detection.',
-      icon: Calendar
-    },
-    {
-      number: '04',
-      title: 'Track Earnings',
-      description: 'Monitor payments, expenses, and generate reports for tax season.',
-      icon: TrendingUp
-    }
-  ];
-
-  const stats = [
-    { number: '10,000+', label: 'Active Professionals' },
-    { number: '50+', label: 'Partner Companies' },
-    { number: '99.9%', label: 'Uptime' },
-    { number: '$2M+', label: 'Payments Processed' }
-  ];
+  const { total: waitlistCount } = useWaitlistStats();
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-[#0A0A0B] text-zinc-100 antialiased">
       {/* Navigation */}
-      <nav className="bg-white/95 backdrop-blur-sm border-b border-gray-100 sticky top-0 z-50">
+      <nav className="sticky top-0 z-50 border-b border-white/10 bg-[#0A0A0B]/80 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-green-500 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-lg">F</span>
+              <div className="w-8 h-8 bg-amber-400 rounded-md flex items-center justify-center">
+                <span className="text-zinc-950 font-black text-lg">F</span>
               </div>
-              <span className="text-xl font-bold text-gray-900">FlexZora</span>
+              <span className="text-xl font-bold tracking-tight text-white">FlexZora</span>
+              <span className="hidden sm:inline text-[11px] font-medium tracking-[0.2em] uppercase text-zinc-500 mt-1">
+                Crew Marketplace
+              </span>
             </div>
-            <div className="flex items-center space-x-4">
-              <Button variant="ghost" onClick={() => navigate('/auth')}>
+            <div className="flex items-center space-x-2 sm:space-x-4">
+              <Button
+                variant="ghost"
+                onClick={() => navigate('/auth')}
+                className="hidden sm:inline-flex text-zinc-300 hover:text-white hover:bg-white/5"
+              >
                 Sign In
               </Button>
-              <Button onClick={() => navigate('/auth?mode=signup')} className="bg-gradient-to-r from-blue-600 to-green-500">
-                Sign Up
+              <Button
+                onClick={() => navigate('/waitlist')}
+                className="bg-amber-400 text-zinc-950 hover:bg-amber-300 font-semibold"
+              >
+                Join the Founding Crew
               </Button>
             </div>
           </div>
         </div>
       </nav>
 
-      {/* Hero Section with Image Grid */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-blue-50 via-white to-green-50 py-20 lg:py-32">
-        <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+      {/* Hero */}
+      <section className="relative overflow-hidden">
+        <div
+          className="absolute inset-0 opacity-[0.04]"
+          style={{
+            backgroundImage:
+              'linear-gradient(rgba(255,255,255,0.6) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.6) 1px, transparent 1px)',
+            backgroundSize: '56px 56px',
+          }}
+        />
+        <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[900px] h-[500px] bg-amber-400/10 blur-[140px] rounded-full pointer-events-none" />
+
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-20 lg:pt-24 lg:pb-28">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
             <div className="text-center lg:text-left">
-              <div className="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm font-medium mb-6">
-                <Zap className="w-4 h-4 mr-2" />
-                Trusted by 10,000+ professionals
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-amber-400/30 bg-amber-400/10 text-amber-300 text-xs font-semibold tracking-wide uppercase mb-6">
+                <Zap className="w-3.5 h-3.5" />
+                Private beta — live events only
               </div>
-              <h1 className="text-4xl lg:text-6xl font-bold text-gray-900 leading-tight mb-6">
-                Manage Your
-                <span className="bg-gradient-to-r from-blue-600 to-green-500 bg-clip-text text-transparent"> Gigs </span>
-                Like a Pro
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-white leading-[1.05] tracking-tight mb-6">
+                From load-in to load-out,{' '}
+                <span className="text-amber-400">crew calls run through FlexZora.</span>
               </h1>
-              <p className="text-xl text-gray-600 mb-6 leading-relaxed">
-                The all-in-one platform for freelance professionals in production and events. 
-                Schedule gigs, track finances, and connect with top companies—all in one place.
+              <p className="text-lg lg:text-xl text-zinc-400 mb-8 leading-relaxed max-w-xl mx-auto lg:mx-0">
+                The marketplace for concert and corporate event production — staging companies post calls, verified
+                crew book them, escrow pays out the moment timesheets approve.
               </p>
-              <div className="mb-6">
-                <Badge variant="outline" className="px-4 py-2 text-base font-medium bg-blue-50 border-blue-200 text-blue-700">
-                  <Users className="w-4 h-4 mr-2" />
-                  {waitlistCount.toLocaleString()}+ professionals on the waitlist
-                </Badge>
-              </div>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                <Button 
-                  size="lg" 
+              <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
+                <Button
+                  size="lg"
                   onClick={() => navigate('/waitlist')}
-                  className="bg-gradient-to-r from-blue-600 to-green-500 hover:from-blue-700 hover:to-green-600 text-lg px-8 py-3"
+                  className="bg-amber-400 text-zinc-950 hover:bg-amber-300 font-semibold text-base px-8 h-12"
                 >
-                  Join the Waitlist
+                  Join the Founding Crew
                   <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
-                <Button 
-                  size="lg" 
-                  variant="outline" 
-                  onClick={() => navigate('/auth')}
-                  className="text-lg px-8 py-3"
+                <Button
+                  size="lg"
+                  variant="outline"
+                  onClick={() => navigate('/schedule-demo')}
+                  className="border-zinc-700 text-zinc-200 hover:bg-white/5 hover:text-white text-base px-8 h-12"
                 >
-                  Sign In
+                  Schedule a Demo
                 </Button>
               </div>
-              <div className="flex items-center justify-center lg:justify-start mt-8 space-x-6 text-sm text-gray-500">
-                <div className="flex items-center">
-                  <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
-                  Early access
-                </div>
-                <div className="flex items-center">
-                  <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
-                  Exclusive pricing
-                </div>
-                <div className="flex items-center">
-                  <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+              <div className="mt-6">
+                <Badge
+                  variant="outline"
+                  className="px-4 py-1.5 text-sm font-medium bg-white/5 border-white/15 text-zinc-300"
+                >
+                  <Users className="w-4 h-4 mr-2 text-amber-400" />
+                  {waitlistCount.toLocaleString()} crew &amp; companies already lined up
+                </Badge>
+              </div>
+              <div className="flex flex-wrap items-center justify-center lg:justify-start mt-8 gap-x-6 gap-y-2 text-sm text-zinc-500">
+                <span className="flex items-center">
+                  <CheckCircle className="w-4 h-4 text-amber-400 mr-2" />
+                  Early access pricing
+                </span>
+                <span className="flex items-center">
+                  <CheckCircle className="w-4 h-4 text-amber-400 mr-2" />
+                  Founding member badge
+                </span>
+                <span className="flex items-center">
+                  <CheckCircle className="w-4 h-4 text-amber-400 mr-2" />
                   Shape the product
-                </div>
+                </span>
               </div>
             </div>
-            
-            {/* Image Grid Showcase */}
+
+            {/* Hero image mosaic */}
             <div className="relative grid grid-cols-2 gap-4">
-              {/* Main large image - Video Production */}
               <div className="col-span-2 relative group">
-                <img 
-                  src="https://images.pexels.com/photos/66134/pexels-photo-66134.jpeg?auto=compress&cs=tinysrgb&w=800" 
-                  alt="Video production and camera work" 
-                  className="w-full h-64 object-cover rounded-2xl shadow-xl group-hover:shadow-2xl transition-all duration-300"
+                <img
+                  src="https://images.pexels.com/photos/1190297/pexels-photo-1190297.jpeg?auto=compress&cs=tinysrgb&w=800"
+                  alt="Concert stage lighting rig"
+                  className="w-full h-64 object-cover rounded-2xl ring-1 ring-white/10"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent rounded-2xl"></div>
-                <div className="absolute bottom-4 left-4 text-white">
-                  <h3 className="font-semibold text-lg">Video Production</h3>
-                  <p className="text-sm opacity-90">Camera operators, directors, editors</p>
+                <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 via-zinc-950/20 to-transparent rounded-2xl" />
+                <div className="absolute bottom-4 left-4">
+                  <div className="text-xs font-semibold tracking-widest uppercase text-amber-300 mb-1">
+                    Show Call / System Ops
+                  </div>
+                  <div className="font-semibold text-white text-lg">Stadium Main Stage</div>
                 </div>
               </div>
-              
-              {/* Sound Engineering */}
               <div className="relative group">
-                <img 
-                  src="https://images.pexels.com/photos/164938/pexels-photo-164938.jpeg?auto=compress&cs=tinysrgb&w=400" 
-                  alt="Sound engineering and audio mixing" 
-                  className="w-full h-48 object-cover rounded-xl shadow-lg group-hover:shadow-xl transition-all duration-300"
+                <img
+                  src="https://images.pexels.com/photos/164938/pexels-photo-164938.jpeg?auto=compress&cs=tinysrgb&w=400"
+                  alt="Audio mixing console"
+                  className="w-full h-44 object-cover rounded-xl ring-1 ring-white/10"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent rounded-xl"></div>
-                <div className="absolute bottom-3 left-3 text-white">
-                  <h4 className="font-medium">Sound Engineering</h4>
-                  <p className="text-xs opacity-90">Audio mixing, live sound</p>
+                <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 to-transparent rounded-xl" />
+                <div className="absolute bottom-3 left-3">
+                  <div className="text-xs font-semibold tracking-widest uppercase text-amber-300 mb-0.5">A1 Audio</div>
+                  <div className="font-medium text-white text-sm">FOH Engineering</div>
                 </div>
               </div>
-              
-              {/* Lighting Design */}
               <div className="relative group">
-                <img 
-                  src="https://images.pexels.com/photos/1190297/pexels-photo-1190297.jpeg?auto=compress&cs=tinysrgb&w=400" 
-                  alt="Stage lighting and design" 
-                  className="w-full h-48 object-cover rounded-xl shadow-lg group-hover:shadow-xl transition-all duration-300"
+                <img
+                  src="https://images.pexels.com/photos/1105666/pexels-photo-1105666.jpeg?auto=compress&cs=tinysrgb&w=400"
+                  alt="Stage truss and rigging"
+                  className="w-full h-44 object-cover rounded-xl ring-1 ring-white/10"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent rounded-xl"></div>
-                <div className="absolute bottom-3 left-3 text-white">
-                  <h4 className="font-medium">Lighting Design</h4>
-                  <p className="text-xs opacity-90">Stage lighting, LED systems</p>
+                <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 to-transparent rounded-xl" />
+                <div className="absolute bottom-3 left-3">
+                  <div className="text-xs font-semibold tracking-widest uppercase text-amber-300 mb-0.5">Rigging</div>
+                  <div className="font-medium text-white text-sm">ETCP Certified</div>
                 </div>
               </div>
-              
-              {/* Event Coordination */}
-              <div className="col-span-2 relative group">
-                <img 
-                  src="https://images.pexels.com/photos/1190298/pexels-photo-1190298.jpeg?auto=compress&cs=tinysrgb&w=800" 
-                  alt="Event coordination and management" 
-                  className="w-full h-40 object-cover rounded-xl shadow-lg group-hover:shadow-xl transition-all duration-300"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent rounded-xl"></div>
-                <div className="absolute bottom-3 left-3 text-white">
-                  <h4 className="font-medium">Event Coordination</h4>
-                  <p className="text-xs opacity-90">Project management, logistics, crew coordination</p>
-                </div>
-              </div>
-              
-              {/* Stage Management */}
-              <div className="relative group">
-                <img 
-                  src="https://images.pexels.com/photos/1105666/pexels-photo-1105666.jpeg?auto=compress&cs=tinysrgb&w=400" 
-                  alt="Stage management and setup" 
-                  className="w-full h-32 object-cover rounded-xl shadow-lg group-hover:shadow-xl transition-all duration-300"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent rounded-xl"></div>
-                <div className="absolute bottom-2 left-2 text-white">
-                  <h4 className="font-medium text-sm">Stage Management</h4>
-                  <p className="text-xs opacity-90">Setup, rigging, safety</p>
-                </div>
-              </div>
-              
-              {/* Photography */}
-              <div className="relative group">
-                <img 
-                  src="https://images.pexels.com/photos/1983032/pexels-photo-1983032.jpeg?auto=compress&cs=tinysrgb&w=400" 
-                  alt="Professional photography" 
-                  className="w-full h-32 object-cover rounded-xl shadow-lg group-hover:shadow-xl transition-all duration-300"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent rounded-xl"></div>
-                <div className="absolute bottom-2 left-2 text-white">
-                  <h4 className="font-medium text-sm">Photography</h4>
-                  <p className="text-xs opacity-90">Events, portraits, commercial</p>
-                </div>
-              </div>
-              
-              {/* Floating elements for visual interest */}
-              <div className="absolute -top-4 -right-4 w-72 h-72 bg-gradient-to-r from-blue-400 to-green-400 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
-              <div className="absolute -bottom-8 -left-4 w-72 h-72 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
+              <div className="absolute -top-6 -right-6 w-56 h-56 bg-amber-400/15 rounded-full blur-3xl pointer-events-none" />
             </div>
           </div>
+
+          {/* Call types strip */}
+          <div className="mt-16 flex flex-wrap justify-center gap-3">
+            {callTypes.map((call) => (
+              <span
+                key={call}
+                className="px-4 py-2 rounded-full border border-white/10 bg-white/[0.03] text-sm text-zinc-300 font-medium"
+              >
+                {call}
+              </span>
+            ))}
+            <span className="px-4 py-2 rounded-full border border-amber-400/40 bg-amber-400/10 text-sm text-amber-300 font-medium">
+              Convention Center Ballroom C
+            </span>
+          </div>
         </div>
       </section>
 
-      {/* Professional Categories Section */}
-      <section className="py-16 bg-white">
+      {/* Roles */}
+      <section className="py-20 border-t border-white/5">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">
-              Built for Every Type of Professional
-            </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              From video production to event coordination, Flexora supports all types of gig work in the entertainment and production industry.
+          <div className="text-center mb-14">
+            <h2 className="text-3xl lg:text-4xl font-bold text-white mb-4">Built for the whole deck</h2>
+            <p className="text-lg text-zinc-400 max-w-2xl mx-auto">
+              Audio, lighting, video, rigging, stagehands — if you work the call, FlexZora works for you.
             </p>
-            <Button 
-              onClick={() => navigate('/waitlist')}
-              className="mt-6 bg-gradient-to-r from-blue-600 to-green-500 hover:from-blue-700 hover:to-green-600"
-            >
-              Join the Waitlist
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-            <Button 
-              variant="outline"
-              onClick={() => navigate('/schedule-demo')}
-              className="mt-4 md:mt-0 md:ml-4"
-            >
-              Schedule a Demo
-            </Button>
           </div>
-          
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
-            {[
-              { icon: '🎥', title: 'Video Production', desc: 'Camera ops, directors' },
-              { icon: '🎵', title: 'Sound Engineering', desc: 'Audio mixing, live sound' },
-              { icon: '💡', title: 'Lighting Design', desc: 'Stage lighting, LED' },
-              { icon: '📸', title: 'Photography', desc: 'Events, commercial' },
-              { icon: '🎭', title: 'Stage Management', desc: 'Setup, rigging' },
-              { icon: '📋', title: 'Event Coordination', desc: 'Project management' }
-            ].map((category, index) => (
-              <div key={index} className="text-center group hover:scale-105 transition-transform duration-300">
-                <div className="text-4xl mb-3 group-hover:scale-110 transition-transform duration-300">
-                  {category.icon}
-                </div>
-                <h3 className="font-semibold text-gray-900 mb-1">{category.title}</h3>
-                <p className="text-sm text-gray-600">{category.desc}</p>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            {roles.map((role) => (
+              <div
+                key={role.title}
+                className="group text-center p-5 rounded-xl border border-white/5 bg-zinc-900/50 hover:border-amber-400/40 hover:bg-zinc-900 transition-colors"
+              >
+                <role.icon className="w-7 h-7 mx-auto mb-3 text-amber-400" />
+                <h3 className="font-semibold text-white text-sm mb-1">{role.title}</h3>
+                <p className="text-xs text-zinc-500">{role.desc}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Stats Section */}
-      <section className="py-16 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
-            {stats.map((stat, index) => (
-              <div key={index} className="text-center">
-                <div className="text-3xl lg:text-4xl font-bold text-gray-900 mb-2">
-                  {stat.number}
-                </div>
-                <div className="text-gray-600">{stat.label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Features Section */}
+      {/* Feature showcase */}
       <StickyScrollSection />
 
-      {/* Core Features Section */}
-      <section className="py-20 bg-gray-50">
+      {/* Core features */}
+      <section className="py-20 border-t border-white/5">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
-              Everything you need to manage your freelance career
-            </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              From scheduling to payments, Flexora provides all the tools you need to succeed as a freelance professional.
+          <div className="text-center mb-14">
+            <h2 className="text-3xl lg:text-4xl font-bold text-white mb-4">Everything between the call and the check</h2>
+            <p className="text-lg text-zinc-400 max-w-2xl mx-auto">
+              Scheduling, escrow, timesheets, and credentials — the boring parts of gig work, handled.
             </p>
-            <Button 
-              onClick={() => navigate('/waitlist')}
-              className="mt-6 bg-gradient-to-r from-blue-600 to-green-500 hover:from-blue-700 hover:to-green-600"
-            >
-              Join the Waitlist
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-            <Button 
-              variant="outline"
-              onClick={() => navigate('/schedule-demo')}
-              className="mt-4 md:mt-0 md:ml-4"
-            >
-              Schedule a Demo
-            </Button>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {features.map((feature, index) => (
-              <Card key={index} className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg">
-                <CardContent className="p-8 text-center">
-                  <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-50 ${feature.color} mb-6 group-hover:scale-110 transition-transform duration-300`}>
-                    <feature.icon className="w-8 h-8" />
-                  </div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4">{feature.title}</h3>
-                  <p className="text-gray-600 leading-relaxed">{feature.description}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Company Integrations */}
-      <section className="py-20 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
-              Connect with industry leaders
-            </h2>
-            <p className="text-xl text-gray-600">
-              Integrate with the production companies you already work with
-            </p>
-            <Button 
-              onClick={() => navigate('/waitlist')}
-              className="mt-6 bg-gradient-to-r from-blue-600 to-green-500 hover:from-blue-700 hover:to-green-600"
-            >
-              Join the Waitlist
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-            <Button 
-              variant="outline"
-              onClick={() => navigate('/schedule-demo')}
-              className="mt-4 md:mt-0 md:ml-4"
-            >
-              Schedule a Demo
-            </Button>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8 items-center">
-            {companies.map((company, index) => (
-              <div key={index} className="text-center group">
-                <div className="text-4xl mb-2 group-hover:scale-110 transition-transform duration-300">
-                  {company.logo}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {features.map((feature) => (
+              <div
+                key={feature.title}
+                className="group p-6 rounded-xl border border-white/5 bg-zinc-900/50 hover:border-amber-400/30 hover:bg-zinc-900 transition-colors"
+              >
+                <div className="inline-flex items-center justify-center w-11 h-11 rounded-lg bg-amber-400/10 text-amber-400 mb-5">
+                  <feature.icon className="w-5 h-5" />
                 </div>
-                <div className="text-sm font-medium text-gray-600">{company.name}</div>
+                <h3 className="text-lg font-semibold text-white mb-2">{feature.title}</h3>
+                <p className="text-sm text-zinc-400 leading-relaxed">{feature.description}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* How It Works */}
-      <section className="py-20">
+      {/* Certifications */}
+      <section className="py-20 border-t border-white/5 bg-zinc-900/30">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-3xl lg:text-4xl font-bold text-white mb-4">Credentials that get you booked</h2>
+          <p className="text-lg text-zinc-400 max-w-2xl mx-auto mb-10">
+            Verified certifications sit on your crew card — companies filter calls by them, and rigs can't fly without
+            them.
+          </p>
+          <div className="flex flex-wrap justify-center gap-4">
+            {certifications.map((cert) => (
+              <div
+                key={cert}
+                className="flex items-center gap-2 px-5 py-3 rounded-lg border border-amber-400/30 bg-amber-400/5"
+              >
+                <Shield className="w-4 h-4 text-amber-400" />
+                <span className="font-semibold text-white text-sm">{cert}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Partner companies */}
+      <section className="py-20 border-t border-white/5">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
-              Get started in minutes
-            </h2>
-            <p className="text-xl text-gray-600">
-              Four simple steps to transform your freelance workflow
+          <div className="text-center mb-12">
+            <h2 className="text-3xl lg:text-4xl font-bold text-white mb-4">Connect with industry leaders</h2>
+            <p className="text-lg text-zinc-400">
+              Integrate with the production companies you already take calls from.
             </p>
-            <Button 
-              onClick={() => navigate('/waitlist')}
-              className="mt-6 bg-gradient-to-r from-blue-600 to-green-500 hover:from-blue-700 hover:to-green-600"
-            >
-              Join the Waitlist
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            {companies.map((company) => (
+              <div
+                key={company}
+                className="px-4 py-5 rounded-lg border border-white/5 bg-zinc-900/40 text-center text-sm font-medium text-zinc-400 hover:text-white hover:border-white/15 transition-colors"
+              >
+                {company}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* How it works */}
+      <section className="py-20 border-t border-white/5 bg-zinc-900/30">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-14">
+            <h2 className="text-3xl lg:text-4xl font-bold text-white mb-4">From first call to final payout</h2>
+            <p className="text-lg text-zinc-400">Four steps between you and a paid gig.</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {steps.map((step, index) => (
-              <div key={index} className="relative text-center group">
-                <div className="relative">
-                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-r from-blue-600 to-green-500 text-white font-bold text-lg mb-6 group-hover:scale-110 transition-transform duration-300">
-                    {step.number}
-                  </div>
+              <div key={step.number} className="relative">
+                <div className="flex items-center mb-4">
+                  <span className="text-4xl font-black text-amber-400/90">{step.number}</span>
                   {index < steps.length - 1 && (
-                    <div className="hidden lg:block absolute top-8 left-full w-full h-0.5 bg-gradient-to-r from-blue-200 to-green-200"></div>
+                    <div className="hidden lg:block flex-1 ml-4 h-px bg-gradient-to-r from-amber-400/40 to-transparent" />
                   )}
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">{step.title}</h3>
-                <p className="text-gray-600 text-sm leading-relaxed">{step.description}</p>
+                <h3 className="text-lg font-semibold text-white mb-2">{step.title}</h3>
+                <p className="text-sm text-zinc-400 leading-relaxed">{step.description}</p>
               </div>
             ))}
           </div>
@@ -452,133 +403,124 @@ const LandingPage: React.FC = () => {
       </section>
 
       {/* Testimonial */}
-      <section className="py-20 bg-gradient-to-r from-blue-600 to-green-500">
+      <section className="py-20 border-t border-white/5">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="flex justify-center mb-6">
             {[...Array(5)].map((_, i) => (
-              <Star key={i} className="w-6 h-6 text-yellow-300 fill-current" />
+              <Star key={i} className="w-5 h-5 text-amber-400 fill-amber-400" />
             ))}
           </div>
-          <blockquote className="text-2xl lg:text-3xl font-medium text-white mb-8 leading-relaxed">
-            "As a sound engineer working with multiple production companies, Flexora keeps me organized and ensures I never double-book. 
-            My earnings have increased 40% since I started using it."
+          <blockquote className="text-xl lg:text-2xl font-medium text-white mb-8 leading-relaxed">
+            "I take A1 calls from three staging companies. FlexZora catches the double-bookings my calendar never did,
+            and the escrow means I'm not chasing checks after load-out."
           </blockquote>
           <div className="flex items-center justify-center space-x-4">
-            <img 
-              src="https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=100" 
-              alt="Sarah Chen" 
-              className="w-12 h-12 rounded-full"
-            />
+            <div className="w-12 h-12 rounded-full bg-zinc-800 border border-white/10 flex items-center justify-center">
+              <span className="text-amber-400 font-bold">SC</span>
+            </div>
             <div className="text-left">
               <div className="text-white font-semibold">Sarah Chen</div>
-              <div className="text-blue-100">Sound Engineer</div>
+              <div className="text-zinc-500 text-sm">A1 Audio Engineer</div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Fixed Waitlist Button */}
-      <div className="fixed bottom-8 right-8 z-50">
-        <Button
-          onClick={() => navigate('/waitlist')}
-          className="bg-gradient-to-r from-blue-600 to-green-500 hover:from-blue-700 hover:to-green-600 shadow-lg animate-bounce"
-        >
-          Join Waitlist
-        </Button>
-      </div>
-
-      {/* CTA Section */}
-      <section className="py-20">
+      {/* CTA */}
+      <section className="py-20 border-t border-white/5 bg-zinc-900/30">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-6">
-            Ready to take control of your freelance career?
-          </h2>
-          <p className="text-xl text-gray-600 mb-8">
-            Join thousands of professionals who trust Flexora to manage their gigs and grow their business.
+          <h2 className="text-3xl lg:text-4xl font-bold text-white mb-6">The next call should come through FlexZora</h2>
+          <p className="text-lg text-zinc-400 mb-8">
+            Founding crew members get early access pricing and a permanent badge on their profile.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button 
-              size="lg" 
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Button
+              size="lg"
               onClick={() => navigate('/waitlist')}
-              className="bg-gradient-to-r from-blue-600 to-green-500 hover:from-blue-700 hover:to-green-600 text-lg px-8 py-3"
+              className="bg-amber-400 text-zinc-950 hover:bg-amber-300 font-semibold text-base px-8 h-12"
             >
-              Join the Waitlist
+              Join the Founding Crew
               <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
             <Button
               size="lg"
               variant="outline"
               onClick={() => navigate('/schedule-demo')}
-              className="text-lg px-8 py-3"
+              className="border-zinc-700 text-zinc-200 hover:bg-white/5 hover:text-white text-base px-8 h-12"
             >
               Schedule a Demo
             </Button>
           </div>
-          <div className="flex items-center justify-center mt-6 space-x-6 text-sm text-gray-500">
-            <div className="flex items-center">
-              <Shield className="w-4 h-4 text-green-500 mr-2" />
-              Enterprise-grade security
-            </div>
-            <div className="flex items-center">
-              <Clock className="w-4 h-4 text-green-500 mr-2" />
-              24/7 support
-            </div>
-          </div>
-          
-          {/* Waitlist Counter */}
-          <div className="mt-8 text-center">
-            <Badge variant="outline" className="px-4 py-2 text-base font-medium bg-blue-50 border-blue-200 text-blue-700">
-              <Users className="w-4 h-4 mr-2" />
-              {waitlistCount.toLocaleString()}+ professionals already on the waitlist
+          <div className="mt-8">
+            <Badge
+              variant="outline"
+              className="px-4 py-1.5 text-sm font-medium bg-white/5 border-white/15 text-zinc-300"
+            >
+              <Users className="w-4 h-4 mr-2 text-amber-400" />
+              {waitlistCount.toLocaleString()} crew &amp; companies already lined up
             </Badge>
           </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12">
+      <footer className="border-t border-white/10 bg-zinc-950 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div className="col-span-1 md:col-span-2">
               <div className="flex items-center space-x-3 mb-4">
-                <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-green-500 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-lg">F</span>
+                <div className="w-8 h-8 bg-amber-400 rounded-md flex items-center justify-center">
+                  <span className="text-zinc-950 font-black text-lg">F</span>
                 </div>
-                <span className="text-xl font-bold">Flexora</span>
+                <span className="text-xl font-bold text-white">FlexZora</span>
               </div>
-              <p className="text-gray-400 mb-4 max-w-md">
-                The professional gig management platform for freelancers in production and events.
+              <p className="text-zinc-500 mb-4 max-w-md text-sm">
+                The gig marketplace for concert and corporate event production — crew, calls, and escrow-backed pay.
               </p>
-              <div className="flex space-x-4">
-                <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white">
-                  Privacy Policy
-                </Button>
-                <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white">
-                  Terms of Service
-                </Button>
-              </div>
             </div>
             <div>
-              <h3 className="font-semibold mb-4">Product</h3>
-              <ul className="space-y-2 text-gray-400">
-                <li><a href="#" className="hover:text-white transition-colors">Features</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Pricing</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Integrations</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">API</a></li>
+              <h3 className="font-semibold text-white mb-4 text-sm uppercase tracking-wider">Product</h3>
+              <ul className="space-y-2 text-zinc-500 text-sm">
+                <li>
+                  <a href="#" className="hover:text-white transition-colors">
+                    Features
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-white transition-colors">
+                    Pricing
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-white transition-colors">
+                    Integrations
+                  </a>
+                </li>
               </ul>
             </div>
             <div>
-              <h3 className="font-semibold mb-4">Support</h3>
-              <ul className="space-y-2 text-gray-400">
-                <li><a href="#" className="hover:text-white transition-colors">Help Center</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Contact Us</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Status</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Community</a></li>
+              <h3 className="font-semibold text-white mb-4 text-sm uppercase tracking-wider">Support</h3>
+              <ul className="space-y-2 text-zinc-500 text-sm">
+                <li>
+                  <a href="#" className="hover:text-white transition-colors">
+                    Help Center
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-white transition-colors">
+                    Contact Us
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-white transition-colors">
+                    Status
+                  </a>
+                </li>
               </ul>
             </div>
           </div>
-          <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
-            <p>&copy; 2024 FlexZora. All rights reserved.</p>
+          <div className="border-t border-white/10 mt-8 pt-8 text-center text-zinc-600 text-sm">
+            <p>&copy; 2026 FlexZora. All rights reserved.</p>
           </div>
         </div>
       </footer>

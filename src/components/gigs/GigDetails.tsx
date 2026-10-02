@@ -441,7 +441,7 @@ const GigDetails: React.FC = () => {
                 <Button 
                   variant="outline" 
                   className="w-full"
-                  onClick={() => navigate(`/profile/${gig.creator.id}`)}
+                  onClick={() => navigate(`/profile/${gig.creator?.id}`)}
                 >
                   View Profile & Reviews
                 </Button>

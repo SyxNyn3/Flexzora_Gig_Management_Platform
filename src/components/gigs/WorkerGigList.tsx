@@ -48,88 +48,88 @@ const WorkerGigList: React.FC = () => {
   const enhancedGigs = [
     {
       id: '1',
-      title: 'Camera Operator for Corporate Event',
-      company: { name: 'TechCorp Events', logo_url: '', avatar: '🏢' },
-      location: 'San Francisco, CA',
+      title: 'A1 Audio Engineer — Show Call',
+      company: { name: 'Rhino Staging', logo_url: '', avatar: '🏟️' },
+      location: 'Stadium Main Stage',
       start_date: new Date().toISOString(),
       end_date: addDays(new Date(), 1).toISOString(),
-      hourly_rate: 45,
+      hourly_rate: 62,
       required_workers: 2,
       urgency: 'high',
-      skills_required: ['Camera Operation', 'Lighting'],
-      description: 'Professional camera operator needed for annual company meeting. Experience with multi-camera setups preferred.',
+      skills_required: ['FOH Mixing', 'System Tuning'],
+      description: 'A1 needed for arena show — digico SD console, L-Acoustics rig. RF coordination a plus.',
       posted: '2 hours ago',
       applicants: 12,
       rating: 4.8,
       verified: true,
       remote: false,
-      category: 'video'
+      category: 'audio'
     },
     {
       id: '2',
-      title: 'Sound Engineer for Wedding',
-      company: { name: 'Dream Weddings', logo_url: '', avatar: '💒' },
-      location: 'Napa Valley, CA',
+      title: 'L2 Lighting Tech — Gala Load-In',
+      company: { name: 'Giglife', logo_url: '', avatar: '🎵' },
+      location: 'Convention Center Ballroom C',
       start_date: addDays(new Date(), 2).toISOString(),
       end_date: addDays(new Date(), 2).toISOString(),
       hourly_rate: 55,
       required_workers: 1,
       urgency: 'medium',
-      skills_required: ['Sound Engineering', 'Live Audio'],
-      description: 'Experienced sound engineer for outdoor wedding ceremony and reception.',
+      skills_required: ['GrandMA', 'LED Systems'],
+      description: 'L2 on grandMA3 for a corporate gala — hang, patch, and focus with the house LD.',
       posted: '1 day ago',
       applicants: 8,
       rating: 4.9,
       verified: true,
       remote: false,
-      category: 'audio'
+      category: 'lighting'
     },
     {
       id: '3',
-      title: 'Lighting Technician for Concert',
-      company: { name: 'Live Music Productions', logo_url: '', avatar: '🎵' },
-      location: 'Los Angeles, CA',
+      title: 'ETCP Arena Rigger — Load-In & Rigging Call',
+      company: { name: 'PCE', logo_url: '', avatar: '🌊' },
+      location: 'Stadium Main Stage',
       start_date: addDays(new Date(), 5).toISOString(),
       end_date: addDays(new Date(), 5).toISOString(),
-      hourly_rate: 50,
+      hourly_rate: 65,
       required_workers: 3,
-      urgency: 'low',
-      skills_required: ['Lighting Design', 'Rigging'],
-      description: 'Concert lighting setup and operation for major venue. Must have experience with LED systems.',
+      urgency: 'high',
+      skills_required: ['Rigging', 'Motor Points'],
+      description: 'Up-riggers for a 40-point mother grid. ETCP Arena Rigging cert required — bring card.',
       posted: '3 days ago',
       applicants: 15,
       rating: 4.7,
       verified: true,
       remote: false,
-      category: 'lighting'
+      category: 'rigging'
     },
     {
       id: '4',
-      title: 'Video Editor - Remote',
-      company: { name: 'Creative Studios', logo_url: '', avatar: '🎬' },
-      location: 'Remote',
+      title: 'Video Wall Lead — Strike & Load-Out',
+      company: { name: 'Stagehands, Inc.', logo_url: '', avatar: '🎭' },
+      location: 'Convention Center Ballroom C',
       start_date: addDays(new Date(), 1).toISOString(),
       end_date: addDays(new Date(), 7).toISOString(),
-      hourly_rate: 40,
+      hourly_rate: 58,
       required_workers: 1,
       urgency: 'medium',
-      skills_required: ['Video Editing', 'After Effects'],
-      description: 'Remote video editing project for documentary series. Flexible schedule.',
+      skills_required: ['LED Wall', 'Video Processing'],
+      description: 'Own the LED wall strike — tile count, processor teardown, case pack for the truck.',
       posted: '5 hours ago',
       applicants: 6,
       rating: 4.6,
       verified: false,
-      remote: true,
-      category: 'post-production'
+      remote: false,
+      category: 'video'
     }
   ];
 
   const categories = [
     { id: 'all', name: 'All Gigs', count: enhancedGigs.length },
-    { id: 'video', name: 'Video Production', count: enhancedGigs.filter(g => g.category === 'video').length },
     { id: 'audio', name: 'Audio', count: enhancedGigs.filter(g => g.category === 'audio').length },
     { id: 'lighting', name: 'Lighting', count: enhancedGigs.filter(g => g.category === 'lighting').length },
-    { id: 'post-production', name: 'Post-Production', count: enhancedGigs.filter(g => g.category === 'post-production').length }
+    { id: 'rigging', name: 'Rigging', count: enhancedGigs.filter(g => g.category === 'rigging').length },
+    { id: 'video', name: 'Video', count: enhancedGigs.filter(g => g.category === 'video').length }
   ];
 
   const filteredGigs = enhancedGigs.filter(gig => {
@@ -399,7 +399,7 @@ const WorkerGigList: React.FC = () => {
                               <MapPin className="h-4 w-4 mr-2" />
                               {gig.location}
                               {gig.remote && (
-                                <Badge variant="outline\" className="ml-2 text-xs">
+                                <Badge variant="outline" className="ml-2 text-xs">
                                   Remote
                                 </Badge>
                               )}

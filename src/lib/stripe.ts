@@ -1,8 +1,14 @@
 import { loadStripe, Stripe } from '@stripe/stripe-js';
 import { supabase } from './supabase';
 
-// Initialize Stripe with publishable key
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '');
+// When no publishable key is configured (no Stripe account yet), the app runs
+// in demo mode: payment UIs render a sandbox flow and no network calls are made
+// to the Stripe edge functions.
+export const isStripeDemoMode = !import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+
+// Initialize Stripe with publishable key (skipped in demo mode — an empty key
+// makes loadStripe emit console warnings on every page load)
+const stripePromise = isStripeDemoMode ? null : loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
 export const getStripe = () => {
   return stripePromise;

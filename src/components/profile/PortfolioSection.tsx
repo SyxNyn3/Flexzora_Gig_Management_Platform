@@ -41,7 +41,7 @@ type PortfolioItemForm = z.infer<typeof portfolioItemSchema>;
 
 interface PortfolioSectionProps {
   portfolioItems: PortfolioItem[];
-  onAddItem: (item: Omit<PortfolioItem, 'id'>) => Promise<void>;
+  onAddItem: (item: Omit<PortfolioItem, 'id' | 'worker_id' | 'created_at' | 'updated_at'>) => Promise<void>;
   onUpdateItem: (id: string, item: Partial<PortfolioItem>) => Promise<void>;
   onDeleteItem: (id: string) => Promise<void>;
 }

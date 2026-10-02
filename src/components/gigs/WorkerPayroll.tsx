@@ -12,6 +12,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/contexts/AuthContext';
 import PaymentProcessor from '@/components/payments/PaymentProcessor';
 import ReviewForm from '@/components/reviews/ReviewForm';
+import { DatabaseService } from '@/lib/supabase';
 import { 
   DollarSign, 
   Users, 
@@ -94,7 +95,7 @@ const WorkerPayroll: React.FC<WorkerPayrollProps> = ({ gigId, gigTitle, workers 
       }
       
       // Transform database payments to WorkerPayment format
-      const transformedPayments: WorkerPayment[] = (data || []).map(payment => {
+      const transformedPayments: WorkerPayment[] = (data || []).map((payment) => {
         const worker = workers.find(w => w.id === payment.worker_id);
         return {
           id: payment.id,
@@ -127,21 +128,21 @@ const WorkerPayroll: React.FC<WorkerPayrollProps> = ({ gigId, gigTitle, workers 
         {
           id: '1',
           worker_id: 'worker-1',
-          worker_name: 'John Smith',
-          worker_email: 'john@example.com',
+          worker_name: 'Marcus Webb',
+          worker_email: 'marcus.webb@flexzora.dev',
           gig_id: gigId,
           hours_worked: 8,
-          hourly_rate: 45,
+          hourly_rate: 48,
           overtime_hours: 2,
-          overtime_rate: 67.5,
+          overtime_rate: 72,
           bonus_amount: 50,
           deductions: 0,
-          gross_pay: 545,
-          net_pay: 545,
+          gross_pay: 578,
+          net_pay: 578,
           status: 'paid',
           payment_method: 'direct_deposit',
           payment_details: { account_ending: '1234' },
-          notes: 'Excellent work on camera operations',
+          notes: 'Clean rigging points on Ballroom C truss — keep on preferred roster',
           created_at: '2024-01-15T10:00:00Z',
           paid_at: '2024-01-16T14:30:00Z',
         },
@@ -187,7 +188,7 @@ const WorkerPayroll: React.FC<WorkerPayrollProps> = ({ gigId, gigTitle, workers 
         company_id: profile?.id || '',
         amount: net,
         currency: 'USD',
-        status: 'pending',
+        status: 'pending' as const,
         notes,
       };
       
@@ -427,23 +428,25 @@ const WorkerPayroll: React.FC<WorkerPayrollProps> = ({ gigId, gigTitle, workers 
                         >
                           <CreditCard className="h-4 w-4 mr-1" />
                           Pay with Card
-                          {payment.status === 'paid' && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => {
-                                setSelectedWorkerForReview(payment.worker_id);
-                                setShowReviewForm(true);
-                              }}
-                            >
-                              <Star className="h-4 w-4 mr-1" />
-                              Review
-                            </Button>
-                          )}
                         </Button>
                       </div>
                     )}
                   </div>
+                )}
+
+                {profile?.role === 'company' && payment.status === 'paid' && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="ml-4"
+                    onClick={() => {
+                      setSelectedWorkerForReview(payment.worker_id);
+                      setShowReviewForm(true);
+                    }}
+                  >
+                    <Star className="h-4 w-4 mr-1" />
+                    Review
+                  </Button>
                 )}
               </div>
             ))}
@@ -621,6 +624,7 @@ const WorkerPayroll: React.FC<WorkerPayrollProps> = ({ gigId, gigTitle, workers 
                   currency: 'USD',
                   status: 'pending',
                   created_at: selectedPayment.created_at,
+                  updated_at: selectedPayment.created_at,
                   gig_id: selectedPayment.gig_id,
                   company_id: profile?.id || '',
                 }}
