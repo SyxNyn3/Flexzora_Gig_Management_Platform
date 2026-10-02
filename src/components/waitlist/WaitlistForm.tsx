@@ -403,7 +403,7 @@ const WaitlistForm: React.FC = () => {
 };
 
 const PageShell: React.FC<{ children: React.ReactNode; aside?: React.ReactNode }> = ({ children, aside }) => (
-  <div className="dark relative min-h-screen bg-[#0A0A0B] text-zinc-100">
+  <div className="dark relative min-h-screen overflow-x-hidden bg-[#0A0A0B] text-zinc-100">
     <div
       className="pointer-events-none absolute inset-0 opacity-[0.04]"
       style={{

@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
+import { useParams } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useAuth } from '@/contexts/AuthContext';
 import GigCommunication from './GigCommunication';
 import WorkerPayroll from './WorkerPayroll';
 import ReviewForm from '@/components/reviews/ReviewForm';
@@ -22,6 +22,7 @@ import {
   X
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { useGig, useApplications } from '@/hooks/useSupabaseQuery';
 
 interface GigManagementProps {
   gigId: string;
@@ -76,18 +77,39 @@ const mockApplications = [
   { id: 'app-5', worker_id: 'worker-5', status: 'pending' },
 ];
 
-const GigManagement: React.FC<GigManagementProps> = ({ gigId }) => {
-  const { profile } = useAuth();
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+const GigManagement: React.FC<GigManagementProps> = ({ gigId: propGigId }) => {
+  const { id: routeId } = useParams();
+  const gigId = routeId ?? propGigId;
   const [activeTab, setActiveTab] = useState('overview');
 
   // State for review form
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [selectedWorker, setSelectedWorker] = useState<string | null>(null);
 
-  const gig = mockGig;
-  const workers = mockWorkers;
-  const applications = mockApplications;
-  const acceptedWorkers = workers.filter(w => w.status === 'accepted' || w.status === 'confirmed');
+  const isLiveGig = UUID_RE.test(gigId);
+  const { data: gigData } = useGig(isLiveGig ? gigId : null);
+  const { data: applicationData } = useApplications({ gigId: isLiveGig ? gigId : undefined });
+
+  // Live gig loaded → real roster/applications; otherwise the demo mock set
+  // (write actions are disabled below so mock ids never reach the database).
+  const live = isLiveGig && !!gigData;
+  const gig = gigData ?? mockGig;
+  const workers = live
+    ? (applicationData ?? [])
+        .filter((a) => a.status === 'accepted' || a.status === 'confirmed')
+        .map((a) => ({
+          id: a.worker_id,
+          name: a.worker?.full_name ?? 'Crew member',
+          email: a.worker?.email ?? '',
+          hourly_rate: a.worker?.hourly_rate ?? gig.hourly_rate ?? 0,
+          avatar_url: '',
+          status: a.status as 'accepted' | 'confirmed',
+        }))
+    : mockWorkers;
+  const applications = live ? (applicationData ?? []) : mockApplications;
+  const acceptedWorkers = workers;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -225,7 +247,7 @@ const GigManagement: React.FC<GigManagementProps> = ({ gigId }) => {
                   <div key={worker.id} className="flex items-center space-x-3 p-3 border rounded-lg">
                     <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
                       <span className="text-blue-600 font-medium">
-                        {worker.name.split(' ').map(n => n[0]).join('')}
+                        {worker.name.split(' ').map((n: string) => n[0]).join('')}
                       </span>
                     </div>
                     <div className="flex-1">
@@ -237,9 +259,11 @@ const GigManagement: React.FC<GigManagementProps> = ({ gigId }) => {
                         </Badge>
                       </div>
                     </div>
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       size="sm"
+                      disabled={!live}
+                      title={live ? undefined : 'Demo roster — reviews need a live gig'}
                       onClick={(e) => {
                         e.stopPropagation();
                         setSelectedWorker(worker.id);
@@ -265,11 +289,15 @@ const GigManagement: React.FC<GigManagementProps> = ({ gigId }) => {
         </TabsContent>
 
         <TabsContent value="payroll">
-          <WorkerPayroll 
-            gigId={gigId}
-            gigTitle={gig.title}
-            workers={acceptedWorkers}
-          />
+          {isLiveGig ? (
+            <WorkerPayroll
+              gigId={gigId}
+              gigTitle={gig.title}
+              workers={acceptedWorkers}
+            />
+          ) : (
+            <p className="text-sm text-gray-500 py-8 text-center">Demo roster — payroll runs against a live gig.</p>
+          )}
         </TabsContent>
 
         <TabsContent value="conflicts">

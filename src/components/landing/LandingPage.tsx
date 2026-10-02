@@ -135,7 +135,7 @@ const LandingPage: React.FC = () => {
               <Button
                 variant="ghost"
                 onClick={() => navigate('/auth')}
-                className="text-zinc-300 hover:text-white hover:bg-white/5"
+                className="hidden sm:inline-flex text-zinc-300 hover:text-white hover:bg-white/5"
               >
                 Sign In
               </Button>
