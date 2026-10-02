@@ -714,17 +714,19 @@ export class MarketplaceService {
     try {
       const returnTo = `${window.location.origin}/events/${event.id}`;
 
-      // Sandbox mode (no Stripe keys configured): record the deposit as funded
-      // directly and round-trip back to the event page — the same place the
-      // checkout return URL lands — so the UI flow stays identical.
+      // Sandbox mode (no Stripe keys configured): record the deposit as a
+      // queued pending row — the escrow insert policy only permits 'pending' —
+      // and round-trip back to the event page so the UI flow stays identical.
+      // The pending row never counts toward the funded balance, so the demo
+      // never claims money it did not collect.
       if (isStripeDemoMode) {
         const { data: deposit, error } = await supabase
           .from('escrow_deposits')
-          .insert({ event_id: event.id, company_id: event.company_id, amount, released_amount: 0, currency: 'USD', status: 'funded' })
+          .insert({ event_id: event.id, company_id: event.company_id, amount, released_amount: 0, currency: 'USD', status: 'pending' })
           .select()
           .single();
         if (error) throw error;
-        return ok({ deposit: deposit as EscrowDeposit, checkoutUrl: `${returnTo}?escrow=funded` });
+        return ok({ deposit: deposit as EscrowDeposit, checkoutUrl: `${returnTo}?escrow=queued` });
       }
 
       const { data: deposit, error } = await supabase
@@ -764,7 +766,15 @@ export class MarketplaceService {
       if (tsErr) throw tsErr;
 
       const shifts = event.shifts ?? [];
-      const policy = rule ?? FLSA_DEFAULT;
+      let policy = rule;
+      if (!policy) {
+        const { data: ruleRow } = await supabase
+          .from('overtime_rules')
+          .select('*')
+          .eq('code', event.overtime_rule_code ?? 'US_FLSA')
+          .maybeSingle();
+        policy = ruleRow ?? FLSA_DEFAULT;
+      }
       const projectedLabor = shifts
         .filter((s) => s.status !== 'cancelled')
         .reduce((sum, s) => sum + projectedShiftCost(s.starts_at, s.ends_at, s.hourly_rate, s.headcount, policy), 0);

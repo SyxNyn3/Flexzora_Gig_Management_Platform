@@ -113,13 +113,10 @@ const StripeCheckout: React.FC<StripeCheckoutProps> = ({
           </Alert>
           <Button
             className="w-full"
-            onClick={() => {
-              toast.success('Simulated transfer recorded');
-              onPaymentSuccess?.(`pi_demo_${Date.now()}`);
-            }}
+            onClick={() => onPaymentSuccess?.(`pi_demo_${Date.now()}`)}
           >
             <Shield className="mr-2 h-4 w-4" />
-            Simulate escrow deposit
+            Queue transfer via Flexzora Escrow (Sandbox)
           </Button>
         </CardContent>
         <CardFooter className="flex justify-between border-t pt-4 text-xs text-gray-500">

@@ -31,7 +31,8 @@ BEGIN
   SELECT * INTO r FROM waiting_list WHERE referral_code = p_code;
   IF r.id IS NULL THEN RETURN NULL; END IF;
   SELECT count(*) INTO v_ahead FROM waiting_list WHERE created_at < r.created_at;
-  RETURN jsonb_build_object('referral_count', r.referral_count, 'position', GREATEST(v_ahead + 1 - 5 * r.referral_count, 1), 'beta_tester', r.beta_tester, 'role_interest', r.role_interest);
+  -- Only queue position and referral count are safe to expose via a bearer code.
+  RETURN jsonb_build_object('referral_count', r.referral_count, 'position', GREATEST(v_ahead + 1 - 5 * r.referral_count, 1));
 END $$;
 
 GRANT EXECUTE ON FUNCTION waitlist_referral_status(text) TO anon, authenticated;

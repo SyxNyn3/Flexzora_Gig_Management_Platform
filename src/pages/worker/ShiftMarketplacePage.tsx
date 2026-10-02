@@ -21,13 +21,23 @@ const ShiftMarketplacePage: React.FC = () => {
   const { profile } = useAuth();
   const shifts = useMarketplaceShifts(profile?.id);
   const assignments = useWorkerAssignments(profile?.id);
-  const [scores, setScores] = useState<Map<string, MatchResult>>(new Map());
+  const [scores, setScores] = useState<Map<string, MatchResult> | null>(null);
+  const [scoringFailed, setScoringFailed] = useState(false);
   const [search, setSearch] = useState('');
   const [busy, setBusy] = useState<string | null>(null);
 
   useEffect(() => {
     if (!profile?.id || shifts.data.length === 0) return;
-    MarketplaceService.scoreShiftsForWorker(profile.id, shifts.data).then(({ data }) => setScores(data));
+    setScores(null);
+    setScoringFailed(false);
+    MarketplaceService.scoreShiftsForWorker(profile.id, shifts.data).then(({ data, error }) => {
+      if (error || !data) {
+        setScoringFailed(true);
+        setScores(new Map());
+        return;
+      }
+      setScores(data);
+    });
   }, [profile?.id, shifts.data]);
 
   const appliedShiftIds = useMemo(() => new Set(assignments.data.filter((a) => !['declined', 'rejected', 'withdrawn'].includes(a.status)).map((a) => a.shift_id)), [assignments.data]);
@@ -36,8 +46,10 @@ const ShiftMarketplacePage: React.FC = () => {
     const q = search.trim().toLowerCase();
     return shifts.data
       .filter((s) => !q || [s.title, s.role_name, s.event?.name, s.event?.company?.name, s.event?.venue?.city].some((v) => v?.toLowerCase().includes(q)))
-      .map((s) => ({ shift: s, match: scores.get(s.id) }))
-      .filter((x) => !x.match || x.match.breakdown.gatekeeperPassed)
+      .map((s) => ({ shift: s, match: scores?.get(s.id) }))
+      // Fail closed: until scoring resolves (or if it errors), nothing is eligible
+      // to apply to — gated calls can never be applied to unvetted.
+      .filter((x) => x.match?.breakdown.gatekeeperPassed)
       .sort((a, b) => (b.match?.score ?? 0) - (a.match?.score ?? 0) || a.shift.starts_at.localeCompare(b.shift.starts_at));
   }, [shifts.data, scores, search]);
 
@@ -57,7 +69,7 @@ const ShiftMarketplacePage: React.FC = () => {
     shifts.refetch();
   };
 
-  const apply = (shift: Shift) => profile && act(shift.id, () => MarketplaceService.applyToShift(shift, profile.id, scores.get(shift.id)), 'Application sent');
+  const apply = (shift: Shift) => profile && act(shift.id, () => MarketplaceService.applyToShift(shift, profile.id, scores?.get(shift.id)), 'Application sent');
   const respond = (a: ShiftAssignment, r: 'confirmed' | 'declined') =>
     act(a.id, () => MarketplaceService.respondToOffer(a.id, r), r === 'confirmed' ? 'Booked! Added to your schedule' : 'Offer declined');
 
@@ -123,15 +135,16 @@ const ShiftMarketplacePage: React.FC = () => {
             <Search className="w-4 h-4 absolute left-3 top-2.5 text-gray-400" />
             <Input className="pl-9" placeholder="Search by role, company, venue or city" value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
-          {shifts.loading && [0, 1, 2].map((i) => <Skeleton key={i} className="h-28 w-full" />)}
-          {!shifts.loading && visible.length === 0 && <p className="text-center text-gray-500 py-10 text-sm">No open calls match right now. Add certifications and skills to your profile to unlock more.</p>}
+          {(shifts.loading || (shifts.data.length > 0 && scores === null && !scoringFailed)) && [0, 1, 2].map((i) => <Skeleton key={i} className="h-28 w-full" />)}
+          {scoringFailed && <p className="text-center text-gray-500 py-10 text-sm">Could not check credential requirements right now — calls stay hidden until matching works again.</p>}
+          {!shifts.loading && scores !== null && visible.length === 0 && <p className="text-center text-gray-500 py-10 text-sm">No open calls match right now. Add certifications and skills to your profile to unlock more.</p>}
           {visible.map(({ shift, match }) => (
             <ShiftRow
               key={shift.id}
               shift={shift}
               match={match}
               action={
-                <Button size="sm" disabled={busy !== null || appliedShiftIds.has(shift.id) || (match && !match.breakdown.gatekeeperPassed)} onClick={() => apply(shift)}>
+                <Button size="sm" disabled={busy !== null || appliedShiftIds.has(shift.id) || !match?.breakdown.gatekeeperPassed} onClick={() => apply(shift)}>
                   {appliedShiftIds.has(shift.id) ? 'Applied' : 'Apply'}
                 </Button>
               }

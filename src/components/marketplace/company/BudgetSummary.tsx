@@ -49,6 +49,11 @@ const BudgetSummary: React.FC<Props> = ({ event, refreshKey }) => {
   useEffect(() => {
     const outcome = new URLSearchParams(window.location.search).get('escrow');
     if (outcome === 'cancelled') toast.info('Escrow deposit cancelled; no funds were taken');
+    if (outcome === 'queued') {
+      toast.info('Deposit queued via Flexzora Escrow (Sandbox) — no funds were moved');
+      load();
+      return;
+    }
     if (outcome !== 'funded') return;
     toast.success('Payment received — waiting for Stripe to confirm the deposit');
     let baseline: number | null = null;

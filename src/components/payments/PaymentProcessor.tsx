@@ -8,6 +8,7 @@ import { Payment, Gig } from '@/lib/types';
 import { CreditCard, DollarSign, CheckCircle, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import StripeCheckout from '@/components/payments/StripeCheckout';
+import { isStripeDemoMode } from '@/lib/stripe';
 
 interface PaymentProcessorProps {
   payment?: Payment;
@@ -34,7 +35,16 @@ const PaymentProcessor: React.FC<PaymentProcessorProps> = ({ payment, gig, onSuc
     
     try {
       setProcessing(true);
-      
+
+      // Sandbox mode (no Stripe key): keep the row pending — only a real
+      // Stripe-confirmed payment may mark it paid.
+      if (isStripeDemoMode) {
+        toast.success('Transfer queued via Flexzora Escrow (Sandbox) — no funds moved yet');
+        setShowPaymentDialog(false);
+        if (onSuccess) onSuccess();
+        return;
+      }
+
       // Update payment status in database
       const { error } = await supabase
         .from('payments')

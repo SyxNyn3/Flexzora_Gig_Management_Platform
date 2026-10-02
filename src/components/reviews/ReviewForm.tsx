@@ -36,7 +36,7 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
   const [hoveredRating, setHoveredRating] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(false);
 
-  const { register, handleSubmit, formState: { errors } } = useForm<ReviewFormData>({
+  const { register, handleSubmit, setValue, formState: { errors } } = useForm<ReviewFormData>({
     resolver: zodResolver(reviewSchema),
     defaultValues: {
       rating: 0,
@@ -98,7 +98,10 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
                   key={star}
                   type="button"
                   className="focus:outline-none"
-                  onClick={() => setRating(star)}
+                  onClick={() => {
+                    setRating(star);
+                    setValue('rating', star, { shouldValidate: true });
+                  }}
                   onMouseEnter={() => setHoveredRating(star)}
                   onMouseLeave={() => setHoveredRating(0)}
                 >

@@ -13,7 +13,7 @@ export interface Database {
       profiles: {
         Row: Profile;
         Insert: Omit<Profile, 'id' | 'created_at' | 'updated_at'>;
-        Update: Partial<Omit<Profile, 'id' | 'created_at' | 'updated_at'>>;
+        Update: { [K in keyof Omit<Profile, 'id' | 'created_at' | 'updated_at'>]?: Profile[K] | null };
       };
       companies: {
         Row: Company;

@@ -154,10 +154,10 @@ const ProfilePage: React.FC = () => {
     try {
       const updates = {
         ...data,
-        hourly_rate: data.hourly_rate ? parseFloat(data.hourly_rate) : undefined,
+        hourly_rate: data.hourly_rate ? parseFloat(data.hourly_rate) : null,
         experience_years: data.experience_years ? parseInt(data.experience_years) : 0,
-        portfolio_url: data.portfolio_url ? normalizeUrl(data.portfolio_url) : undefined,
-        linkedin_url: data.linkedin_url ? normalizeUrl(data.linkedin_url) : undefined,
+        portfolio_url: data.portfolio_url ? normalizeUrl(data.portfolio_url) : null,
+        linkedin_url: data.linkedin_url ? normalizeUrl(data.linkedin_url) : null,
       };
 
       const { error } = await updateProfile(updates);

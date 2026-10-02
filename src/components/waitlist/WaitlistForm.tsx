@@ -37,7 +37,7 @@ const waitlistSchema = z.object({
 });
 
 type WaitlistFormData = z.infer<typeof waitlistSchema>;
-type ReferralStatus = { position: number; referral_count: number; beta_tester: boolean };
+type ReferralStatus = { position: number; referral_count: number };
 
 const shareText = (link: string) =>
   `I joined the Flexzora founding crew for concert and corporate event production crews. Join me for early access: ${link}`;
@@ -181,9 +181,6 @@ const WaitlistForm: React.FC = () => {
               <div className="rounded-xl border border-amber-400/30 bg-amber-400/10 p-5 text-center">
                 <p className="text-2xl font-bold text-amber-300">You're #{referralStatus.position} in line</p>
                 <p className="text-amber-200/80">{referralStatus.referral_count} referrals</p>
-                {referralStatus.beta_tester && (
-                  <Badge className="mt-3 bg-amber-400 text-zinc-950 hover:bg-amber-400">Founding beta tester</Badge>
-                )}
               </div>
             )}
             <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">

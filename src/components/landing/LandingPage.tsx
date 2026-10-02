@@ -112,13 +112,6 @@ const steps = [
   },
 ];
 
-const stats = [
-  { number: '10,000+', label: 'Crew Professionals' },
-  { number: '50+', label: 'Production Partners' },
-  { number: '99.9%', label: 'Platform Uptime' },
-  { number: '$2M+', label: 'Escrow Processed' },
-];
-
 const LandingPage: React.FC = () => {
   const navigate = useNavigate();
   const { total: waitlistCount } = useWaitlistStats();
@@ -306,20 +299,6 @@ const LandingPage: React.FC = () => {
                 <role.icon className="w-7 h-7 mx-auto mb-3 text-amber-400" />
                 <h3 className="font-semibold text-white text-sm mb-1">{role.title}</h3>
                 <p className="text-xs text-zinc-500">{role.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Stats */}
-      <section className="py-14 border-t border-white/5 bg-zinc-900/30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
-            {stats.map((stat) => (
-              <div key={stat.label} className="text-center">
-                <div className="text-3xl lg:text-4xl font-black text-white mb-1">{stat.number}</div>
-                <div className="text-sm text-zinc-500 uppercase tracking-wider">{stat.label}</div>
               </div>
             ))}
           </div>
