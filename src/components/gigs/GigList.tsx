@@ -31,7 +31,8 @@ const GigList: React.FC = () => {
   const navigate = useNavigate();
   
   // Use the hook to fetch gigs
-  const { data: gigs = [], loading: gigsLoading, error } = useGigs({ status: 'published' });
+  const { data: gigsData, loading: gigsLoading, error } = useGigs({ status: 'published' });
+  const gigs = gigsData ?? [];
   
   const [filteredGigs, setFilteredGigs] = useState<Gig[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -368,7 +369,7 @@ const GigList: React.FC = () => {
                       <MapPin className="h-4 w-4 mr-2 text-gray-400" />
                       {gig.location}
                       {gig.is_remote && (
-                        <Badge variant="outline\" className="ml-2 text-xs">
+                        <Badge variant="outline" className="ml-2 text-xs">
                           Remote
                         </Badge>
                       )}

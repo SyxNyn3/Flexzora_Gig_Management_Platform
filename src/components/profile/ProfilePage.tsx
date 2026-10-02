@@ -154,10 +154,10 @@ const ProfilePage: React.FC = () => {
     try {
       const updates = {
         ...data,
-        hourly_rate: data.hourly_rate ? parseFloat(data.hourly_rate) : null,
+        hourly_rate: data.hourly_rate ? parseFloat(data.hourly_rate) : undefined,
         experience_years: data.experience_years ? parseInt(data.experience_years) : 0,
-        portfolio_url: data.portfolio_url ? normalizeUrl(data.portfolio_url) : null,
-        linkedin_url: data.linkedin_url ? normalizeUrl(data.linkedin_url) : null,
+        portfolio_url: data.portfolio_url ? normalizeUrl(data.portfolio_url) : undefined,
+        linkedin_url: data.linkedin_url ? normalizeUrl(data.linkedin_url) : undefined,
       };
 
       const { error } = await updateProfile(updates);
@@ -293,14 +293,14 @@ const ProfilePage: React.FC = () => {
     setShowCertDialog(true);
   };
 
-  const handleAddPortfolioItem = async (item: Omit<PortfolioItem, 'id'>) => {
+  const handleAddPortfolioItem = async (item: Omit<PortfolioItem, 'id' | 'worker_id' | 'created_at' | 'updated_at'>) => {
     if (!profile) return;
     
     try {
-      const newItem: PortfolioItem = {
+      const newItem = {
         ...item,
         id: `portfolio-${Date.now()}`,
-      };
+      } as PortfolioItem;
       
       const updatedItems = [...portfolioItems, newItem];
       setPortfolioItems(updatedItems);
@@ -437,7 +437,7 @@ const ProfilePage: React.FC = () => {
               <h3 className="font-medium">{profile.full_name}</h3>
               <p className="text-sm text-gray-600">{profile.email}</p>
               <Badge className="mt-2">
-                {profile.role.charAt(0).toUpperCase() + profile.role.slice(1)}
+                {profile.role ? profile.role.charAt(0).toUpperCase() + profile.role.slice(1) : 'User'}
               </Badge>
             </CardContent>
           </Card>
@@ -468,7 +468,7 @@ const ProfilePage: React.FC = () => {
                   </div>
                 </div>
               )}
-              {profile.review_count > 0 && (
+              {(profile.review_count ?? 0) > 0 && (
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">Reviews</span>
                   <span className="font-medium">{profile.review_count}</span>
@@ -484,7 +484,7 @@ const ProfilePage: React.FC = () => {
           </Card>
           
           {/* Rating Summary */}
-          {profile.role === 'worker' && profile.review_count > 0 && (
+          {profile.role === 'worker' && (profile.review_count ?? 0) > 0 && (
             <Card className="mt-6">
               <CardHeader>
                 <CardTitle>Rating Summary</CardTitle>

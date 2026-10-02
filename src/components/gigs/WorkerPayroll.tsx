@@ -12,6 +12,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/contexts/AuthContext';
 import PaymentProcessor from '@/components/payments/PaymentProcessor';
 import ReviewForm from '@/components/reviews/ReviewForm';
+import { DatabaseService } from '@/lib/supabase';
 import { 
   DollarSign, 
   Users, 
@@ -94,7 +95,7 @@ const WorkerPayroll: React.FC<WorkerPayrollProps> = ({ gigId, gigTitle, workers 
       }
       
       // Transform database payments to WorkerPayment format
-      const transformedPayments: WorkerPayment[] = (data || []).map(payment => {
+      const transformedPayments: WorkerPayment[] = (data || []).map((payment: any) => {
         const worker = workers.find(w => w.id === payment.worker_id);
         return {
           id: payment.id,
@@ -187,7 +188,7 @@ const WorkerPayroll: React.FC<WorkerPayrollProps> = ({ gigId, gigTitle, workers 
         company_id: profile?.id || '',
         amount: net,
         currency: 'USD',
-        status: 'pending',
+        status: 'pending' as const,
         notes,
       };
       
@@ -427,23 +428,25 @@ const WorkerPayroll: React.FC<WorkerPayrollProps> = ({ gigId, gigTitle, workers 
                         >
                           <CreditCard className="h-4 w-4 mr-1" />
                           Pay with Card
-                          {payment.status === 'paid' && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => {
-                                setSelectedWorkerForReview(payment.worker_id);
-                                setShowReviewForm(true);
-                              }}
-                            >
-                              <Star className="h-4 w-4 mr-1" />
-                              Review
-                            </Button>
-                          )}
                         </Button>
                       </div>
                     )}
                   </div>
+                )}
+
+                {profile?.role === 'company' && payment.status === 'paid' && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="ml-4"
+                    onClick={() => {
+                      setSelectedWorkerForReview(payment.worker_id);
+                      setShowReviewForm(true);
+                    }}
+                  >
+                    <Star className="h-4 w-4 mr-1" />
+                    Review
+                  </Button>
                 )}
               </div>
             ))}
@@ -621,6 +624,7 @@ const WorkerPayroll: React.FC<WorkerPayrollProps> = ({ gigId, gigTitle, workers 
                   currency: 'USD',
                   status: 'pending',
                   created_at: selectedPayment.created_at,
+                  updated_at: selectedPayment.created_at,
                   gig_id: selectedPayment.gig_id,
                   company_id: profile?.id || '',
                 }}

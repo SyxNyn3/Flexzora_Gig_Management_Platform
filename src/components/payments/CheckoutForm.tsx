@@ -129,7 +129,7 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({
           options={{
             mode: 'billing',
             fields: {
-              phone: 'optional',
+              phone: 'auto',
             },
             validation: {
               phone: {

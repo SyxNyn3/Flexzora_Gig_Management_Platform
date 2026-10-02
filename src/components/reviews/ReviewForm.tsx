@@ -5,7 +5,6 @@ import { z } from 'zod';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 import { DatabaseService } from '@/lib/supabase';
@@ -15,7 +14,6 @@ import { toast } from 'sonner';
 const reviewSchema = z.object({
   rating: z.number().min(1).max(5),
   review_text: z.string().min(5, 'Review must be at least 5 characters').max(500, 'Review cannot exceed 500 characters'),
-  is_public: z.boolean().default(true),
 });
 
 type ReviewFormData = z.infer<typeof reviewSchema>;
@@ -36,7 +34,6 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
   const { profile } = useAuth();
   const [rating, setRating] = useState<number>(0);
   const [hoveredRating, setHoveredRating] = useState<number>(0);
-  const [isPublic, setIsPublic] = useState<boolean>(true);
   const [loading, setLoading] = useState<boolean>(false);
 
   const { register, handleSubmit, formState: { errors } } = useForm<ReviewFormData>({
@@ -44,7 +41,6 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
     defaultValues: {
       rating: 0,
       review_text: '',
-      is_public: true,
     }
   });
 
@@ -62,12 +58,11 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
     setLoading(true);
     try {
       const reviewData = {
-        worker_id: workerId,
+        reviewee_id: workerId,
         reviewer_id: profile.id,
-        gig_id: gigId || null,
+        gig_id: gigId,
         rating,
-        review_text: data.review_text,
-        is_public: isPublic,
+        comment: data.review_text,
       };
 
       const { data: newReview, error } = await DatabaseService.addReview(reviewData);
@@ -139,15 +134,6 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
             )}
           </div>
 
-          {/* Public/Private Toggle */}
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="is_public"
-              checked={isPublic}
-              onCheckedChange={setIsPublic}
-            />
-            <Label htmlFor="is_public">Make this review public</Label>
-          </div>
         </form>
       </CardContent>
       <CardFooter className="flex justify-end space-x-2">

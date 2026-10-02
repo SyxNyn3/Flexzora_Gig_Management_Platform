@@ -149,7 +149,7 @@ const Navbar: React.FC = () => {
                             {profile?.email}
                           </p>
                           <Badge variant="outline" className="w-fit mt-1">
-                            {profile?.role?.charAt(0).toUpperCase() + profile?.role?.slice(1)}
+                            {profile?.role ? profile.role.charAt(0).toUpperCase() + profile.role.slice(1) : 'User'}
                           </Badge>
                         </div>
                       </DropdownMenuLabel>

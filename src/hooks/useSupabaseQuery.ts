@@ -152,8 +152,10 @@ export function useCompanyIntegrations(workerId: string | undefined | null) {
 
 // Hook for fetching reviews for a worker
 export function useReviewsForWorker(workerId: string | undefined | null) {
-  // Return empty data for now since reviews table doesn't exist yet
-  return { data: [], error: null, loading: false, refetch: async () => {} };
+  return useSupabaseQuery(
+    () => workerId ? DatabaseService.getReviewsForWorker(workerId) : Promise.resolve({ data: [], error: 'No worker ID provided' }),
+    [workerId]
+  );
 }
 
 // Hook for fetching a single review

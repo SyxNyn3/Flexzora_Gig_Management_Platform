@@ -114,6 +114,7 @@ const PRODUCTION_COMPANIES = [
 
 const CompanyIntegrations: React.FC = () => {
   const { profile } = useAuth();
+  const navigate = useNavigate();
   const [integrations, setIntegrations] = useState<CompanyIntegration[]>([]);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState<string>('');

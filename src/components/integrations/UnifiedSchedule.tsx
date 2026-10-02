@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { AuthKitButton } from './AuthKitButton';
 import { Calendar, AlertTriangle, Clock, MapPin, Building2, DollarSign, CheckCircle, XCircle, FolderSync as Sync, Filter, Download, Eye, EyeOff } from 'lucide-react';
 import { format, isWithinInterval, parseISO, startOfWeek, endOfWeek, addDays } from 'date-fns';
+import { toast } from 'sonner';
 
 interface UnifiedGig {
   id: string;

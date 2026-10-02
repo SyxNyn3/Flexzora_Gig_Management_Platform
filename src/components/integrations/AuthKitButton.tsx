@@ -28,13 +28,13 @@ export function AuthKitButton({ onConnectionSuccess, className = "" }: AuthKitBu
       console.log("Connected:", connection);
       setConnections(prev => [...prev, connection]);
       setIsConnecting(false);
-      toast.success(`Successfully connected to ${connection.provider || 'service'}!`);
+      toast.success(`Successfully connected to ${connection.platform || connection.name || 'service'}!`);
       onConnectionSuccess?.(connection);
     },
     onError: (error) => {
       console.error("AuthKit error:", error);
       setIsConnecting(false);
-      toast.error(`Connection failed: ${error.message || 'Unknown error'}`);
+      toast.error(`Connection failed: ${error || 'Unknown error'}`);
     },
     onClose: () => {
       console.log("AuthKit UI closed");

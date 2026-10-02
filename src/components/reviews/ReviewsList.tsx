@@ -13,7 +13,8 @@ interface ReviewsListProps {
 }
 
 const ReviewsList: React.FC<ReviewsListProps> = ({ workerId, limit }) => {
-  const { data: reviews = [], loading, error } = useReviewsForWorker(workerId);
+  const { data: reviewsData, loading, error } = useReviewsForWorker(workerId);
+  const reviews = reviewsData ?? [];
   
   // Limit the number of reviews if specified
   const displayedReviews = limit ? reviews.slice(0, limit) : reviews;
@@ -69,7 +70,7 @@ const ReviewsList: React.FC<ReviewsListProps> = ({ workerId, limit }) => {
               <Avatar className="h-10 w-10">
                 <AvatarImage src={review.reviewer?.avatar_url} />
                 <AvatarFallback>
-                  {review.reviewer?.full_name?.split(' ').map(n => n[0]).join('') || 'U'}
+                  {review.reviewer?.full_name?.split(' ').map((n: string) => n[0]).join('') || 'U'}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1">
@@ -105,7 +106,7 @@ const ReviewsList: React.FC<ReviewsListProps> = ({ workerId, limit }) => {
                   </div>
                 )}
                 
-                <p className="mt-3 text-gray-700">{review.review_text}</p>
+                <p className="mt-3 text-gray-700">{review.comment}</p>
               </div>
             </div>
           </CardContent>

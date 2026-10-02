@@ -8,7 +8,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Payment, Gig } from '@/lib/types';
 import {
   FileText,
-  Download
+  Download,
+  User,
+  Building,
+  Plus,
+  Trash2
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
