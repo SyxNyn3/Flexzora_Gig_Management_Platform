@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import { createCheckoutSession } from '@/lib/stripe';
+import { createCheckoutSession, isStripeDemoMode } from '@/lib/stripe';
 import {
   AssignmentStatus,
   BroadcastStage,
@@ -712,6 +712,21 @@ export class MarketplaceService {
    */
   static async fundEscrow(event: Pick<ProductionEvent, 'id' | 'company_id' | 'name'>, amount: number): Promise<Result<{ deposit: EscrowDeposit; checkoutUrl: string } | null>> {
     try {
+      const returnTo = `${window.location.origin}/events/${event.id}`;
+
+      // Sandbox mode (no Stripe keys configured): record the deposit as funded
+      // directly and round-trip back to the event page — the same place the
+      // checkout return URL lands — so the UI flow stays identical.
+      if (isStripeDemoMode) {
+        const { data: deposit, error } = await supabase
+          .from('escrow_deposits')
+          .insert({ event_id: event.id, company_id: event.company_id, amount, released_amount: 0, currency: 'USD', status: 'funded' })
+          .select()
+          .single();
+        if (error) throw error;
+        return ok({ deposit: deposit as EscrowDeposit, checkoutUrl: `${returnTo}?escrow=funded` });
+      }
+
       const { data: deposit, error } = await supabase
         .from('escrow_deposits')
         .insert({ event_id: event.id, company_id: event.company_id, amount, released_amount: 0, currency: 'USD', status: 'pending' })
@@ -719,7 +734,6 @@ export class MarketplaceService {
         .single();
       if (error) throw error;
 
-      const returnTo = `${window.location.origin}/events/${event.id}`;
       const checkout = await createCheckoutSession(
         [{
           price_data: {

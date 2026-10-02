@@ -741,9 +741,15 @@ const ProfilePage: React.FC = () => {
                           </div>
                         </div>
                         <div className="flex items-center space-x-2">
-                          <Badge variant={cert.is_active ? "default" : "secondary"}>
-                            {cert.is_active ? 'Active' : 'Inactive'}
+                          <Badge
+                            variant="outline"
+                            className={cert.verified
+                              ? 'border-green-300 bg-green-50 text-green-700'
+                              : 'border-amber-300 bg-amber-50 text-amber-700'}
+                          >
+                            {cert.verified ? 'Verified' : 'Pending'}
                           </Badge>
+                          {!cert.is_active && <Badge variant="secondary">Inactive</Badge>}
                           <Button
                             size="sm"
                             variant="ghost"

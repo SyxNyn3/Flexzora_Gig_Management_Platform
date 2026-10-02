@@ -142,9 +142,9 @@ const WaitlistForm: React.FC = () => {
   if (verificationSent) {
     return (
       <PageShell>
-        <Card className="shadow-xl border-0">
+        <Card className="rounded-none border-0 bg-zinc-900/70 shadow-2xl backdrop-blur sm:rounded-2xl sm:border sm:border-white/10">
           <CardHeader className="text-center">
-            <Mail className="mx-auto mb-3 h-12 w-12 text-blue-600" />
+            <Mail className="mx-auto mb-3 h-12 w-12 text-amber-400" />
             <CardTitle>Check your inbox</CardTitle>
             <CardDescription>We sent a verification link to {userEmail}.</CardDescription>
           </CardHeader>
@@ -170,26 +170,28 @@ const WaitlistForm: React.FC = () => {
     const text = encodeURIComponent(shareText(referralLink));
     return (
       <PageShell>
-        <Card className="shadow-xl border-0">
+        <Card className="rounded-none border-0 bg-zinc-900/70 shadow-2xl backdrop-blur sm:rounded-2xl sm:border sm:border-white/10">
           <CardHeader className="text-center">
-            <CheckCircle className="mx-auto mb-3 h-14 w-14 text-green-600" />
+            <CheckCircle className="mx-auto mb-3 h-14 w-14 text-amber-400" />
             <CardTitle>You're in the Founding Crew!</CardTitle>
             <CardDescription>Thanks for helping shape the future of event production.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             {referralStatus && (
-              <div className="rounded-lg border border-blue-200 bg-blue-50 p-5 text-center">
-                <p className="text-2xl font-bold text-blue-800">You're #{referralStatus.position} in line</p>
-                <p className="text-blue-700">{referralStatus.referral_count} referrals</p>
-                {referralStatus.beta_tester && <Badge className="mt-3">Founding beta tester</Badge>}
+              <div className="rounded-xl border border-amber-400/30 bg-amber-400/10 p-5 text-center">
+                <p className="text-2xl font-bold text-amber-300">You're #{referralStatus.position} in line</p>
+                <p className="text-amber-200/80">{referralStatus.referral_count} referrals</p>
+                {referralStatus.beta_tester && (
+                  <Badge className="mt-3 bg-amber-400 text-zinc-950 hover:bg-amber-400">Founding beta tester</Badge>
+                )}
               </div>
             )}
-            <div className="rounded-lg border border-gray-200 p-4">
-              <p className="mb-3 text-sm text-gray-600">
+            <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+              <p className="mb-3 text-sm text-zinc-400">
                 Invite concert and corporate event crews to move up together.
               </p>
-              <div className="mb-4 flex items-center justify-between rounded border bg-gray-50 p-3">
-                <code className="truncate text-sm">{referralLink}</code>
+              <div className="mb-4 flex items-center justify-between rounded-lg border border-white/10 bg-zinc-950/60 p-3">
+                <code className="truncate text-sm text-zinc-300">{referralLink}</code>
                 <Button variant="ghost" size="sm" onClick={copyReferralLink}>
                   <Copy className="h-4 w-4" />
                 </Button>
@@ -209,7 +211,10 @@ const WaitlistForm: React.FC = () => {
                 </Button>
               </div>
             </div>
-            <Button onClick={() => navigate('/')} className="w-full">
+            <Button
+              onClick={() => navigate('/')}
+              className="w-full bg-amber-400 font-semibold text-zinc-950 hover:bg-amber-300"
+            >
               Return to Home
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
@@ -220,27 +225,56 @@ const WaitlistForm: React.FC = () => {
   }
 
   return (
-    <PageShell>
-      <Card className="shadow-xl border-0">
-        <CardHeader className="text-center">
-          <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-r from-blue-600 to-green-500 text-2xl font-bold text-white">
+    <PageShell
+      aside={
+        <div className="text-center lg:text-left">
+          <div className="mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-xl bg-amber-400 text-2xl font-black text-zinc-950 lg:mx-0">
             F
           </div>
-          <CardTitle className="text-3xl">Join the Founding Crew</CardTitle>
-          <CardDescription className="text-lg">
-            Flexzora is the operating system for load-in, show call and load-out crews — replacing the Excel sheets and
-            text groups. Get early access and help shape it.
-          </CardDescription>
+          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.25em] text-amber-400">
+            Private beta — live events
+          </p>
+          <h1 className="text-3xl font-black tracking-tight text-white sm:text-4xl lg:text-5xl">
+            Join the Founding Crew
+          </h1>
+          <p className="mt-4 text-lg leading-relaxed text-zinc-400">
+            Flexzora is the operating system for load-in, show call and load-out crews — replacing the Excel sheets
+            and text groups. Get early access and help shape it.
+          </p>
+          <div className="mt-6 flex flex-wrap justify-center gap-2 lg:justify-start">
+            {['A1 Audio Engineer', 'L2 Lighting Tech', 'Video Wall Lead', 'Stagehand', 'ETCP Arena Rigger'].map(
+              (role) => (
+                <span
+                  key={role}
+                  className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs font-medium text-zinc-300"
+                >
+                  {role}
+                </span>
+              ),
+            )}
+          </div>
           {stats.total > 0 && (
-            <Badge variant="outline" className="mx-auto mt-4 w-fit">
-              <Users className="mr-2 h-4 w-4" />
+            <Badge
+              variant="outline"
+              className="mt-6 w-fit border-white/15 bg-white/5 px-4 py-1.5 text-sm text-zinc-300"
+            >
+              <Users className="mr-2 h-4 w-4 text-amber-400" />
               {stats.total.toLocaleString()} crew &amp; companies already lined up
             </Badge>
           )}
+        </div>
+      }
+    >
+      <Card className="rounded-none border-0 bg-zinc-900/70 shadow-2xl backdrop-blur sm:rounded-2xl sm:border sm:border-white/10">
+        <CardHeader>
+          <CardTitle className="text-2xl">Get on the list</CardTitle>
+          <CardDescription>
+            Tell us how you work so we can prioritize the right market and features.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {referredBy && (
-            <Alert className="mb-5 border-blue-200 bg-blue-50">
+            <Alert className="mb-5 border-amber-400/30 bg-amber-400/10 text-amber-100">
               <AlertDescription>You were referred by a friend — you'll both get priority access.</AlertDescription>
             </Alert>
           )}
@@ -269,7 +303,7 @@ const WaitlistForm: React.FC = () => {
                     <SelectItem value="company">Production company</SelectItem>
                   </SelectContent>
                 </Select>
-                {errors.role_interest && <p className="mt-1 text-sm text-red-600">{errors.role_interest.message}</p>}
+                {errors.role_interest && <p className="mt-1 text-sm text-red-400">{errors.role_interest.message}</p>}
               </div>
             </div>
             <Field label="Primary market / city">
@@ -329,7 +363,7 @@ const WaitlistForm: React.FC = () => {
                 </SelectContent>
               </Select>
             </div>
-            <label className="flex items-start gap-3 rounded-lg border p-4">
+            <label className="flex items-start gap-3 rounded-lg border border-white/10 bg-white/[0.03] p-4">
               <Checkbox
                 checked={watch('beta_tester')}
                 onCheckedChange={(checked) => setValue('beta_tester', checked === true)}
@@ -338,8 +372,8 @@ const WaitlistForm: React.FC = () => {
                 Count me in as a founding beta tester — I'll test early builds and give feedback
               </span>
             </label>
-            <div className="space-y-4 border-t pt-5">
-              <h3 className="text-lg font-semibold">Help us build a better platform</h3>
+            <div className="space-y-4 border-t border-white/10 pt-5">
+              <h3 className="text-lg font-semibold text-white">Help us build a better platform</h3>
               <Field label="What production companies have you worked for or do you currently work with?">
                 <Textarea rows={3} {...register('production_companies_worked_with')} />
               </Field>
@@ -356,12 +390,12 @@ const WaitlistForm: React.FC = () => {
             <Button
               type="submit"
               disabled={loading}
-              className="h-12 w-full bg-gradient-to-r from-blue-600 to-green-500 text-lg"
+              className="h-12 w-full bg-amber-400 text-base font-semibold text-zinc-950 hover:bg-amber-300"
             >
               {loading ? 'Processing...' : 'Join the Founding Crew'}
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
-            <p className="text-center text-sm text-gray-500">
+            <p className="text-center text-sm text-zinc-500">
               By joining, you agree to receive updates about Flexzora. We'll never spam you or share your information.
             </p>
           </form>
@@ -371,16 +405,34 @@ const WaitlistForm: React.FC = () => {
   );
 };
 
-const PageShell: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 px-4 py-16 sm:px-6 lg:px-8">
-    <div className="mx-auto max-w-3xl">{children}</div>
+const PageShell: React.FC<{ children: React.ReactNode; aside?: React.ReactNode }> = ({ children, aside }) => (
+  <div className="dark relative min-h-screen bg-[#0A0A0B] text-zinc-100">
+    <div
+      className="pointer-events-none absolute inset-0 opacity-[0.04]"
+      style={{
+        backgroundImage:
+          'linear-gradient(rgba(255,255,255,0.6) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.6) 1px, transparent 1px)',
+        backgroundSize: '56px 56px',
+      }}
+    />
+    <div className="pointer-events-none absolute -top-32 left-1/2 h-[400px] w-[700px] -translate-x-1/2 rounded-full bg-amber-400/10 blur-[120px]" />
+    <div className="relative mx-auto w-full max-w-6xl px-0 py-0 sm:px-6 sm:py-12 lg:px-8">
+      {aside ? (
+        <div className="grid gap-10 px-5 py-10 sm:px-0 sm:py-0 lg:grid-cols-2 lg:gap-16 lg:py-8">
+          <div className="flex flex-col justify-center">{aside}</div>
+          <div>{children}</div>
+        </div>
+      ) : (
+        <div className="mx-auto max-w-2xl px-0 py-0 sm:py-8">{children}</div>
+      )}
+    </div>
   </div>
 );
 const Field: React.FC<{ label: string; error?: string; children: React.ReactNode }> = ({ label, error, children }) => (
   <div>
     <Label>{label}</Label>
     <div className="mt-1">{children}</div>
-    {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
+    {error && <p className="mt-1 text-sm text-red-400">{error}</p>}
   </div>
 );
 const ChipGroup: React.FC<{
@@ -402,6 +454,11 @@ const ChipGroup: React.FC<{
             variant={selected.includes(value) ? 'default' : 'outline'}
             size="sm"
             onClick={() => onToggle(value)}
+            className={
+              selected.includes(value)
+                ? 'bg-amber-400 font-medium text-zinc-950 hover:bg-amber-300'
+                : 'border-white/15 text-zinc-300 hover:bg-white/5 hover:text-white'
+            }
           >
             {text}
           </Button>

@@ -9,11 +9,11 @@ import {
 } from '@stripe/react-stripe-js';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { createPaymentIntent } from '@/lib/stripe';
+import { createPaymentIntent, isStripeDemoMode } from '@/lib/stripe';
 import { toast } from 'sonner';
 
 // Load Stripe outside of component to avoid recreating Stripe object on every render
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '');
+const stripePromise = isStripeDemoMode ? null : loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
 interface StripePaymentFormProps {
   amount: number;

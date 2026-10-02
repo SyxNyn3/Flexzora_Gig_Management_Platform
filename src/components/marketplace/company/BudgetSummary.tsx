@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ProductionEvent } from '@/lib/types';
 import { EventBudgetSummary, MarketplaceService } from '@/lib/marketplace/service';
+import { isStripeDemoMode } from '@/lib/stripe';
 import { money } from '../format';
 import { Landmark, Users, Wallet, TrendingUp } from 'lucide-react';
 
@@ -125,8 +126,16 @@ const BudgetSummary: React.FC<Props> = ({ event, refreshKey }) => {
                   <strong>{money(Math.max(0, summary.projectedLabor - summary.approvedLabor - (summary.escrowFunded - summary.escrowReleased)))}</strong>
                 </p>
                 <Input type="number" min={1} step="100" placeholder="Amount (USD)" value={amount} onChange={(e) => setAmount(e.target.value)} />
-                <Button onClick={fund} disabled={saving || !amount}>{saving ? 'Redirecting to Stripe…' : 'Continue to payment'}</Button>
-                <p className="text-xs text-gray-500">You will be taken to Stripe Checkout; the balance updates once the payment settles.</p>
+                <Button onClick={fund} disabled={saving || !amount}>
+                  {saving
+                    ? isStripeDemoMode ? 'Queueing deposit…' : 'Redirecting to Stripe…'
+                    : 'Continue to payment'}
+                </Button>
+                <p className="text-xs text-gray-500">
+                  {isStripeDemoMode
+                    ? 'Sandbox mode: the deposit is queued via Flexzora Escrow (no Stripe account connected).'
+                    : 'You will be taken to Stripe Checkout; the balance updates once the payment settles.'}
+                </p>
               </DialogContent>
             </Dialog>
           </div>

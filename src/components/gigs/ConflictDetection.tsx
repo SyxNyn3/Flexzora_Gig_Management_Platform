@@ -74,15 +74,15 @@ const ConflictDetection: React.FC<ConflictDetectionProps> = ({
       {
         id: '1',
         worker_id: 'worker-1',
-        worker_name: 'John Smith',
+        worker_name: 'Marcus Webb',
         conflicting_gigs: [
           {
             id: 'gig-2',
-            title: 'Wedding Photography',
-            company: 'Dream Weddings',
+            title: 'Strike & Load-Out — Festival Main',
+            company: 'Giglife',
             start_date: '2024-01-15T14:00:00Z',
             end_date: '2024-01-15T22:00:00Z',
-            location: 'Napa Valley, CA',
+            location: 'Golden Gate Park, SF',
             status: 'confirmed'
           }
         ],
@@ -94,35 +94,35 @@ const ConflictDetection: React.FC<ConflictDetectionProps> = ({
       {
         id: '2',
         worker_id: 'worker-2',
-        worker_name: 'Sarah Davis',
+        worker_name: 'Priya Raman',
         conflicting_gigs: [
           {
             id: 'gig-3',
-            title: 'Corporate Event Setup',
-            company: 'TechCorp',
+            title: 'Load-In & Rigging Call — Truss Build',
+            company: 'PCE',
             start_date: '2024-01-15T06:00:00Z',
             end_date: '2024-01-15T08:00:00Z',
-            location: 'San Jose, CA',
+            location: 'Convention Center Ballroom C',
             status: 'confirmed'
           }
         ],
         conflict_type: 'travel_time',
         severity: 'medium',
         auto_resolvable: true,
-        suggested_resolution: 'Allow 2 hours travel time between San Jose and San Francisco'
+        suggested_resolution: 'Allow 2 hours travel time between Ballroom C and Stadium Main Stage'
       },
       {
         id: '3',
         worker_id: 'worker-3',
-        worker_name: 'Mike Johnson',
+        worker_name: 'Devon Carter',
         conflicting_gigs: [
           {
             id: 'gig-4',
-            title: 'Concert Sound Check',
-            company: 'Live Music Productions',
+            title: 'Show Call / System Ops — Arena PA',
+            company: 'Rhino Staging',
             start_date: '2024-01-14T20:00:00Z',
             end_date: '2024-01-15T02:00:00Z',
-            location: 'Los Angeles, CA',
+            location: 'Stadium Main Stage',
             status: 'confirmed'
           }
         ],
