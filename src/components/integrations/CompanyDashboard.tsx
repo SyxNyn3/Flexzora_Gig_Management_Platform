@@ -1,29 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useAuth } from '@/contexts/AuthContext';
-import { DatabaseService } from '@/lib/supabase';
-import GigCommunication from '@/components/gigs/GigCommunication';
-import WorkerPayroll from '@/components/gigs/WorkerPayroll';
-import { 
-  Users, 
-  Send, 
+import {
+  Users,
+  Send,
   DollarSign,
   Calendar,
-  MessageSquare,
   Search,
-  Filter,
   Download,
-  Upload,
   CheckCircle,
   Clock,
-  AlertTriangle,
-  Building2
+  AlertTriangle
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -46,7 +36,6 @@ interface WorkerProfile {
 }
 
 const CompanyDashboard: React.FC = () => {
-  const { profile } = useAuth();
   const [workers, setWorkers] = useState<WorkerProfile[]>([]); 
   const [filteredWorkers, setFilteredWorkers] = useState<WorkerProfile[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -79,6 +68,7 @@ const CompanyDashboard: React.FC = () => {
 
   useEffect(() => {
     filterWorkers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workers, searchTerm, skillFilter, availabilityFilter]);
 
   const loadWorkerPool = () => {
@@ -86,88 +76,88 @@ const CompanyDashboard: React.FC = () => {
     const mockWorkers: WorkerProfile[] = [
       {
         id: 'worker-1',
-        name: 'John Smith',
-        email: 'john@example.com',
-        phone: '+1 (555) 123-4567',
+        name: 'Marcus Delgado',
+        email: 'm.delgado@stagework.co',
+        phone: '+1 (310) 555-0148',
         avatar_url: '',
-        skills: ['Camera Operation', 'Lighting Design', 'Video Editing'],
-        hourly_rate: 45,
-        experience_years: 5,
-        location: 'San Francisco, CA',
+        skills: ['Arena Rigging', 'Chain Motor Ops', 'Truss Assembly'],
+        hourly_rate: 68,
+        experience_years: 9,
+        location: 'Los Angeles, CA',
         availability_status: 'available',
         last_active: new Date().toISOString(),
-        total_gigs: 28,
-        rating: 4.8,
-        certifications: ['Certified Audio Engineer', 'Safety Training'],
-        preferred_roles: ['Camera Operator', 'Video Production']
+        total_gigs: 112,
+        rating: 4.9,
+        certifications: ['ETCP Arena Rigger', 'OSHA-30', 'Fall Protection'],
+        preferred_roles: ['Rigging Supervisor', 'Lead Rigger']
       },
       {
         id: 'worker-2',
-        name: 'Sarah Davis',
-        email: 'sarah@example.com',
-        phone: '+1 (555) 234-5678',
+        name: 'Priya Raman',
+        email: 'priya.r@a1audio.live',
+        phone: '+1 (615) 555-0237',
         avatar_url: '',
-        skills: ['Sound Engineering', 'Live Streaming', 'Event Coordination'],
-        hourly_rate: 50,
-        experience_years: 7,
-        location: 'Oakland, CA',
+        skills: ['FOH Mixing', 'System Tuning', 'RF Coordination'],
+        hourly_rate: 82,
+        experience_years: 11,
+        location: 'Nashville, TN',
         availability_status: 'busy',
         last_active: new Date(Date.now() - 3600000).toISOString(),
-        total_gigs: 42,
+        total_gigs: 189,
         rating: 4.9,
-        certifications: ['Professional Sound Engineer', 'Event Management'],
-        preferred_roles: ['Sound Engineer', 'Technical Director']
+        certifications: ['OSHA-10', 'L-Acoustics K System', 'Shure Wireless Workbench'],
+        preferred_roles: ['A1 Audio Engineer', 'System Tech']
       },
       {
         id: 'worker-3',
-        name: 'Mike Johnson',
-        email: 'mike@example.com',
-        phone: '+1 (555) 345-6789',
+        name: 'Tom Okafor',
+        email: 't.okafor@gridlite.pro',
+        phone: '+1 (702) 555-0364',
         avatar_url: '',
-        skills: ['Stage Management', 'Rigging', 'Safety Coordination'],
-        hourly_rate: 40,
-        experience_years: 3,
-        location: 'San Jose, CA',
+        skills: ['Lighting Programming', 'MA Lighting grandMA3', 'LED Wall Mapping'],
+        hourly_rate: 74,
+        experience_years: 7,
+        location: 'Las Vegas, NV',
         availability_status: 'available',
         last_active: new Date(Date.now() - 7200000).toISOString(),
-        total_gigs: 15,
-        rating: 4.6,
-        certifications: ['Rigging Certification', 'First Aid'],
-        preferred_roles: ['Stage Manager', 'Safety Coordinator']
+        total_gigs: 96,
+        rating: 4.7,
+        certifications: ['OSHA-30', 'Boom Lift Operator', 'ETCP Entertainment Electrician'],
+        preferred_roles: ['L2 Lighting Tech', 'Lighting Director']
       },
       {
         id: 'worker-4',
-        name: 'Emily Chen',
-        email: 'emily@example.com',
-        phone: '+1 (555) 456-7890',
+        name: 'Dana Whitfield',
+        email: 'dana.w@ledcrew.io',
+        phone: '+1 (404) 555-0172',
         avatar_url: '',
-        skills: ['Photography', 'Drone Operation', 'Post Production'],
-        hourly_rate: 55,
-        experience_years: 6,
-        location: 'Berkeley, CA',
+        skills: ['LED Video Walls', 'Camera Engineering', 'Media Servers'],
+        hourly_rate: 78,
+        experience_years: 8,
+        location: 'Atlanta, GA',
         availability_status: 'available',
         last_active: new Date(Date.now() - 1800000).toISOString(),
-        total_gigs: 35,
-        rating: 4.7,
-        certifications: ['FAA Drone License', 'Adobe Certified'],
-        preferred_roles: ['Photographer', 'Drone Pilot']
+        total_gigs: 74,
+        rating: 4.8,
+        certifications: ['OSHA-10', 'Boom Lift Operator', 'disguise d3 Certified'],
+        preferred_roles: ['Video Wall Lead', 'Video Engineer']
       },
       {
         id: 'worker-5',
-        name: 'David Rodriguez',
-        email: 'david@example.com',
-        phone: '+1 (555) 567-8901',
+        name: 'Jesse Kowalski',
+        email: 'jkowalski@stagehands.net',
+        phone: '+1 (213) 555-0519',
         avatar_url: '',
-        skills: ['Lighting Technician', 'Electrical', 'Equipment Setup'],
-        hourly_rate: 42,
+        skills: ['Stage Setup', 'Forklift Operation', 'Truck Pack'],
+        hourly_rate: 45,
         experience_years: 4,
-        location: 'Fremont, CA',
+        location: 'Los Angeles, CA',
         availability_status: 'unavailable',
         last_active: new Date(Date.now() - 86400000).toISOString(),
-        total_gigs: 22,
-        rating: 4.5,
-        certifications: ['Electrical Safety', 'Lighting Design'],
-        preferred_roles: ['Lighting Technician', 'Gaffer']
+        total_gigs: 58,
+        rating: 4.6,
+        certifications: ['Forklift (ANSI B56.1)', 'OSHA-10', 'CPR / First Aid'],
+        preferred_roles: ['Stagehand', 'Forklift Operator']
       }
     ];
 
@@ -264,10 +254,10 @@ const CompanyDashboard: React.FC = () => {
 
   const getAvailabilityColor = (status: string) => {
     switch (status) {
-      case 'available': return 'bg-green-100 text-green-800';
-      case 'busy': return 'bg-yellow-100 text-yellow-800';
-      case 'unavailable': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'available': return 'bg-green-500/15 text-success dark:text-green-400 border border-green-500/30';
+      case 'busy': return 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30';
+      case 'unavailable': return 'bg-red-500/15 text-red-600 dark:text-red-400 border border-red-500/30';
+      default: return 'bg-muted text-muted-foreground border border-border';
     }
   };
 
@@ -287,19 +277,19 @@ const CompanyDashboard: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header skeleton */}
         <div className="mb-8">
-          <div className="h-8 w-64 bg-gray-200 rounded animate-pulse mb-2"></div>
-          <div className="h-4 w-96 bg-gray-200 rounded animate-pulse"></div>
+          <div className="h-8 w-64 bg-muted rounded animate-pulse mb-2"></div>
+          <div className="h-4 w-96 bg-muted rounded animate-pulse"></div>
         </div>
         
         {/* Stats skeleton */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="bg-white p-6 rounded-lg shadow animate-pulse">
+            <div key={i} className="bg-card p-6 rounded-lg shadow animate-pulse">
               <div className="flex items-center">
-                <div className="h-8 w-8 bg-gray-200 rounded-full mr-4"></div>
+                <div className="h-8 w-8 bg-muted rounded-full mr-4"></div>
                 <div>
-                  <div className="h-4 w-32 bg-gray-200 rounded mb-2"></div>
-                  <div className="h-6 w-16 bg-gray-200 rounded"></div>
+                  <div className="h-4 w-32 bg-muted rounded mb-2"></div>
+                  <div className="h-6 w-16 bg-muted rounded"></div>
                 </div>
               </div>
             </div>
@@ -307,29 +297,29 @@ const CompanyDashboard: React.FC = () => {
         </div>
         
         {/* Filters skeleton */}
-        <div className="bg-white p-6 rounded-lg shadow mb-6 animate-pulse">
+        <div className="bg-card p-6 rounded-lg shadow mb-6 animate-pulse">
           <div className="flex flex-wrap items-center gap-4">
-            <div className="h-10 w-64 bg-gray-200 rounded"></div>
-            <div className="h-10 w-32 bg-gray-200 rounded"></div>
-            <div className="h-10 w-32 bg-gray-200 rounded"></div>
-            <div className="h-10 w-32 bg-gray-200 rounded"></div>
+            <div className="h-10 w-64 bg-muted rounded"></div>
+            <div className="h-10 w-32 bg-muted rounded"></div>
+            <div className="h-10 w-32 bg-muted rounded"></div>
+            <div className="h-10 w-32 bg-muted rounded"></div>
           </div>
         </div>
         
         {/* Workers grid skeleton */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div key={i} className="bg-white p-6 rounded-lg shadow animate-pulse">
+            <div key={i} className="bg-card p-6 rounded-lg shadow animate-pulse">
               <div className="flex items-start space-x-4">
-                <div className="h-12 w-12 bg-gray-200 rounded-full"></div>
+                <div className="h-12 w-12 bg-muted rounded-full"></div>
                 <div className="flex-1">
-                  <div className="h-5 w-32 bg-gray-200 rounded mb-2"></div>
-                  <div className="h-4 w-24 bg-gray-200 rounded mb-2"></div>
-                  <div className="h-4 w-full bg-gray-200 rounded mb-2"></div>
-                  <div className="h-4 w-3/4 bg-gray-200 rounded mb-4"></div>
+                  <div className="h-5 w-32 bg-muted rounded mb-2"></div>
+                  <div className="h-4 w-24 bg-muted rounded mb-2"></div>
+                  <div className="h-4 w-full bg-muted rounded mb-2"></div>
+                  <div className="h-4 w-3/4 bg-muted rounded mb-4"></div>
                   <div className="flex flex-wrap gap-1">
                     {[1, 2, 3].map((j) => (
-                      <div key={j} className="h-6 w-16 bg-gray-200 rounded"></div>
+                      <div key={j} className="h-6 w-16 bg-muted rounded"></div>
                     ))}
                   </div>
                 </div>
@@ -347,8 +337,8 @@ const CompanyDashboard: React.FC = () => {
       <div className="mb-8">
         <div className="flex justify-between items-start">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Worker Management</h1>
-            <p className="text-gray-600 mt-2">
+            <h1 className="text-3xl font-bold text-foreground">Worker Management</h1>
+            <p className="text-muted-foreground mt-2">
               Manage your workforce, send messages, and track performance
             </p>
           </div>
@@ -370,9 +360,9 @@ const CompanyDashboard: React.FC = () => {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center">
-              <Users className="h-8 w-8 text-blue-600" />
+              <Users className="h-8 w-8 text-primary" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Workers</p>
+                <p className="text-sm font-medium text-muted-foreground">Total Workers</p>
                 <p className="text-2xl font-bold">{workers.length}</p>
               </div>
             </div>
@@ -382,10 +372,10 @@ const CompanyDashboard: React.FC = () => {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center">
-              <CheckCircle className="h-8 w-8 text-green-600" />
+              <CheckCircle className="h-8 w-8 text-success" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Available Now</p>
-                <p className="text-2xl font-bold text-green-600">
+                <p className="text-sm font-medium text-muted-foreground">Available Now</p>
+                <p className="text-2xl font-bold text-success">
                   {workers.filter(w => w.availability_status === 'available').length}
                 </p>
               </div>
@@ -396,9 +386,9 @@ const CompanyDashboard: React.FC = () => {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center">
-              <DollarSign className="h-8 w-8 text-yellow-600" />
+              <DollarSign className="h-8 w-8 text-warning" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Avg. Hourly Rate</p>
+                <p className="text-sm font-medium text-muted-foreground">Avg. Hourly Rate</p>
                 <p className="text-2xl font-bold">
                   ${Math.round(workers.reduce((sum, w) => sum + w.hourly_rate, 0) / workers.length)}
                 </p>
@@ -410,9 +400,9 @@ const CompanyDashboard: React.FC = () => {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center">
-              <Calendar className="h-8 w-8 text-purple-600" />
+              <Calendar className="h-8 w-8 text-secondary" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Gigs</p>
+                <p className="text-sm font-medium text-muted-foreground">Total Gigs</p>
                 <p className="text-2xl font-bold">
                   {workers.reduce((sum, w) => sum + w.total_gigs, 0)}
                 </p>
@@ -428,7 +418,7 @@ const CompanyDashboard: React.FC = () => {
           <div className="flex flex-wrap items-center gap-4">
             <div className="flex-1 min-w-64">
               <div className="relative">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Search workers by name, email, skills, or location..."
                   value={searchTerm}
@@ -441,7 +431,7 @@ const CompanyDashboard: React.FC = () => {
             <select 
               value={skillFilter} 
               onChange={(e) => setSkillFilter(e.target.value)}
-              className="px-3 py-2 border rounded-md text-sm"
+              className="px-3 py-2 border border-input bg-background text-foreground rounded-md text-sm"
             >
               <option value="">All Skills</option>
               {allSkills.map(skill => (
@@ -452,7 +442,7 @@ const CompanyDashboard: React.FC = () => {
             <select 
               value={availabilityFilter} 
               onChange={(e) => setAvailabilityFilter(e.target.value)}
-              className="px-3 py-2 border rounded-md text-sm"
+              className="px-3 py-2 border border-input bg-background text-foreground rounded-md text-sm"
             >
               <option value="all">All Availability</option>
               <option value="available">Available</option>
@@ -478,7 +468,7 @@ const CompanyDashboard: React.FC = () => {
           <Card 
             key={worker.id} 
             className={`cursor-pointer transition-all hover:shadow-md ${
-              selectedWorkers.includes(worker.id) ? 'ring-2 ring-blue-500 bg-blue-50' : ''
+              selectedWorkers.includes(worker.id) ? 'ring-2 ring-primary bg-primary/10' : ''
             }`}
             onClick={() => toggleWorkerSelection(worker.id)}
           >
@@ -502,17 +492,17 @@ const CompanyDashboard: React.FC = () => {
                     </Badge>
                   </div>
                   
-                  <div className="space-y-2 text-sm text-gray-600">
+                  <div className="space-y-2 text-sm text-muted-foreground">
                     <div>{worker.email}</div>
                     <div className="flex items-center justify-between">
                       <span>${worker.hourly_rate}/hr</span>
-                      <span className="text-gray-500">{worker.experience_years} years exp.</span>
+                      <span className="text-muted-foreground">{worker.experience_years} years exp.</span>
                     </div>
                     <div>{worker.location}</div>
                     <div className="flex items-center justify-between">
                       <span>{worker.total_gigs} gigs</span>
                       <div className="flex items-center">
-                        <span className="text-yellow-500">★</span>
+                        <span className="text-primary">★</span>
                         <span className="ml-1 font-medium">{worker.rating}</span>
                       </div>
                     </div>
@@ -533,7 +523,7 @@ const CompanyDashboard: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="mt-3 text-xs text-gray-500 flex items-center">
+                  <div className="mt-3 text-xs text-muted-foreground flex items-center">
                     <Clock className="h-3 w-3 mr-1" />
                     Last active: {new Date(worker.last_active).toLocaleDateString()}
                   </div>
@@ -547,9 +537,9 @@ const CompanyDashboard: React.FC = () => {
       {filteredWorkers.length === 0 && (
         <Card>
           <CardContent className="text-center py-12">
-            <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No Workers Found</h3>
-            <p className="text-gray-600">
+            <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-foreground mb-2">No Workers Found</h3>
+            <p className="text-muted-foreground">
               Try adjusting your search criteria or filters.
             </p>
           </CardContent>
@@ -558,8 +548,8 @@ const CompanyDashboard: React.FC = () => {
 
       {/* Broadcast Message Dialog */}
       {showBroadcastDialog && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-card border border-border rounded-lg p-6 w-full max-w-md">
             <h3 className="text-lg font-semibold mb-4">
               Send Message to {selectedWorkers.length} Worker{selectedWorkers.length !== 1 ? 's' : ''}
             </h3>
@@ -571,7 +561,7 @@ const CompanyDashboard: React.FC = () => {
               <div>
                 <label className="block text-sm font-medium mb-2">Message</label>
                 <textarea 
-                  className="w-full p-3 border rounded-md" 
+                  className="w-full p-3 border border-input bg-background text-foreground rounded-md" 
                   rows={4}
                   placeholder="Type your message here..."
                 />

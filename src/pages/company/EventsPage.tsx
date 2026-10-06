@@ -17,11 +17,11 @@ import { confirmedCount } from '@/components/marketplace/format';
 import { CalendarDays, MapPin, Plus, Users } from 'lucide-react';
 
 const statusTone: Record<ProductionEvent['status'], string> = {
-  draft: 'bg-gray-100 text-gray-700',
-  published: 'bg-blue-100 text-blue-800',
-  in_progress: 'bg-green-100 text-green-800',
-  completed: 'bg-purple-100 text-purple-800',
-  cancelled: 'bg-red-100 text-red-800',
+  draft: 'bg-muted text-foreground/80',
+  published: 'bg-primary/15 text-blue-800',
+  in_progress: 'bg-green-500/15 text-green-600 dark:text-green-400',
+  completed: 'bg-secondary/15 text-purple-800',
+  cancelled: 'bg-red-500/15 text-red-600 dark:text-red-400',
 };
 
 const EventsPage: React.FC = () => {
@@ -61,7 +61,7 @@ const EventsPage: React.FC = () => {
         <Card>
           <CardContent className="p-6 space-y-3">
             <h2 className="text-xl font-semibold">Set up your production company</h2>
-            <p className="text-sm text-gray-600">Events, shifts, rosters and escrow are all scoped to your company.</p>
+            <p className="text-sm text-muted-foreground">Events, shifts, rosters and escrow are all scoped to your company.</p>
             <Input placeholder="Company name" value={companyName} onChange={(e) => setCompanyName(e.target.value)} />
             <Button disabled={!companyName.trim()} onClick={() => createCompany(companyName.trim())}>Create company</Button>
           </CardContent>
@@ -75,7 +75,7 @@ const EventsPage: React.FC = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Events</h1>
-          <p className="text-sm text-gray-600">{company.name} · multi-day productions and their crew calls</p>
+          <p className="text-sm text-muted-foreground">{company.name} · multi-day productions and their crew calls</p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
@@ -91,8 +91,8 @@ const EventsPage: React.FC = () => {
       {events.loading && <Skeleton className="h-40 w-full" />}
       {!events.loading && events.data.length === 0 && (
         <Card>
-          <CardContent className="p-10 text-center text-gray-500">
-            <CalendarDays className="w-10 h-10 mx-auto mb-3 text-gray-300" />
+          <CardContent className="p-10 text-center text-muted-foreground">
+            <CalendarDays className="w-10 h-10 mx-auto mb-3 text-muted-foreground" />
             No events yet. Create your first production to start building crew calls.
           </CardContent>
         </Card>
@@ -112,22 +112,22 @@ const EventsPage: React.FC = () => {
                     <h3 className="font-semibold">{ev.name}</h3>
                     <Badge className={statusTone[ev.status]} variant="outline">{ev.status.replace('_', ' ')}</Badge>
                   </div>
-                  <p className="text-sm text-gray-600 flex items-center gap-1">
+                  <p className="text-sm text-muted-foreground flex items-center gap-1">
                     <CalendarDays className="w-3.5 h-3.5" />
                     {format(parseISO(ev.starts_on), 'MMM d')} – {format(parseISO(ev.ends_on), 'MMM d, yyyy')} · {ev.event_type}
                   </p>
                   {ev.venue && (
-                    <p className="text-sm text-gray-600 flex items-center gap-1">
+                    <p className="text-sm text-muted-foreground flex items-center gap-1">
                       <MapPin className="w-3.5 h-3.5" /> {ev.venue.name}
                     </p>
                   )}
                   <div className="flex items-center gap-2 text-sm">
-                    <Users className="w-3.5 h-3.5 text-gray-500" />
+                    <Users className="w-3.5 h-3.5 text-muted-foreground" />
                     <span>{filled}/{required} crew confirmed</span>
-                    <div className="flex-1 h-1.5 bg-gray-200 rounded">
-                      <div className={`h-1.5 rounded ${pct === 100 ? 'bg-green-500' : 'bg-blue-500'}`} style={{ width: `${pct}%` }} />
+                    <div className="flex-1 h-1.5 bg-muted rounded">
+                      <div className={`h-1.5 rounded ${pct === 100 ? 'bg-green' : 'bg-secondary'}`} style={{ width: `${pct}%` }} />
                     </div>
-                    <span className="text-xs text-gray-500">{shifts.length} calls</span>
+                    <span className="text-xs text-muted-foreground">{shifts.length} calls</span>
                   </div>
                 </CardContent>
               </Card>

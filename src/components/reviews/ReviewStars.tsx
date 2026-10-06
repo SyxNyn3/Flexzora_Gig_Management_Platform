@@ -35,13 +35,13 @@ const ReviewStars: React.FC<ReviewStarsProps> = ({
               ? 'text-yellow-400 fill-yellow-400' 
               : i < rating 
                 ? 'text-yellow-400 fill-yellow-400 opacity-50' 
-                : 'text-gray-300'
+                : 'text-muted-foreground'
           }`}
         />
       ))}
       
       {showText && (
-        <span className="ml-2 text-sm font-medium text-gray-700">
+        <span className="ml-2 text-sm font-medium text-foreground/80">
           {rating.toFixed(1)}
         </span>
       )}

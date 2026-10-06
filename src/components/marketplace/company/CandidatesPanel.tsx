@@ -77,7 +77,7 @@ const CandidatesPanel: React.FC<Props> = ({ shift, companyId, managerId, onChang
       <div className="flex items-start justify-between gap-2">
         <div>
           <h3 className="font-semibold text-lg leading-tight">{shift.title}</h3>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-muted-foreground">
             {shift.role_name} · {shiftWindow(shift.starts_at, shift.ends_at)} · ${Number(shift.hourly_rate).toFixed(2)}/hr
           </p>
           <div className="flex flex-wrap gap-1 mt-1">
@@ -112,12 +112,12 @@ const CandidatesPanel: React.FC<Props> = ({ shift, companyId, managerId, onChang
 
         <TabsContent value="candidates" className="space-y-2 mt-3">
           {loading && [0, 1, 2].map((i) => <Skeleton key={i} className="h-14 w-full" />)}
-          {!loading && candidates.length === 0 && <p className="text-sm text-gray-500 py-4 text-center">No available workers found.</p>}
+          {!loading && candidates.length === 0 && <p className="text-sm text-muted-foreground py-4 text-center">No available workers found.</p>}
           {!loading &&
             candidates.map((c) => {
               const engaged = engagedIds.has(c.worker.id);
               return (
-                <div key={c.worker.id} className={`flex items-center gap-3 p-2.5 rounded-md border ${c.breakdown.gatekeeperPassed ? 'bg-white' : 'bg-gray-50 opacity-70'}`}>
+                <div key={c.worker.id} className={`flex items-center gap-3 p-2.5 rounded-md border ${c.breakdown.gatekeeperPassed ? 'bg-card' : 'bg-muted opacity-70'}`}>
                   <Avatar className="h-9 w-9">
                     <AvatarImage src={c.worker.avatar_url} />
                     <AvatarFallback>{initials(c.worker)}</AvatarFallback>
@@ -129,7 +129,7 @@ const CandidatesPanel: React.FC<Props> = ({ shift, companyId, managerId, onChang
                     </div>
                     <div className="flex items-center gap-2 mt-0.5">
                       <MatchScoreBadge score={c.score} breakdown={c.breakdown} reasons={c.reasons} size="sm" />
-                      {c.breakdown.distanceKm != null && <span className="text-xs text-gray-500">{c.breakdown.distanceKm} km</span>}
+                      {c.breakdown.distanceKm != null && <span className="text-xs text-muted-foreground">{c.breakdown.distanceKm} km</span>}
                     </div>
                   </div>
                   <div className="flex gap-1">
@@ -148,9 +148,9 @@ const CandidatesPanel: React.FC<Props> = ({ shift, companyId, managerId, onChang
         </TabsContent>
 
         <TabsContent value="applicants" className="space-y-2 mt-3">
-          {applicants.length === 0 && <p className="text-sm text-gray-500 py-4 text-center">No pending applications.</p>}
+          {applicants.length === 0 && <p className="text-sm text-muted-foreground py-4 text-center">No pending applications.</p>}
           {applicants.map((a) => (
-            <div key={a.id} className="flex items-center gap-3 p-2.5 rounded-md border bg-white">
+            <div key={a.id} className="flex items-center gap-3 p-2.5 rounded-md border bg-card">
               <Avatar className="h-9 w-9">
                 <AvatarImage src={a.worker?.avatar_url} />
                 <AvatarFallback>{initials(a.worker)}</AvatarFallback>
@@ -159,7 +159,7 @@ const CandidatesPanel: React.FC<Props> = ({ shift, companyId, managerId, onChang
                 <p className="text-sm font-medium truncate">{a.worker?.full_name}</p>
                 <div className="flex items-center gap-2 mt-0.5">
                   {a.match_score != null && <MatchScoreBadge score={a.match_score} breakdown={a.match_breakdown} size="sm" />}
-                  <span className="text-xs text-gray-500">via {a.source.replace(/_/g, ' ')}</span>
+                  <span className="text-xs text-muted-foreground">via {a.source.replace(/_/g, ' ')}</span>
                 </div>
               </div>
               <div className="flex gap-1">
@@ -175,16 +175,16 @@ const CandidatesPanel: React.FC<Props> = ({ shift, companyId, managerId, onChang
         </TabsContent>
 
         <TabsContent value="crew" className="space-y-2 mt-3">
-          {crew.length + offered.length === 0 && <p className="text-sm text-gray-500 py-4 text-center">Nobody booked yet.</p>}
+          {crew.length + offered.length === 0 && <p className="text-sm text-muted-foreground py-4 text-center">Nobody booked yet.</p>}
           {[...crew, ...offered].map((a) => (
-            <div key={a.id} className="flex items-center gap-3 p-2.5 rounded-md border bg-white">
+            <div key={a.id} className="flex items-center gap-3 p-2.5 rounded-md border bg-card">
               <Avatar className="h-9 w-9">
                 <AvatarImage src={a.worker?.avatar_url} />
                 <AvatarFallback>{initials(a.worker)}</AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">{a.worker?.full_name}</p>
-                <p className="text-xs text-gray-500">{a.worker?.phone ?? a.worker?.email}</p>
+                <p className="text-xs text-muted-foreground">{a.worker?.phone ?? a.worker?.email}</p>
               </div>
               <Badge variant={a.status === 'offered' ? 'outline' : 'default'}>{a.status === 'offered' ? 'Awaiting reply' : a.status}</Badge>
             </div>

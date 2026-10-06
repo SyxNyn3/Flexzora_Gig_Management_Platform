@@ -7,10 +7,13 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, CreditCard, Shield, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { createPaymentIntent } from '@/lib/stripe';
+import { IS_PAYMENTS_SANDBOX, SANDBOX_BANNER } from '@/lib/payments';
 import CheckoutForm from './CheckoutForm';
 
-// Initialize Stripe outside component to avoid recreating on each render
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '');
+// Initialize Stripe outside component — skipped in payments sandbox (no key, no Stripe request)
+const stripePromise = IS_PAYMENTS_SANDBOX
+  ? null
+  : loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
 interface StripeCheckoutProps {
   amount: number;
@@ -36,6 +39,10 @@ const StripeCheckout: React.FC<StripeCheckoutProps> = ({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (IS_PAYMENTS_SANDBOX) {
+      setLoading(false);
+      return;
+    }
     const initializePayment = async () => {
       try {
         setLoading(true);
@@ -53,10 +60,11 @@ const StripeCheckout: React.FC<StripeCheckoutProps> = ({
         }
         
         setClientSecret(clientSecret);
-      } catch (err: any) {
+      } catch (err) {
         console.error('Failed to initialize payment:', err);
-        setError(err.message || 'Failed to initialize payment');
-        onPaymentError?.(err);
+        const e = err instanceof Error ? err : new Error('Failed to initialize payment');
+        setError(e.message);
+        onPaymentError?.(e);
       } finally {
         setLoading(false);
       }
@@ -75,12 +83,39 @@ const StripeCheckout: React.FC<StripeCheckoutProps> = ({
     onPaymentError?.(error);
   };
 
+  if (IS_PAYMENTS_SANDBOX) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Shield className="h-5 w-5 text-primary" />
+            Payments sandbox
+          </CardTitle>
+          <CardDescription>Complete your payment for {description}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm rounded-md border border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 px-3 py-2">
+            {SANDBOX_BANNER}
+          </p>
+        </CardContent>
+        <CardFooter className="flex justify-between text-xs text-muted-foreground">
+          <div>Set VITE_STRIPE_PUBLISHABLE_KEY to enable live checkout.</div>
+          {onCancel && (
+            <Button variant="outline" size="sm" onClick={onCancel}>
+              Close
+            </Button>
+          )}
+        </CardFooter>
+      </Card>
+    );
+  }
+
   if (loading) {
     return (
       <Card>
         <CardContent className="pt-6 flex flex-col items-center justify-center py-10">
           <Loader2 className="h-10 w-10 text-primary animate-spin mb-4" />
-          <p className="text-center text-gray-600">Initializing payment...</p>
+          <p className="text-center text-muted-foreground">Initializing payment...</p>
         </CardContent>
       </Card>
     );
@@ -145,7 +180,7 @@ const StripeCheckout: React.FC<StripeCheckoutProps> = ({
           </Elements>
         )}
       </CardContent>
-      <CardFooter className="flex justify-between border-t pt-4 text-xs text-gray-500">
+      <CardFooter className="flex justify-between border-t pt-4 text-xs text-muted-foreground">
         <div className="flex items-center">
           <Shield className="h-3 w-3 mr-1" />
           Secure payment powered by Stripe

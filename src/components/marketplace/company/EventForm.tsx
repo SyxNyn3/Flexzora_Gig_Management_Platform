@@ -116,7 +116,7 @@ const EventForm: React.FC<Props> = ({ venues, overtimeRules, onCreateVenue, onSu
           </SelectContent>
         </Select>
         {showVenue && (
-          <div className="mt-3 p-3 border rounded-md bg-gray-50 space-y-2">
+          <div className="mt-3 p-3 border border-border rounded-md bg-muted/50 space-y-2">
             <Input placeholder="Venue name" value={venue.name} onChange={(e) => setVenue({ ...venue, name: e.target.value })} />
             <Input placeholder="Street address" value={venue.address} onChange={(e) => setVenue({ ...venue, address: e.target.value })} />
             <div className="grid grid-cols-2 gap-2">
@@ -128,7 +128,7 @@ const EventForm: React.FC<Props> = ({ venues, overtimeRules, onCreateVenue, onSu
               <Input type="number" step="any" placeholder="Longitude" value={venue.longitude || ''} onChange={(e) => setVenue({ ...venue, longitude: Number(e.target.value) })} />
               <Input type="number" placeholder="Geofence (m)" value={venue.geofence_radius_m} onChange={(e) => setVenue({ ...venue, geofence_radius_m: Number(e.target.value) })} />
             </div>
-            <p className="text-xs text-gray-500">Coordinates power geofenced clock-in and proximity matching.</p>
+            <p className="text-xs text-muted-foreground">Coordinates power geofenced clock-in and proximity matching.</p>
             <Button type="button" size="sm" disabled={savingVenue || !venue.name || !venue.address || !venue.latitude} onClick={saveVenue}>
               {savingVenue ? 'Saving…' : 'Save venue'}
             </Button>

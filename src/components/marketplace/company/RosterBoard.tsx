@@ -14,9 +14,9 @@ interface Props {
 const stageLabel: Record<Shift['broadcast_stage'], string> = { none: 'Draft', roster: 'Roster only', public: 'Public' };
 
 const fillTone = (confirmed: number, headcount: number) => {
-  if (confirmed >= headcount) return 'border-green-300 bg-green-50';
+  if (confirmed >= headcount) return 'border-green-500/40 bg-green-500/10';
   if (confirmed > 0) return 'border-amber-300 bg-amber-50';
-  return 'border-gray-200 bg-white';
+  return 'border-border bg-card';
 };
 
 /** Multi-lane schedule: one column per event day, one card per call. */
@@ -41,15 +41,15 @@ const RosterBoard: React.FC<Props> = ({ event, selectedShiftId, onSelectShift })
               <div className="flex items-center justify-between mb-2 px-1">
                 <div>
                   <p className="text-sm font-semibold">{format(day, 'EEE, MMM d')}</p>
-                  <p className="text-xs text-gray-500">{dayShifts.length} call{dayShifts.length === 1 ? '' : 's'}</p>
+                  <p className="text-xs text-muted-foreground">{dayShifts.length} call{dayShifts.length === 1 ? '' : 's'}</p>
                 </div>
                 <Badge variant="outline" className="text-xs">
                   <Users className="w-3 h-3 mr-1" />
                   {filled}/{required}
                 </Badge>
               </div>
-              <div className="space-y-2 min-h-[120px] rounded-md bg-gray-50 p-2 border border-dashed">
-                {dayShifts.length === 0 && <p className="text-xs text-gray-400 text-center py-6">No calls</p>}
+              <div className="space-y-2 min-h-[120px] rounded-md bg-muted/50 p-2 border border-dashed">
+                {dayShifts.length === 0 && <p className="text-xs text-muted-foreground/70 text-center py-6">No calls</p>}
                 {dayShifts.map((shift) => {
                   const confirmed = confirmedCount(shift);
                   const pending = (shift.assignments ?? []).filter((a) => a.status === 'applied' || a.status === 'offered').length;
@@ -58,7 +58,7 @@ const RosterBoard: React.FC<Props> = ({ event, selectedShiftId, onSelectShift })
                       type="button"
                       key={shift.id}
                       onClick={() => onSelectShift(shift)}
-                      className={`w-full text-left rounded-md border p-2.5 shadow-sm transition ${fillTone(confirmed, shift.headcount)} ${selectedShiftId === shift.id ? 'ring-2 ring-blue-500' : 'hover:shadow'}`}
+                      className={`w-full text-left rounded-md border p-2.5 shadow-sm transition ${fillTone(confirmed, shift.headcount)} ${selectedShiftId === shift.id ? 'ring-2 ring-primary' : 'hover:shadow'}`}
                       style={{ borderLeftWidth: 4, borderLeftColor: event.color }}
                     >
                       <div className="flex items-start justify-between gap-2">
@@ -67,8 +67,8 @@ const RosterBoard: React.FC<Props> = ({ event, selectedShiftId, onSelectShift })
                           {confirmed}/{shift.headcount}
                         </span>
                       </div>
-                      <p className="text-xs text-gray-600 mt-0.5">{shift.role_name}</p>
-                      <div className="flex items-center gap-1 text-xs text-gray-500 mt-1">
+                      <p className="text-xs text-muted-foreground mt-0.5">{shift.role_name}</p>
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
                         <Clock className="w-3 h-3" />
                         {format(new Date(shift.starts_at), 'HH:mm')}–{format(new Date(shift.ends_at), 'HH:mm')} · ${Number(shift.hourly_rate).toFixed(0)}/hr
                       </div>

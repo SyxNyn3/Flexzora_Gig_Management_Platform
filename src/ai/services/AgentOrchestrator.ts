@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- dynamic AI agent payloads/ML plumbing */
 import { BaseAgent, InMemoryMessageBus, MessageBus } from './BaseAgent';
 import { AgentTask, AgentMessage } from '../types';
 

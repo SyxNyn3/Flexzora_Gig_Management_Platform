@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -12,7 +11,7 @@ import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { AuthKitButton } from './AuthKitButton';
-import { Building2, Plus, Link, CheckCircle, AlertCircle, FolderSync as Sync, Settings, Users, Calendar, DollarSign, MessageSquare, Upload, Download, Wifi, WifiOff, Star, Shield } from 'lucide-react';
+import { Building2, Plus, Link, CheckCircle, FolderSync as Sync, Calendar, DollarSign, MessageSquare, Wifi, WifiOff } from 'lucide-react';
 import { Mail } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -31,7 +30,7 @@ interface CompanyIntegration {
   };
   last_sync: string;
   worker_id: string;
-  credentials?: any;
+  credentials?: Record<string, unknown>;
   settings: {
     auto_sync: boolean;
     notifications: boolean;
@@ -114,11 +113,12 @@ const PRODUCTION_COMPANIES = [
 
 const CompanyIntegrations: React.FC = () => {
   const { profile } = useAuth();
+  const navigate = useNavigate();
   const [integrations, setIntegrations] = useState<CompanyIntegration[]>([]);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState<string>('');
   const [integrationType, setIntegrationType] = useState<string>('');
-  const [credentials, setCredentials] = useState<any>({});
+  const [credentials, setCredentials] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('connected');
 
@@ -226,7 +226,7 @@ const CompanyIntegrations: React.FC = () => {
         id: Date.now().toString(),
         company_name: company.name,
         company_logo: company.logo,
-        integration_type: company.integration_type as any,
+        integration_type: company.integration_type as CompanyIntegration['integration_type'],
         status: 'pending',
         features: {
           scheduling: company.features.includes('scheduling'),
@@ -265,7 +265,7 @@ const CompanyIntegrations: React.FC = () => {
       }, 2000);
 
       toast.info(`Connecting to ${company.name}...`);
-    } catch (error) {
+    } catch {
       toast.error('Failed to add integration');
     } finally {
       setLoading(false);
@@ -300,11 +300,11 @@ const CompanyIntegrations: React.FC = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'connected': return 'bg-green-100 text-green-800';
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'error': return 'bg-red-100 text-red-800';
-      case 'disconnected': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'connected': return 'bg-green-500/15 text-green-600 dark:text-green-400';
+      case 'pending': return 'bg-amber-500/15 text-amber-600 dark:text-amber-400';
+      case 'error': return 'bg-red-500/15 text-red-600 dark:text-red-400';
+      case 'disconnected': return 'bg-muted text-foreground/90';
+      default: return 'bg-muted text-foreground/90';
     }
   };
 
@@ -328,8 +328,8 @@ const CompanyIntegrations: React.FC = () => {
       <div className="mb-8">
         <div className="flex justify-between items-start">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Company Integrations</h1>
-            <p className="text-gray-600 mt-2">
+            <h1 className="text-3xl font-bold text-foreground">Company Integrations</h1>
+            <p className="text-muted-foreground mt-2">
               Connect with production companies to manage all your gigs in one place
             </p>
           </div>
@@ -345,9 +345,9 @@ const CompanyIntegrations: React.FC = () => {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center">
-              <Building2 className="h-8 w-8 text-blue-600" />
+              <Building2 className="h-8 w-8 text-primary" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Connected Companies</p>
+                <p className="text-sm font-medium text-muted-foreground">Connected Companies</p>
                 <p className="text-2xl font-bold">{connectedIntegrations.length}</p>
               </div>
             </div>
@@ -357,9 +357,9 @@ const CompanyIntegrations: React.FC = () => {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center">
-              <Calendar className="h-8 w-8 text-green-600" />
+              <Calendar className="h-8 w-8 text-green-600 dark:text-green-400" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Gigs</p>
+                <p className="text-sm font-medium text-muted-foreground">Total Gigs</p>
                 <p className="text-2xl font-bold">
                   {connectedIntegrations.reduce((sum, i) => sum + i.stats.total_gigs, 0)}
                 </p>
@@ -371,9 +371,9 @@ const CompanyIntegrations: React.FC = () => {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center">
-              <DollarSign className="h-8 w-8 text-yellow-600" />
+              <DollarSign className="h-8 w-8 text-amber-600 dark:text-amber-400" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Pending Payments</p>
+                <p className="text-sm font-medium text-muted-foreground">Pending Payments</p>
                 <p className="text-2xl font-bold">
                   ${connectedIntegrations.reduce((sum, i) => sum + i.stats.pending_payments, 0).toLocaleString()}
                 </p>
@@ -385,9 +385,9 @@ const CompanyIntegrations: React.FC = () => {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center">
-              <MessageSquare className="h-8 w-8 text-purple-600" />
+              <MessageSquare className="h-8 w-8 text-secondary" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Unread Messages</p>
+                <p className="text-sm font-medium text-muted-foreground">Unread Messages</p>
                 <p className="text-2xl font-bold">
                   {connectedIntegrations.reduce((sum, i) => sum + i.stats.unread_messages, 0)}
                 </p>
@@ -459,7 +459,7 @@ const CompanyIntegrations: React.FC = () => {
                             {enabled ? (
                               <CheckCircle className="h-4 w-4 text-green-500" />
                             ) : (
-                              <div className="h-4 w-4 rounded-full bg-gray-200"></div>
+                              <div className="h-4 w-4 rounded-full bg-muted"></div>
                             )}
                           </div>
                         ))}
@@ -525,9 +525,9 @@ const CompanyIntegrations: React.FC = () => {
           ) : (
             <Card>
               <CardContent className="text-center py-12">
-                <Building2 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No Connected Companies</h3>
-                <p className="text-gray-600 mb-4">
+                <Building2 className="h-12 w-12 text-muted-foreground/70 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-foreground mb-2">No Connected Companies</h3>
+                <p className="text-muted-foreground mb-4">
                   Connect with production companies to start managing all your gigs in one place.
                 </p>
                 <Button onClick={() => setShowAddDialog(true)}>
@@ -548,7 +548,7 @@ const CompanyIntegrations: React.FC = () => {
                     <div className="text-2xl">{integration.company_logo}</div>
                     <div>
                       <h3 className="font-medium">{integration.company_name}</h3>
-                      <p className="text-sm text-gray-600">Connection in progress...</p>
+                      <p className="text-sm text-muted-foreground">Connection in progress...</p>
                     </div>
                   </div>
                   <Badge className={getStatusColor(integration.status)}>
@@ -565,14 +565,14 @@ const CompanyIntegrations: React.FC = () => {
 
         <TabsContent value="errors" className="space-y-4">
           {errorIntegrations.map((integration) => (
-            <Card key={integration.id} className="border-red-200">
+            <Card key={integration.id} className="border-red-500/30">
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
                     <div className="text-2xl">{integration.company_logo}</div>
                     <div>
                       <h3 className="font-medium">{integration.company_name}</h3>
-                      <p className="text-sm text-red-600">Connection error - credentials may be invalid</p>
+                      <p className="text-sm text-red-600 dark:text-red-400">Connection error - credentials may be invalid</p>
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
@@ -632,7 +632,7 @@ const CompanyIntegrations: React.FC = () => {
                         <Badge variant="outline">
                           {company.integration_type.toUpperCase()}
                         </Badge>
-                        <span className="text-xs text-gray-500">{company.website}</span>
+                        <span className="text-xs text-muted-foreground">{company.website}</span>
                       </div>
                       <Button 
                         size="sm"
@@ -670,7 +670,7 @@ const CompanyIntegrations: React.FC = () => {
                   <div className="text-2xl">📧</div>
                   <div>
                     <h3 className="font-medium">Gmail Integration</h3>
-                    <p className="text-sm text-gray-600">Sync emails, detect gig offers, and manage communications</p>
+                    <p className="text-sm text-muted-foreground">Sync emails, detect gig offers, and manage communications</p>
                   </div>
                 </div>
                 <Button 
@@ -688,7 +688,7 @@ const CompanyIntegrations: React.FC = () => {
                   <div className="text-2xl">🗓️</div>
                   <div>
                     <h3 className="font-medium">Google Calendar</h3>
-                    <p className="text-sm text-gray-600">Sync your gigs with Google Calendar automatically</p>
+                    <p className="text-sm text-muted-foreground">Sync your gigs with Google Calendar automatically</p>
                   </div>
                 </div>
                 <AuthKitButton 
@@ -713,7 +713,7 @@ const CompanyIntegrations: React.FC = () => {
             <AuthKitButton 
               onConnectionSuccess={(connection) => {
                 console.log('New connection established:', connection);
-                toast.success(`Connected to ${connection.provider || 'service'} successfully!`);
+                toast.success(`Connected to ${connection.name || 'service'} successfully!`);
               }}
             />
           </CardContent>
@@ -753,7 +753,7 @@ const CompanyIntegrations: React.FC = () => {
             </div>
 
             {selectedCompany && (
-              <div className="bg-blue-50 p-4 rounded-lg">
+              <div className="bg-primary/10 p-4 rounded-lg">
                 <h4 className="font-medium text-blue-900 mb-2">Integration Type: {integrationType?.toUpperCase()}</h4>
                 <div className="text-sm text-blue-800">
                   {integrationType === 'api' && (
@@ -814,7 +814,7 @@ const CompanyIntegrations: React.FC = () => {
                   value={credentials.email || ''}
                   onChange={(e) => setCredentials({...credentials, email: e.target.value})}
                 />
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   We'll monitor emails from this address for job updates
                 </p>
               </div>

@@ -1,19 +1,20 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useAuthKit } from '@picahq/authkit';
+type ConnectionRecord = { _id: string; name: string; platform: string; key?: string };
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { PlusCircle, CheckCircle, AlertCircle, ExternalLink, Zap } from 'lucide-react';
+import { PlusCircle, CheckCircle, ExternalLink, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface AuthKitButtonProps {
-  onConnectionSuccess?: (connection: any) => void;
+  onConnectionSuccess?: (connection: ConnectionRecord) => void;
   className?: string;
 }
 
 export function AuthKitButton({ onConnectionSuccess, className = "" }: AuthKitButtonProps) {
   const [isConnecting, setIsConnecting] = useState(false);
-  const [connections, setConnections] = useState<any[]>([]);
+  const [connections, setConnections] = useState<ConnectionRecord[]>([]);
   const isDemoMode = !import.meta.env.VITE_SUPABASE_URL;
 
   const { open } = useAuthKit({
@@ -28,13 +29,13 @@ export function AuthKitButton({ onConnectionSuccess, className = "" }: AuthKitBu
       console.log("Connected:", connection);
       setConnections(prev => [...prev, connection]);
       setIsConnecting(false);
-      toast.success(`Successfully connected to ${connection.provider || 'service'}!`);
+      toast.success('Successfully connected!');
       onConnectionSuccess?.(connection);
     },
     onError: (error) => {
       console.error("AuthKit error:", error);
       setIsConnecting(false);
-      toast.error(`Connection failed: ${error.message || 'Unknown error'}`);
+      toast.error(`Connection failed: ${error || 'Unknown error'}`);
     },
     onClose: () => {
       console.log("AuthKit UI closed");
@@ -58,7 +59,7 @@ export function AuthKitButton({ onConnectionSuccess, className = "" }: AuthKitBu
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center">
-            <Zap className="h-5 w-5 mr-2 text-blue-600" />
+            <Zap className="h-5 w-5 mr-2 text-primary" />
             External Tool Connections
           </CardTitle>
           <CardDescription>
@@ -69,19 +70,19 @@ export function AuthKitButton({ onConnectionSuccess, className = "" }: AuthKitBu
           {/* Connection Status */}
           {connections.length > 0 && (
             <div className="space-y-2">
-              <h4 className="font-medium text-sm text-gray-700">Connected Services</h4>
+              <h4 className="font-medium text-sm text-foreground/80">Connected Services</h4>
               {connections.map((connection) => (
-                <div key={connection.id} className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
+                <div key={connection._id} className="flex items-center justify-between p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
                   <div className="flex items-center space-x-3">
-                    <CheckCircle className="h-5 w-5 text-green-600" />
+                    <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
                     <div>
-                      <p className="font-medium text-green-900">{connection.provider}</p>
-                      <p className="text-sm text-green-700">
-                        Connected {new Date(connection.connectedAt).toLocaleDateString()}
+                      <p className="font-medium text-green-900">{connection.name}</p>
+                      <p className="text-sm text-green-600 dark:text-green-400">
+                        {connection.platform}
                       </p>
                     </div>
                   </div>
-                  <Badge variant="outline" className="text-green-700 border-green-300">
+                  <Badge variant="outline" className="text-green-600 dark:text-green-400 border-green-500/40">
                     Active
                   </Badge>
                 </div>
@@ -97,7 +98,7 @@ export function AuthKitButton({ onConnectionSuccess, className = "" }: AuthKitBu
           >
             {isConnecting ? (
               <div className="flex items-center">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-foreground mr-2"></div>
                 Connecting...
               </div>
             ) : (
@@ -109,8 +110,8 @@ export function AuthKitButton({ onConnectionSuccess, className = "" }: AuthKitBu
           </Button>
 
           {/* Available Integrations Preview */}
-          <div className="pt-4 border-t border-gray-200">
-            <h4 className="font-medium text-sm text-gray-700 mb-3">Available Integrations</h4>
+          <div className="pt-4 border-t border-border">
+            <h4 className="font-medium text-sm text-foreground/80 mb-3">Available Integrations</h4>
             <div className="grid grid-cols-2 gap-2">
               {[
                 { name: 'Google Calendar', icon: '📅' },
@@ -120,9 +121,9 @@ export function AuthKitButton({ onConnectionSuccess, className = "" }: AuthKitBu
                 { name: 'Zapier', icon: '⚡' },
                 { name: 'Airtable', icon: '🗃️' }
               ].map((service) => (
-                <div key={service.name} className="flex items-center space-x-2 p-2 bg-gray-50 rounded text-sm">
+                <div key={service.name} className="flex items-center space-x-2 p-2 bg-muted/50 rounded text-sm">
                   <span>{service.icon}</span>
-                  <span className="text-gray-700">{service.name}</span>
+                  <span className="text-foreground/80">{service.name}</span>
                 </div>
               ))}
             </div>
@@ -134,7 +135,7 @@ export function AuthKitButton({ onConnectionSuccess, className = "" }: AuthKitBu
               href="https://docs.pica.com/authkit" 
               target="_blank" 
               rel="noopener noreferrer"
-              className="inline-flex items-center text-sm text-blue-600 hover:text-blue-700"
+              className="inline-flex items-center text-sm text-primary hover:text-primary"
             >
               Learn more about integrations
               <ExternalLink className="ml-1 h-3 w-3" />

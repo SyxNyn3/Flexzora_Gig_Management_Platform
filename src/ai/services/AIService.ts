@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- dynamic AI agent payloads/ML plumbing */
 import { AgentOrchestrator, orchestrator } from './AgentOrchestrator';
 import { InMemoryMessageBus } from './BaseAgent';
 import { CredentialGraphAgent } from '../agents/matching/CredentialGraphAgent';

@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
-import { Mail, Apple, Chrome, ArrowLeft, Shield, CircleCheck as CheckCircle, Eye, EyeOff, Sparkles, Lock } from 'lucide-react';
+import { Mail, Apple, Chrome, ArrowLeft, Shield, CircleCheck as CheckCircle, Eye, EyeOff, Zap, Lock } from 'lucide-react';
 
 const signInSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -85,8 +85,8 @@ const AuthForm: React.FC = () => {
         // Navigate immediately to prevent blank screen
         navigate('/dashboard', { replace: true });
       }
-    } catch (err: any) {
-      setError(err.message || 'An error occurred during sign in');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred during sign in');
       console.error('Sign in exception:', err);
     } finally {
       setLoading(false);
@@ -126,8 +126,8 @@ const AuthForm: React.FC = () => {
         // Navigate immediately to prevent blank screen
         navigate('/dashboard', { replace: true });
       }
-    } catch (err: any) {
-      setError(err.message || 'An error occurred during sign up');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred during sign up');
       console.error('Sign up exception:', err);
     } finally {
       setLoading(false);
@@ -155,45 +155,42 @@ const AuthForm: React.FC = () => {
       }
 
       // The redirect will happen automatically
-    } catch (err: any) {
+    } catch (err) {
       console.error(`${provider} login error:`, err);
-      setError(err.message || `Failed to sign in with ${provider}`);
+      setError(err instanceof Error ? err.message : `Failed to sign in with ${provider}`);
       setSocialLoading(null);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-white to-blue-50 p-4">
-      <div className="w-full max-w-md">
+    <div className="relative min-h-screen flex items-center justify-center bg-background p-4 overflow-x-hidden">
+      <div className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 h-[480px] w-[720px] rounded-full bg-primary/10 blur-3xl" />
+      <div className="pointer-events-none absolute bottom-0 right-0 h-[320px] w-[480px] rounded-full bg-secondary/10 blur-3xl" />
+      <div className="relative w-full max-w-md">
         {/* Back to Home Button */}
         <Button
           variant="ghost"
           onClick={() => navigate('/')}
-          className="mb-6 text-gray-600 hover:text-gray-900 transition-colors"
+          className="mb-6 text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Home
         </Button>
 
-        <Card className="shadow-2xl border-0 animate-fade-in backdrop-blur-sm bg-white/95">
+        <Card className="shadow-2xl border-border bg-card animate-fade-in">
           <CardHeader className="text-center pb-8 pt-8">
             <div className="flex justify-center mb-6">
-              <div className="relative">
-                <div className="w-16 h-16 bg-gradient-to-r from-blue-600 to-green-500 rounded-xl flex items-center justify-center shadow-lg">
-                  <span className="text-white font-bold text-3xl">F</span>
-                </div>
-                <div className="absolute -top-1 -right-1 w-6 h-6 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
-                  <Sparkles className="w-3 h-3 text-white" />
-                </div>
+              <div className="w-16 h-16 bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/25">
+                <Zap className="w-8 h-8 text-primary-foreground" />
               </div>
             </div>
-            <CardTitle className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent mb-2">
-              {isSignUp ? 'Join FlexZora' : 'Welcome Back'}
+            <CardTitle className="text-3xl font-bold text-foreground mb-2">
+              {isSignUp ? 'Join Flexzora' : 'Welcome Back'}
             </CardTitle>
-            <CardDescription className="text-base text-gray-600 max-w-sm mx-auto leading-relaxed">
+            <CardDescription className="text-base text-muted-foreground max-w-sm mx-auto leading-relaxed">
               {isSignUp 
-                ? 'Create your account and start managing your gigs like a pro' 
-                : 'Sign in to your FlexZora account and continue your journey'
+                ? 'Claim your spot on the call sheet — built for live-event crews' 
+                : 'Sign in to your Flexzora account and get back on the call sheet'
               }
             </CardDescription>
           </CardHeader>
@@ -205,10 +202,10 @@ const AuthForm: React.FC = () => {
                 variant="outline"
                 onClick={() => handleSocialLogin('google')}
                 disabled={socialLoading !== null || loading}
-                className="w-full h-12 text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 font-medium"
+                className="w-full h-12 text-foreground border-border hover:bg-muted hover:border-border transition-all duration-200 font-medium"
               >
                 {socialLoading === 'google' ? (
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-600"></div>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-foreground"></div>
                 ) : (
                   <>
                     <Chrome className="w-5 h-5 mr-3" />
@@ -221,10 +218,10 @@ const AuthForm: React.FC = () => {
                 variant="outline"
                 onClick={() => handleSocialLogin('apple')}
                 disabled={socialLoading !== null || loading}
-                className="w-full h-12 text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 font-medium"
+                className="w-full h-12 text-foreground border-border hover:bg-muted hover:border-border transition-all duration-200 font-medium"
               >
                 {socialLoading === 'apple' ? (
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-600"></div>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-foreground"></div>
                 ) : (
                   <>
                     <Apple className="w-5 h-5 mr-3" />
@@ -235,18 +232,18 @@ const AuthForm: React.FC = () => {
 
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t border-gray-200" />
+                  <span className="w-full border-t border-border" />
                 </div>
                 <div className="relative flex justify-center text-sm uppercase">
-                  <span className="bg-white px-4 text-gray-500 font-medium tracking-wide">Or continue with email</span>
+                  <span className="bg-card px-4 text-muted-foreground font-medium tracking-wide">Or continue with email</span>
                 </div>
               </div>
             </div>
 
             {/* Error Display */}
             {error && (
-              <Alert variant="destructive" className="bg-red-50 border-red-200">
-                <AlertDescription className="text-red-800 text-sm">{error}</AlertDescription>
+              <Alert variant="destructive" className="bg-destructive/10 border-destructive/30">
+                <AlertDescription className="text-destructive text-sm">{error}</AlertDescription>
               </Alert>
             )}
 
@@ -255,32 +252,32 @@ const AuthForm: React.FC = () => {
               <form onSubmit={signUpForm.handleSubmit(onSignUp)} className="space-y-5">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="fullName" className="text-sm font-medium text-gray-700">Full Name</Label>
+                    <Label htmlFor="fullName" className="text-sm font-medium text-foreground">Full Name</Label>
                     <Input
                       id="fullName"
                       type="text"
                       {...signUpForm.register('fullName')}
-                      className="mt-1.5 h-11 transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="mt-1.5 h-11 transition-all duration-200 focus:ring-2 focus:ring-primary focus:border-transparent"
                       placeholder="Enter your full name"
                     />
                     {signUpForm.formState.errors.fullName && (
-                      <p className="text-sm text-red-600 mt-1">
+                      <p className="text-sm text-destructive mt-1">
                         {signUpForm.formState.errors.fullName.message}
                       </p>
                     )}
                   </div>
 
                   <div>
-                    <Label htmlFor="username" className="text-sm font-medium text-gray-700">Username</Label>
+                    <Label htmlFor="username" className="text-sm font-medium text-foreground">Username</Label>
                     <Input
                       id="username"
                       type="text"
                       {...signUpForm.register('username')}
-                      className="mt-1.5 h-11 transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="mt-1.5 h-11 transition-all duration-200 focus:ring-2 focus:ring-primary focus:border-transparent"
                       placeholder="Choose a unique username"
                     />
                     {signUpForm.formState.errors.username && (
-                      <p className="text-sm text-red-600 mt-1">
+                      <p className="text-sm text-destructive mt-1">
                         {signUpForm.formState.errors.username.message}
                       </p>
                     )}
@@ -288,119 +285,119 @@ const AuthForm: React.FC = () => {
                 </div>
 
                 <div>
-                  <Label htmlFor="email" className="text-sm font-medium text-gray-700">Email</Label>
+                  <Label htmlFor="email" className="text-sm font-medium text-foreground">Email</Label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                     <Input
                       id="email"
                       type="email"
                       {...signUpForm.register('email')}
-                      className="mt-1.5 h-11 pl-10 transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="mt-1.5 h-11 pl-10 transition-all duration-200 focus:ring-2 focus:ring-primary focus:border-transparent"
                       placeholder="Enter your email"
                     />
                   </div>
                   {signUpForm.formState.errors.email && (
-                    <p className="text-sm text-red-600 mt-1">
+                    <p className="text-sm text-destructive mt-1">
                       {signUpForm.formState.errors.email.message}
                     </p>
                   )}
                 </div>
 
                 <div>
-                  <Label htmlFor="role" className="text-sm font-medium text-gray-700">I am a...</Label>
+                  <Label htmlFor="role" className="text-sm font-medium text-foreground">I am a...</Label>
                   <Select onValueChange={(value) => signUpForm.setValue('role', value as 'worker' | 'company')}>
-                    <SelectTrigger className="mt-1.5 h-11 transition-all duration-200 focus:ring-2 focus:ring-blue-500">
+                    <SelectTrigger className="mt-1.5 h-11 transition-all duration-200 focus:ring-2 focus:ring-primary">
                       <SelectValue placeholder="Select your role" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="worker">
                         <div className="flex items-center py-2">
-                          <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+                          <div className="w-8 h-8 bg-secondary/15 rounded-lg flex items-center justify-center mr-3">
                             <span className="text-lg">👤</span>
                           </div>
                           <div>
-                            <div className="font-medium">Freelance Professional</div>
-                            <div className="text-xs text-gray-500">Camera operator, sound engineer, etc.</div>
+                            <div className="font-medium">Crew Member</div>
+                            <div className="text-xs text-muted-foreground">Stagehand, A1, L2, rigger, video lead</div>
                           </div>
                         </div>
                       </SelectItem>
                       <SelectItem value="company">
                         <div className="flex items-center py-2">
-                          <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center mr-3">
-                            <span className="text-lg">🏢</span>
+                          <div className="w-8 h-8 bg-primary/15 rounded-lg flex items-center justify-center mr-3">
+                            <span className="text-lg">🏟️</span>
                           </div>
                           <div>
-                            <div className="font-medium">Company/Employer</div>
-                            <div className="text-xs text-gray-500">Production company, event organizer</div>
+                            <div className="font-medium">Production Company</div>
+                            <div className="text-xs text-muted-foreground">Promoters, AV providers, labor brokers</div>
                           </div>
                         </div>
                       </SelectItem>
                     </SelectContent>
                   </Select>
                   {signUpForm.formState.errors.role && (
-                    <p className="text-sm text-red-600 mt-1">
+                    <p className="text-sm text-destructive mt-1">
                       {signUpForm.formState.errors.role.message}
                     </p>
                   )}
                 </div>
 
                 <div>
-                  <Label htmlFor="password" className="text-sm font-medium text-gray-700">Password</Label>
+                  <Label htmlFor="password" className="text-sm font-medium text-foreground">Password</Label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                     <Input
                       id="password"
                       type={showPassword ? "text" : "password"}
                       {...signUpForm.register('password')}
-                      className="mt-1.5 h-11 pl-10 pr-10 transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="mt-1.5 h-11 pl-10 pr-10 transition-all duration-200 focus:ring-2 focus:ring-primary focus:border-transparent"
                       placeholder="Create a strong password"
                     />
                     <Button
                       type="button"
                       variant="ghost"
                       size="sm"
-                      className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 hover:bg-gray-100"
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 hover:bg-muted"
                       onClick={() => setShowPassword(!showPassword)}
                     >
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </Button>
                   </div>
                   {signUpForm.formState.errors.password && (
-                    <p className="text-sm text-red-600 mt-1">
+                    <p className="text-sm text-destructive mt-1">
                       {signUpForm.formState.errors.password.message}
                     </p>
                   )}
                   <div className="mt-2 space-y-1">
-                    <div className="flex items-center text-xs text-gray-500">
-                      <div className="w-1 h-1 bg-gray-400 rounded-full mr-2"></div>
+                    <div className="flex items-center text-xs text-muted-foreground">
+                      <div className="w-1 h-1 bg-muted-foreground rounded-full mr-2"></div>
                       At least 8 characters
                     </div>
                   </div>
                 </div>
 
                 <div>
-                  <Label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700">Confirm Password</Label>
+                  <Label htmlFor="confirmPassword" className="text-sm font-medium text-foreground">Confirm Password</Label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                     <Input
                       id="confirmPassword"
                       type={showConfirmPassword ? "text" : "password"}
                       {...signUpForm.register('confirmPassword')}
-                      className="mt-1.5 h-11 pl-10 pr-10 transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="mt-1.5 h-11 pl-10 pr-10 transition-all duration-200 focus:ring-2 focus:ring-primary focus:border-transparent"
                       placeholder="Confirm your password"
                     />
                     <Button
                       type="button"
                       variant="ghost"
                       size="sm"
-                      className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 hover:bg-gray-100"
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 hover:bg-muted"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     >
                       {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </Button>
                   </div>
                   {signUpForm.formState.errors.confirmPassword && (
-                    <p className="text-sm text-red-600 mt-1">
+                    <p className="text-sm text-destructive mt-1">
                       {signUpForm.formState.errors.confirmPassword.message}
                     </p>
                   )}
@@ -408,12 +405,12 @@ const AuthForm: React.FC = () => {
 
                 <Button 
                   type="submit" 
-                  className="w-full h-12 bg-gradient-to-r from-blue-600 to-green-500 hover:from-blue-700 hover:to-green-600 text-white font-semibold text-base shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-[1.02]" 
+                  className="w-full h-12 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold text-base shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all duration-200" 
                   disabled={loading || socialLoading !== null}
                 >
                   {loading ? (
                     <div className="flex items-center">
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary-foreground mr-3"></div>
                       Creating Account...
                     </div>
                   ) : (
@@ -424,47 +421,47 @@ const AuthForm: React.FC = () => {
             ) : (
               <form onSubmit={signInForm.handleSubmit(onSignIn)} className="space-y-5">
                 <div>
-                  <Label htmlFor="email" className="text-sm font-medium text-gray-700">Email or Username</Label>
+                  <Label htmlFor="email" className="text-sm font-medium text-foreground">Email or Username</Label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                     <Input
                       id="email"
                       type="email"
                       {...signInForm.register('email')}
-                      className="mt-1.5 h-11 pl-10 transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="mt-1.5 h-11 pl-10 transition-all duration-200 focus:ring-2 focus:ring-primary focus:border-transparent"
                       placeholder="Enter your email or username"
                     />
                   </div>
                   {signInForm.formState.errors.email && (
-                    <p className="text-sm text-red-600 mt-1">
+                    <p className="text-sm text-destructive mt-1">
                       {signInForm.formState.errors.email.message}
                     </p>
                   )}
                 </div>
 
                 <div>
-                  <Label htmlFor="password" className="text-sm font-medium text-gray-700">Password</Label>
+                  <Label htmlFor="password" className="text-sm font-medium text-foreground">Password</Label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                     <Input
                       id="password"
                       type={showPassword ? "text" : "password"}
                       {...signInForm.register('password')}
-                      className="mt-1.5 h-11 pl-10 pr-10 transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="mt-1.5 h-11 pl-10 pr-10 transition-all duration-200 focus:ring-2 focus:ring-primary focus:border-transparent"
                       placeholder="Enter your password"
                     />
                     <Button
                       type="button"
                       variant="ghost"
                       size="sm"
-                      className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 hover:bg-gray-100"
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 hover:bg-muted"
                       onClick={() => setShowPassword(!showPassword)}
                     >
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </Button>
                   </div>
                   {signInForm.formState.errors.password && (
-                    <p className="text-sm text-red-600 mt-1">
+                    <p className="text-sm text-destructive mt-1">
                       {signInForm.formState.errors.password.message}
                     </p>
                   )}
@@ -472,12 +469,12 @@ const AuthForm: React.FC = () => {
 
                 <Button 
                   type="submit" 
-                  className="w-full h-12 bg-gradient-to-r from-blue-600 to-green-500 hover:from-blue-700 hover:to-green-600 text-white font-semibold text-base shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-[1.02]" 
+                  className="w-full h-12 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold text-base shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all duration-200" 
                   disabled={loading || socialLoading !== null}
                 >
                   {loading ? (
                     <div className="flex items-center">
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary-foreground mr-3"></div>
                       Signing In...
                     </div>
                   ) : (
@@ -486,7 +483,7 @@ const AuthForm: React.FC = () => {
                 </Button>
 
                 <div className="text-center">
-                  <Button variant="link" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
+                  <Button variant="link" className="text-sm text-primary hover:text-primary/80 font-medium">
                     Forgot your password?
                   </Button>
                 </div>
@@ -494,8 +491,8 @@ const AuthForm: React.FC = () => {
             )}
 
             {/* Security Features */}
-            <div className="pt-4 border-t border-gray-100">
-              <div className="flex items-center justify-center space-x-6 text-xs text-gray-500">
+            <div className="pt-4 border-t border-border">
+              <div className="flex items-center justify-center space-x-6 text-xs text-muted-foreground">
                 <div className="flex items-center">
                   <Shield className="w-3 h-3 mr-1.5" />
                   256-bit SSL
@@ -521,13 +518,13 @@ const AuthForm: React.FC = () => {
             >
               {isSignUp 
                 ? (
-                  <span className="text-gray-600">
-                    Already have an account? <span className="text-blue-600 font-medium hover:text-blue-700">Sign in</span>
+                  <span className="text-muted-foreground">
+                    Already have an account? <span className="text-primary font-medium hover:text-primary/80">Sign in</span>
                   </span>
                 )
                 : (
-                  <span className="text-gray-600">
-                    Don't have an account? <span className="text-blue-600 font-medium hover:text-blue-700">Sign up</span>
+                  <span className="text-muted-foreground">
+                    Don't have an account? <span className="text-primary font-medium hover:text-primary/80">Sign up</span>
                   </span>
                 )
               }
@@ -537,18 +534,18 @@ const AuthForm: React.FC = () => {
 
         {/* Trust Indicators */}
         <div className="mt-8 text-center">
-          <p className="text-sm text-gray-500 mb-3 font-medium">Trusted by 10,000+ professionals</p>
-          <div className="flex justify-center space-x-8 text-xs text-gray-400">
+          <p className="text-sm text-muted-foreground mb-3 font-medium">Built for live-event crews and production companies</p>
+          <div className="flex justify-center space-x-8 text-xs text-muted-foreground">
             <div className="flex flex-col items-center">
-              <div className="text-base font-bold text-gray-700">99.9%</div>
+              <div className="text-base font-bold text-foreground">99.9%</div>
               <span>Uptime</span>
             </div>
             <div className="flex flex-col items-center">
-              <div className="text-base font-bold text-gray-700">24/7</div>
+              <div className="text-base font-bold text-foreground">24/7</div>
               <span>Support</span>
             </div>
             <div className="flex flex-col items-center">
-              <div className="text-base font-bold text-gray-700">256-bit</div>
+              <div className="text-base font-bold text-foreground">256-bit</div>
               <span>Security</span>
             </div>
           </div>

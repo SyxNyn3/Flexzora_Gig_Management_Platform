@@ -116,68 +116,68 @@ p {
   }
 
   .dark {
-    /* Dark mode - Maintaining calm aesthetic with deeper tones */
-    --background: 215 25% 12%;
-    --foreground: 210 20% 95%;
-    --card: 215 25% 15%;
-    --card-foreground: 210 20% 95%;
-    --popover: 215 25% 15%;
-    --popover-foreground: 210 20% 95%;
+    /* Live-event dark system - deep stage charcoals */
+    --background: 222 24% 7%;
+    --foreground: 210 20% 96%;
+    --card: 222 20% 10%;
+    --card-foreground: 210 20% 96%;
+    --popover: 222 20% 10%;
+    --popover-foreground: 210 20% 96%;
 
-    /* Primary - Slightly lighter for dark mode visibility */
-    --primary: 205 65% 60%;
-    --primary-light: 205 65% 75%;
-    --primary-lighter: 205 65% 30%;
-    --primary-dark: 205 65% 45%;
-    --primary-foreground: 215 25% 12%;
+    /* Primary - Safety amber, hi-vis accent */
+    --primary: 38 95% 55%;
+    --primary-light: 38 95% 70%;
+    --primary-lighter: 38 95% 22%;
+    --primary-dark: 38 90% 42%;
+    --primary-foreground: 222 30% 8%;
 
-    /* Secondary - Adjusted for dark mode */
-    --secondary: 150 30% 55%;
-    --secondary-light: 150 30% 70%;
-    --secondary-lighter: 150 30% 25%;
-    --secondary-dark: 150 30% 40%;
-    --secondary-foreground: 210 20% 95%;
+    /* Secondary - Electric steel blue */
+    --secondary: 205 85% 60%;
+    --secondary-light: 205 85% 74%;
+    --secondary-lighter: 205 60% 22%;
+    --secondary-dark: 205 80% 42%;
+    --secondary-foreground: 222 30% 8%;
 
-    /* Accent - Warmer in dark mode */
-    --accent: 25 75% 60%;
-    --accent-light: 25 75% 75%;
-    --accent-lighter: 25 75% 25%;
-    --accent-dark: 25 75% 45%;
-    --accent-foreground: 215 25% 12%;
+    /* Accent - Amber family, same hi-vis language */
+    --accent: 38 95% 55%;
+    --accent-light: 38 95% 70%;
+    --accent-lighter: 38 95% 22%;
+    --accent-dark: 38 90% 42%;
+    --accent-foreground: 222 30% 8%;
 
     /* Success - Vibrant but not harsh */
-    --success: 142 76% 50%;
-    --success-light: 142 76% 65%;
-    --success-lighter: 142 76% 25%;
-    --success-foreground: 215 25% 12%;
+    --success: 142 70% 50%;
+    --success-light: 142 70% 65%;
+    --success-lighter: 142 60% 22%;
+    --success-foreground: 222 30% 8%;
 
     /* Warning - Visible but calming */
-    --warning: 38 92% 65%;
-    --warning-light: 38 92% 80%;
-    --warning-lighter: 38 92% 25%;
-    --warning-foreground: 215 25% 12%;
+    --warning: 38 92% 60%;
+    --warning-light: 38 92% 75%;
+    --warning-lighter: 38 92% 22%;
+    --warning-foreground: 222 30% 8%;
 
-    /* Destructive - Softer in dark mode */
-    --destructive: 0 70% 65%;
-    --destructive-light: 0 70% 80%;
-    --destructive-lighter: 0 70% 25%;
-    --destructive-foreground: 215 25% 12%;
+    /* Destructive */
+    --destructive: 0 72% 60%;
+    --destructive-light: 0 72% 75%;
+    --destructive-lighter: 0 60% 22%;
+    --destructive-foreground: 222 30% 8%;
 
     /* Muted elements */
-    --muted: 215 25% 20%;
-    --muted-foreground: 215 15% 60%;
+    --muted: 215 20% 14%;
+    --muted-foreground: 215 15% 65%;
 
     /* Borders and inputs */
-    --border: 215 25% 25%;
-    --input: 215 25% 25%;
-    --ring: 205 65% 60%;
+    --border: 215 20% 18%;
+    --input: 215 20% 16%;
+    --ring: 38 95% 55%;
 
     /* Chart colors - adjusted for dark mode */
-    --chart-1: 205 65% 60%;
-    --chart-2: 150 30% 55%;
-    --chart-3: 25 75% 60%;
-    --chart-4: 142 76% 50%;
-    --chart-5: 38 92% 65%;
+    --chart-1: 38 95% 55%;
+    --chart-2: 205 85% 60%;
+    --chart-3: 142 70% 50%;
+    --chart-4: 280 60% 65%;
+    --chart-5: 0 72% 60%;
   }
 }
 

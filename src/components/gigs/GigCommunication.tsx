@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,25 +8,17 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
   Send, 
   Users, 
   MessageSquare,
   MapPin,
-  Clock,
-  Shirt,
   Shield,
-  Hotel,
   FileText,
   DollarSign,
-  Calendar,
   AlertTriangle,
   CheckCircle,
-  Plus,
-  Edit,
-  Trash2
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -161,11 +153,11 @@ const GigCommunication: React.FC<GigCommunicationProps> = ({ gigId, gigTitle, wo
         sender_id: profile?.id || 'demo',
         sender_name: profile?.full_name || 'Demo User',
         sender_role: profile?.role as 'company' | 'worker',
-        message_type: messageType as any,
+        message_type: messageType as GigMessage['message_type'],
         title,
         content,
         recipients: selectedRecipients,
-        priority: priority as any,
+        priority: priority as GigMessage['priority'],
         requires_confirmation: requiresConfirmation,
         confirmations: [],
         created_at: new Date().toISOString(),
@@ -175,7 +167,7 @@ const GigCommunication: React.FC<GigCommunicationProps> = ({ gigId, gigTitle, wo
       setShowMessageDialog(false);
       resetForm();
       toast.success('Message sent successfully!');
-    } catch (error) {
+    } catch {
       toast.error('Failed to send message');
     } finally {
       setLoading(false);
@@ -225,21 +217,21 @@ const GigCommunication: React.FC<GigCommunicationProps> = ({ gigId, gigTitle, wo
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'urgent': return 'bg-red-100 text-red-800 border-red-200';
-      case 'high': return 'bg-orange-100 text-orange-800 border-orange-200';
-      case 'medium': return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'low': return 'bg-gray-100 text-gray-800 border-gray-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+      case 'urgent': return 'bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/30';
+      case 'high': return 'bg-amber-500/15 text-orange-800 border-orange-200';
+      case 'medium': return 'bg-primary/15 text-blue-800 border-primary/30';
+      case 'low': return 'bg-muted text-foreground/90 border-border';
+      default: return 'bg-muted text-foreground/90 border-border';
     }
   };
 
   const getTypeColor = (type: string) => {
     switch (type) {
-      case 'instructions': return 'bg-purple-100 text-purple-800';
-      case 'payment': return 'bg-green-100 text-green-800';
-      case 'logistics': return 'bg-blue-100 text-blue-800';
-      case 'safety': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'instructions': return 'bg-secondary/15 text-purple-800';
+      case 'payment': return 'bg-green-500/15 text-green-600 dark:text-green-400';
+      case 'logistics': return 'bg-primary/15 text-blue-800';
+      case 'safety': return 'bg-red-500/15 text-red-600 dark:text-red-400';
+      default: return 'bg-muted text-foreground/90';
     }
   };
 
@@ -258,8 +250,8 @@ const GigCommunication: React.FC<GigCommunicationProps> = ({ gigId, gigTitle, wo
       {/* Header */}
       <div className="flex justify-between items-start">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Gig Communication</h2>
-          <p className="text-gray-600 mt-2">
+          <h2 className="text-2xl font-bold text-foreground">Gig Communication</h2>
+          <p className="text-muted-foreground mt-2">
             Messages and updates for {gigTitle}
           </p>
         </div>
@@ -282,7 +274,7 @@ const GigCommunication: React.FC<GigCommunicationProps> = ({ gigId, gigTitle, wo
         <CardContent>
           <div className="flex flex-wrap gap-3">
             {workers.map((worker) => (
-              <div key={worker.id} className="flex items-center space-x-2 bg-gray-50 rounded-lg p-2">
+              <div key={worker.id} className="flex items-center space-x-2 bg-muted/50 rounded-lg p-2">
                 <Avatar className="h-8 w-8">
                   <AvatarImage src={worker.avatar_url} />
                   <AvatarFallback>
@@ -308,7 +300,7 @@ const GigCommunication: React.FC<GigCommunicationProps> = ({ gigId, gigTitle, wo
           const userConfirmed = isConfirmedByUser(message);
 
           return (
-            <Card key={message.id} className={`${message.priority === 'urgent' ? 'border-red-300 bg-red-50' : ''}`}>
+            <Card key={message.id} className={`${message.priority === 'urgent' ? 'border-red-500/40 bg-red-500/10' : ''}`}>
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div className="flex items-start space-x-3">
@@ -325,7 +317,7 @@ const GigCommunication: React.FC<GigCommunicationProps> = ({ gigId, gigTitle, wo
                           {message.message_type}
                         </Badge>
                       </div>
-                      <div className="flex items-center space-x-4 text-sm text-gray-600">
+                      <div className="flex items-center space-x-4 text-sm text-muted-foreground">
                         <span>From: {message.sender_name}</span>
                         <span>{format(new Date(message.created_at), 'MMM d, yyyy h:mm a')}</span>
                         <span>To: {message.recipients.includes('all') ? 'All team members' : `${message.recipients.length} members`}</span>
@@ -334,13 +326,13 @@ const GigCommunication: React.FC<GigCommunicationProps> = ({ gigId, gigTitle, wo
                   </div>
                   
                   {message.priority === 'urgent' && (
-                    <AlertTriangle className="h-5 w-5 text-red-600" />
+                    <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
                   )}
                 </div>
               </CardHeader>
               
               <CardContent>
-                <p className="text-gray-700 leading-relaxed mb-4">
+                <p className="text-foreground/80 leading-relaxed mb-4">
                   {message.content}
                 </p>
 
@@ -348,12 +340,12 @@ const GigCommunication: React.FC<GigCommunicationProps> = ({ gigId, gigTitle, wo
                   <div className="border-t pt-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-4">
-                        <span className="text-sm text-gray-600">
+                        <span className="text-sm text-muted-foreground">
                           Confirmations: {confirmationStatus.confirmed}/{confirmationStatus.total}
                         </span>
                         {profile?.role === 'worker' && (
                           userConfirmed ? (
-                            <div className="flex items-center text-green-600">
+                            <div className="flex items-center text-green-600 dark:text-green-400">
                               <CheckCircle className="h-4 w-4 mr-1" />
                               <span className="text-sm">Confirmed</span>
                             </div>
@@ -373,14 +365,14 @@ const GigCommunication: React.FC<GigCommunicationProps> = ({ gigId, gigTitle, wo
                     
                     {message.confirmations.length > 0 && (
                       <div className="mt-3">
-                        <p className="text-xs text-gray-500 mb-2">Confirmed by:</p>
+                        <p className="text-xs text-muted-foreground mb-2">Confirmed by:</p>
                         <div className="flex flex-wrap gap-2">
                           {message.confirmations.map((confirmation) => {
                             const worker = workers.find(w => w.id === confirmation.worker_id);
                             return (
-                              <div key={confirmation.worker_id} className="flex items-center space-x-1 bg-green-50 rounded px-2 py-1">
-                                <CheckCircle className="h-3 w-3 text-green-600" />
-                                <span className="text-xs text-green-800">
+                              <div key={confirmation.worker_id} className="flex items-center space-x-1 bg-green-500/10 rounded px-2 py-1">
+                                <CheckCircle className="h-3 w-3 text-green-600 dark:text-green-400" />
+                                <span className="text-xs text-green-600 dark:text-green-400">
                                   {worker?.name || 'Unknown'} - {format(new Date(confirmation.confirmed_at), 'MMM d, h:mm a')}
                                 </span>
                               </div>

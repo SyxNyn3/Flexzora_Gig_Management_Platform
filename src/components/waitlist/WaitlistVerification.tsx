@@ -105,9 +105,9 @@ const WaitlistVerification: React.FC = () => {
         <div className="max-w-md mx-auto">
           <Card className="shadow-xl border-0">
             <CardContent className="pt-8 text-center">
-              <Loader2 className="h-12 w-12 text-blue-600 animate-spin mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Verifying your email...</h3>
-              <p className="text-gray-600">Please wait while we confirm your email address.</p>
+              <Loader2 className="h-12 w-12 text-primary animate-spin mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-foreground mb-2">Verifying your email...</h3>
+              <p className="text-muted-foreground">Please wait while we confirm your email address.</p>
             </CardContent>
           </Card>
         </div>
@@ -121,8 +121,8 @@ const WaitlistVerification: React.FC = () => {
         <div className="max-w-md mx-auto">
           <Card className="shadow-xl border-0">
             <CardHeader className="text-center pb-6">
-              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <AlertTriangle className="w-8 h-8 text-red-600" />
+              <div className="w-16 h-16 bg-red-500/15 rounded-full flex items-center justify-center mx-auto mb-4">
+                <AlertTriangle className="w-8 h-8 text-red-600 dark:text-red-400" />
               </div>
               <CardTitle className="text-2xl font-bold">Verification Failed</CardTitle>
               <CardDescription className="text-lg">We couldn't verify your email address</CardDescription>
@@ -134,7 +134,7 @@ const WaitlistVerification: React.FC = () => {
               </Alert>
 
               <div className="text-center space-y-4">
-                <p className="text-gray-600">
+                <p className="text-muted-foreground">
                   This could happen if the verification link has expired or has already been used.
                 </p>
                 <div className="flex flex-col space-y-2">
@@ -156,8 +156,8 @@ const WaitlistVerification: React.FC = () => {
       <div className="max-w-md mx-auto">
         <Card className="shadow-xl border-0 animate-fade-in">
           <CardHeader className="text-center pb-6">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <CheckCircle className="w-8 h-8 text-green-600" />
+            <div className="w-16 h-16 bg-green-500/15 rounded-full flex items-center justify-center mx-auto mb-4">
+              <CheckCircle className="w-8 h-8 text-green-600 dark:text-green-400" />
             </div>
             <CardTitle className="text-2xl font-bold">
               {alreadyVerified ? 'Already Verified!' : 'Email Verified!'}
@@ -169,23 +169,23 @@ const WaitlistVerification: React.FC = () => {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="bg-green-50 p-6 rounded-lg border border-green-200">
-              <h3 className="text-lg font-semibold text-green-800 mb-3 flex items-center">
+            <div className="bg-green-500/10 p-6 rounded-lg border border-green-500/30">
+              <h3 className="text-lg font-semibold text-green-600 dark:text-green-400 mb-3 flex items-center">
                 <CheckCircle className="w-5 h-5 mr-2" />
                 You're officially on the waitlist!
               </h3>
-              <p className="text-green-700 mb-4">
+              <p className="text-green-600 dark:text-green-400 mb-4">
                 We'll keep you updated on our progress and let you know when you get early access to FlexZora.
               </p>
             </div>
 
             {referralCode && (
-              <div className="bg-blue-50 p-6 rounded-lg border border-blue-200">
+              <div className="bg-primary/10 p-6 rounded-lg border border-primary/30">
                 <h3 className="text-lg font-semibold text-blue-800 mb-3 flex items-center">
                   <Share2 className="w-5 h-5 mr-2" />
                   Earn Priority Access
                 </h3>
-                <p className="text-blue-700 mb-4">Share your unique referral link to move up in the waitlist faster!</p>
+                <p className="text-primary mb-4">Share your unique referral link to move up in the waitlist faster!</p>
                 {referralStatus && (
                   <div className="mb-4 text-blue-800">
                     <strong>You're #{referralStatus.position} in line</strong> · {referralStatus.referral_count}{' '}
@@ -193,7 +193,7 @@ const WaitlistVerification: React.FC = () => {
                     {referralStatus.beta_tester && <Badge className="ml-2">Founding beta tester</Badge>}
                   </div>
                 )}
-                <div className="bg-white p-3 rounded-md flex items-center justify-between border border-blue-200 mb-4">
+                <div className="bg-card p-3 rounded-md flex items-center justify-between border border-primary/30 mb-4">
                   <code className="text-sm font-mono text-blue-800 truncate">
                     {window.location.origin}/waitlist?ref={referralCode}
                   </code>
@@ -220,10 +220,10 @@ const WaitlistVerification: React.FC = () => {
 
             <div className="text-center">
               <h3 className="text-lg font-semibold mb-2">What's Next?</h3>
-              <p className="text-gray-600 mb-4">
+              <p className="text-muted-foreground mb-4">
                 Keep an eye on your inbox for exclusive updates and be ready for early access!
               </p>
-              <Button onClick={() => navigate('/')} className="bg-gradient-to-r from-blue-600 to-green-500">
+              <Button onClick={() => navigate('/')} className="bg-gradient-to-r from-primary to-green-500">
                 Return to Home
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>

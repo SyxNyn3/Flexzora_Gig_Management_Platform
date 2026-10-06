@@ -3,7 +3,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useAuth } from '@/contexts/AuthContext';
 import GigCommunication from './GigCommunication';
 import WorkerPayroll from './WorkerPayroll';
 import ReviewForm from '@/components/reviews/ReviewForm';
@@ -30,39 +29,39 @@ interface GigManagementProps {
 // Mock data for demo
 const mockGig = {
   id: '1',
-  title: 'Corporate Event Video Production',
-  description: 'Multi-camera video production for annual company meeting',
-  company: { name: 'TechCorp Events', logo_url: null },
-  location: 'San Francisco, CA',
-  start_date: '2024-01-15T08:00:00Z',
-  end_date: '2024-01-15T18:00:00Z',
-  hourly_rate: 45,
-  required_workers: 5,
+  title: 'Load-In & Rigging Call',
+  description: 'Overnight load-in for the main stage build: arena rig points, truss, and chain motors up — 4 riggers plus forklift support before the PA hang',
+  company: { name: 'Rhino Staging', logo_url: null },
+  location: 'Stadium Main Stage, Los Angeles, CA',
+  start_date: '2026-10-12T07:00:00Z',
+  end_date: '2026-10-12T17:00:00Z',
+  hourly_rate: 58,
+  required_workers: 6,
   status: 'published',
 };
 
 const mockWorkers = [
   {
     id: 'worker-1',
-    name: 'John Smith',
-    email: 'john@example.com',
-    hourly_rate: 45,
+    name: 'Marcus Delgado',
+    email: 'm.delgado@stagework.co',
+    hourly_rate: 68,
     avatar_url: '',
-    status: 'accepted' as const,
+    status: 'confirmed' as const,
   },
   {
     id: 'worker-2',
-    name: 'Sarah Davis',
-    email: 'sarah@example.com',
-    hourly_rate: 50,
+    name: 'Tom Okafor',
+    email: 't.okafor@gridlite.pro',
+    hourly_rate: 62,
     avatar_url: '',
     status: 'confirmed' as const,
   },
   {
     id: 'worker-3',
-    name: 'Mike Johnson',
-    email: 'mike@example.com',
-    hourly_rate: 40,
+    name: 'Jesse Kowalski',
+    email: 'jkowalski@stagehands.net',
+    hourly_rate: 45,
     avatar_url: '',
     status: 'accepted' as const,
   },
@@ -77,7 +76,6 @@ const mockApplications = [
 ];
 
 const GigManagement: React.FC<GigManagementProps> = ({ gigId }) => {
-  const { profile } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
 
   // State for review form
@@ -95,8 +93,8 @@ const GigManagement: React.FC<GigManagementProps> = ({ gigId }) => {
       <div className="mb-8">
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">{gig.title}</h1>
-            <div className="flex items-center space-x-4 mt-2 text-gray-600">
+            <h1 className="text-3xl font-bold text-foreground">{gig.title}</h1>
+            <div className="flex items-center space-x-4 mt-2 text-muted-foreground">
               <div className="flex items-center">
                 <Building className="h-4 w-4 mr-1" />
                 {gig.company.name}
@@ -115,7 +113,7 @@ const GigManagement: React.FC<GigManagementProps> = ({ gigId }) => {
               </div>
             </div>
           </div>
-          <Badge className="bg-green-100 text-green-800">
+          <Badge className="bg-green-500/15 text-green-600 dark:text-green-400">
             {gig.status}
           </Badge>
         </div>
@@ -152,7 +150,7 @@ const GigManagement: React.FC<GigManagementProps> = ({ gigId }) => {
                   <CardTitle>Gig Details</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-gray-700 leading-relaxed mb-4">
+                  <p className="text-foreground/80 leading-relaxed mb-4">
                     {gig.description}
                   </p>
                   <div className="grid grid-cols-2 gap-4 text-sm">
@@ -186,7 +184,7 @@ const GigManagement: React.FC<GigManagementProps> = ({ gigId }) => {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Total Budget</span>
+                    <span className="text-muted-foreground">Total Budget</span>
                     <span className="font-medium">
                       ${gig.hourly_rate && acceptedWorkers.length 
                         ? (gig.hourly_rate * Math.round((new Date(gig.end_date).getTime() - new Date(gig.start_date).getTime()) / (1000 * 60 * 60)) * acceptedWorkers.length).toLocaleString()
@@ -195,15 +193,15 @@ const GigManagement: React.FC<GigManagementProps> = ({ gigId }) => {
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Applications</span>
+                    <span className="text-muted-foreground">Applications</span>
                     <span className="font-medium">{applications.length}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Confirmed Workers</span>
+                    <span className="text-muted-foreground">Confirmed Workers</span>
                     <span className="font-medium">{acceptedWorkers.filter(w => w.status === 'confirmed').length}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Pending Confirmations</span>
+                    <span className="text-muted-foreground">Pending Confirmations</span>
                     <span className="font-medium">{acceptedWorkers.filter(w => w.status === 'accepted').length}</span>
                   </div>
                 </CardContent>
@@ -223,15 +221,15 @@ const GigManagement: React.FC<GigManagementProps> = ({ gigId }) => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {acceptedWorkers.map((worker) => (
                   <div key={worker.id} className="flex items-center space-x-3 p-3 border rounded-lg">
-                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                      <span className="text-blue-600 font-medium">
+                    <div className="w-10 h-10 bg-primary/15 rounded-full flex items-center justify-center">
+                      <span className="text-primary font-medium">
                         {worker.name.split(' ').map(n => n[0]).join('')}
                       </span>
                     </div>
                     <div className="flex-1">
                       <h4 className="font-medium">{worker.name}</h4>
                       <div className="flex items-center space-x-2">
-                        <span className="text-sm text-gray-600">${worker.hourly_rate}/hr</span>
+                        <span className="text-sm text-muted-foreground">${worker.hourly_rate}/hr</span>
                         <Badge variant={worker.status === 'confirmed' ? 'default' : 'secondary'}>
                           {worker.status}
                         </Badge>
@@ -290,8 +288,8 @@ const GigManagement: React.FC<GigManagementProps> = ({ gigId }) => {
       
       {/* Review Form Dialog */}
       {showReviewForm && selectedWorker && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg w-full max-w-md">
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-card border border-border rounded-lg w-full max-w-md">
             <div className="p-4 border-b flex justify-between items-center">
               <h3 className="text-lg font-semibold">Write a Review</h3>
               <Button 

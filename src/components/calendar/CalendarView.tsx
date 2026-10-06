@@ -185,9 +185,9 @@ const CalendarView: React.FC = () => {
       resetForm();
       setShowAddDialog(false);
       toast.success('Note added successfully!');
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error adding note:', error);
-      toast.error(error.message || 'Failed to add note');
+      toast.error((error as Error).message || 'Failed to add note');
     }
   };
 
@@ -232,9 +232,9 @@ const CalendarView: React.FC = () => {
       resetForm();
       setShowAddDialog(false);
       toast.success('Reminder added successfully!');
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error adding reminder:', error);
-      toast.error(error.message || 'Failed to add reminder');
+      toast.error((error as Error).message || 'Failed to add reminder');
     }
   };
 
@@ -259,15 +259,15 @@ const CalendarView: React.FC = () => {
       await refetchEvents();
       setShowEventDialog(false);
       toast.success(`${event.type === 'note' ? 'Note' : 'Reminder'} deleted successfully!`);
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error deleting event:', error);
-      toast.error(error.message || 'Failed to delete event');
+      toast.error((error as Error).message || 'Failed to delete event');
     }
   };
 
   const toggleReminderComplete = async (event: CalendarEvent) => {
     try {
-      const metadata = (event.resource as any).metadata || {};
+      const metadata = (event.resource as CalendarReminder & { metadata?: { completed?: boolean } }).metadata || {};
       const currentCompleted = metadata.completed || false;
       const updates = {
         metadata: {
@@ -285,9 +285,9 @@ const CalendarView: React.FC = () => {
       // Refetch events to update the calendar
       await refetchEvents();
       toast.success('Reminder updated!');
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error updating reminder:', error);
-      toast.error(error.message || 'Failed to update reminder');
+      toast.error((error as Error).message || 'Failed to update reminder');
     }
   };
 
@@ -339,22 +339,22 @@ const CalendarView: React.FC = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'published': return 'bg-blue-100 text-blue-800';
-      case 'in_progress': return 'bg-green-100 text-green-800';
-      case 'completed': return 'bg-gray-100 text-gray-800';
+      case 'published': return 'bg-primary/15 text-blue-800';
+      case 'in_progress': return 'bg-green-500/15 text-green-600 dark:text-green-400';
+      case 'completed': return 'bg-muted text-foreground/90';
       case 'accepted': return 'bg-emerald-100 text-emerald-800';
-      case 'note': return 'bg-purple-100 text-purple-800';
-      case 'high': return 'bg-red-100 text-red-800';
-      case 'medium': return 'bg-yellow-100 text-yellow-800';
-      case 'low': return 'bg-green-100 text-green-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'note': return 'bg-secondary/15 text-purple-800';
+      case 'high': return 'bg-red-500/15 text-red-600 dark:text-red-400';
+      case 'medium': return 'bg-amber-500/15 text-amber-600 dark:text-amber-400';
+      case 'low': return 'bg-green-500/15 text-green-600 dark:text-green-400';
+      default: return 'bg-muted text-foreground/90';
     }
   };
 
   if (eventsLoading && !profile) {
     return (
       <div className="flex items-center justify-center min-h-96">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
       </div>
     );
   }
@@ -363,8 +363,8 @@ const CalendarView: React.FC = () => {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Calendar</h1>
-        <p className="text-gray-600 mt-2">
+        <h1 className="text-3xl font-bold text-foreground">Calendar</h1>
+        <p className="text-muted-foreground mt-2">
           {profile?.role === 'worker' 
             ? 'View your scheduled gigs, notes, and reminders'
             : 'Manage your company\'s gig schedule and planning'
@@ -395,7 +395,7 @@ const CalendarView: React.FC = () => {
               showMultiDayTimes
               components={{
                 toolbar: (props) => (
-                  <div className="flex justify-between items-center mb-4 p-4 bg-gray-50 rounded-lg">
+                  <div className="flex justify-between items-center mb-4 p-4 bg-muted/50 rounded-lg">
                     <div className="flex items-center space-x-2">
                       <Button
                         variant="outline"
@@ -448,11 +448,11 @@ const CalendarView: React.FC = () => {
           </div>
           
           {/* Legend */}
-          <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+          <div className="mt-4 p-4 bg-muted/50 rounded-lg">
             <h3 className="font-medium mb-2">Legend</h3>
             <div className="flex flex-wrap gap-4 text-sm">
               <div className="flex items-center">
-                <div className="w-4 h-4 bg-blue-600 rounded mr-2"></div>
+                <div className="w-4 h-4 bg-primary rounded mr-2"></div>
                 <span>Gigs</span>
               </div>
               <div className="flex items-center">
@@ -464,11 +464,11 @@ const CalendarView: React.FC = () => {
                 <span>Notes</span>
               </div>
               <div className="flex items-center">
-                <div className="w-4 h-4 bg-yellow-500 rounded mr-2"></div>
+                <div className="w-4 h-4 bg-amber rounded mr-2"></div>
                 <span>Reminders</span>
               </div>
               <div className="flex items-center">
-                <div className="w-4 h-4 bg-gray-400 rounded mr-2"></div>
+                <div className="w-4 h-4 bg-muted-foreground rounded mr-2"></div>
                 <span>Completed</span>
               </div>
             </div>
@@ -507,14 +507,14 @@ const CalendarView: React.FC = () => {
                         variant="outline"
                         onClick={() => toggleReminderComplete(selectedEvent)}
                       >
-                        {((selectedEvent.resource as any).metadata?.completed) ? 'Mark Incomplete' : 'Mark Complete'}
+                        {((selectedEvent.resource as CalendarReminder & { metadata?: { completed?: boolean } }).metadata?.completed) ? 'Mark Incomplete' : 'Mark Complete'}
                       </Button>
                     )}
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => deleteItem(selectedEvent)}
-                      className="text-red-600 hover:text-red-700"
+                      className="text-red-600 dark:text-red-400 hover:text-red-600 dark:hover:text-red-400"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -525,34 +525,34 @@ const CalendarView: React.FC = () => {
               {selectedEvent.type === 'gig' && (
                 <div className="space-y-3">
                   <div className="flex items-center text-sm">
-                    <Clock className="h-4 w-4 mr-2 text-gray-400" />
+                    <Clock className="h-4 w-4 mr-2 text-muted-foreground/70" />
                     <div>
                       <div>{format(selectedEvent.start, 'MMM d, yyyy h:mm a')}</div>
-                      <div className="text-gray-500">to {format(selectedEvent.end, 'MMM d, yyyy h:mm a')}</div>
+                      <div className="text-muted-foreground">to {format(selectedEvent.end, 'MMM d, yyyy h:mm a')}</div>
                     </div>
                   </div>
 
                   <div className="flex items-center text-sm">
-                    <MapPin className="h-4 w-4 mr-2 text-gray-400" />
+                    <MapPin className="h-4 w-4 mr-2 text-muted-foreground/70" />
                     <span>{(selectedEvent.resource as Gig).location}</span>
                   </div>
 
                   {(selectedEvent.resource as Gig).hourly_rate && (
                     <div className="flex items-center text-sm">
-                      <DollarSign className="h-4 w-4 mr-2 text-gray-400" />
+                      <DollarSign className="h-4 w-4 mr-2 text-muted-foreground/70" />
                       <span>${(selectedEvent.resource as Gig).hourly_rate}/hour</span>
                     </div>
                   )}
 
                   <div className="flex items-center text-sm">
-                    <Users className="h-4 w-4 mr-2 text-gray-400" />
+                    <Users className="h-4 w-4 mr-2 text-muted-foreground/70" />
                     <span>{(selectedEvent.resource as Gig).required_workers} worker{(selectedEvent.resource as Gig).required_workers !== 1 ? 's' : ''} needed</span>
                   </div>
 
                   {(selectedEvent.resource as Gig).description && (
                     <div>
                       <h4 className="font-medium mb-2">Description</h4>
-                      <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg">
+                      <p className="text-sm text-foreground/80 bg-muted/50 p-3 rounded-lg">
                         {(selectedEvent.resource as Gig).description}
                       </p>
                     </div>
@@ -563,14 +563,14 @@ const CalendarView: React.FC = () => {
               {selectedEvent.type === 'note' && (
                 <div className="space-y-3">
                   <div className="flex items-center text-sm">
-                    <CalendarIcon className="h-4 w-4 mr-2 text-gray-400" />
+                    <CalendarIcon className="h-4 w-4 mr-2 text-muted-foreground/70" />
                     <span>{format(new Date((selectedEvent.resource as CalendarNote).date), 'MMM d, yyyy')}</span>
                   </div>
                   
                   {(selectedEvent.resource as CalendarNote).content && (
                     <div>
                       <h4 className="font-medium mb-2">Content</h4>
-                      <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg">
+                      <p className="text-sm text-foreground/80 bg-muted/50 p-3 rounded-lg">
                         {(selectedEvent.resource as CalendarNote).content}
                       </p>
                     </div>
@@ -581,19 +581,19 @@ const CalendarView: React.FC = () => {
               {selectedEvent.type === 'reminder' && (
                 <div className="space-y-3">
                   <div className="flex items-center text-sm">
-                    <Clock className="h-4 w-4 mr-2 text-gray-400" />
+                    <Clock className="h-4 w-4 mr-2 text-muted-foreground/70" />
                     <span>{format(new Date(`${(selectedEvent.resource as CalendarReminder).date}T${(selectedEvent.resource as CalendarReminder).time}`), 'MMM d, yyyy h:mm a')}</span>
                   </div>
                   
                   <div className="flex items-center text-sm">
-                    <Bell className="h-4 w-4 mr-2 text-gray-400" />
+                    <Bell className="h-4 w-4 mr-2 text-muted-foreground/70" />
                     <span>Priority: {(selectedEvent.resource as CalendarReminder).priority}</span>
                   </div>
                   
                   {(selectedEvent.resource as CalendarReminder).description && (
                     <div>
                       <h4 className="font-medium mb-2">Description</h4>
-                      <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg">
+                      <p className="text-sm text-foreground/80 bg-muted/50 p-3 rounded-lg">
                         {(selectedEvent.resource as CalendarReminder).description}
                       </p>
                     </div>
@@ -709,7 +709,7 @@ const CalendarView: React.FC = () => {
                   {['#3B82F6', '#10B981', '#8B5CF6', '#F59E0B', '#EF4444', '#6B7280'].map((color) => (
                     <button
                       key={color}
-                      className={`w-8 h-8 rounded-full border-2 ${noteColor === color ? 'border-gray-800' : 'border-gray-300'}`}
+                      className={`w-8 h-8 rounded-full border-2 ${noteColor === color ? 'border-gray-800' : 'border-input'}`}
                       style={{ backgroundColor: color }}
                       onClick={() => setNoteColor(color)}
                     />

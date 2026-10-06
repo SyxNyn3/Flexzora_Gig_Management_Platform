@@ -17,15 +17,15 @@ import { money } from '@/components/marketplace/format';
 import { CheckCircle2, MapPinCheck, MapPinOff, AlertTriangle, Zap, Landmark } from 'lucide-react';
 
 const statusTone: Record<Timesheet['status'], string> = {
-  open: 'bg-gray-100 text-gray-700',
+  open: 'bg-muted text-foreground/80',
   submitted: 'bg-amber-100 text-amber-800',
-  approved: 'bg-blue-100 text-blue-800',
-  disputed: 'bg-red-100 text-red-800',
-  paid: 'bg-green-100 text-green-800',
+  approved: 'bg-primary/15 text-blue-800',
+  disputed: 'bg-red-500/15 text-red-600 dark:text-red-400',
+  paid: 'bg-green-500/15 text-green-600 dark:text-green-400',
 };
 
 const Geo: React.FC<{ verified: boolean; distance?: number }> = ({ verified, distance }) => (
-  <span className={`inline-flex items-center gap-1 text-xs ${verified ? 'text-green-700' : 'text-red-700'}`}>
+  <span className={`inline-flex items-center gap-1 text-xs ${verified ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
     {verified ? <MapPinCheck className="w-3.5 h-3.5" /> : <MapPinOff className="w-3.5 h-3.5" />}
     {distance != null ? `${Math.round(distance)} m` : 'no GPS'}
   </span>
@@ -98,19 +98,19 @@ const TimesheetApprovalPage: React.FC = () => {
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-[220px]">
               <p className="font-medium">{t.worker?.full_name}</p>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-muted-foreground">
                 {t.shift?.title} · {t.shift?.event?.name}
               </p>
-              <p className="text-xs text-gray-500">{t.clock_in_at && format(new Date(t.clock_in_at), 'EEE MMM d')} · ${rateFor(t).toFixed(2)}/hr{t.assignment?.offered_rate != null && ' (negotiated)'}</p>
+              <p className="text-xs text-muted-foreground">{t.clock_in_at && format(new Date(t.clock_in_at), 'EEE MMM d')} · ${rateFor(t).toFixed(2)}/hr{t.assignment?.offered_rate != null && ' (negotiated)'}</p>
             </div>
             <div className="text-sm space-y-1">
               <div className="flex items-center gap-2">
-                <span className="text-gray-500 w-8">In</span>
+                <span className="text-muted-foreground w-8">In</span>
                 <span>{t.clock_in_at ? format(new Date(t.clock_in_at), 'HH:mm') : '—'}</span>
                 <Geo verified={t.clock_in_verified} distance={t.clock_in_distance_m} />
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-gray-500 w-8">Out</span>
+                <span className="text-muted-foreground w-8">Out</span>
                 <span>{t.clock_out_at ? format(new Date(t.clock_out_at), 'HH:mm') : '—'}</span>
                 {t.clock_out_at && <Geo verified={t.clock_out_verified} distance={t.clock_out_distance_m} />}
               </div>
@@ -122,7 +122,7 @@ const TimesheetApprovalPage: React.FC = () => {
             </div>
             {p && (
               <div className="text-sm">
-                <div className="grid grid-cols-[auto_auto] gap-x-3 text-xs text-gray-600">
+                <div className="grid grid-cols-[auto_auto] gap-x-3 text-xs text-muted-foreground">
                   <span>Regular</span><span className="text-right">{p.regularHours.toFixed(2)} h</span>
                   {p.overtimeHours > 0 && <><span>Overtime</span><span className="text-right">{p.overtimeHours.toFixed(2)} h</span></>}
                   {p.doubletimeHours > 0 && <><span>Double time</span><span className="text-right">{p.doubletimeHours.toFixed(2)} h</span></>}
@@ -136,7 +136,7 @@ const TimesheetApprovalPage: React.FC = () => {
               {actions && t.clock_out_at && (
                 <>
                   <div className="flex items-center gap-1 text-xs">
-                    <span className="text-gray-500">Break</span>
+                    <span className="text-muted-foreground">Break</span>
                     <Input
                       type="number"
                       min={0}
@@ -144,7 +144,7 @@ const TimesheetApprovalPage: React.FC = () => {
                       value={breaks[t.id] ?? String(t.break_minutes)}
                       onChange={(e) => setBreaks({ ...breaks, [t.id]: e.target.value })}
                     />
-                    <span className="text-gray-500">min</span>
+                    <span className="text-muted-foreground">min</span>
                   </div>
                   <div className="flex gap-1">
                     <Button size="sm" variant="outline" disabled={busy !== null} onClick={() => setDispute({ sheet: t, notes: '' })}>Dispute</Button>
@@ -159,8 +159,8 @@ const TimesheetApprovalPage: React.FC = () => {
               )}
             </div>
           </div>
-          {t.worker_notes && <p className="text-xs text-gray-600 mt-2 border-t pt-2">Crew note: {t.worker_notes}</p>}
-          {t.manager_notes && <p className="text-xs text-red-700 mt-1">Manager: {t.manager_notes}</p>}
+          {t.worker_notes && <p className="text-xs text-muted-foreground mt-2 border-t pt-2">Crew note: {t.worker_notes}</p>}
+          {t.manager_notes && <p className="text-xs text-red-600 dark:text-red-400 mt-1">Manager: {t.manager_notes}</p>}
         </CardContent>
       </Card>
     );
@@ -171,11 +171,11 @@ const TimesheetApprovalPage: React.FC = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Timesheets</h1>
-          <p className="text-sm text-gray-600">Geofenced clock records with automatic overtime. Approval releases escrow, issues the contractor invoice and starts the payout.</p>
+          <p className="text-sm text-muted-foreground">Geofenced clock records with automatic overtime. Approval releases escrow, issues the contractor invoice and starts the payout.</p>
         </div>
         <Card>
           <CardContent className="p-3 text-right">
-            <p className="text-xs text-gray-500">Awaiting approval</p>
+            <p className="text-xs text-muted-foreground">Awaiting approval</p>
             <p className="text-lg font-semibold">{money(totalPending)}</p>
           </CardContent>
         </Card>
@@ -192,14 +192,14 @@ const TimesheetApprovalPage: React.FC = () => {
           </TabsList>
           <TabsContent value="review" className="space-y-3 mt-4">
             {grouped.review.length === 0 && (
-              <p className="text-center text-gray-500 py-10 text-sm inline-flex items-center gap-2 w-full justify-center">
-                <CheckCircle2 className="w-4 h-4 text-green-600" /> All caught up.
+              <p className="text-center text-muted-foreground py-10 text-sm inline-flex items-center gap-2 w-full justify-center">
+                <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" /> All caught up.
               </p>
             )}
             {grouped.review.map((t) => <Row key={t.id} t={t} actions />)}
           </TabsContent>
           <TabsContent value="live" className="space-y-3 mt-4">
-            {grouped.live.length === 0 && <p className="text-center text-gray-500 py-10 text-sm">Nobody is clocked in right now.</p>}
+            {grouped.live.length === 0 && <p className="text-center text-muted-foreground py-10 text-sm">Nobody is clocked in right now.</p>}
             {grouped.live.map((t) => <Row key={t.id} t={t} />)}
           </TabsContent>
           <TabsContent value="settled" className="space-y-3 mt-4">
@@ -211,7 +211,7 @@ const TimesheetApprovalPage: React.FC = () => {
       <Dialog open={dispute !== null} onOpenChange={(o) => !o && setDispute(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader><DialogTitle>Dispute timesheet</DialogTitle></DialogHeader>
-          <p className="text-sm text-gray-600">The worker will be notified and can respond. Nothing is paid until you approve.</p>
+          <p className="text-sm text-muted-foreground">The worker will be notified and can respond. Nothing is paid until you approve.</p>
           <Textarea rows={3} placeholder="e.g. Clock-out shows 02:10 but load-out wrapped at 00:30" value={dispute?.notes ?? ''} onChange={(e) => dispute && setDispute({ ...dispute, notes: e.target.value })} />
           <Button variant="destructive" disabled={!dispute?.notes || busy !== null} onClick={submitDispute}>Flag for review</Button>
         </DialogContent>

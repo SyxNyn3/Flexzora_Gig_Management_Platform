@@ -63,22 +63,23 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
     try {
       const reviewData = {
         worker_id: workerId,
+        reviewee_id: workerId,
         reviewer_id: profile.id,
-        gig_id: gigId || null,
+        gig_id: gigId || undefined,
         rating,
         review_text: data.review_text,
         is_public: isPublic,
       };
 
-      const { data: newReview, error } = await DatabaseService.addReview(reviewData);
+      const { error } = await DatabaseService.addReview(reviewData);
 
       if (error) throw new Error(error);
 
       toast.success('Review submitted successfully!');
       if (onSuccess) onSuccess();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error submitting review:', error);
-      toast.error(error.message || 'Failed to submit review');
+      toast.error((error as Error).message || 'Failed to submit review');
     } finally {
       setLoading(false);
     }
@@ -111,17 +112,17 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
                     className={`h-8 w-8 ${
                       star <= (hoveredRating || rating)
                         ? 'text-yellow-400 fill-yellow-400'
-                        : 'text-gray-300'
+                        : 'text-muted-foreground'
                     } transition-colors`}
                   />
                 </button>
               ))}
-              <span className="ml-2 text-sm text-gray-600">
+              <span className="ml-2 text-sm text-muted-foreground">
                 {rating > 0 ? `${rating} star${rating !== 1 ? 's' : ''}` : 'Select a rating'}
               </span>
             </div>
             {rating === 0 && (
-              <p className="text-sm text-red-600">Please select a rating</p>
+              <p className="text-sm text-red-600 dark:text-red-400">Please select a rating</p>
             )}
           </div>
 
@@ -135,7 +136,7 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
               {...register('review_text')}
             />
             {errors.review_text && (
-              <p className="text-sm text-red-600">{errors.review_text.message}</p>
+              <p className="text-sm text-red-600 dark:text-red-400">{errors.review_text.message}</p>
             )}
           </div>
 

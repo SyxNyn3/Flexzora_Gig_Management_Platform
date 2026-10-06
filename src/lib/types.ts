@@ -270,7 +270,7 @@ export interface Gig {
   equipment_provided?: string[];
   special_requirements?: string;
   is_remote: boolean;
-  contact_info?: any;
+  contact_info?: Record<string, unknown>;
   created_at: string;
   updated_at: string;
   company?: Company;
@@ -345,7 +345,7 @@ export interface Notification {
   type: string;
   read: boolean;
   action_url?: string;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
   created_at: string;
 }
 
@@ -355,8 +355,8 @@ export interface CompanyIntegration {
   company_name: string;
   integration_type: string;
   status: IntegrationStatus;
-  credentials?: any;
-  settings: any;
+  credentials?: Record<string, unknown>;
+  settings: Record<string, unknown>;
   last_sync?: string;
   created_at: string;
   updated_at: string;
@@ -372,7 +372,7 @@ export interface CalendarEvent {
   end_time?: string;
   all_day: boolean;
   color: string;
-  metadata: any;
+  metadata: Record<string, unknown>;
   created_at: string;
   updated_at: string;
 }

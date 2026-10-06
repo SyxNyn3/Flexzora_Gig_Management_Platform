@@ -68,7 +68,7 @@ const EventDetailPage: React.FC = () => {
     <div className="max-w-7xl mx-auto p-6 space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <Link to="/events" className="text-sm text-gray-500 inline-flex items-center gap-1 hover:text-gray-800">
+          <Link to="/events" className="text-sm text-muted-foreground inline-flex items-center gap-1 hover:text-foreground/90">
             <ArrowLeft className="w-3.5 h-3.5" /> All events
           </Link>
           <h1 className="text-2xl font-bold mt-1 flex items-center gap-2">
@@ -76,7 +76,7 @@ const EventDetailPage: React.FC = () => {
             {ev.name}
             <Badge variant="outline" className="capitalize">{ev.status.replace('_', ' ')}</Badge>
           </h1>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-muted-foreground">
             {format(parseISO(ev.starts_on), 'EEE MMM d')} – {format(parseISO(ev.ends_on), 'EEE MMM d, yyyy')}
             {ev.venue && (
               <span className="inline-flex items-center gap-1 ml-3">
@@ -105,7 +105,7 @@ const EventDetailPage: React.FC = () => {
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-3">
               <h2 className="font-semibold">Schedule & roster</h2>
-              <p className="text-xs text-gray-500">Click a call to rank candidates, direct-book, or confirm applicants</p>
+              <p className="text-xs text-muted-foreground">Click a call to rank candidates, direct-book, or confirm applicants</p>
             </div>
             <RosterBoard event={ev} selectedShiftId={selectedId} onSelectShift={(s) => setSelectedId(s.id)} />
           </CardContent>
@@ -122,7 +122,7 @@ const EventDetailPage: React.FC = () => {
                 onEdit={(s) => setShiftDialog({ open: true, editing: s })}
               />
             ) : (
-              <div className="text-center text-gray-500 py-12 text-sm">
+              <div className="text-center text-muted-foreground py-12 text-sm">
                 {ev.shifts?.length ? 'Select a call on the board to staff it.' : 'Add your first call — e.g. “4 Ground Riggers, load-in 08:00–16:00”.'}
               </div>
             )}

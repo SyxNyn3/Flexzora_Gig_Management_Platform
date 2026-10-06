@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 
 export function useSupabaseQuery<T>(
   queryFn: () => Promise<{ data: T | null; error: string | null }>,
-  dependencies: any[] = []
+  dependencies: unknown[] = []
 ): ApiResponse<T> & { refetch: () => Promise<void> } {
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -28,8 +28,8 @@ export function useSupabaseQuery<T>(
         setData(result.data);
         setError(null);
       }
-    } catch (err: any) {
-      setError(err.message || 'An unexpected error occurred');
+    } catch (err) {
+      setError((err as Error).message || 'An unexpected error occurred');
       setData(null);
       console.error('Query exception:', err);
     } finally {
@@ -150,10 +150,20 @@ export function useCompanyIntegrations(workerId: string | undefined | null) {
   );
 }
 
+export interface WorkerReview {
+  id: string;
+  rating: number;
+  review_text?: string;
+  created_at: string;
+  reviewer?: { full_name?: string; avatar_url?: string; role?: string } | null;
+  gig?: { title: string } | null;
+}
+
 // Hook for fetching reviews for a worker
 export function useReviewsForWorker(workerId: string | undefined | null) {
+  void workerId;
   // Return empty data for now since reviews table doesn't exist yet
-  return { data: [], error: null, loading: false, refetch: async () => {} };
+  return { data: [] as WorkerReview[], error: null, loading: false, refetch: async () => {} };
 }
 
 // Hook for fetching a single review
@@ -165,8 +175,10 @@ export function useReview(reviewId: string | undefined | null) {
 }
 
 // Hook for real-time notifications
-export function useRealtimeNotifications(userId: string | undefined | null, onNewNotification?: (notification: any) => void) {
-  const [notifications, setNotifications] = useState<any[]>([]);
+export interface RealtimeNotification { title: string; message: string; [key: string]: unknown }
+
+export function useRealtimeNotifications(userId: string | undefined | null, onNewNotification?: (notification: RealtimeNotification) => void) {
+  const [notifications, setNotifications] = useState<RealtimeNotification[]>([]);
   
   useEffect(() => {
     if (!userId) return;
@@ -185,7 +197,7 @@ export function useRealtimeNotifications(userId: string | undefined | null, onNe
     
     // Set up real-time subscription
     const subscription = DatabaseService.subscribeToNotifications(userId, (payload) => {
-      const newNotification = payload.new;
+      const newNotification = payload.new as { title: string; message: string };
       setNotifications(prev => [newNotification, ...prev]);
       
       // Call the callback if provided

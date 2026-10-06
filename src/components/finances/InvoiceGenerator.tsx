@@ -8,7 +8,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Payment, Gig } from '@/lib/types';
 import {
   FileText,
-  Download
+  Download,
+  User,
+  Building,
+  Plus,
+  Trash2
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -76,7 +80,7 @@ const InvoiceGenerator: React.FC<InvoiceGeneratorProps> = ({ payment, gig }) => 
     total: payment?.amount || 0,
   });
 
-  const updateInvoiceItem = (index: number, field: string, value: any) => {
+  const updateInvoiceItem = (index: number, field: string, value: string | number) => {
     const updatedItems = [...invoiceData.items];
     updatedItems[index] = {
       ...updatedItems[index],
@@ -193,7 +197,7 @@ const InvoiceGenerator: React.FC<InvoiceGeneratorProps> = ({ payment, gig }) => 
         `$${item.amount.toFixed(2)}`
       ]);
       
-      // @ts-ignore - jspdf-autotable types are not included
+      // @ts-expect-error - jspdf-autotable types are not included
       doc.autoTable({
         head: [tableColumn],
         body: tableRows,
@@ -209,8 +213,8 @@ const InvoiceGenerator: React.FC<InvoiceGeneratorProps> = ({ payment, gig }) => 
         },
       });
       
-      // @ts-ignore - get the y position after the table
-      const finalY = (doc as any).lastAutoTable.finalY || 120;
+      // jspdf-autotable augments jsPDF at runtime; types aren't bundled
+      const finalY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY || 120;
       
       // Add totals
       doc.setFontSize(10);
@@ -316,7 +320,7 @@ const InvoiceGenerator: React.FC<InvoiceGeneratorProps> = ({ payment, gig }) => 
               {/* From (Worker) */}
               <div className="space-y-4">
                 <div className="flex items-center">
-                  <User className="h-5 w-5 mr-2 text-gray-500" />
+                  <User className="h-5 w-5 mr-2 text-muted-foreground" />
                   <h3 className="font-medium">From (Your Details)</h3>
                 </div>
                 <div>
@@ -358,7 +362,7 @@ const InvoiceGenerator: React.FC<InvoiceGeneratorProps> = ({ payment, gig }) => 
               {/* To (Company) */}
               <div className="space-y-4">
                 <div className="flex items-center">
-                  <Building className="h-5 w-5 mr-2 text-gray-500" />
+                  <Building className="h-5 w-5 mr-2 text-muted-foreground" />
                   <h3 className="font-medium">Bill To (Client)</h3>
                 </div>
                 <div>
@@ -446,7 +450,7 @@ const InvoiceGenerator: React.FC<InvoiceGeneratorProps> = ({ payment, gig }) => 
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                        className="h-8 w-8 p-0 text-red-600 dark:text-red-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-500/10"
                         onClick={() => removeInvoiceItem(index)}
                       >
                         <Trash2 className="h-4 w-4" />
@@ -461,11 +465,11 @@ const InvoiceGenerator: React.FC<InvoiceGeneratorProps> = ({ payment, gig }) => 
             <div className="flex justify-end">
               <div className="w-64 space-y-2">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Subtotal:</span>
+                  <span className="text-muted-foreground">Subtotal:</span>
                   <span>${invoiceData.subtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Tax:</span>
+                  <span className="text-muted-foreground">Tax:</span>
                   <Input
                     type="number"
                     className="w-24 text-right"

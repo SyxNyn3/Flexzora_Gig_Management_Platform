@@ -143,8 +143,8 @@ const ShiftForm: React.FC<Props> = ({ eventDate, skills, certTypes, initial, onS
         <Label htmlFor="sh-notes">Notes to crew</Label>
         <Textarea id="sh-notes" rows={2} value={form.notes} onChange={(e) => set('notes', e.target.value)} placeholder="Steel toes, hi-vis, bring harness…" />
       </div>
-      <div className="flex items-center justify-between rounded-md bg-gray-50 border p-3 text-sm">
-        <span className="text-gray-600">Projected labor (incl. OT)</span>
+      <div className="flex items-center justify-between rounded-md bg-muted/50 border border-border p-3 text-sm">
+        <span className="text-muted-foreground">Projected labor (incl. OT)</span>
         <span className="font-semibold">{money(projected)}</span>
       </div>
       <Button type="submit" className="w-full" disabled={submitting}>

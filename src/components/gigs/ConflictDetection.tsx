@@ -2,9 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useAuth } from '@/contexts/AuthContext';
 import { 
   Calendar, 
   AlertTriangle, 
@@ -15,7 +13,7 @@ import {
   XCircle,
   Info
 } from 'lucide-react';
-import { format, isWithinInterval, parseISO } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 
 interface ScheduleConflict {
   id: string;
@@ -58,7 +56,6 @@ const ConflictDetection: React.FC<ConflictDetectionProps> = ({
   gigLocation, 
   workers 
 }) => {
-  const { profile } = useAuth();
   const [conflicts, setConflicts] = useState<ScheduleConflict[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -74,15 +71,15 @@ const ConflictDetection: React.FC<ConflictDetectionProps> = ({
       {
         id: '1',
         worker_id: 'worker-1',
-        worker_name: 'John Smith',
+        worker_name: 'Marcus Delgado',
         conflicting_gigs: [
           {
             id: 'gig-2',
-            title: 'Wedding Photography',
-            company: 'Dream Weddings',
-            start_date: '2024-01-15T14:00:00Z',
-            end_date: '2024-01-15T22:00:00Z',
-            location: 'Napa Valley, CA',
+            title: 'Ballroom AV Build',
+            company: 'Encore',
+            start_date: '2026-10-12T14:00:00Z',
+            end_date: '2026-10-12T22:00:00Z',
+            location: 'Convention Center Ballroom C, Anaheim, CA',
             status: 'confirmed'
           }
         ],
@@ -94,35 +91,35 @@ const ConflictDetection: React.FC<ConflictDetectionProps> = ({
       {
         id: '2',
         worker_id: 'worker-2',
-        worker_name: 'Sarah Davis',
+        worker_name: 'Tom Okafor',
         conflicting_gigs: [
           {
             id: 'gig-3',
-            title: 'Corporate Event Setup',
-            company: 'TechCorp',
-            start_date: '2024-01-15T06:00:00Z',
-            end_date: '2024-01-15T08:00:00Z',
-            location: 'San Jose, CA',
+            title: 'LED Wall Calibration',
+            company: 'Freeman AV',
+            start_date: '2026-10-12T05:00:00Z',
+            end_date: '2026-10-12T08:00:00Z',
+            location: 'Long Beach Arena, Long Beach, CA',
             status: 'confirmed'
           }
         ],
         conflict_type: 'travel_time',
         severity: 'medium',
         auto_resolvable: true,
-        suggested_resolution: 'Allow 2 hours travel time between San Jose and San Francisco'
+        suggested_resolution: 'Allow 90 minutes travel time between Long Beach Arena and the stadium'
       },
       {
         id: '3',
         worker_id: 'worker-3',
-        worker_name: 'Mike Johnson',
+        worker_name: 'Jesse Kowalski',
         conflicting_gigs: [
           {
             id: 'gig-4',
-            title: 'Concert Sound Check',
-            company: 'Live Music Productions',
-            start_date: '2024-01-14T20:00:00Z',
-            end_date: '2024-01-15T02:00:00Z',
-            location: 'Los Angeles, CA',
+            title: 'Strike & Load-Out',
+            company: 'Rhino Staging',
+            start_date: '2026-10-11T22:00:00Z',
+            end_date: '2026-10-12T06:00:00Z',
+            location: 'Greek Theatre, Los Angeles, CA',
             status: 'confirmed'
           }
         ],
@@ -158,11 +155,11 @@ const ConflictDetection: React.FC<ConflictDetectionProps> = ({
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
-      case 'critical': return 'bg-red-100 text-red-800 border-red-200';
-      case 'high': return 'bg-orange-100 text-orange-800 border-orange-200';
-      case 'medium': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'low': return 'bg-blue-100 text-blue-800 border-blue-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+      case 'critical': return 'bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/30';
+      case 'high': return 'bg-amber-500/15 text-orange-800 border-orange-200';
+      case 'medium': return 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30';
+      case 'low': return 'bg-primary/15 text-blue-800 border-primary/30';
+      default: return 'bg-muted text-foreground/90 border-border';
     }
   };
 
@@ -170,7 +167,7 @@ const ConflictDetection: React.FC<ConflictDetectionProps> = ({
     switch (type) {
       case 'overlap': return <XCircle className="h-5 w-5 text-red-500" />;
       case 'travel_time': return <Clock className="h-5 w-5 text-yellow-500" />;
-      case 'back_to_back': return <Info className="h-5 w-5 text-blue-500" />;
+      case 'back_to_back': return <Info className="h-5 w-5 text-primary" />;
       default: return <AlertTriangle className="h-5 w-5 text-orange-500" />;
     }
   };
@@ -191,7 +188,7 @@ const ConflictDetection: React.FC<ConflictDetectionProps> = ({
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
@@ -200,8 +197,8 @@ const ConflictDetection: React.FC<ConflictDetectionProps> = ({
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h2 className="text-2xl font-bold text-gray-900">Schedule Conflict Detection</h2>
-        <p className="text-gray-600 mt-2">
+        <h2 className="text-2xl font-bold text-foreground">Schedule Conflict Detection</h2>
+        <p className="text-muted-foreground mt-2">
           Automatically detect and resolve scheduling conflicts for {gigTitle}
         </p>
       </div>
@@ -211,9 +208,9 @@ const ConflictDetection: React.FC<ConflictDetectionProps> = ({
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center">
-              <Users className="h-8 w-8 text-blue-600" />
+              <Users className="h-8 w-8 text-primary" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Workers</p>
+                <p className="text-sm font-medium text-muted-foreground">Total Workers</p>
                 <p className="text-2xl font-bold">{workers.length}</p>
               </div>
             </div>
@@ -223,10 +220,10 @@ const ConflictDetection: React.FC<ConflictDetectionProps> = ({
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center">
-              <AlertTriangle className="h-8 w-8 text-red-600" />
+              <AlertTriangle className="h-8 w-8 text-red-600 dark:text-red-400" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Conflicts Found</p>
-                <p className="text-2xl font-bold text-red-600">{conflicts.length}</p>
+                <p className="text-sm font-medium text-muted-foreground">Conflicts Found</p>
+                <p className="text-2xl font-bold text-red-600 dark:text-red-400">{conflicts.length}</p>
               </div>
             </div>
           </CardContent>
@@ -235,10 +232,10 @@ const ConflictDetection: React.FC<ConflictDetectionProps> = ({
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center">
-              <CheckCircle className="h-8 w-8 text-green-600" />
+              <CheckCircle className="h-8 w-8 text-green-600 dark:text-green-400" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Auto-Resolvable</p>
-                <p className="text-2xl font-bold text-green-600">
+                <p className="text-sm font-medium text-muted-foreground">Auto-Resolvable</p>
+                <p className="text-2xl font-bold text-green-600 dark:text-green-400">
                   {conflicts.filter(c => c.auto_resolvable).length}
                 </p>
               </div>
@@ -249,10 +246,10 @@ const ConflictDetection: React.FC<ConflictDetectionProps> = ({
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center">
-              <XCircle className="h-8 w-8 text-orange-600" />
+              <XCircle className="h-8 w-8 text-amber-600 dark:text-amber-400" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Needs Attention</p>
-                <p className="text-2xl font-bold text-orange-600">
+                <p className="text-sm font-medium text-muted-foreground">Needs Attention</p>
+                <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">
                   {conflicts.filter(c => !c.auto_resolvable).length}
                 </p>
               </div>
@@ -286,7 +283,7 @@ const ConflictDetection: React.FC<ConflictDetectionProps> = ({
               <CardContent>
                 <div className="space-y-4">
                   {/* Current Gig Info */}
-                  <div className="bg-blue-50 p-4 rounded-lg">
+                  <div className="bg-primary/10 p-4 rounded-lg">
                     <h4 className="font-medium text-blue-900 mb-2">Current Gig</h4>
                     <div className="space-y-1 text-sm text-blue-800">
                       <div className="flex items-center">
@@ -305,17 +302,17 @@ const ConflictDetection: React.FC<ConflictDetectionProps> = ({
                     <h4 className="font-medium mb-2">Conflicting Commitments</h4>
                     <div className="space-y-2">
                       {conflict.conflicting_gigs.map((gig) => (
-                        <div key={gig.id} className="bg-red-50 p-3 rounded-lg">
+                        <div key={gig.id} className="bg-red-500/10 p-3 rounded-lg">
                           <div className="flex items-center justify-between">
                             <div>
                               <h5 className="font-medium text-red-900">{gig.title}</h5>
-                              <p className="text-sm text-red-700">{gig.company}</p>
-                              <div className="flex items-center space-x-4 mt-1 text-xs text-red-600">
+                              <p className="text-sm text-red-600 dark:text-red-400">{gig.company}</p>
+                              <div className="flex items-center space-x-4 mt-1 text-xs text-red-600 dark:text-red-400">
                                 <span>{format(parseISO(gig.start_date), 'MMM d, h:mm a')} - {format(parseISO(gig.end_date), 'h:mm a')}</span>
                                 <span>{gig.location}</span>
                               </div>
                             </div>
-                            <Badge variant="outline" className="text-red-700 border-red-300">
+                            <Badge variant="outline" className="text-red-600 dark:text-red-400 border-red-500/40">
                               {gig.status}
                             </Badge>
                           </div>
@@ -373,8 +370,8 @@ const ConflictDetection: React.FC<ConflictDetectionProps> = ({
         <Card>
           <CardContent className="text-center py-12">
             <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No Conflicts Detected</h3>
-            <p className="text-gray-600">
+            <h3 className="text-lg font-medium text-foreground mb-2">No Conflicts Detected</h3>
+            <p className="text-muted-foreground">
               All workers are available for this gig with no scheduling conflicts.
             </p>
           </CardContent>

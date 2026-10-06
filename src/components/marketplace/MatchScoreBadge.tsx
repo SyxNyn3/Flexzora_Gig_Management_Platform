@@ -13,20 +13,20 @@ interface Props {
 }
 
 const tone = (score: number, passed: boolean) => {
-  if (!passed) return 'bg-red-100 text-red-700 border-red-200';
-  if (score >= 80) return 'bg-green-100 text-green-800 border-green-200';
+  if (!passed) return 'bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/30';
+  if (score >= 80) return 'bg-green-500/15 text-green-600 dark:text-green-400 border-green-500/30';
   if (score >= 60) return 'bg-amber-100 text-amber-800 border-amber-200';
-  return 'bg-gray-100 text-gray-700 border-gray-200';
+  return 'bg-muted text-muted-foreground border-border';
 };
 
 const Row: React.FC<{ label: string; value: number; weight: number }> = ({ label, value, weight }) => (
   <div className="flex items-center justify-between text-xs py-0.5">
-    <span className="text-gray-600">
-      {label} <span className="text-gray-400">({Math.round(weight * 100)}%)</span>
+    <span className="text-muted-foreground">
+      {label} <span className="text-muted-foreground/70">({Math.round(weight * 100)}%)</span>
     </span>
     <div className="flex items-center gap-2">
-      <div className="w-20 h-1.5 bg-gray-200 rounded">
-        <div className="h-1.5 bg-blue-500 rounded" style={{ width: `${value}%` }} />
+      <div className="w-20 h-1.5 bg-muted rounded">
+        <div className="h-1.5 bg-secondary rounded" style={{ width: `${value}%` }} />
       </div>
       <span className="w-8 text-right font-medium">{Math.round(value)}</span>
     </div>
@@ -52,7 +52,7 @@ const MatchScoreBadge: React.FC<Props> = ({ score, breakdown, reasons = [], size
       <PopoverContent className="w-72" align="start">
         <p className="text-sm font-semibold mb-2">Match breakdown</p>
         {!passed && (
-          <ul className="mb-2 text-xs text-red-700 list-disc pl-4">
+          <ul className="mb-2 text-xs text-red-600 dark:text-red-400 list-disc pl-4">
             {breakdown.gatekeeperReasons.map((r) => (
               <li key={r}>{r}</li>
             ))}
@@ -62,9 +62,9 @@ const MatchScoreBadge: React.FC<Props> = ({ score, breakdown, reasons = [], size
         <Row label="Availability" value={breakdown.availability} weight={MATCH_WEIGHTS.availability} />
         <Row label="Performance" value={breakdown.performance} weight={MATCH_WEIGHTS.performance} />
         <Row label="Trusted roster" value={breakdown.roster} weight={MATCH_WEIGHTS.roster} />
-        {breakdown.distanceKm != null && <p className="text-xs text-gray-500 mt-2">{breakdown.distanceKm} km from venue</p>}
+        {breakdown.distanceKm != null && <p className="text-xs text-muted-foreground mt-2">{breakdown.distanceKm} km from venue</p>}
         {reasons.length > 0 && passed && (
-          <ul className="mt-2 text-xs text-gray-600 list-disc pl-4">
+          <ul className="mt-2 text-xs text-muted-foreground list-disc pl-4">
             {reasons.map((r) => (
               <li key={r}>{r}</li>
             ))}

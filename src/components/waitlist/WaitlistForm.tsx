@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowRight, CheckCircle, Copy, Mail, MessageSquare, Share2, Users } from 'lucide-react';
+import { ArrowRight, CheckCircle, Copy, Mail, MessageSquare, Share2, Users, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -142,9 +142,11 @@ const WaitlistForm: React.FC = () => {
   if (verificationSent) {
     return (
       <PageShell>
-        <Card className="shadow-xl border-0">
+        <Card>
           <CardHeader className="text-center">
-            <Mail className="mx-auto mb-3 h-12 w-12 text-blue-600" />
+            <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-secondary/15">
+              <Mail className="h-7 w-7 text-secondary" />
+            </div>
             <CardTitle>Check your inbox</CardTitle>
             <CardDescription>We sent a verification link to {userEmail}.</CardDescription>
           </CardHeader>
@@ -154,12 +156,14 @@ const WaitlistForm: React.FC = () => {
                 <AlertDescription>{verificationError}</AlertDescription>
               </Alert>
             )}
-            <Button variant="outline" onClick={resendVerification} disabled={loading}>
-              Resend verification email
-            </Button>
-            <Button variant="ghost" onClick={() => navigate('/')}>
-              Return to home
-            </Button>
+            <div className="flex flex-col sm:flex-row justify-center gap-3">
+              <Button variant="outline" onClick={resendVerification} disabled={loading} className="h-11">
+                Resend verification email
+              </Button>
+              <Button variant="ghost" onClick={() => navigate('/')} className="h-11">
+                Return to home
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </PageShell>
@@ -170,26 +174,28 @@ const WaitlistForm: React.FC = () => {
     const text = encodeURIComponent(shareText(referralLink));
     return (
       <PageShell>
-        <Card className="shadow-xl border-0">
+        <Card>
           <CardHeader className="text-center">
-            <CheckCircle className="mx-auto mb-3 h-14 w-14 text-green-600" />
+            <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-success/15">
+              <CheckCircle className="h-8 w-8 text-success" />
+            </div>
             <CardTitle>You're in the Founding Crew!</CardTitle>
             <CardDescription>Thanks for helping shape the future of event production.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             {referralStatus && (
-              <div className="rounded-lg border border-blue-200 bg-blue-50 p-5 text-center">
-                <p className="text-2xl font-bold text-blue-800">You're #{referralStatus.position} in line</p>
-                <p className="text-blue-700">{referralStatus.referral_count} referrals</p>
+              <div className="rounded-xl border border-primary/30 bg-primary/10 p-5 text-center">
+                <p className="text-2xl font-bold text-primary">You're #{referralStatus.position} in line</p>
+                <p className="text-muted-foreground">{referralStatus.referral_count} referrals</p>
                 {referralStatus.beta_tester && <Badge className="mt-3">Founding beta tester</Badge>}
               </div>
             )}
-            <div className="rounded-lg border border-gray-200 p-4">
-              <p className="mb-3 text-sm text-gray-600">
+            <div className="rounded-xl border border-border p-4">
+              <p className="mb-3 text-sm text-muted-foreground">
                 Invite concert and corporate event crews to move up together.
               </p>
-              <div className="mb-4 flex items-center justify-between rounded border bg-gray-50 p-3">
-                <code className="truncate text-sm">{referralLink}</code>
+              <div className="mb-4 flex items-center justify-between gap-2 rounded-lg border border-border bg-muted/60 p-3">
+                <code className="truncate text-sm text-foreground/90">{referralLink}</code>
                 <Button variant="ghost" size="sm" onClick={copyReferralLink}>
                   <Copy className="h-4 w-4" />
                 </Button>
@@ -209,7 +215,7 @@ const WaitlistForm: React.FC = () => {
                 </Button>
               </div>
             </div>
-            <Button onClick={() => navigate('/')} className="w-full">
+            <Button onClick={() => navigate('/')} className="h-11 w-full">
               Return to Home
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
@@ -221,26 +227,26 @@ const WaitlistForm: React.FC = () => {
 
   return (
     <PageShell>
-      <Card className="shadow-xl border-0">
+      <Card>
         <CardHeader className="text-center">
-          <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-r from-blue-600 to-green-500 text-2xl font-bold text-white">
-            F
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary">
+            <Zap className="h-7 w-7 text-primary-foreground" strokeWidth={2.5} />
           </div>
-          <CardTitle className="text-3xl">Join the Founding Crew</CardTitle>
-          <CardDescription className="text-lg">
+          <CardTitle className="text-2xl sm:text-3xl">Join the Founding Crew</CardTitle>
+          <CardDescription className="text-base sm:text-lg">
             Flexzora is the operating system for load-in, show call and load-out crews — replacing the Excel sheets and
             text groups. Get early access and help shape it.
           </CardDescription>
           {stats.total > 0 && (
-            <Badge variant="outline" className="mx-auto mt-4 w-fit">
-              <Users className="mr-2 h-4 w-4" />
+            <Badge variant="outline" className="mx-auto mt-4 w-fit border-border">
+              <Users className="mr-2 h-4 w-4 text-primary" />
               {stats.total.toLocaleString()} crew &amp; companies already lined up
             </Badge>
           )}
         </CardHeader>
         <CardContent>
           {referredBy && (
-            <Alert className="mb-5 border-blue-200 bg-blue-50">
+            <Alert className="mb-5 border-secondary/40 bg-secondary/10">
               <AlertDescription>You were referred by a friend — you'll both get priority access.</AlertDescription>
             </Alert>
           )}
@@ -252,7 +258,7 @@ const WaitlistForm: React.FC = () => {
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Email address" error={errors.email?.message}>
-                <Input type="email" placeholder="you@example.com" {...register('email')} />
+                <Input type="email" placeholder="you@example.com" className="h-11" {...register('email')} />
               </Field>
               <div>
                 <Label>I am a...</Label>
@@ -261,7 +267,7 @@ const WaitlistForm: React.FC = () => {
                     setValue('role_interest', value, { shouldValidate: true })
                   }
                 >
-                  <SelectTrigger className="mt-1">
+                  <SelectTrigger className="mt-2 h-11">
                     <SelectValue placeholder="Select your role" />
                   </SelectTrigger>
                   <SelectContent>
@@ -269,11 +275,11 @@ const WaitlistForm: React.FC = () => {
                     <SelectItem value="company">Production company</SelectItem>
                   </SelectContent>
                 </Select>
-                {errors.role_interest && <p className="mt-1 text-sm text-red-600">{errors.role_interest.message}</p>}
+                {errors.role_interest && <p className="mt-1 text-sm text-destructive">{errors.role_interest.message}</p>}
               </div>
             </div>
             <Field label="Primary market / city">
-              <Input placeholder="Los Angeles, CA" {...register('market_city')} />
+              <Input placeholder="Los Angeles, CA" className="h-11" {...register('market_city')} />
             </Field>
             {role === 'worker' && (
               <ChipGroup
@@ -288,7 +294,7 @@ const WaitlistForm: React.FC = () => {
                 <div>
                   <Label>Company type</Label>
                   <Select onValueChange={(value) => setValue('company_type', value)}>
-                    <SelectTrigger className="mt-1">
+                    <SelectTrigger className="mt-2 h-11">
                       <SelectValue placeholder="Select type" />
                     </SelectTrigger>
                     <SelectContent>
@@ -301,10 +307,10 @@ const WaitlistForm: React.FC = () => {
                   </Select>
                 </div>
                 <Field label="Events per month">
-                  <Input type="number" min="0" {...register('events_per_month')} />
+                  <Input type="number" min="0" className="h-11" {...register('events_per_month')} />
                 </Field>
                 <Field label="Typical crew size">
-                  <Input type="number" min="0" {...register('typical_crew_size')} />
+                  <Input type="number" min="0" className="h-11" {...register('typical_crew_size')} />
                 </Field>
               </div>
             )}
@@ -317,7 +323,7 @@ const WaitlistForm: React.FC = () => {
             <div>
               <Label>How did you hear about us?</Label>
               <Select onValueChange={(value) => setValue('heard_from', value)}>
-                <SelectTrigger className="mt-1">
+                <SelectTrigger className="mt-2 h-11">
                   <SelectValue placeholder="Select one" />
                 </SelectTrigger>
                 <SelectContent>
@@ -329,7 +335,7 @@ const WaitlistForm: React.FC = () => {
                 </SelectContent>
               </Select>
             </div>
-            <label className="flex items-start gap-3 rounded-lg border p-4">
+            <label className="flex items-start gap-3 rounded-xl border border-border bg-muted/40 p-4 cursor-pointer">
               <Checkbox
                 checked={watch('beta_tester')}
                 onCheckedChange={(checked) => setValue('beta_tester', checked === true)}
@@ -356,12 +362,12 @@ const WaitlistForm: React.FC = () => {
             <Button
               type="submit"
               disabled={loading}
-              className="h-12 w-full bg-gradient-to-r from-blue-600 to-green-500 text-lg"
+              className="h-12 w-full text-base sm:text-lg font-semibold"
             >
               {loading ? 'Processing...' : 'Join the Founding Crew'}
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
-            <p className="text-center text-sm text-gray-500">
+            <p className="text-center text-sm text-muted-foreground">
               By joining, you agree to receive updates about Flexzora. We'll never spam you or share your information.
             </p>
           </form>
@@ -372,15 +378,27 @@ const WaitlistForm: React.FC = () => {
 };
 
 const PageShell: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 px-4 py-16 sm:px-6 lg:px-8">
-    <div className="mx-auto max-w-3xl">{children}</div>
+  <div className="relative min-h-screen bg-background px-4 py-10 sm:px-6 sm:py-16 lg:px-8 overflow-x-hidden">
+    <div className="absolute inset-0 pointer-events-none" aria-hidden>
+      <div className="absolute -top-32 -left-32 w-[600px] h-[400px] bg-primary/[0.08] rounded-full blur-[110px]" />
+      <div className="absolute -bottom-40 -right-32 w-[500px] h-[400px] bg-secondary/[0.05] rounded-full blur-[110px]" />
+    </div>
+    <div className="relative mx-auto max-w-3xl">
+      <a href="/" className="mb-8 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+        <span className="flex h-6 w-6 items-center justify-center rounded-md bg-primary">
+          <Zap className="h-3.5 w-3.5 text-primary-foreground" strokeWidth={2.5} />
+        </span>
+        Flexzora
+      </a>
+      {children}
+    </div>
   </div>
 );
 const Field: React.FC<{ label: string; error?: string; children: React.ReactNode }> = ({ label, error, children }) => (
   <div>
     <Label>{label}</Label>
-    <div className="mt-1">{children}</div>
-    {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
+    <div className="mt-2">{children}</div>
+    {error && <p className="mt-1 text-sm text-destructive">{error}</p>}
   </div>
 );
 const ChipGroup: React.FC<{
@@ -401,6 +419,7 @@ const ChipGroup: React.FC<{
             type="button"
             variant={selected.includes(value) ? 'default' : 'outline'}
             size="sm"
+            className="rounded-full"
             onClick={() => onToggle(value)}
           >
             {text}

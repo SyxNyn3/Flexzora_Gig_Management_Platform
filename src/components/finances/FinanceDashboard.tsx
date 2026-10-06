@@ -47,7 +47,7 @@ const FinanceDashboard: React.FC = () => {
   const payments = paymentsData ?? [];
   const expenses = expensesData ?? [];
   
-  const [monthlyData, setMonthlyData] = useState<any[]>([]);
+  const [monthlyData, setMonthlyData] = useState<{ month: string; earnings: number; expenses: number; net: number }[]>([]);
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
 
@@ -151,9 +151,9 @@ const FinanceDashboard: React.FC = () => {
       // Refresh payments data
       await refetchPayments();
       toast.success('Payment processed successfully!');
-    } catch (error: any) {
+    } catch (error) {
       console.error('Payment update error:', error);
-      toast.error(`Failed to update payment: ${error.message || 'Unknown error'}`);
+      toast.error(`Failed to update payment: ${(error as Error).message || 'Unknown error'}`);
     }
   };
 
@@ -210,8 +210,8 @@ const FinanceDashboard: React.FC = () => {
       {/* Header */}
       <div className="mb-8 flex justify-between items-start">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Financial Dashboard</h1>
-          <p className="text-gray-600 mt-2">
+          <h1 className="text-3xl font-bold text-foreground">Financial Dashboard</h1>
+          <p className="text-muted-foreground mt-2">
             Track your earnings, expenses, and financial performance
           </p>
         </div>
@@ -358,10 +358,10 @@ const FinanceDashboard: React.FC = () => {
                   (payments || []).slice(0, 10).map((payment) => (
                     <div key={payment.id} className="flex items-center justify-between p-4 border rounded-lg">
                       <div className="flex items-center space-x-4">
-                        <CreditCard className="h-8 w-8 text-gray-400" />
+                        <CreditCard className="h-8 w-8 text-muted-foreground/70" />
                         <div>
                           <h4 className="font-medium">{payment.gig?.title || 'Unknown Gig'}</h4>
-                          <p className="text-xs text-gray-500">
+                          <p className="text-xs text-muted-foreground">
                             {payment.gig?.company?.name || 'Unknown Company'}
                           </p>
                           <div className="mt-2 flex space-x-2">
@@ -391,7 +391,7 @@ const FinanceDashboard: React.FC = () => {
                     </div>
                   ))
                 ) : (
-                  <p className="text-gray-500 text-center py-8">No payments recorded</p>
+                  <p className="text-muted-foreground text-center py-8">No payments recorded</p>
                 )}
               </div>
             </CardContent>

@@ -1,7 +1,6 @@
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 import { Profile } from './types';
-import { toast } from 'sonner';
 
 // Token storage keys
 const AUTH_TOKEN_KEY = 'flexzora-auth-token';
@@ -179,8 +178,8 @@ export const lookupUserByIdentifier = async (identifier: string): Promise<{ emai
     }
 
     return { email: data.email, error: null };
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error in lookupUserByIdentifier:', error);
-    return { email: null, error: error.message || 'Unknown error occurred' };
+    return { email: null, error: (error as Error).message || 'Unknown error occurred' };
   }
 };

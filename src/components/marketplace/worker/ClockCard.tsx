@@ -54,14 +54,14 @@ const ClockCard: React.FC<Props> = ({ assignment, onChanged }) => {
   if (!shift) return null;
 
   return (
-    <div className="rounded-lg border bg-white p-4 shadow-sm" style={{ borderLeft: `4px solid ${shift.event?.color ?? '#2563eb'}` }}>
+    <div className="rounded-lg border bg-card p-4 shadow-sm" style={{ borderLeft: `4px solid ${shift.event?.color ?? '#2563eb'}` }}>
       <div className="flex items-start justify-between gap-2">
         <div>
           <p className="font-semibold">{shift.title}</p>
-          <p className="text-sm text-gray-600">{shift.event?.name} · {shift.event?.company?.name}</p>
-          <p className="text-sm text-gray-600">{shiftWindow(shift.starts_at, shift.ends_at)} · ${Number(assignment.offered_rate ?? shift.hourly_rate).toFixed(2)}/hr</p>
+          <p className="text-sm text-muted-foreground">{shift.event?.name} · {shift.event?.company?.name}</p>
+          <p className="text-sm text-muted-foreground">{shiftWindow(shift.starts_at, shift.ends_at)} · ${Number(assignment.offered_rate ?? shift.hourly_rate).toFixed(2)}/hr</p>
           {venue && (
-            <p className="text-xs text-gray-500 inline-flex items-center gap-1 mt-1">
+            <p className="text-xs text-muted-foreground inline-flex items-center gap-1 mt-1">
               <MapPin className="w-3 h-3" /> {venue.name}, {venue.address}
             </p>
           )}
@@ -71,10 +71,10 @@ const ClockCard: React.FC<Props> = ({ assignment, onChanged }) => {
         </Badge>
       </div>
 
-      {shift.notes && <p className="text-xs text-gray-600 mt-2 bg-gray-50 rounded p-2">{shift.notes}</p>}
+      {shift.notes && <p className="text-xs text-muted-foreground mt-2 bg-muted rounded p-2">{shift.notes}</p>}
 
       <div className="mt-3 flex items-center justify-between gap-3">
-        <div className="text-xs text-gray-500 space-y-0.5">
+        <div className="text-xs text-muted-foreground space-y-0.5">
           {ts?.clock_in_at && <p>In {format(new Date(ts.clock_in_at), 'HH:mm')} {ts.clock_in_verified ? '· GPS verified' : '· outside fence'}</p>}
           {ts?.clock_out_at && <p>Out {format(new Date(ts.clock_out_at), 'HH:mm')} · {Number(ts.regular_hours) + Number(ts.overtime_hours) + Number(ts.doubletime_hours)} h · ${Number(ts.gross_pay).toFixed(2)}</p>}
           {locating && <p className="inline-flex items-center gap-1"><Navigation className="w-3 h-3" /> {locating}</p>}

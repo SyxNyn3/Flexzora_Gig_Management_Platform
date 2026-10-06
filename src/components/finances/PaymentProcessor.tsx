@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { Payment, Gig } from '@/lib/types';
-import { CreditCard, DollarSign, CheckCircle, AlertCircle } from 'lucide-react';
+import { CreditCard, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import StripeCheckout from '@/components/payments/StripeCheckout';
 
@@ -17,7 +17,7 @@ interface PaymentProcessorProps {
 const PaymentProcessor: React.FC<PaymentProcessorProps> = ({ payment, gig, onSuccess }) => {
   const { profile } = useAuth();
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
-  const [processing, setProcessing] = useState(false);
+  const [, setProcessing] = useState(false);
 
   const handlePayNow = () => {
     if (!payment) {
@@ -28,7 +28,7 @@ const PaymentProcessor: React.FC<PaymentProcessorProps> = ({ payment, gig, onSuc
     setShowPaymentDialog(true);
   };
 
-  const handlePaymentSuccess = async (paymentIntentId: string) => {
+  const handlePaymentSuccess = async () => {
     if (!payment || !profile) return;
     
     try {
@@ -55,9 +55,9 @@ const PaymentProcessor: React.FC<PaymentProcessorProps> = ({ payment, gig, onSuc
       if (onSuccess) {
         onSuccess();
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error updating payment status:', error);
-      toast.error(error.message || 'Failed to update payment status');
+      toast.error((error as Error).message || 'Failed to update payment status');
     } finally {
       setProcessing(false);
     }
