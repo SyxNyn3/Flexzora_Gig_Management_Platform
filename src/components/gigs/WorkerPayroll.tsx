@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -74,11 +74,7 @@ const WorkerPayroll: React.FC<WorkerPayrollProps> = ({ gigId, gigTitle, workers 
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [selectedWorkerForReview, setSelectedWorkerForReview] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadPayments();
-  }, [gigId]);
-
-  const loadPayments = async () => {
+  const loadPayments = useCallback(async () => {
     try {
       const { data, error } = await DatabaseService.getPayments({ gigId });
       
@@ -119,7 +115,11 @@ const WorkerPayroll: React.FC<WorkerPayrollProps> = ({ gigId, gigTitle, workers 
       setPayments([]);
       toast.error('Could not load payments');
     }
-  };
+  }, [gigId, workers]);
+
+  useEffect(() => {
+    loadPayments();
+  }, [loadPayments]);
 
   const calculatePayment = () => {
     const worker = workers.find(w => w.id === selectedWorker);

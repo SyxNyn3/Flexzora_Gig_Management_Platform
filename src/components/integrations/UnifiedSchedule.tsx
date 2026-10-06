@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -37,20 +37,11 @@ const UnifiedSchedule: React.FC = () => {
   const [sourceFilter, setSourceFilter] = useState<string>('all');
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (profile?.id) loadUnifiedSchedule();
-    else setLoading(false);
-  }, [profile?.id]);
-
-  useEffect(() => {
-    filterGigs();
-  }, [gigs, selectedWeek, viewMode, sourceFilter, showConflicts]);
-
   // PostgREST many-to-one embeds come back as objects, not arrays — normalize both shapes
   const one = <T,>(v: T | T[] | null | undefined): T | undefined =>
     Array.isArray(v) ? v[0] : (v ?? undefined);
 
-  const loadUnifiedSchedule = async () => {
+  const loadUnifiedSchedule = useCallback(async () => {
     setLoading(true);
     const rows: UnifiedGig[] = [];
 
@@ -133,9 +124,9 @@ const UnifiedSchedule: React.FC = () => {
 
     setGigs(rows);
     setLoading(false);
-  };
+  }, [profile]);
 
-  const filterGigs = () => {
+  const filterGigs = useCallback(() => {
     let filtered = gigs;
 
     // Filter by date range
@@ -159,7 +150,16 @@ const UnifiedSchedule: React.FC = () => {
     }
 
     setFilteredGigs(filtered);
-  };
+  }, [gigs, selectedWeek, viewMode, sourceFilter, showConflicts]);
+
+  useEffect(() => {
+    if (profile?.id) loadUnifiedSchedule();
+    else setLoading(false);
+  }, [profile?.id, loadUnifiedSchedule]);
+
+  useEffect(() => {
+    filterGigs();
+  }, [filterGigs]);
 
   const syncAllSources = async () => {
     setGigs(prev => prev.map(gig => ({ ...gig, sync_status: 'pending' as const })));

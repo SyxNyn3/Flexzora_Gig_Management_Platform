@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -46,19 +46,11 @@ const CompanyDashboard: React.FC = () => {
   const [showBroadcastDialog, setShowBroadcastDialog] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadWorkerPool();
-  }, []);
-
-  useEffect(() => {
-    filterWorkers();
-  }, [workers, searchTerm, skillFilter, availabilityFilter]);
-
   // PostgREST many-to-one embeds come back as objects, not arrays — normalize both shapes
   const one = <T,>(v: T | T[] | null | undefined): T | undefined =>
     Array.isArray(v) ? v[0] : (v ?? undefined);
 
-  const loadWorkerPool = async () => {
+  const loadWorkerPool = useCallback(async () => {
     setLoading(true);
 
     const { data: profiles, error } = await supabase
@@ -94,9 +86,9 @@ const CompanyDashboard: React.FC = () => {
       preferred_roles: [],
     })));
     setLoading(false);
-  };
+  }, []);
 
-  const filterWorkers = () => {
+  const filterWorkers = useCallback(() => {
     let filtered = workers;
 
     // Search filter
@@ -122,7 +114,15 @@ const CompanyDashboard: React.FC = () => {
     }
 
     setFilteredWorkers(filtered);
-  };
+  }, [workers, searchTerm, skillFilter, availabilityFilter]);
+
+  useEffect(() => {
+    loadWorkerPool();
+  }, [loadWorkerPool]);
+
+  useEffect(() => {
+    filterWorkers();
+  }, [filterWorkers]);
 
   const toggleWorkerSelection = (workerId: string) => {
     setSelectedWorkers(prev => 

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -44,8 +44,8 @@ const FinanceDashboard: React.FC = () => {
   const { data: expensesData, loading: expensesLoading } = useExpenses({ 
     workerId: profile?.id 
   });
-  const payments = paymentsData ?? [];
-  const expenses = expensesData ?? [];
+  const payments = useMemo(() => paymentsData ?? [], [paymentsData]);
+  const expenses = useMemo(() => expensesData ?? [], [expensesData]);
   
   const [monthlyData, setMonthlyData] = useState<{ month: string; earnings: number; expenses: number; net: number }[]>([]);
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
@@ -53,8 +53,8 @@ const FinanceDashboard: React.FC = () => {
 
   useEffect(() => {
     if (profile) {
-      calculateStats(payments || [], expenses || []);
-      generateMonthlyData(payments || [], expenses || []);
+      calculateStats(payments, expenses);
+      generateMonthlyData(payments, expenses);
     }
   }, [profile, payments, expenses]);
 

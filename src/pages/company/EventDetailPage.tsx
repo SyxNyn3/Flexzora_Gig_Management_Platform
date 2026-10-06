@@ -67,6 +67,8 @@ const EventDetailPage: React.FC = () => {
         event.refetch();
       }
     });
+    // Runs once per event on mount — event.refetch is intentionally excluded.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eventId]);
 
   const refresh = () => {
