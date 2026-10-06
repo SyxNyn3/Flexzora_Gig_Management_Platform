@@ -139,7 +139,7 @@ const ShiftForm: React.FC<Props> = ({ eventDate, skills, certTypes, initial, onS
           ))}
         </div>
         {form.required_cert_codes.some((c) => c.startsWith('ETCP')) && (
-          <p className="text-xs text-amber-700 mt-1">Only workers with a verified, unexpired ETCP credential will see this call.</p>
+          <p className="text-xs text-amber-500 mt-1">Only workers with a verified, unexpired ETCP credential will see this call.</p>
         )}
       </div>
       <div>

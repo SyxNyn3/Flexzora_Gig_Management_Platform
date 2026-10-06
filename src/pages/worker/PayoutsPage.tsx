@@ -16,8 +16,8 @@ import { Download, FileText, Landmark, Zap, Clock, FlaskConical } from 'lucide-r
 const payoutTone: Record<Payout['status'], string> = {
   queued: 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30',
   processing: 'bg-secondary/15 text-primary dark:text-blue-400 border-primary/30',
-  paid: 'bg-green-500/15 text-green-600 dark:text-green-400 border-green-500/30',
-  failed: 'bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/30',
+  paid: 'bg-green-500/15 text-emerald-500 dark:text-green-400 border-green-500/30',
+  failed: 'bg-red-500/15 text-destructive dark:text-red-400 border-red-500/30',
 };
 
 const payoutLabel = (status: Payout['status']): string => {
@@ -113,14 +113,14 @@ const PayoutsPage: React.FC = () => {
           {payouts.data.map((p) => (
             <Card key={p.id}>
               <CardContent className="p-3 flex items-center gap-3">
-                <div className={`p-2 rounded-md ${p.method === 'instant' ? 'bg-amber-50 text-amber-700' : 'bg-primary/10 text-primary'}`}>
+                <div className={`p-2 rounded-md ${p.method === 'instant' ? 'bg-amber-50 text-amber-500' : 'bg-primary/10 text-primary'}`}>
                   {p.method === 'instant' ? <Zap className="w-4 h-4" /> : <Landmark className="w-4 h-4" />}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium truncate">{p.invoice?.event?.name ?? 'Shift payout'} · {p.invoice?.company?.name}</p>
                   <p className="text-xs text-muted-foreground dark:text-muted-foreground">
                     {IS_PAYMENTS_SANDBOX && p.status === 'paid' ? SANDBOX_TRANSFER_LABEL : p.method === 'instant' ? 'Instant transfer' : 'ACH'} · {p.paid_at ? `Paid ${format(new Date(p.paid_at), 'MMM d')}` : p.expected_arrival_at ? `Expected ${format(new Date(p.expected_arrival_at), 'MMM d')}` : 'Processing'}
-                    {p.failure_reason && <span className="text-red-600 dark:text-red-400"> · {p.failure_reason}</span>}
+                    {p.failure_reason && <span className="text-destructive dark:text-red-400"> · {p.failure_reason}</span>}
                   </p>
                 </div>
                 <p className="font-semibold">{money(p.amount)}</p>
@@ -146,7 +146,7 @@ const PayoutsPage: React.FC = () => {
                     <p className="font-semibold">{money(inv.total)}</p>
                     <p className="text-xs text-muted-foreground">{money(inv.subtotal)} − {money(inv.platform_fee)} fee</p>
                   </div>
-                  <Badge variant="outline" className={inv.status === 'paid' ? 'bg-green-500/15 text-green-600 dark:text-green-400 border-green-500/30' : 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30'}>{inv.status}</Badge>
+                  <Badge variant="outline" className={inv.status === 'paid' ? 'bg-green-500/15 text-emerald-500 dark:text-green-400 border-green-500/30' : 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30'}>{inv.status}</Badge>
                 </div>
                 <div className="mt-2 pl-7 text-xs text-muted-foreground grid grid-cols-[1fr_auto_auto_auto] gap-x-4">
                   {inv.line_items.map((li, i) => (

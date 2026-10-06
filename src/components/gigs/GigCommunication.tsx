@@ -217,9 +217,9 @@ const GigCommunication: React.FC<GigCommunicationProps> = ({ gigId, gigTitle, wo
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'urgent': return 'bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/30';
+      case 'urgent': return 'bg-red-500/15 text-destructive dark:text-red-400 border-red-500/30';
       case 'high': return 'bg-amber-500/15 text-orange-800 border-orange-200';
-      case 'medium': return 'bg-primary/15 text-blue-800 border-primary/30';
+      case 'medium': return 'bg-primary/15 text-primary border-primary/30';
       case 'low': return 'bg-muted text-foreground/90 border-border';
       default: return 'bg-muted text-foreground/90 border-border';
     }
@@ -228,9 +228,9 @@ const GigCommunication: React.FC<GigCommunicationProps> = ({ gigId, gigTitle, wo
   const getTypeColor = (type: string) => {
     switch (type) {
       case 'instructions': return 'bg-secondary/15 text-purple-800';
-      case 'payment': return 'bg-green-500/15 text-green-600 dark:text-green-400';
-      case 'logistics': return 'bg-primary/15 text-blue-800';
-      case 'safety': return 'bg-red-500/15 text-red-600 dark:text-red-400';
+      case 'payment': return 'bg-green-500/15 text-emerald-500 dark:text-green-400';
+      case 'logistics': return 'bg-primary/15 text-primary';
+      case 'safety': return 'bg-red-500/15 text-destructive dark:text-red-400';
       default: return 'bg-muted text-foreground/90';
     }
   };
@@ -326,7 +326,7 @@ const GigCommunication: React.FC<GigCommunicationProps> = ({ gigId, gigTitle, wo
                   </div>
                   
                   {message.priority === 'urgent' && (
-                    <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
+                    <AlertTriangle className="h-5 w-5 text-destructive dark:text-red-400" />
                   )}
                 </div>
               </CardHeader>
@@ -345,7 +345,7 @@ const GigCommunication: React.FC<GigCommunicationProps> = ({ gigId, gigTitle, wo
                         </span>
                         {profile?.role === 'worker' && (
                           userConfirmed ? (
-                            <div className="flex items-center text-green-600 dark:text-green-400">
+                            <div className="flex items-center text-emerald-500 dark:text-green-400">
                               <CheckCircle className="h-4 w-4 mr-1" />
                               <span className="text-sm">Confirmed</span>
                             </div>
@@ -371,8 +371,8 @@ const GigCommunication: React.FC<GigCommunicationProps> = ({ gigId, gigTitle, wo
                             const worker = workers.find(w => w.id === confirmation.worker_id);
                             return (
                               <div key={confirmation.worker_id} className="flex items-center space-x-1 bg-green-500/10 rounded px-2 py-1">
-                                <CheckCircle className="h-3 w-3 text-green-600 dark:text-green-400" />
-                                <span className="text-xs text-green-600 dark:text-green-400">
+                                <CheckCircle className="h-3 w-3 text-emerald-500 dark:text-green-400" />
+                                <span className="text-xs text-emerald-500 dark:text-green-400">
                                   {worker?.name || 'Unknown'} - {format(new Date(confirmation.confirmed_at), 'MMM d, h:mm a')}
                                 </span>
                               </div>

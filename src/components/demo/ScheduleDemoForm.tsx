@@ -188,7 +188,7 @@ const ScheduleDemoForm: React.FC = () => {
   const timeSlots = generateTimeSlots();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 py-16 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-background py-16 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
         {/* Back to Home Button */}
         <Button
@@ -204,7 +204,7 @@ const ScheduleDemoForm: React.FC = () => {
           <Card className="shadow-xl border-0 animate-fade-in">
             <CardHeader className="text-center pb-6">
               <div className="w-16 h-16 bg-green-500/15 rounded-full flex items-center justify-center mx-auto mb-4">
-                <CheckCircle className="w-8 h-8 text-green-600 dark:text-green-400" />
+                <CheckCircle className="w-8 h-8 text-emerald-500 dark:text-green-400" />
               </div>
               <CardTitle className="text-2xl font-bold">Demo Scheduled!</CardTitle>
               <CardDescription className="text-lg">
@@ -213,7 +213,7 @@ const ScheduleDemoForm: React.FC = () => {
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="bg-primary/10 p-6 rounded-lg border border-primary/30">
-                <h3 className="text-lg font-semibold text-blue-800 mb-3">Your Demo Details</h3>
+                <h3 className="text-lg font-semibold text-primary mb-3">Your Demo Details</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-primary">
                   <div className="flex items-start">
                     <Calendar className="w-5 h-5 mr-2 mt-0.5 text-primary" />
@@ -243,15 +243,15 @@ const ScheduleDemoForm: React.FC = () => {
                 </p>
                 <ul className="space-y-2">
                   <li className="flex items-start">
-                    <CheckCircle className="w-5 h-5 mr-2 text-green-600 dark:text-green-400 shrink-0 mt-0.5" />
+                    <CheckCircle className="w-5 h-5 mr-2 text-emerald-500 dark:text-green-400 shrink-0 mt-0.5" />
                     <span>A list of your current workforce management challenges</span>
                   </li>
                   <li className="flex items-start">
-                    <CheckCircle className="w-5 h-5 mr-2 text-green-600 dark:text-green-400 shrink-0 mt-0.5" />
+                    <CheckCircle className="w-5 h-5 mr-2 text-emerald-500 dark:text-green-400 shrink-0 mt-0.5" />
                     <span>Examples of your current scheduling process and documents</span>
                   </li>
                   <li className="flex items-start">
-                    <CheckCircle className="w-5 h-5 mr-2 text-green-600 dark:text-green-400 shrink-0 mt-0.5" />
+                    <CheckCircle className="w-5 h-5 mr-2 text-emerald-500 dark:text-green-400 shrink-0 mt-0.5" />
                     <span>Questions about specific features you'd like to see demonstrated</span>
                   </li>
                 </ul>
@@ -283,8 +283,8 @@ const ScheduleDemoForm: React.FC = () => {
               {error && (
                 <Alert className="mb-6 bg-red-500/10 border-red-500/30">
                   <div className="flex items-center">
-                    <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400 mr-2" />
-                    <AlertDescription className="text-red-600 dark:text-red-400">{error}</AlertDescription>
+                    <AlertTriangle className="h-4 w-4 text-destructive dark:text-red-400 mr-2" />
+                    <AlertDescription className="text-destructive dark:text-red-400">{error}</AlertDescription>
                   </div>
                 </Alert>
               )}
@@ -306,7 +306,7 @@ const ScheduleDemoForm: React.FC = () => {
                         />
                       </div>
                       {errors.company_name && (
-                        <p className="text-sm text-red-600 dark:text-red-400 mt-1">{errors.company_name.message}</p>
+                        <p className="text-sm text-destructive dark:text-red-400 mt-1">{errors.company_name.message}</p>
                       )}
                     </div>
 
@@ -322,7 +322,7 @@ const ScheduleDemoForm: React.FC = () => {
                         />
                       </div>
                       {errors.company_website && (
-                        <p className="text-sm text-red-600 dark:text-red-400 mt-1">{errors.company_website.message}</p>
+                        <p className="text-sm text-destructive dark:text-red-400 mt-1">{errors.company_website.message}</p>
                       )}
                     </div>
                   </div>
@@ -345,7 +345,7 @@ const ScheduleDemoForm: React.FC = () => {
                         </SelectContent>
                       </Select>
                       {errors.company_size && (
-                        <p className="text-sm text-red-600 dark:text-red-400 mt-1">{errors.company_size.message}</p>
+                        <p className="text-sm text-destructive dark:text-red-400 mt-1">{errors.company_size.message}</p>
                       )}
                     </div>
 
@@ -368,7 +368,7 @@ const ScheduleDemoForm: React.FC = () => {
                         </SelectContent>
                       </Select>
                       {errors.industry_focus && (
-                        <p className="text-sm text-red-600 dark:text-red-400 mt-1">{errors.industry_focus.message}</p>
+                        <p className="text-sm text-destructive dark:text-red-400 mt-1">{errors.industry_focus.message}</p>
                       )}
                     </div>
                   </div>
@@ -390,7 +390,7 @@ const ScheduleDemoForm: React.FC = () => {
                         />
                       </div>
                       {errors.contact_name && (
-                        <p className="text-sm text-red-600 dark:text-red-400 mt-1">{errors.contact_name.message}</p>
+                        <p className="text-sm text-destructive dark:text-red-400 mt-1">{errors.contact_name.message}</p>
                       )}
                     </div>
 
@@ -407,7 +407,7 @@ const ScheduleDemoForm: React.FC = () => {
                         />
                       </div>
                       {errors.contact_email && (
-                        <p className="text-sm text-red-600 dark:text-red-400 mt-1">{errors.contact_email.message}</p>
+                        <p className="text-sm text-destructive dark:text-red-400 mt-1">{errors.contact_email.message}</p>
                       )}
                     </div>
                   </div>
@@ -424,7 +424,7 @@ const ScheduleDemoForm: React.FC = () => {
                       />
                     </div>
                     {errors.contact_phone && (
-                      <p className="text-sm text-red-600 dark:text-red-400 mt-1">{errors.contact_phone.message}</p>
+                      <p className="text-sm text-destructive dark:text-red-400 mt-1">{errors.contact_phone.message}</p>
                     )}
                   </div>
                 </div>
@@ -450,7 +450,7 @@ const ScheduleDemoForm: React.FC = () => {
                         </SelectContent>
                       </Select>
                       {errors.num_workers_managed && (
-                        <p className="text-sm text-red-600 dark:text-red-400 mt-1">{errors.num_workers_managed.message}</p>
+                        <p className="text-sm text-destructive dark:text-red-400 mt-1">{errors.num_workers_managed.message}</p>
                       )}
                     </div>
 
@@ -471,7 +471,7 @@ const ScheduleDemoForm: React.FC = () => {
                         </SelectContent>
                       </Select>
                       {errors.annual_gigs && (
-                        <p className="text-sm text-red-600 dark:text-red-400 mt-1">{errors.annual_gigs.message}</p>
+                        <p className="text-sm text-destructive dark:text-red-400 mt-1">{errors.annual_gigs.message}</p>
                       )}
                     </div>
                   </div>
@@ -486,7 +486,7 @@ const ScheduleDemoForm: React.FC = () => {
                       {...register('current_software')}
                     />
                     {errors.current_software && (
-                      <p className="text-sm text-red-600 dark:text-red-400 mt-1">{errors.current_software.message}</p>
+                      <p className="text-sm text-destructive dark:text-red-400 mt-1">{errors.current_software.message}</p>
                     )}
                   </div>
 
@@ -500,7 +500,7 @@ const ScheduleDemoForm: React.FC = () => {
                       {...register('communication_methods')}
                     />
                     {errors.communication_methods && (
-                      <p className="text-sm text-red-600 dark:text-red-400 mt-1">{errors.communication_methods.message}</p>
+                      <p className="text-sm text-destructive dark:text-red-400 mt-1">{errors.communication_methods.message}</p>
                     )}
                   </div>
 
@@ -514,7 +514,7 @@ const ScheduleDemoForm: React.FC = () => {
                       {...register('payroll_process')}
                     />
                     {errors.payroll_process && (
-                      <p className="text-sm text-red-600 dark:text-red-400 mt-1">{errors.payroll_process.message}</p>
+                      <p className="text-sm text-destructive dark:text-red-400 mt-1">{errors.payroll_process.message}</p>
                     )}
                   </div>
 
@@ -528,7 +528,7 @@ const ScheduleDemoForm: React.FC = () => {
                       {...register('pain_points')}
                     />
                     {errors.pain_points && (
-                      <p className="text-sm text-red-600 dark:text-red-400 mt-1">{errors.pain_points.message}</p>
+                      <p className="text-sm text-destructive dark:text-red-400 mt-1">{errors.pain_points.message}</p>
                     )}
                   </div>
                 </div>
@@ -537,7 +537,7 @@ const ScheduleDemoForm: React.FC = () => {
                   <h3 className="text-lg font-semibold border-b pb-2">Documents to Prepare</h3>
                   
                   <div className="space-y-3 bg-primary/10 p-4 rounded-lg">
-                    <p className="text-blue-800 mb-2">
+                    <p className="text-primary mb-2">
                       To make the most of your demo, please prepare the following documents. Check the boxes for documents you can provide:
                     </p>
                     
@@ -612,7 +612,7 @@ const ScheduleDemoForm: React.FC = () => {
                         </SelectContent>
                       </Select>
                       {errors.preferred_date && (
-                        <p className="text-sm text-red-600 dark:text-red-400 mt-1">{errors.preferred_date.message}</p>
+                        <p className="text-sm text-destructive dark:text-red-400 mt-1">{errors.preferred_date.message}</p>
                       )}
                     </div>
 
@@ -633,7 +633,7 @@ const ScheduleDemoForm: React.FC = () => {
                         </SelectContent>
                       </Select>
                       {errors.preferred_time && (
-                        <p className="text-sm text-red-600 dark:text-red-400 mt-1">{errors.preferred_time.message}</p>
+                        <p className="text-sm text-destructive dark:text-red-400 mt-1">{errors.preferred_time.message}</p>
                       )}
                     </div>
                   </div>
@@ -704,7 +704,7 @@ const ScheduleDemoForm: React.FC = () => {
                   </div>
                   <div className="bg-card p-4 rounded-lg border border-border text-center">
                     <div className="w-10 h-10 bg-green-500/15 rounded-full flex items-center justify-center mx-auto mb-3">
-                      <DollarSign className="h-5 w-5 text-green-600 dark:text-green-400" />
+                      <DollarSign className="h-5 w-5 text-emerald-500 dark:text-green-400" />
                     </div>
                     <h4 className="font-medium">ROI Analysis</h4>
                     <p className="text-sm text-muted-foreground">Understand your potential savings</p>
@@ -754,7 +754,7 @@ const ScheduleDemoForm: React.FC = () => {
               <Card className="bg-card border-0 shadow-md">
                 <CardContent className="pt-6">
                   <div className="flex items-start space-x-4">
-                    <div className="w-12 h-12 rounded-full bg-green-500/15 flex items-center justify-center text-green-600 dark:text-green-400 font-bold text-lg">
+                    <div className="w-12 h-12 rounded-full bg-green-500/15 flex items-center justify-center text-emerald-500 dark:text-green-400 font-bold text-lg">
                       J
                     </div>
                     <div>

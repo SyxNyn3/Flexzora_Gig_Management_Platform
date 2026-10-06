@@ -117,8 +117,8 @@ const GigManagement: React.FC<GigManagementProps> = ({ gigId: propGigId }) => {
       <div className="mb-8">
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">{gig.title}</h1>
-            <div className="flex items-center space-x-4 mt-2 text-gray-600">
+            <h1 className="text-3xl font-bold text-foreground">{gig.title}</h1>
+            <div className="flex items-center space-x-4 mt-2 text-muted-foreground">
               <div className="flex items-center">
                 <Building className="h-4 w-4 mr-1" />
                 {gig.company.name}
@@ -137,7 +137,7 @@ const GigManagement: React.FC<GigManagementProps> = ({ gigId: propGigId }) => {
               </div>
             </div>
           </div>
-          <Badge className="bg-green-100 text-green-800">
+          <Badge className="bg-emerald-500/10 text-green-800">
             {gig.status}
           </Badge>
         </div>
@@ -174,7 +174,7 @@ const GigManagement: React.FC<GigManagementProps> = ({ gigId: propGigId }) => {
                   <CardTitle>Gig Details</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-gray-700 leading-relaxed mb-4">
+                  <p className="text-foreground leading-relaxed mb-4">
                     {gig.description}
                   </p>
                   <div className="grid grid-cols-2 gap-4 text-sm">
@@ -208,7 +208,7 @@ const GigManagement: React.FC<GigManagementProps> = ({ gigId: propGigId }) => {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Total Budget</span>
+                    <span className="text-muted-foreground">Total Budget</span>
                     <span className="font-medium">
                       ${gig.hourly_rate && acceptedWorkers.length 
                         ? (gig.hourly_rate * Math.round((new Date(gig.end_date).getTime() - new Date(gig.start_date).getTime()) / (1000 * 60 * 60)) * acceptedWorkers.length).toLocaleString()
@@ -217,15 +217,15 @@ const GigManagement: React.FC<GigManagementProps> = ({ gigId: propGigId }) => {
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Applications</span>
+                    <span className="text-muted-foreground">Applications</span>
                     <span className="font-medium">{applications.length}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Confirmed Workers</span>
+                    <span className="text-muted-foreground">Confirmed Workers</span>
                     <span className="font-medium">{acceptedWorkers.filter(w => w.status === 'confirmed').length}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Pending Confirmations</span>
+                    <span className="text-muted-foreground">Pending Confirmations</span>
                     <span className="font-medium">{acceptedWorkers.filter(w => w.status === 'accepted').length}</span>
                   </div>
                 </CardContent>
@@ -245,15 +245,15 @@ const GigManagement: React.FC<GigManagementProps> = ({ gigId: propGigId }) => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {acceptedWorkers.map((worker) => (
                   <div key={worker.id} className="flex items-center space-x-3 p-3 border rounded-lg">
-                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                      <span className="text-blue-600 font-medium">
+                    <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                      <span className="text-primary font-medium">
                         {worker.name.split(' ').map((n: string) => n[0]).join('')}
                       </span>
                     </div>
                     <div className="flex-1">
                       <h4 className="font-medium">{worker.name}</h4>
                       <div className="flex items-center space-x-2">
-                        <span className="text-sm text-gray-600">${worker.hourly_rate}/hr</span>
+                        <span className="text-sm text-muted-foreground">${worker.hourly_rate}/hr</span>
                         <Badge variant={worker.status === 'confirmed' ? 'default' : 'secondary'}>
                           {worker.status}
                         </Badge>
@@ -296,7 +296,7 @@ const GigManagement: React.FC<GigManagementProps> = ({ gigId: propGigId }) => {
               workers={acceptedWorkers}
             />
           ) : (
-            <p className="text-sm text-gray-500 py-8 text-center">Demo roster — payroll runs against a live gig.</p>
+            <p className="text-sm text-muted-foreground py-8 text-center">Demo roster — payroll runs against a live gig.</p>
           )}
         </TabsContent>
 
@@ -319,7 +319,7 @@ const GigManagement: React.FC<GigManagementProps> = ({ gigId: propGigId }) => {
       {/* Review Form Dialog */}
       {showReviewForm && selectedWorker && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg w-full max-w-md">
+          <div className="bg-card rounded-lg w-full max-w-md">
             <div className="p-4 border-b flex justify-between items-center">
               <h3 className="text-lg font-semibold">Write a Review</h3>
               <Button 

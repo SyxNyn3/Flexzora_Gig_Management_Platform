@@ -379,7 +379,7 @@ const CreateGigForm: React.FC = () => {
                 placeholder="e.g., Camera Operator for Corporate Event"
               />
               {form.formState.errors.title && (
-                <p className="text-sm text-red-600 dark:text-red-400 mt-1">
+                <p className="text-sm text-destructive dark:text-red-400 mt-1">
                   {form.formState.errors.title.message}
                 </p>
               )}
@@ -394,7 +394,7 @@ const CreateGigForm: React.FC = () => {
                 placeholder="Describe the gig, responsibilities, and what you're looking for..."
               />
               {form.formState.errors.description && (
-                <p className="text-sm text-red-600 dark:text-red-400 mt-1">
+                <p className="text-sm text-destructive dark:text-red-400 mt-1">
                   {form.formState.errors.description.message}
                 </p>
               )}
@@ -479,7 +479,7 @@ const CreateGigForm: React.FC = () => {
                 </Popover>
               </div>
               {form.formState.errors.company_id && (
-                <p className="text-sm text-red-600 dark:text-red-400 mt-1">
+                <p className="text-sm text-destructive dark:text-red-400 mt-1">
                   {form.formState.errors.company_id.message}
                 </p>
               )}
@@ -505,7 +505,7 @@ const CreateGigForm: React.FC = () => {
                   placeholder="City, State or Full Address"
                 />
                 {form.formState.errors.location && (
-                  <p className="text-sm text-red-600 dark:text-red-400 mt-1">
+                  <p className="text-sm text-destructive dark:text-red-400 mt-1">
                     {form.formState.errors.location.message}
                   </p>
                 )}
@@ -530,7 +530,7 @@ const CreateGigForm: React.FC = () => {
                   {...form.register('start_date')}
                 />
                 {form.formState.errors.start_date && (
-                  <p className="text-sm text-red-600 dark:text-red-400 mt-1">
+                  <p className="text-sm text-destructive dark:text-red-400 mt-1">
                     {form.formState.errors.start_date.message}
                   </p>
                 )}
@@ -544,7 +544,7 @@ const CreateGigForm: React.FC = () => {
                   {...form.register('end_date')}
                 />
                 {form.formState.errors.end_date && (
-                  <p className="text-sm text-red-600 dark:text-red-400 mt-1">
+                  <p className="text-sm text-destructive dark:text-red-400 mt-1">
                     {form.formState.errors.end_date.message}
                   </p>
                 )}
@@ -594,7 +594,7 @@ const CreateGigForm: React.FC = () => {
                   {...form.register('required_workers')}
                 />
                 {form.formState.errors.required_workers && (
-                  <p className="text-sm text-red-600 dark:text-red-400 mt-1">
+                  <p className="text-sm text-destructive dark:text-red-400 mt-1">
                     {form.formState.errors.required_workers.message}
                   </p>
                 )}
@@ -809,7 +809,7 @@ const CreateGigForm: React.FC = () => {
                 placeholder="Enter company name"
               />
               {companyForm.formState.errors.name && (
-                <p className="text-sm text-red-600 dark:text-red-400 mt-1">
+                <p className="text-sm text-destructive dark:text-red-400 mt-1">
                   {companyForm.formState.errors.name.message}
                 </p>
               )}
@@ -834,7 +834,7 @@ const CreateGigForm: React.FC = () => {
                   placeholder="https://example.com"
                 />
                 {companyForm.formState.errors.website_url && (
-                  <p className="text-sm text-red-600 dark:text-red-400 mt-1">
+                  <p className="text-sm text-destructive dark:text-red-400 mt-1">
                     {companyForm.formState.errors.website_url.message}
                   </p>
                 )}
@@ -849,7 +849,7 @@ const CreateGigForm: React.FC = () => {
                   placeholder="contact@example.com"
                 />
                 {companyForm.formState.errors.contact_email && (
-                  <p className="text-sm text-red-600 dark:text-red-400 mt-1">
+                  <p className="text-sm text-destructive dark:text-red-400 mt-1">
                     {companyForm.formState.errors.contact_email.message}
                   </p>
                 )}

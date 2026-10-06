@@ -364,12 +364,12 @@ const ProfilePage: React.FC = () => {
 
   const getProficiencyColor = (level: number) => {
     switch (level) {
-      case 1: return 'bg-red-100 text-red-800';
+      case 1: return 'bg-destructive/10 text-red-800';
       case 2: return 'bg-orange-100 text-orange-800';
-      case 3: return 'bg-yellow-100 text-yellow-800';
-      case 4: return 'bg-blue-100 text-blue-800';
-      case 5: return 'bg-green-100 text-green-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 3: return 'bg-amber-500/10 text-yellow-800';
+      case 4: return 'bg-primary/10 text-primary';
+      case 5: return 'bg-emerald-500/10 text-green-800';
+      default: return 'bg-muted text-foreground';
     }
   };
 
@@ -404,8 +404,8 @@ const ProfilePage: React.FC = () => {
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Profile Settings</h1>
-        <p className="text-gray-600 mt-2">
+        <h1 className="text-3xl font-bold text-foreground">Profile Settings</h1>
+        <p className="text-muted-foreground mt-2">
           Manage your profile information and showcase your skills
         </p>
       </div>
@@ -434,7 +434,7 @@ const ProfilePage: React.FC = () => {
                 </Button>
               </div>
               <h3 className="font-medium">{profile.full_name}</h3>
-              <p className="text-sm text-gray-600">{profile.email}</p>
+              <p className="text-sm text-muted-foreground">{profile.email}</p>
               <Badge className="mt-2">
                 {profile.role ? profile.role.charAt(0).toUpperCase() + profile.role.slice(1) : 'User'}
               </Badge>
@@ -447,20 +447,20 @@ const ProfilePage: React.FC = () => {
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Experience</span>
+                <span className="text-sm text-muted-foreground">Experience</span>
                 <span className="font-medium">{profile.experience_years || 0} years</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Skills</span>
+                <span className="text-sm text-muted-foreground">Skills</span>
                 <span className="font-medium">{(workerSkills ?? []).length}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Certifications</span>
+                <span className="text-sm text-muted-foreground">Certifications</span>
                 <span className="font-medium">{(certifications ?? []).length}</span>
               </div>
               {profile.average_rating && (
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Rating</span>
+                  <span className="text-sm text-muted-foreground">Rating</span>
                   <div className="flex items-center">
                     <ReviewStars rating={profile.average_rating} size="sm" />
                     <span className="ml-1 font-medium">{profile.average_rating.toFixed(1)}</span>
@@ -469,13 +469,13 @@ const ProfilePage: React.FC = () => {
               )}
               {(profile.review_count ?? 0) > 0 && (
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Reviews</span>
+                  <span className="text-sm text-muted-foreground">Reviews</span>
                   <span className="font-medium">{profile.review_count}</span>
                 </div>
               )}
               {profile.hourly_rate && (
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Hourly Rate</span>
+                  <span className="text-sm text-muted-foreground">Hourly Rate</span>
                   <span className="font-medium">${profile.hourly_rate}/hr</span>
                 </div>
               )}
@@ -493,7 +493,7 @@ const ProfilePage: React.FC = () => {
                   <span className="text-3xl font-bold">{profile.average_rating?.toFixed(1) || '0.0'}</span>
                   <ReviewStars rating={profile.average_rating || 0} size="lg" />
                 </div>
-                <p className="text-center text-sm text-gray-600">
+                <p className="text-center text-sm text-muted-foreground">
                   Based on {profile.review_count} {profile.review_count === 1 ? 'review' : 'reviews'}
                 </p>
               </CardContent>
@@ -521,7 +521,7 @@ const ProfilePage: React.FC = () => {
                       {...form.register('full_name')}
                     />
                     {form.formState.errors.full_name && (
-                      <p className="text-sm text-red-600 mt-1">
+                      <p className="text-sm text-destructive mt-1">
                         {form.formState.errors.full_name.message}
                       </p>
                     )}
@@ -592,7 +592,7 @@ const ProfilePage: React.FC = () => {
                         placeholder="www.yourportfolio.com"
                       />
                       {form.formState.errors.portfolio_url && (
-                        <p className="text-sm text-red-600 mt-1">
+                        <p className="text-sm text-destructive mt-1">
                           {form.formState.errors.portfolio_url.message}
                         </p>
                       )}
@@ -606,7 +606,7 @@ const ProfilePage: React.FC = () => {
                         placeholder="linkedin.com/in/yourprofile"
                       />
                       {form.formState.errors.linkedin_url && (
-                        <p className="text-sm text-red-600 mt-1">
+                        <p className="text-sm text-destructive mt-1">
                           {form.formState.errors.linkedin_url.message}
                         </p>
                       )}
@@ -646,7 +646,7 @@ const ProfilePage: React.FC = () => {
                       {(workerSkills ?? []).map((workerSkill) => (
                         <div
                           key={workerSkill.id}
-                          className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                          className="flex items-center justify-between p-3 bg-muted/40 rounded-lg"
                         >
                           <div className="flex items-center space-x-3">
                             <div>
@@ -657,7 +657,7 @@ const ProfilePage: React.FC = () => {
                                 <Badge className={getProficiencyColor(workerSkill.proficiency_level)}>
                                   {getProficiencyLabel(workerSkill.proficiency_level)}
                                 </Badge>
-                                <span className="text-xs text-gray-500">
+                                <span className="text-xs text-muted-foreground">
                                   {workerSkill.years_experience} years
                                 </span>
                               </div>
@@ -667,7 +667,7 @@ const ProfilePage: React.FC = () => {
                             size="sm"
                             variant="ghost"
                             onClick={() => removeSkill(workerSkill.id)}
-                            className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                            className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
                           >
                             <X className="h-4 w-4" />
                           </Button>
@@ -675,7 +675,7 @@ const ProfilePage: React.FC = () => {
                       ))}
                     </div>
                   ) : (
-                    <p className="text-gray-500 text-center py-8">
+                    <p className="text-muted-foreground text-center py-8">
                       No skills added yet. Add your first skill to showcase your expertise.
                     </p>
                   )}
@@ -707,7 +707,7 @@ const ProfilePage: React.FC = () => {
                     {(certifications ?? []).map((cert) => (
                       <div key={cert.id} className="flex items-start justify-between p-4 border rounded-lg">
                         <div className="flex items-start space-x-3 flex-1">
-                          <Award className="h-5 w-5 text-blue-600 mt-1" />
+                          <Award className="h-5 w-5 text-primary mt-1" />
                           <div className="flex-1">
                             <h4 className="font-medium flex items-center gap-2">
                               {cert.name}
@@ -716,9 +716,9 @@ const ProfilePage: React.FC = () => {
                               )}
                             </h4>
                             {cert.issuing_organization && (
-                              <p className="text-sm text-gray-600">{cert.issuing_organization}</p>
+                              <p className="text-sm text-muted-foreground">{cert.issuing_organization}</p>
                             )}
-                            <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500">
+                            <div className="flex items-center space-x-4 mt-2 text-xs text-muted-foreground">
                               {cert.issue_date && (
                                 <span>Issued: {new Date(cert.issue_date).getFullYear()}</span>
                               )}
@@ -730,7 +730,7 @@ const ProfilePage: React.FC = () => {
                                   href={cert.credential_url} 
                                   target="_blank" 
                                   rel="noopener noreferrer"
-                                  className="flex items-center text-blue-600 hover:text-blue-700"
+                                  className="flex items-center text-primary hover:text-primary"
                                 >
                                   <ExternalLink className="h-3 w-3 mr-1" />
                                   View
@@ -743,8 +743,8 @@ const ProfilePage: React.FC = () => {
                           <Badge
                             variant="outline"
                             className={cert.verified
-                              ? 'border-green-300 bg-green-50 text-green-700'
-                              : 'border-amber-300 bg-amber-50 text-amber-700'}
+                              ? 'border-green-300 bg-emerald-500/10 text-emerald-500'
+                              : 'border-amber-300 bg-amber-50 text-amber-500'}
                           >
                             {cert.verified ? 'Verified' : 'Pending'}
                           </Badge>
@@ -761,7 +761,7 @@ const ProfilePage: React.FC = () => {
                             size="sm"
                             variant="ghost"
                             onClick={() => removeCertification(cert.id)}
-                            className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                            className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -770,7 +770,7 @@ const ProfilePage: React.FC = () => {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-gray-500 text-center py-8">
+                  <p className="text-muted-foreground text-center py-8">
                     No certifications added yet. Add your first certification to showcase your expertise.
                   </p>
                 )}
@@ -824,7 +824,7 @@ const ProfilePage: React.FC = () => {
                 placeholder="e.g., Camera Operation, Sound Engineering"
               />
               {skillForm.formState.errors.skill_name && (
-                <p className="text-sm text-red-600 mt-1">
+                <p className="text-sm text-destructive mt-1">
                   {skillForm.formState.errors.skill_name.message}
                 </p>
               )}
@@ -914,7 +914,7 @@ const ProfilePage: React.FC = () => {
                   <SelectItem value={OTHER_CERT_TYPE}>Other / not in catalog</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 Calls that require a credential (e.g. ETCP for rigging) only match certifications linked to a catalog type.
               </p>
             </div>
@@ -927,7 +927,7 @@ const ProfilePage: React.FC = () => {
                 placeholder="e.g., Certified Audio Engineer"
               />
               {certForm.formState.errors.name && (
-                <p className="text-sm text-red-600 mt-1">
+                <p className="text-sm text-destructive mt-1">
                   {certForm.formState.errors.name.message}
                 </p>
               )}
@@ -979,7 +979,7 @@ const ProfilePage: React.FC = () => {
                 placeholder="e.g., verify.organization.com"
               />
               {certForm.formState.errors.credential_url && (
-                <p className="text-sm text-red-600 mt-1">
+                <p className="text-sm text-destructive mt-1">
                   {certForm.formState.errors.credential_url.message}
                 </p>
               )}

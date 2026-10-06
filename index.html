@@ -13,6 +13,11 @@
     <link rel="manifest" href="/manifest.json" />
     <link rel="apple-touch-icon" href="/icon-192x192.png" />
     <title>Flexzora — The OS for live-event crews</title>
+    <style>
+      /* Paint the shell dark before the CSS bundle arrives — prevents a white flash on cold load. */
+      html { background-color: hsl(222 24% 7%); color-scheme: dark; }
+      body { background-color: hsl(222 24% 7%); }
+    </style>
   </head>
   <body>
     <div id="root"></div>

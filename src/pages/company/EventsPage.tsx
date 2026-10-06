@@ -18,10 +18,10 @@ import { CalendarDays, MapPin, Plus, Users } from 'lucide-react';
 
 const statusTone: Record<ProductionEvent['status'], string> = {
   draft: 'bg-muted text-foreground/80',
-  published: 'bg-primary/15 text-blue-800',
-  in_progress: 'bg-green-500/15 text-green-600 dark:text-green-400',
+  published: 'bg-primary/15 text-primary',
+  in_progress: 'bg-green-500/15 text-emerald-500 dark:text-green-400',
   completed: 'bg-secondary/15 text-purple-800',
-  cancelled: 'bg-red-500/15 text-red-600 dark:text-red-400',
+  cancelled: 'bg-red-500/15 text-destructive dark:text-red-400',
 };
 
 const EventsPage: React.FC = () => {

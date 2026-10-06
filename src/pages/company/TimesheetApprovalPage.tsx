@@ -18,14 +18,14 @@ import { CheckCircle2, MapPinCheck, MapPinOff, AlertTriangle, Zap, Landmark } fr
 
 const statusTone: Record<Timesheet['status'], string> = {
   open: 'bg-muted text-foreground/80',
-  submitted: 'bg-amber-100 text-amber-800',
-  approved: 'bg-primary/15 text-blue-800',
-  disputed: 'bg-red-500/15 text-red-600 dark:text-red-400',
-  paid: 'bg-green-500/15 text-green-600 dark:text-green-400',
+  submitted: 'bg-amber-500/10 text-amber-800',
+  approved: 'bg-primary/15 text-primary',
+  disputed: 'bg-red-500/15 text-destructive dark:text-red-400',
+  paid: 'bg-green-500/15 text-emerald-500 dark:text-green-400',
 };
 
 const Geo: React.FC<{ verified: boolean; distance?: number }> = ({ verified, distance }) => (
-  <span className={`inline-flex items-center gap-1 text-xs ${verified ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+  <span className={`inline-flex items-center gap-1 text-xs ${verified ? 'text-emerald-500 dark:text-green-400' : 'text-destructive dark:text-red-400'}`}>
     {verified ? <MapPinCheck className="w-3.5 h-3.5" /> : <MapPinOff className="w-3.5 h-3.5" />}
     {distance != null ? `${Math.round(distance)} m` : 'no GPS'}
   </span>
@@ -115,7 +115,7 @@ const TimesheetApprovalPage: React.FC = () => {
                 {t.clock_out_at && <Geo verified={t.clock_out_verified} distance={t.clock_out_distance_m} />}
               </div>
               {ranLong && (
-                <p className="text-xs text-amber-700 inline-flex items-center gap-1">
+                <p className="text-xs text-amber-500 inline-flex items-center gap-1">
                   <AlertTriangle className="w-3 h-3" /> Ran past scheduled wrap — OT applied automatically
                 </p>
               )}
@@ -126,7 +126,7 @@ const TimesheetApprovalPage: React.FC = () => {
                   <span>Regular</span><span className="text-right">{p.regularHours.toFixed(2)} h</span>
                   {p.overtimeHours > 0 && <><span>Overtime</span><span className="text-right">{p.overtimeHours.toFixed(2)} h</span></>}
                   {p.doubletimeHours > 0 && <><span>Double time</span><span className="text-right">{p.doubletimeHours.toFixed(2)} h</span></>}
-                  {p.minimumCallApplied && <span className="col-span-2 text-amber-700">Minimum call applied</span>}
+                  {p.minimumCallApplied && <span className="col-span-2 text-amber-500">Minimum call applied</span>}
                 </div>
                 <p className="font-semibold text-base mt-1">{money(t.status === 'approved' || t.status === 'paid' ? t.gross_pay : p.grossPay)}</p>
               </div>
@@ -160,7 +160,7 @@ const TimesheetApprovalPage: React.FC = () => {
             </div>
           </div>
           {t.worker_notes && <p className="text-xs text-muted-foreground mt-2 border-t pt-2">Crew note: {t.worker_notes}</p>}
-          {t.manager_notes && <p className="text-xs text-red-600 dark:text-red-400 mt-1">Manager: {t.manager_notes}</p>}
+          {t.manager_notes && <p className="text-xs text-destructive dark:text-red-400 mt-1">Manager: {t.manager_notes}</p>}
         </CardContent>
       </Card>
     );
@@ -193,7 +193,7 @@ const TimesheetApprovalPage: React.FC = () => {
           <TabsContent value="review" className="space-y-3 mt-4">
             {grouped.review.length === 0 && (
               <p className="text-center text-muted-foreground py-10 text-sm inline-flex items-center gap-2 w-full justify-center">
-                <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" /> All caught up.
+                <CheckCircle2 className="w-4 h-4 text-emerald-500 dark:text-green-400" /> All caught up.
               </p>
             )}
             {grouped.review.map((t) => <Row key={t.id} t={t} actions />)}

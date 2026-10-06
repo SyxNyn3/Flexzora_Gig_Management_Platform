@@ -82,7 +82,7 @@ const StripePaymentFormInner: React.FC<StripePaymentFormProps> = ({
       </div>
 
       {errorMessage && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-md text-red-800 text-sm">
+        <div className="p-3 bg-destructive/10 border border-destructive/30 rounded-md text-red-800 text-sm">
           {errorMessage}
         </div>
       )}
@@ -129,7 +129,7 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = (props) => {
       <Card>
         <CardContent className="pt-6">
           <div className="flex items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
           </div>
         </CardContent>
       </Card>
@@ -140,7 +140,7 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = (props) => {
     return (
       <Card>
         <CardContent className="pt-6">
-          <div className="p-4 bg-red-50 border border-red-200 rounded-md text-red-800">
+          <div className="p-4 bg-destructive/10 border border-destructive/30 rounded-md text-red-800">
             <p className="font-medium">Payment initialization failed</p>
             <p className="text-sm mt-1">{error}</p>
           </div>
@@ -180,7 +180,7 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = (props) => {
           <StripePaymentFormInner {...props} />
         </Elements>
       </CardContent>
-      <CardFooter className="flex justify-between text-xs text-gray-500">
+      <CardFooter className="flex justify-between text-xs text-muted-foreground">
         <div>Secure payment powered by Stripe</div>
         <div>All card information is encrypted</div>
       </CardFooter>

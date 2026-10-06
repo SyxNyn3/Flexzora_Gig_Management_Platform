@@ -131,7 +131,7 @@ const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ gigId }) => {
 
   const getCategoryColor = (category: string) => {
     switch (category) {
-      case 'travel': return 'bg-primary/15 text-blue-800';
+      case 'travel': return 'bg-primary/15 text-primary';
       case 'equipment': return 'bg-secondary/15 text-purple-800';
       case 'meals': return 'bg-amber-500/15 text-orange-800';
       case 'accommodation': return 'bg-primary/15 text-indigo-800';
@@ -292,7 +292,7 @@ const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ gigId }) => {
                   placeholder="0.00"
                 />
                 {form.formState.errors.amount && (
-                  <p className="text-sm text-red-600 dark:text-red-400 mt-1">
+                  <p className="text-sm text-destructive dark:text-red-400 mt-1">
                     {form.formState.errors.amount.message}
                   </p>
                 )}
@@ -323,7 +323,7 @@ const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ gigId }) => {
                 placeholder="What was this expense for?"
               />
               {form.formState.errors.description && (
-                <p className="text-sm text-red-600 dark:text-red-400 mt-1">
+                <p className="text-sm text-destructive dark:text-red-400 mt-1">
                   {form.formState.errors.description.message}
                 </p>
               )}

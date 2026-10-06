@@ -79,7 +79,7 @@ const PaymentSuccess: React.FC = () => {
       <div className="max-w-md mx-auto px-4 py-16">
         <Card>
           <CardHeader>
-            <CardTitle className="text-red-600 dark:text-red-400">Payment Error</CardTitle>
+            <CardTitle className="text-destructive dark:text-red-400">Payment Error</CardTitle>
             <CardDescription>
               There was a problem processing your payment
             </CardDescription>
@@ -102,7 +102,7 @@ const PaymentSuccess: React.FC = () => {
       <Card>
         <CardHeader className="text-center">
           <div className="mx-auto bg-green-500/15 p-3 rounded-full w-16 h-16 flex items-center justify-center mb-4">
-            <CheckCircle className="h-8 w-8 text-green-600 dark:text-green-400" />
+            <CheckCircle className="h-8 w-8 text-emerald-500 dark:text-green-400" />
           </div>
           <CardTitle className="text-2xl">Payment Successful!</CardTitle>
           <CardDescription>

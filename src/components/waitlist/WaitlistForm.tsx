@@ -183,7 +183,7 @@ const WaitlistForm: React.FC = () => {
                 <p className="text-amber-200/80">{referralStatus.referral_count} referrals</p>
               </div>
             )}
-            <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+            <div className="rounded-xl border border-white/10 bg-card/[0.03] p-4">
               <p className="mb-3 text-sm text-zinc-400">
                 Invite concert and corporate event crews to move up together.
               </p>
@@ -243,7 +243,7 @@ const WaitlistForm: React.FC = () => {
               (role) => (
                 <span
                   key={role}
-                  className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs font-medium text-zinc-300"
+                  className="rounded-full border border-white/10 bg-card/[0.03] px-3 py-1.5 text-xs font-medium text-zinc-300"
                 >
                   {role}
                 </span>
@@ -253,7 +253,7 @@ const WaitlistForm: React.FC = () => {
           {stats.total > 0 && (
             <Badge
               variant="outline"
-              className="mt-6 w-fit border-white/15 bg-white/5 px-4 py-1.5 text-sm text-zinc-300"
+              className="mt-6 w-fit border-white/15 bg-card/5 px-4 py-1.5 text-sm text-zinc-300"
             >
               <Users className="mr-2 h-4 w-4 text-amber-400" />
               {stats.total.toLocaleString()} crew &amp; companies already lined up
@@ -360,7 +360,7 @@ const WaitlistForm: React.FC = () => {
                 </SelectContent>
               </Select>
             </div>
-            <label className="flex items-start gap-3 rounded-lg border border-white/10 bg-white/[0.03] p-4">
+            <label className="flex items-start gap-3 rounded-lg border border-white/10 bg-card/[0.03] p-4">
               <Checkbox
                 checked={watch('beta_tester')}
                 onCheckedChange={(checked) => setValue('beta_tester', checked === true)}
@@ -454,7 +454,7 @@ const ChipGroup: React.FC<{
             className={
               selected.includes(value)
                 ? 'bg-amber-400 font-medium text-zinc-950 hover:bg-amber-300'
-                : 'border-white/15 text-zinc-300 hover:bg-white/5 hover:text-white'
+                : 'border-white/15 text-zinc-300 hover:bg-card/5 hover:text-white'
             }
           >
             {text}

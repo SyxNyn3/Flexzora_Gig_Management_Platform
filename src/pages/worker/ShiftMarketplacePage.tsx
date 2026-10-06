@@ -87,12 +87,12 @@ const ShiftMarketplacePage: React.FC = () => {
               )}
               {match && <MatchScoreBadge score={match.score} breakdown={match.breakdown} reasons={match.reasons} size="sm" />}
             </div>
-            <p className="text-sm text-gray-600 mt-1 inline-flex items-center gap-1">
+            <p className="text-sm text-muted-foreground mt-1 inline-flex items-center gap-1">
               <Building2 className="w-3.5 h-3.5" /> {shift.event?.company?.name} · {shift.event?.name}
             </p>
-            <p className="text-sm text-gray-600">{shiftWindow(shift.starts_at, shift.ends_at)} · {hoursBetween(shift.starts_at, shift.ends_at)} h</p>
+            <p className="text-sm text-muted-foreground">{shiftWindow(shift.starts_at, shift.ends_at)} · {hoursBetween(shift.starts_at, shift.ends_at)} h</p>
             {shift.event?.venue && (
-              <p className="text-xs text-gray-500 inline-flex items-center gap-1">
+              <p className="text-xs text-muted-foreground inline-flex items-center gap-1">
                 <MapPin className="w-3 h-3" /> {shift.event.venue.name}{shift.event.venue.city ? `, ${shift.event.venue.city}` : ''}
                 {match?.breakdown.distanceKm != null && ` · ${match.breakdown.distanceKm} km away`}
               </p>
@@ -104,8 +104,8 @@ const ShiftMarketplacePage: React.FC = () => {
             )}
           </div>
           <div className="text-right">
-            <p className="text-lg font-semibold">${Number(shift.hourly_rate).toFixed(2)}<span className="text-xs text-gray-500">/hr</span></p>
-            <p className="text-xs text-gray-500">≈ {money(est)} incl. OT</p>
+            <p className="text-lg font-semibold">${Number(shift.hourly_rate).toFixed(2)}<span className="text-xs text-muted-foreground">/hr</span></p>
+            <p className="text-xs text-muted-foreground">≈ {money(est)} incl. OT</p>
             <div className="mt-2">{action}</div>
           </div>
         </CardContent>
@@ -117,7 +117,7 @@ const ShiftMarketplacePage: React.FC = () => {
     <div className="max-w-5xl mx-auto p-6 space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Shifts</h1>
-        <p className="text-sm text-gray-600">Calls ranked by your match score. Only shifts you're credentialed for are shown.</p>
+        <p className="text-sm text-muted-foreground">Calls ranked by your match score. Only shifts you're credentialed for are shown.</p>
       </div>
 
       <Tabs defaultValue={offers.length ? 'offers' : 'market'}>
@@ -132,12 +132,12 @@ const ShiftMarketplacePage: React.FC = () => {
 
         <TabsContent value="market" className="space-y-3 mt-4">
           <div className="relative">
-            <Search className="w-4 h-4 absolute left-3 top-2.5 text-gray-400" />
+            <Search className="w-4 h-4 absolute left-3 top-2.5 text-muted-foreground" />
             <Input className="pl-9" placeholder="Search by role, company, venue or city" value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
           {(shifts.loading || (shifts.data.length > 0 && scores === null && !scoringFailed)) && [0, 1, 2].map((i) => <Skeleton key={i} className="h-28 w-full" />)}
-          {scoringFailed && <p className="text-center text-gray-500 py-10 text-sm">Could not check credential requirements right now — calls stay hidden until matching works again.</p>}
-          {!shifts.loading && scores !== null && visible.length === 0 && <p className="text-center text-gray-500 py-10 text-sm">No open calls match right now. Add certifications and skills to your profile to unlock more.</p>}
+          {scoringFailed && <p className="text-center text-muted-foreground py-10 text-sm">Could not check credential requirements right now — calls stay hidden until matching works again.</p>}
+          {!shifts.loading && scores !== null && visible.length === 0 && <p className="text-center text-muted-foreground py-10 text-sm">No open calls match right now. Add certifications and skills to your profile to unlock more.</p>}
           {visible.map(({ shift, match }) => (
             <ShiftRow
               key={shift.id}
@@ -153,7 +153,7 @@ const ShiftMarketplacePage: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="offers" className="space-y-3 mt-4">
-          {offers.length === 0 && <p className="text-center text-gray-500 py-10 text-sm">No direct-book offers waiting. Companies send these to their trusted roster first.</p>}
+          {offers.length === 0 && <p className="text-center text-muted-foreground py-10 text-sm">No direct-book offers waiting. Companies send these to their trusted roster first.</p>}
           {offers.map((a) =>
             a.shift ? (
               <ShiftRow
@@ -172,12 +172,12 @@ const ShiftMarketplacePage: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="bookings" className="space-y-3 mt-4">
-          {bookings.length === 0 && <p className="text-center text-gray-500 py-10 text-sm">No confirmed bookings yet.</p>}
+          {bookings.length === 0 && <p className="text-center text-muted-foreground py-10 text-sm">No confirmed bookings yet.</p>}
           {bookings.map((a) => <ClockCard key={a.id} assignment={a} onChanged={() => assignments.refetch()} />)}
         </TabsContent>
 
         <TabsContent value="pending" className="space-y-3 mt-4">
-          {pending.length === 0 && <p className="text-center text-gray-500 py-10 text-sm">No pending applications.</p>}
+          {pending.length === 0 && <p className="text-center text-muted-foreground py-10 text-sm">No pending applications.</p>}
           {pending.map((a) =>
             a.shift ? (
               <ShiftRow

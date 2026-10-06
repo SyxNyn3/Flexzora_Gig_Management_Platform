@@ -136,7 +136,7 @@ const AIInsightsDashboard: React.FC = () => {
   const getSeverityIcon = (severity: string) => {
     switch (severity) {
       case 'success':
-        return <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />;
+        return <CheckCircle className="h-5 w-5 text-emerald-500 dark:text-green-400" />;
       case 'warning':
         return <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400" />;
       default:

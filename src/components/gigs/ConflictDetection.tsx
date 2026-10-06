@@ -155,11 +155,11 @@ const ConflictDetection: React.FC<ConflictDetectionProps> = ({
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
-      case 'critical': return 'bg-red-100 text-red-800 border-red-200';
+      case 'critical': return 'bg-destructive/10 text-red-800 border-destructive/30';
       case 'high': return 'bg-orange-100 text-orange-800 border-orange-200';
-      case 'medium': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'low': return 'bg-blue-100 text-blue-800 border-blue-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+      case 'medium': return 'bg-amber-500/10 text-yellow-800 border-yellow-200';
+      case 'low': return 'bg-primary/10 text-primary border-primary/30';
+      default: return 'bg-muted text-foreground border-border';
     }
   };
 
@@ -188,7 +188,7 @@ const ConflictDetection: React.FC<ConflictDetectionProps> = ({
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
@@ -197,8 +197,8 @@ const ConflictDetection: React.FC<ConflictDetectionProps> = ({
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h2 className="text-2xl font-bold text-gray-900">Schedule Conflict Detection</h2>
-        <p className="text-gray-600 mt-2">
+        <h2 className="text-2xl font-bold text-foreground">Schedule Conflict Detection</h2>
+        <p className="text-muted-foreground mt-2">
           Automatically detect and resolve scheduling conflicts for {gigTitle}
         </p>
       </div>
@@ -208,9 +208,9 @@ const ConflictDetection: React.FC<ConflictDetectionProps> = ({
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center">
-              <Users className="h-8 w-8 text-blue-600" />
+              <Users className="h-8 w-8 text-primary" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Workers</p>
+                <p className="text-sm font-medium text-muted-foreground">Total Workers</p>
                 <p className="text-2xl font-bold">{workers.length}</p>
               </div>
             </div>
@@ -220,10 +220,10 @@ const ConflictDetection: React.FC<ConflictDetectionProps> = ({
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center">
-              <AlertTriangle className="h-8 w-8 text-red-600" />
+              <AlertTriangle className="h-8 w-8 text-destructive" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Conflicts Found</p>
-                <p className="text-2xl font-bold text-red-600">{conflicts.length}</p>
+                <p className="text-sm font-medium text-muted-foreground">Conflicts Found</p>
+                <p className="text-2xl font-bold text-destructive">{conflicts.length}</p>
               </div>
             </div>
           </CardContent>
@@ -232,10 +232,10 @@ const ConflictDetection: React.FC<ConflictDetectionProps> = ({
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center">
-              <CheckCircle className="h-8 w-8 text-green-600" />
+              <CheckCircle className="h-8 w-8 text-emerald-500" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Auto-Resolvable</p>
-                <p className="text-2xl font-bold text-green-600">
+                <p className="text-sm font-medium text-muted-foreground">Auto-Resolvable</p>
+                <p className="text-2xl font-bold text-emerald-500">
                   {conflicts.filter(c => c.auto_resolvable).length}
                 </p>
               </div>
@@ -248,7 +248,7 @@ const ConflictDetection: React.FC<ConflictDetectionProps> = ({
             <div className="flex items-center">
               <XCircle className="h-8 w-8 text-orange-600" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Needs Attention</p>
+                <p className="text-sm font-medium text-muted-foreground">Needs Attention</p>
                 <p className="text-2xl font-bold text-orange-600">
                   {conflicts.filter(c => !c.auto_resolvable).length}
                 </p>
@@ -283,9 +283,9 @@ const ConflictDetection: React.FC<ConflictDetectionProps> = ({
               <CardContent>
                 <div className="space-y-4">
                   {/* Current Gig Info */}
-                  <div className="bg-blue-50 p-4 rounded-lg">
+                  <div className="bg-primary/10 p-4 rounded-lg">
                     <h4 className="font-medium text-blue-900 mb-2">Current Gig</h4>
-                    <div className="space-y-1 text-sm text-blue-800">
+                    <div className="space-y-1 text-sm text-primary">
                       <div className="flex items-center">
                         <Calendar className="h-4 w-4 mr-2" />
                         {format(parseISO(gigStartDate), 'MMM d, yyyy h:mm a')} - {format(parseISO(gigEndDate), 'MMM d, yyyy h:mm a')}
@@ -302,17 +302,17 @@ const ConflictDetection: React.FC<ConflictDetectionProps> = ({
                     <h4 className="font-medium mb-2">Conflicting Commitments</h4>
                     <div className="space-y-2">
                       {conflict.conflicting_gigs.map((gig) => (
-                        <div key={gig.id} className="bg-red-50 p-3 rounded-lg">
+                        <div key={gig.id} className="bg-destructive/10 p-3 rounded-lg">
                           <div className="flex items-center justify-between">
                             <div>
                               <h5 className="font-medium text-red-900">{gig.title}</h5>
-                              <p className="text-sm text-red-700">{gig.company}</p>
-                              <div className="flex items-center space-x-4 mt-1 text-xs text-red-600">
+                              <p className="text-sm text-destructive">{gig.company}</p>
+                              <div className="flex items-center space-x-4 mt-1 text-xs text-destructive">
                                 <span>{format(parseISO(gig.start_date), 'MMM d, h:mm a')} - {format(parseISO(gig.end_date), 'h:mm a')}</span>
                                 <span>{gig.location}</span>
                               </div>
                             </div>
-                            <Badge variant="outline" className="text-red-700 border-red-300">
+                            <Badge variant="outline" className="text-destructive border-destructive/40">
                               {gig.status}
                             </Badge>
                           </div>
@@ -370,8 +370,8 @@ const ConflictDetection: React.FC<ConflictDetectionProps> = ({
         <Card>
           <CardContent className="text-center py-12">
             <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No Conflicts Detected</h3>
-            <p className="text-gray-600">
+            <h3 className="text-lg font-medium text-foreground mb-2">No Conflicts Detected</h3>
+            <p className="text-muted-foreground">
               All workers are available for this gig with no scheduling conflicts.
             </p>
           </CardContent>

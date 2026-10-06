@@ -85,7 +85,7 @@ const StripeCheckout: React.FC<StripeCheckoutProps> = ({
       <Card>
         <CardContent className="pt-6 flex flex-col items-center justify-center py-10">
           <Loader2 className="h-10 w-10 text-primary animate-spin mb-4" />
-          <p className="text-center text-gray-600">Initializing payment...</p>
+          <p className="text-center text-muted-foreground">Initializing payment...</p>
         </CardContent>
       </Card>
     );
@@ -119,7 +119,7 @@ const StripeCheckout: React.FC<StripeCheckoutProps> = ({
             Queue transfer via Flexzora Escrow (Sandbox)
           </Button>
         </CardContent>
-        <CardFooter className="flex justify-between border-t pt-4 text-xs text-gray-500">
+        <CardFooter className="flex justify-between border-t pt-4 text-xs text-muted-foreground">
           <div className="flex items-center">
             <Shield className="h-3 w-3 mr-1" />
             Sandbox — no real funds move
@@ -189,7 +189,7 @@ const StripeCheckout: React.FC<StripeCheckoutProps> = ({
           </Elements>
         )}
       </CardContent>
-      <CardFooter className="flex justify-between border-t pt-4 text-xs text-gray-500">
+      <CardFooter className="flex justify-between border-t pt-4 text-xs text-muted-foreground">
         <div className="flex items-center">
           <Shield className="h-3 w-3 mr-1" />
           Secure payment powered by Stripe

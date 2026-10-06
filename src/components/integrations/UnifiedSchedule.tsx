@@ -179,31 +179,31 @@ const UnifiedSchedule: React.FC = () => {
 
   const getConflictColor = (level: string) => {
     switch (level) {
-      case 'high': return 'border-l-red-500 bg-red-50';
-      case 'medium': return 'border-l-yellow-500 bg-yellow-50';
-      case 'low': return 'border-l-blue-500 bg-blue-50';
-      default: return 'border-l-green-500 bg-white';
+      case 'high': return 'border-l-red-500 bg-destructive/10';
+      case 'medium': return 'border-l-yellow-500 bg-amber-500/10';
+      case 'low': return 'border-l-blue-500 bg-primary/10';
+      default: return 'border-l-green-500 bg-card';
     }
   };
 
   const getSourceColor = (source: string) => {
     switch (source) {
       case 'rhino': return 'bg-purple-100 text-purple-800';
-      case 'giglife': return 'bg-blue-100 text-blue-800';
-      case 'stagehands': return 'bg-green-100 text-green-800';
+      case 'giglife': return 'bg-primary/10 text-primary';
+      case 'stagehands': return 'bg-emerald-500/10 text-green-800';
       case 'pce': return 'bg-cyan-100 text-cyan-800';
       case 'flexora': return 'bg-indigo-100 text-indigo-800';
-      default: return 'bg-gray-100 text-gray-800';
+      default: return 'bg-muted text-foreground';
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'confirmed': return 'bg-green-100 text-green-800';
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'completed': return 'bg-gray-100 text-gray-800';
-      case 'cancelled': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'confirmed': return 'bg-emerald-500/10 text-green-800';
+      case 'pending': return 'bg-amber-500/10 text-yellow-800';
+      case 'completed': return 'bg-muted text-foreground';
+      case 'cancelled': return 'bg-destructive/10 text-red-800';
+      default: return 'bg-muted text-foreground';
     }
   };
 
@@ -212,7 +212,7 @@ const UnifiedSchedule: React.FC = () => {
       case 'synced': return <CheckCircle className="h-4 w-4 text-green-500" />;
       case 'pending': return <Sync className="h-4 w-4 text-yellow-500 animate-spin" />;
       case 'error': return <XCircle className="h-4 w-4 text-red-500" />;
-      default: return <Clock className="h-4 w-4 text-gray-500" />;
+      default: return <Clock className="h-4 w-4 text-muted-foreground" />;
     }
   };
 
@@ -228,7 +228,7 @@ const UnifiedSchedule: React.FC = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
@@ -238,8 +238,8 @@ const UnifiedSchedule: React.FC = () => {
       {/* Header */}
       <div className="flex justify-between items-start">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Unified Schedule</h2>
-          <p className="text-gray-600 mt-2">
+          <h2 className="text-2xl font-bold text-foreground">Unified Schedule</h2>
+          <p className="text-muted-foreground mt-2">
             All your gigs from connected companies in one view
           </p>
         </div>
@@ -260,9 +260,9 @@ const UnifiedSchedule: React.FC = () => {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center">
-              <Calendar className="h-8 w-8 text-blue-600" />
+              <Calendar className="h-8 w-8 text-primary" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">This Week</p>
+                <p className="text-sm font-medium text-muted-foreground">This Week</p>
                 <p className="text-2xl font-bold">{filteredGigs.length} gigs</p>
               </div>
             </div>
@@ -272,9 +272,9 @@ const UnifiedSchedule: React.FC = () => {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center">
-              <DollarSign className="h-8 w-8 text-green-600" />
+              <DollarSign className="h-8 w-8 text-emerald-500" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Potential Earnings</p>
+                <p className="text-sm font-medium text-muted-foreground">Potential Earnings</p>
                 <p className="text-2xl font-bold">${totalEarnings.toLocaleString()}</p>
               </div>
             </div>
@@ -286,7 +286,7 @@ const UnifiedSchedule: React.FC = () => {
             <div className="flex items-center">
               <AlertTriangle className="h-8 w-8 text-yellow-600" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Conflicts</p>
+                <p className="text-sm font-medium text-muted-foreground">Conflicts</p>
                 <p className="text-2xl font-bold text-yellow-600">{conflictCount}</p>
               </div>
             </div>
@@ -298,7 +298,7 @@ const UnifiedSchedule: React.FC = () => {
             <div className="flex items-center">
               <Building2 className="h-8 w-8 text-purple-600" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Companies</p>
+                <p className="text-sm font-medium text-muted-foreground">Companies</p>
                 <p className="text-2xl font-bold">
                   {new Set(filteredGigs.map(g => g.company_name)).size}
                 </p>
@@ -313,7 +313,7 @@ const UnifiedSchedule: React.FC = () => {
         <CardContent className="pt-6">
           <div className="flex flex-wrap items-center gap-4">
             <div className="flex items-center space-x-2">
-              <Filter className="h-4 w-4 text-gray-500" />
+              <Filter className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm font-medium">Filters:</span>
             </div>
             
@@ -362,7 +362,7 @@ const UnifiedSchedule: React.FC = () => {
 
       {/* Conflicts Alert */}
       {conflictCount > 0 && (
-        <Alert className="border-yellow-200 bg-yellow-50">
+        <Alert className="border-yellow-200 bg-amber-500/10">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription className="text-yellow-800">
             <strong>{conflictCount} scheduling conflict{conflictCount !== 1 ? 's' : ''} detected.</strong> 
@@ -392,7 +392,7 @@ const UnifiedSchedule: React.FC = () => {
                         {getSyncIcon(gig.sync_status)}
                       </div>
                       
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-muted-foreground">
                         <div className="flex items-center">
                           <Clock className="h-4 w-4 mr-2" />
                           {format(parseISO(gig.start_date), 'MMM d, h:mm a')} - {format(parseISO(gig.end_date), 'h:mm a')}
@@ -410,14 +410,14 @@ const UnifiedSchedule: React.FC = () => {
                       </div>
 
                       {gig.notes && (
-                        <div className="mt-3 p-3 bg-gray-50 rounded-lg">
-                          <p className="text-sm text-gray-700">{gig.notes}</p>
+                        <div className="mt-3 p-3 bg-muted/40 rounded-lg">
+                          <p className="text-sm text-foreground">{gig.notes}</p>
                         </div>
                       )}
 
                       {gig.conflict_level !== 'none' && (
                         <div className="mt-3">
-                          <Badge className="bg-red-100 text-red-800">
+                          <Badge className="bg-destructive/10 text-red-800">
                             <AlertTriangle className="h-3 w-3 mr-1" />
                             {gig.conflict_level.toUpperCase()} CONFLICT
                           </Badge>
@@ -432,7 +432,7 @@ const UnifiedSchedule: React.FC = () => {
                         ${((new Date(gig.end_date).getTime() - new Date(gig.start_date).getTime()) / (1000 * 60 * 60) * gig.hourly_rate).toLocaleString()}
                       </div>
                     )}
-                    <div className="text-sm text-gray-500">
+                    <div className="text-sm text-muted-foreground">
                       {Math.round((new Date(gig.end_date).getTime() - new Date(gig.start_date).getTime()) / (1000 * 60 * 60))} hours
                     </div>
                   </div>
@@ -443,9 +443,9 @@ const UnifiedSchedule: React.FC = () => {
         ) : (
           <Card>
             <CardContent className="text-center py-12">
-              <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No Gigs Scheduled</h3>
-              <p className="text-gray-600">
+              <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-foreground mb-2">No Gigs Scheduled</h3>
+              <p className="text-muted-foreground">
                 No gigs found for the selected time period and filters.
               </p>
             </CardContent>

@@ -300,9 +300,9 @@ const CompanyIntegrations: React.FC = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'connected': return 'bg-green-500/15 text-green-600 dark:text-green-400';
+      case 'connected': return 'bg-green-500/15 text-emerald-500 dark:text-green-400';
       case 'pending': return 'bg-amber-500/15 text-amber-600 dark:text-amber-400';
-      case 'error': return 'bg-red-500/15 text-red-600 dark:text-red-400';
+      case 'error': return 'bg-red-500/15 text-destructive dark:text-red-400';
       case 'disconnected': return 'bg-muted text-foreground/90';
       default: return 'bg-muted text-foreground/90';
     }
@@ -357,7 +357,7 @@ const CompanyIntegrations: React.FC = () => {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center">
-              <Calendar className="h-8 w-8 text-green-600 dark:text-green-400" />
+              <Calendar className="h-8 w-8 text-emerald-500 dark:text-green-400" />
               <div className="ml-4">
                 <p className="text-sm font-medium text-muted-foreground">Total Gigs</p>
                 <p className="text-2xl font-bold">
@@ -572,7 +572,7 @@ const CompanyIntegrations: React.FC = () => {
                     <div className="text-2xl">{integration.company_logo}</div>
                     <div>
                       <h3 className="font-medium">{integration.company_name}</h3>
-                      <p className="text-sm text-red-600 dark:text-red-400">Connection error - credentials may be invalid</p>
+                      <p className="text-sm text-destructive dark:text-red-400">Connection error - credentials may be invalid</p>
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
@@ -755,7 +755,7 @@ const CompanyIntegrations: React.FC = () => {
             {selectedCompany && (
               <div className="bg-primary/10 p-4 rounded-lg">
                 <h4 className="font-medium text-blue-900 mb-2">Integration Type: {integrationType?.toUpperCase()}</h4>
-                <div className="text-sm text-blue-800">
+                <div className="text-sm text-primary">
                   {integrationType === 'api' && (
                     <div className="space-y-2">
                       <p>Direct API integration provides real-time sync of:</p>

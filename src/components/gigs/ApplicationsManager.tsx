@@ -144,8 +144,8 @@ const ApplicationsManager: React.FC<ApplicationsManagerProps> = ({ gigId }) => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending': return 'bg-amber-500/15 text-amber-600 dark:text-amber-400';
-      case 'accepted': return 'bg-green-500/15 text-green-600 dark:text-green-400';
-      case 'rejected': return 'bg-red-500/15 text-red-600 dark:text-red-400';
+      case 'accepted': return 'bg-green-500/15 text-emerald-500 dark:text-green-400';
+      case 'rejected': return 'bg-red-500/15 text-destructive dark:text-red-400';
       case 'withdrawn': return 'bg-muted text-foreground/90';
       default: return 'bg-muted text-foreground/90';
     }

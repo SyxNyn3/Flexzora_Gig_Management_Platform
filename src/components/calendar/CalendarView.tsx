@@ -339,14 +339,14 @@ const CalendarView: React.FC = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'published': return 'bg-primary/15 text-blue-800';
-      case 'in_progress': return 'bg-green-500/15 text-green-600 dark:text-green-400';
+      case 'published': return 'bg-primary/15 text-primary';
+      case 'in_progress': return 'bg-green-500/15 text-emerald-500 dark:text-green-400';
       case 'completed': return 'bg-muted text-foreground/90';
       case 'accepted': return 'bg-emerald-100 text-emerald-800';
       case 'note': return 'bg-secondary/15 text-purple-800';
-      case 'high': return 'bg-red-500/15 text-red-600 dark:text-red-400';
+      case 'high': return 'bg-red-500/15 text-destructive dark:text-red-400';
       case 'medium': return 'bg-amber-500/15 text-amber-600 dark:text-amber-400';
-      case 'low': return 'bg-green-500/15 text-green-600 dark:text-green-400';
+      case 'low': return 'bg-green-500/15 text-emerald-500 dark:text-green-400';
       default: return 'bg-muted text-foreground/90';
     }
   };
@@ -514,7 +514,7 @@ const CalendarView: React.FC = () => {
                       size="sm"
                       variant="outline"
                       onClick={() => deleteItem(selectedEvent)}
-                      className="text-red-600 dark:text-red-400 hover:text-red-600 dark:hover:text-red-400"
+                      className="text-destructive dark:text-red-400 hover:text-destructive dark:hover:text-red-400"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>

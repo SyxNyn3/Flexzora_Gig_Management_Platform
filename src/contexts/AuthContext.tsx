@@ -140,8 +140,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       let error = null;
 
       try {
-        // First try to get existing profile
-        const result = await DatabaseService.getProfile(userId);
+        // First try to get existing profile — bound the wait so a stalled
+        // query can't leave users on the loading screen forever
+        const result = await Promise.race([
+          DatabaseService.getProfile(userId),
+          new Promise<null>((resolve) => setTimeout(() => resolve(null), 8000)),
+        ]);
+        if (!result) {
+          console.warn('Profile fetch timed out; continuing without profile');
+          return;
+        }
         profileData = result.data;
         error = result.error;
         

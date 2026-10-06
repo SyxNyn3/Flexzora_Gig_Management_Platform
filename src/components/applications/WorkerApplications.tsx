@@ -133,7 +133,7 @@ const WorkerApplications: React.FC = () => {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Response Rate</span>
-                  <span className="font-semibold text-lg text-green-600 dark:text-green-400">{stats.responseRate}%</span>
+                  <span className="font-semibold text-lg text-emerald-500 dark:text-green-400">{stats.responseRate}%</span>
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
@@ -173,11 +173,11 @@ const WorkerApplications: React.FC = () => {
                 </div>
                 <div className="p-3 bg-green-500/10 rounded-lg">
                   <p className="font-medium text-green-900">Apply early</p>
-                  <p className="text-green-600 dark:text-green-400">Early applications get more attention</p>
+                  <p className="text-emerald-500 dark:text-green-400">Early applications get more attention</p>
                 </div>
                 <div className="p-3 bg-secondary/10 rounded-lg">
                   <p className="font-medium text-purple-900">Follow up professionally</p>
-                  <p className="text-purple-700">Send a polite follow-up after 3-5 days</p>
+                  <p className="text-purple-400">Send a polite follow-up after 3-5 days</p>
                 </div>
               </CardContent>
             </Card>

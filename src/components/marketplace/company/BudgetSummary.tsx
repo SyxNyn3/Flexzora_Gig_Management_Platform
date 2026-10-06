@@ -21,11 +21,11 @@ const ESCROW_POLL_MAX_TICKS = 20;
 const Stat: React.FC<{ icon: React.ReactNode; label: string; value: string; sub?: string; warn?: boolean }> = ({ icon, label, value, sub, warn }) => (
   <Card>
     <CardContent className="p-4 flex items-start gap-3">
-      <div className={`p-2 rounded-md ${warn ? 'bg-red-100 text-red-700' : 'bg-blue-50 text-blue-700'}`}>{icon}</div>
+      <div className={`p-2 rounded-md ${warn ? 'bg-destructive/10 text-destructive' : 'bg-primary/10 text-primary'}`}>{icon}</div>
       <div>
-        <p className="text-xs text-gray-500">{label}</p>
-        <p className={`text-lg font-semibold ${warn ? 'text-red-700' : ''}`}>{value}</p>
-        {sub && <p className="text-xs text-gray-500">{sub}</p>}
+        <p className="text-xs text-muted-foreground">{label}</p>
+        <p className={`text-lg font-semibold ${warn ? 'text-destructive' : ''}`}>{value}</p>
+        {sub && <p className="text-xs text-muted-foreground">{sub}</p>}
       </div>
     </CardContent>
   </Card>
@@ -107,13 +107,13 @@ const BudgetSummary: React.FC<Props> = ({ event, refreshKey }) => {
       <Stat icon={<Wallet className="w-4 h-4" />} label="Approved / paid" value={money(summary.approvedLabor)} sub="From approved timesheets" />
       <Card>
         <CardContent className="p-4 flex items-start gap-3">
-          <div className={`p-2 rounded-md ${underFunded ? 'bg-amber-100 text-amber-700' : 'bg-green-50 text-green-700'}`}>
+          <div className={`p-2 rounded-md ${underFunded ? 'bg-amber-500/10 text-amber-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
             <Landmark className="w-4 h-4" />
           </div>
           <div className="flex-1">
-            <p className="text-xs text-gray-500">Escrow</p>
+            <p className="text-xs text-muted-foreground">Escrow</p>
             <p className="text-lg font-semibold">{money(summary.escrowFunded - summary.escrowReleased)}</p>
-            <p className="text-xs text-gray-500">{money(summary.escrowReleased)} released</p>
+            <p className="text-xs text-muted-foreground">{money(summary.escrowReleased)} released</p>
             <Dialog open={open} onOpenChange={setOpen}>
               <DialogTrigger asChild>
                 <Button size="sm" variant="outline" className="mt-2 w-full">Fund escrow</Button>
@@ -122,7 +122,7 @@ const BudgetSummary: React.FC<Props> = ({ event, refreshKey }) => {
                 <DialogHeader>
                   <DialogTitle>Deposit to escrow</DialogTitle>
                 </DialogHeader>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-muted-foreground">
                   Funds are held for <strong>{event.name}</strong> and released to crew as you approve timesheets. Shortfall vs. projected labor:{' '}
                   <strong>{money(Math.max(0, summary.projectedLabor - summary.approvedLabor - (summary.escrowFunded - summary.escrowReleased)))}</strong>
                 </p>
@@ -132,7 +132,7 @@ const BudgetSummary: React.FC<Props> = ({ event, refreshKey }) => {
                     ? isStripeDemoMode ? 'Queueing deposit…' : 'Redirecting to Stripe…'
                     : 'Continue to payment'}
                 </Button>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-muted-foreground">
                   {isStripeDemoMode
                     ? 'Sandbox mode: the deposit is queued via Flexzora Escrow (no Stripe account connected).'
                     : 'You will be taken to Stripe Checkout; the balance updates once the payment settles.'}

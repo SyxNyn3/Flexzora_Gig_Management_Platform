@@ -114,12 +114,12 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
                   />
                 </button>
               ))}
-              <span className="ml-2 text-sm text-gray-600">
+              <span className="ml-2 text-sm text-muted-foreground">
                 {rating > 0 ? `${rating} star${rating !== 1 ? 's' : ''}` : 'Select a rating'}
               </span>
             </div>
             {rating === 0 && (
-              <p className="text-sm text-red-600">Please select a rating</p>
+              <p className="text-sm text-destructive">Please select a rating</p>
             )}
           </div>
 
@@ -133,7 +133,7 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
               {...register('review_text')}
             />
             {errors.review_text && (
-              <p className="text-sm text-red-600">{errors.review_text.message}</p>
+              <p className="text-sm text-destructive">{errors.review_text.message}</p>
             )}
           </div>
 

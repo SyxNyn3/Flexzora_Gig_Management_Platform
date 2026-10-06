@@ -450,7 +450,7 @@ const InvoiceGenerator: React.FC<InvoiceGeneratorProps> = ({ payment, gig }) => 
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-8 w-8 p-0 text-red-600 dark:text-red-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-500/10"
+                        className="h-8 w-8 p-0 text-destructive dark:text-red-400 hover:text-destructive dark:hover:text-red-400 hover:bg-red-500/10"
                         onClick={() => removeInvoiceItem(index)}
                       >
                         <Trash2 className="h-4 w-4" />

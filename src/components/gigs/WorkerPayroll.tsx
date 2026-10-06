@@ -251,11 +251,11 @@ const WorkerPayroll: React.FC<WorkerPayrollProps> = ({ gigId, gigTitle, workers 
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'paid': return 'bg-green-100 text-green-800';
-      case 'approved': return 'bg-blue-100 text-blue-800';
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'disputed': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'paid': return 'bg-emerald-500/10 text-green-800';
+      case 'approved': return 'bg-primary/10 text-primary';
+      case 'pending': return 'bg-amber-500/10 text-yellow-800';
+      case 'disputed': return 'bg-destructive/10 text-red-800';
+      default: return 'bg-muted text-foreground';
     }
   };
 
@@ -278,8 +278,8 @@ const WorkerPayroll: React.FC<WorkerPayrollProps> = ({ gigId, gigTitle, workers 
       {/* Header */}
       <div className="flex justify-between items-start">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Worker Payroll</h2>
-          <p className="text-gray-600 mt-2">
+          <h2 className="text-2xl font-bold text-foreground">Worker Payroll</h2>
+          <p className="text-muted-foreground mt-2">
             Manage payments for {gigTitle}
           </p>
         </div>
@@ -318,7 +318,7 @@ const WorkerPayroll: React.FC<WorkerPayrollProps> = ({ gigId, gigTitle, workers 
             <CheckCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">${paidPayments.toLocaleString()}</div>
+            <div className="text-2xl font-bold text-emerald-500">${paidPayments.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">
               {payments.filter(p => p.status === 'paid').length} payments completed
             </p>
@@ -359,7 +359,7 @@ const WorkerPayroll: React.FC<WorkerPayrollProps> = ({ gigId, gigTitle, workers 
                   </Avatar>
                   <div>
                     <h4 className="font-medium">{payment.worker_name}</h4>
-                    <div className="flex items-center space-x-4 text-sm text-gray-600">
+                    <div className="flex items-center space-x-4 text-sm text-muted-foreground">
                       <span>{payment.hours_worked}h regular</span>
                       {payment.overtime_hours > 0 && (
                         <span>{payment.overtime_hours}h overtime</span>
@@ -367,7 +367,7 @@ const WorkerPayroll: React.FC<WorkerPayrollProps> = ({ gigId, gigTitle, workers 
                       <span>${payment.hourly_rate}/hr</span>
                     </div>
                     {payment.notes && (
-                      <p className="text-sm text-gray-500 mt-1">{payment.notes}</p>
+                      <p className="text-sm text-muted-foreground mt-1">{payment.notes}</p>
                     )}
                   </div>
                 </div>
@@ -382,7 +382,7 @@ const WorkerPayroll: React.FC<WorkerPayrollProps> = ({ gigId, gigTitle, workers 
                     </Badge>
                   </div>
                   <div className="text-lg font-semibold">${payment.net_pay.toLocaleString()}</div>
-                  <div className="text-sm text-gray-500">
+                  <div className="text-sm text-muted-foreground">
                     {payment.paid_at ? (
                       <span>Paid on {format(new Date(payment.paid_at), 'MMM d, yyyy')}</span>
                     ) : (
@@ -537,7 +537,7 @@ const WorkerPayroll: React.FC<WorkerPayrollProps> = ({ gigId, gigTitle, workers 
             </div>
 
             {selectedWorker && hoursWorked && (
-              <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="bg-muted/40 p-4 rounded-lg">
                 <h4 className="font-medium mb-2">Payment Calculation</h4>
                 <div className="space-y-1 text-sm">
                   <div className="flex justify-between">
@@ -557,7 +557,7 @@ const WorkerPayroll: React.FC<WorkerPayrollProps> = ({ gigId, gigTitle, workers 
                     </div>
                   )}
                   {deductions && parseFloat(deductions) > 0 && (
-                    <div className="flex justify-between text-red-600">
+                    <div className="flex justify-between text-destructive">
                       <span>Deductions:</span>
                       <span>-${parseFloat(deductions).toFixed(2)}</span>
                     </div>
@@ -599,7 +599,7 @@ const WorkerPayroll: React.FC<WorkerPayrollProps> = ({ gigId, gigTitle, workers 
                   <div className="flex justify-between items-center">
                     <div>
                       <p className="font-medium">{selectedPayment.worker_name}</p>
-                      <p className="text-sm text-gray-600">
+                      <p className="text-sm text-muted-foreground">
                         {selectedPayment.hours_worked} hours at ${selectedPayment.hourly_rate}/hr
                         {selectedPayment.overtime_hours > 0 && ` + ${selectedPayment.overtime_hours} overtime hours`}
                       </p>
@@ -631,7 +631,7 @@ const WorkerPayroll: React.FC<WorkerPayrollProps> = ({ gigId, gigTitle, workers 
       {/* Review Form Dialog */}
       {showReviewForm && selectedWorkerForReview && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg w-full max-w-md">
+          <div className="bg-card rounded-lg w-full max-w-md">
             <div className="p-4 border-b flex justify-between items-center">
               <h3 className="text-lg font-semibold">Write a Review</h3>
               <Button 

@@ -13,9 +13,9 @@ interface Props {
 }
 
 const tone = (score: number, passed: boolean) => {
-  if (!passed) return 'bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/30';
-  if (score >= 80) return 'bg-green-500/15 text-green-600 dark:text-green-400 border-green-500/30';
-  if (score >= 60) return 'bg-amber-100 text-amber-800 border-amber-200';
+  if (!passed) return 'bg-red-500/15 text-destructive dark:text-red-400 border-red-500/30';
+  if (score >= 80) return 'bg-green-500/15 text-emerald-500 dark:text-green-400 border-green-500/30';
+  if (score >= 60) return 'bg-amber-500/10 text-amber-800 border-amber-500/30';
   return 'bg-muted text-muted-foreground border-border';
 };
 
@@ -52,7 +52,7 @@ const MatchScoreBadge: React.FC<Props> = ({ score, breakdown, reasons = [], size
       <PopoverContent className="w-72" align="start">
         <p className="text-sm font-semibold mb-2">Match breakdown</p>
         {!passed && (
-          <ul className="mb-2 text-xs text-red-600 dark:text-red-400 list-disc pl-4">
+          <ul className="mb-2 text-xs text-destructive dark:text-red-400 list-disc pl-4">
             {breakdown.gatekeeperReasons.map((r) => (
               <li key={r}>{r}</li>
             ))}

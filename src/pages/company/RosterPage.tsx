@@ -13,9 +13,9 @@ import { RosterTier } from '@/lib/types';
 import { Star, Trash2 } from 'lucide-react';
 
 const tierTone: Record<RosterTier, string> = {
-  core: 'bg-amber-100 text-amber-800 border-amber-200',
-  preferred: 'bg-primary/15 text-blue-800 border-primary/30',
-  blocked: 'bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/30',
+  core: 'bg-amber-500/10 text-amber-800 border-amber-500/30',
+  preferred: 'bg-primary/15 text-primary border-primary/30',
+  blocked: 'bg-red-500/15 text-destructive dark:text-red-400 border-red-500/30',
 };
 
 const RosterPage: React.FC = () => {

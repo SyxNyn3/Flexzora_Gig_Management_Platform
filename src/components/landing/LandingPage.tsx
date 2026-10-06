@@ -135,7 +135,7 @@ const LandingPage: React.FC = () => {
               <Button
                 variant="ghost"
                 onClick={() => navigate('/auth')}
-                className="hidden sm:inline-flex text-zinc-300 hover:text-white hover:bg-white/5"
+                className="hidden sm:inline-flex text-zinc-300 hover:text-white hover:bg-card/5"
               >
                 Sign In
               </Button>
@@ -190,7 +190,7 @@ const LandingPage: React.FC = () => {
                   size="lg"
                   variant="outline"
                   onClick={() => navigate('/schedule-demo')}
-                  className="border-zinc-700 text-zinc-200 hover:bg-white/5 hover:text-white text-base px-8 h-12"
+                  className="border-zinc-700 text-zinc-200 hover:bg-card/5 hover:text-white text-base px-8 h-12"
                 >
                   Schedule a Demo
                 </Button>
@@ -198,7 +198,7 @@ const LandingPage: React.FC = () => {
               <div className="mt-6">
                 <Badge
                   variant="outline"
-                  className="px-4 py-1.5 text-sm font-medium bg-white/5 border-white/15 text-zinc-300"
+                  className="px-4 py-1.5 text-sm font-medium bg-card/5 border-white/15 text-zinc-300"
                 >
                   <Users className="w-4 h-4 mr-2 text-amber-400" />
                   {waitlistCount.toLocaleString()} crew &amp; companies already lined up
@@ -269,7 +269,7 @@ const LandingPage: React.FC = () => {
             {callTypes.map((call) => (
               <span
                 key={call}
-                className="px-4 py-2 rounded-full border border-white/10 bg-white/[0.03] text-sm text-zinc-300 font-medium"
+                className="px-4 py-2 rounded-full border border-white/10 bg-card/[0.03] text-sm text-zinc-300 font-medium"
               >
                 {call}
               </span>
@@ -446,7 +446,7 @@ const LandingPage: React.FC = () => {
               size="lg"
               variant="outline"
               onClick={() => navigate('/schedule-demo')}
-              className="border-zinc-700 text-zinc-200 hover:bg-white/5 hover:text-white text-base px-8 h-12"
+              className="border-zinc-700 text-zinc-200 hover:bg-card/5 hover:text-white text-base px-8 h-12"
             >
               Schedule a Demo
             </Button>
@@ -454,7 +454,7 @@ const LandingPage: React.FC = () => {
           <div className="mt-8">
             <Badge
               variant="outline"
-              className="px-4 py-1.5 text-sm font-medium bg-white/5 border-white/15 text-zinc-300"
+              className="px-4 py-1.5 text-sm font-medium bg-card/5 border-white/15 text-zinc-300"
             >
               <Users className="w-4 h-4 mr-2 text-amber-400" />
               {waitlistCount.toLocaleString()} crew &amp; companies already lined up

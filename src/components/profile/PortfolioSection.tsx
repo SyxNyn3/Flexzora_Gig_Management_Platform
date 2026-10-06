@@ -129,10 +129,10 @@ const PortfolioSection: React.FC<PortfolioSectionProps> = ({
 
   const getCategoryColor = (category?: string) => {
     switch (category?.toLowerCase()) {
-      case 'video': return 'bg-primary/15 text-blue-800';
+      case 'video': return 'bg-primary/15 text-primary';
       case 'audio': return 'bg-secondary/15 text-purple-800';
       case 'lighting': return 'bg-amber-500/15 text-amber-600 dark:text-amber-400';
-      case 'event': return 'bg-green-500/15 text-green-600 dark:text-green-400';
+      case 'event': return 'bg-green-500/15 text-emerald-500 dark:text-green-400';
       case 'photography': return 'bg-pink-100 text-pink-800';
       default: return 'bg-muted text-foreground/90';
     }
@@ -207,7 +207,7 @@ const PortfolioSection: React.FC<PortfolioSectionProps> = ({
                       <Button 
                         variant="ghost" 
                         size="sm" 
-                        className="h-8 w-8 p-0 text-red-600 dark:text-red-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-500/10"
+                        className="h-8 w-8 p-0 text-destructive dark:text-red-400 hover:text-destructive dark:hover:text-red-400 hover:bg-red-500/10"
                         onClick={() => handleDeleteItem(item.id)}
                       >
                         <Trash2 className="h-4 w-4" />
@@ -248,7 +248,7 @@ const PortfolioSection: React.FC<PortfolioSectionProps> = ({
                         href={item.url} 
                         target="_blank" 
                         rel="noopener noreferrer"
-                        className="text-sm text-primary hover:text-blue-800 flex items-center"
+                        className="text-sm text-primary hover:text-primary flex items-center"
                       >
                         <ExternalLink className="h-3 w-3 mr-1" />
                         View Project
@@ -303,7 +303,7 @@ const PortfolioSection: React.FC<PortfolioSectionProps> = ({
                 placeholder="e.g., Stadium Show — FOH System Build"
               />
               {form.formState.errors.title && (
-                <p className="text-sm text-red-600 dark:text-red-400 mt-1">
+                <p className="text-sm text-destructive dark:text-red-400 mt-1">
                   {form.formState.errors.title.message}
                 </p>
               )}
@@ -368,7 +368,7 @@ const PortfolioSection: React.FC<PortfolioSectionProps> = ({
                   placeholder="https://example.com/project"
                 />
                 {form.formState.errors.url && (
-                  <p className="text-sm text-red-600 dark:text-red-400 mt-1">
+                  <p className="text-sm text-destructive dark:text-red-400 mt-1">
                     {form.formState.errors.url.message}
                   </p>
                 )}
@@ -383,7 +383,7 @@ const PortfolioSection: React.FC<PortfolioSectionProps> = ({
                 placeholder="https://example.com/image.jpg"
               />
               {form.formState.errors.image_url && (
-                <p className="text-sm text-red-600 dark:text-red-400 mt-1">
+                <p className="text-sm text-destructive dark:text-red-400 mt-1">
                   {form.formState.errors.image_url.message}
                 </p>
               )}
