@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, startOfDay } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -85,6 +85,24 @@ const EventDetailPage: React.FC = () => {
     toast.success(shiftDialog.editing ? 'Shift updated' : 'Shift added');
     if (res.data) setSelectedId(res.data.id);
     setShiftDialog({ open: false });
+    refresh();
+  };
+
+  const moveShift = async (shift: Shift, day: Date) => {
+    const dayStart = startOfDay(day);
+    const moveDate = (iso: string) => {
+      const t = new Date(iso);
+      return new Date(
+        dayStart.getFullYear(), dayStart.getMonth(), dayStart.getDate(),
+        t.getHours(), t.getMinutes(), t.getSeconds(),
+      ).toISOString();
+    };
+    const { error } = await MarketplaceService.updateShift(shift.id, {
+      starts_at: moveDate(shift.starts_at),
+      ends_at: moveDate(shift.ends_at),
+    });
+    if (error) return toast.error(error);
+    toast.success(`"${shift.title}" moved to ${format(day, 'EEE MMM d')}`);
     refresh();
   };
 
@@ -172,9 +190,9 @@ const EventDetailPage: React.FC = () => {
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-3">
               <h2 className="font-semibold">Schedule & roster</h2>
-              <p className="text-xs text-muted-foreground">Click a call to rank candidates, direct-book, or confirm applicants</p>
+              <p className="text-xs text-muted-foreground">Click a call to rank candidates, direct-book, or confirm applicants · drag between days to reschedule</p>
             </div>
-            <RosterBoard event={ev} selectedShiftId={selectedId} onSelectShift={(s) => setSelectedId(s.id)} />
+            <RosterBoard event={ev} selectedShiftId={selectedId} onSelectShift={(s) => setSelectedId(s.id)} onMoveShift={moveShift} />
           </CardContent>
         </Card>
 

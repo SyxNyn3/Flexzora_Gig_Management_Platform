@@ -38,7 +38,7 @@ Two sessions work this repo in parallel. **Before starting any item, mark it**: 
 
 ## P3 — Phase 2 intelligence
 - [x] Smart-matching analytics: fill-rate, time-to-fill, no-show rate per event. — **done: Tom** (stat cards on EventDetailPage — fill % vs headcount, avg broadcast→fill time, no-show %)
-- [ ] Drag-and-drop roster lanes in `RosterBuilder` (multi-lane schedule).
+- [x] Drag-and-drop roster lanes in `RosterBuilder` (multi-lane schedule). — **done: Tom** (RosterBoard day lanes accept drop → `moveShift` keeps time-of-day, updates via `updateShift`)
 - [ ] Push notifications (FCM/APNs) for clock-in reminders near call time.
 - [ ] Geofence auto-clock-out on fence exit + manager alert.
 

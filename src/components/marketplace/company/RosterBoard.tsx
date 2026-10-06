@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { eachDayOfInterval, format, isSameDay, parseISO } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { ProductionEvent, Shift } from '@/lib/types';
@@ -9,6 +9,7 @@ interface Props {
   event: ProductionEvent;
   selectedShiftId?: string | null;
   onSelectShift: (shift: Shift) => void;
+  onMoveShift?: (shift: Shift, day: Date) => void;
 }
 
 const stageLabel: Record<Shift['broadcast_stage'], string> = { none: 'Draft', roster: 'Roster only', public: 'Public' };
@@ -19,13 +20,14 @@ const fillTone = (confirmed: number, headcount: number) => {
   return 'border-border bg-card';
 };
 
-/** Multi-lane schedule: one column per event day, one card per call. */
-const RosterBoard: React.FC<Props> = ({ event, selectedShiftId, onSelectShift }) => {
+/** Multi-lane schedule: one column per event day, one card per call. Cards drag between lanes to reschedule. */
+const RosterBoard: React.FC<Props> = ({ event, selectedShiftId, onSelectShift, onMoveShift }) => {
   const days = useMemo(
     () => eachDayOfInterval({ start: parseISO(event.starts_on), end: parseISO(event.ends_on) }),
     [event.starts_on, event.ends_on],
   );
   const shifts = event.shifts ?? [];
+  const [dragOverDay, setDragOverDay] = useState<string | null>(null);
 
   return (
     <div className="overflow-x-auto">
@@ -48,7 +50,18 @@ const RosterBoard: React.FC<Props> = ({ event, selectedShiftId, onSelectShift })
                   {filled}/{required}
                 </Badge>
               </div>
-              <div className="space-y-2 min-h-[120px] rounded-md bg-muted/50 p-2 border border-dashed">
+              <div
+                className={`space-y-2 min-h-[120px] rounded-md bg-muted/50 p-2 border border-dashed transition ${dragOverDay === day.toISOString() ? 'border-primary bg-primary/5' : ''}`}
+                onDragOver={(e) => { e.preventDefault(); setDragOverDay(day.toISOString()); }}
+                onDragLeave={() => setDragOverDay((d) => (d === day.toISOString() ? null : d))}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setDragOverDay(null);
+                  const shiftId = e.dataTransfer.getData('text/shift-id');
+                  const shift = shifts.find((s) => s.id === shiftId);
+                  if (shift && !isSameDay(new Date(shift.starts_at), day)) onMoveShift?.(shift, day);
+                }}
+              >
                 {dayShifts.length === 0 && <p className="text-xs text-muted-foreground/70 text-center py-6">No calls</p>}
                 {dayShifts.map((shift) => {
                   const confirmed = confirmedCount(shift);
@@ -57,6 +70,11 @@ const RosterBoard: React.FC<Props> = ({ event, selectedShiftId, onSelectShift })
                     <button
                       type="button"
                       key={shift.id}
+                      draggable={!!onMoveShift}
+                      onDragStart={(e) => {
+                        e.dataTransfer.setData('text/shift-id', shift.id);
+                        e.dataTransfer.effectAllowed = 'move';
+                      }}
                       onClick={() => onSelectShift(shift)}
                       className={`w-full text-left rounded-md border p-2.5 shadow-sm transition ${fillTone(confirmed, shift.headcount)} ${selectedShiftId === shift.id ? 'ring-2 ring-primary' : 'hover:shadow'}`}
                       style={{ borderLeftWidth: 4, borderLeftColor: event.color }}
