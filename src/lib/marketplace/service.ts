@@ -698,6 +698,16 @@ export class MarketplaceService {
     }
   }
 
+  static async updateTimesheetNotes(timesheetId: string, workerNotes: string): Promise<Result<boolean>> {
+    try {
+      const { error } = await supabase.from('timesheets').update({ worker_notes: workerNotes }).eq('id', timesheetId);
+      if (error) throw error;
+      return ok(true);
+    } catch (e) {
+      return fail(false, e);
+    }
+  }
+
   // ---------------------------------------------------------------- money
   static async getInvoices(filter: { workerId?: string; companyId?: string; taxYear?: number }): Promise<Result<Invoice[]>> {
     try {

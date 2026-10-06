@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,8 @@ interface Props {
 }
 
 /** Geofenced clock-in / clock-out for a confirmed booking. */
+const AUTO_OUT_GRACE_MS = 90_000;
+
 const ClockCard: React.FC<Props> = ({ assignment, onChanged }) => {
   const [busy, setBusy] = useState(false);
   const [locating, setLocating] = useState<string | null>(null);
@@ -23,6 +25,8 @@ const ClockCard: React.FC<Props> = ({ assignment, onChanged }) => {
   const ts = assignment.timesheet;
   const clockedIn = !!ts?.clock_in_at;
   const clockedOut = !!ts?.clock_out_at;
+  const outsideSince = useRef<number | null>(null);
+  const autoOutDone = useRef(false);
   const now = Date.now();
   const canClockIn = shift && !clockedIn && new Date(shift.starts_at).getTime() - now < 60 * 60_000;
 
@@ -46,6 +50,7 @@ const ClockCard: React.FC<Props> = ({ assignment, onChanged }) => {
       const { error } = await MarketplaceService.clockEvent(assignment.id, kind, here.lat, here.lng);
       if (error) throw new Error(error);
       toast.success(kind === 'in' ? (venue ? `Clocked in at ${venue.name}` : 'Clocked in') : 'Clocked out — timesheet submitted for approval');
+      if (kind === 'out') autoOutDone.current = true;
       onChanged();
     } catch (e) {
       toast.error(e instanceof GeolocationPositionError ? 'Location permission is required to clock in.' : (e as Error).message);
@@ -53,6 +58,55 @@ const ClockCard: React.FC<Props> = ({ assignment, onChanged }) => {
       setBusy(false);
     }
   };
+
+  // Auto clock-out: while on the clock inside a fenced venue, sustained
+  // position fixes outside the fence clock the worker out and flag it for
+  // the manager (timesheet keeps the GPS distance/verification fields).
+  useEffect(() => {
+    if (!clockedIn || clockedOut || !venue || typeof navigator === 'undefined' || !navigator.geolocation) return;
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        const fence = checkGeofence(
+          { lat: pos.coords.latitude, lng: pos.coords.longitude },
+          { lat: venue.latitude, lng: venue.longitude },
+          venue.geofence_radius_m,
+          pos.coords.accuracy,
+        );
+        if (fence.inside) {
+          outsideSince.current = null;
+          return;
+        }
+        if (outsideSince.current == null) {
+          outsideSince.current = pos.timestamp;
+          return;
+        }
+        if (pos.timestamp - outsideSince.current >= AUTO_OUT_GRACE_MS && !autoOutDone.current) {
+          autoOutDone.current = true;
+          setLocating(`Left ${venue.name} geofence — clocking out`);
+          MarketplaceService.clockEvent(assignment.id, 'out', pos.coords.latitude, pos.coords.longitude).then(({ error }) => {
+            if (error) {
+              autoOutDone.current = false;
+              toast.error(`Auto clock-out failed: ${error}`);
+              return;
+            }
+            toast.warning(`Clocked out — you left the ${venue.name} geofence`, { duration: 10_000 });
+            if (ts?.id) {
+              // Best-effort flag for the manager reviewing the timesheet.
+              MarketplaceService.updateTimesheetNotes(ts.id, 'Auto clock-out: worker left the venue geofence').catch(() => {});
+            }
+            onChanged();
+          });
+        }
+      },
+      () => { /* GPS read failures can't confirm an exit — ignore and retry on next fix */ },
+      { enableHighAccuracy: true, maximumAge: 15_000, timeout: 20_000 },
+    );
+    return () => {
+      navigator.geolocation.clearWatch(watchId);
+      outsideSince.current = null;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clockedIn, clockedOut, venue?.id]);
 
   if (!shift) return null;
 

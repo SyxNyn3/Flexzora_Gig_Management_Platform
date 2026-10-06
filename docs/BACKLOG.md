@@ -40,7 +40,7 @@ Two sessions work this repo in parallel. **Before starting any item, mark it**: 
 - [x] Smart-matching analytics: fill-rate, time-to-fill, no-show rate per event. — **done: Tom** (stat cards on EventDetailPage — fill % vs headcount, avg broadcast→fill time, no-show %)
 - [x] Drag-and-drop roster lanes in `RosterBuilder` (multi-lane schedule). — **done: Tom** (RosterBoard day lanes accept drop → `moveShift` keeps time-of-day, updates via `updateShift`)
 - [ ] Push notifications (FCM/APNs) for clock-in reminders near call time.
-- [ ] Geofence auto-clock-out on fence exit + manager alert.
+- [x] Geofence auto-clock-out on fence exit + manager alert. — **done: Tom** (ClockCard watches GPS while clocked in; 90s sustained outside-fence auto clocks out, flags the timesheet `worker_notes` for the manager)
 
 ## Debt
 - 21 `react-hooks/exhaustive-deps` + `react-refresh` eslint warnings — burn down ~4/PR, never silence wholesale.
