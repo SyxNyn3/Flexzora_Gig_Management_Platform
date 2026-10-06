@@ -34,6 +34,10 @@ import PortfolioSection from './PortfolioSection';
 
 const profileSchema = z.object({
   full_name: z.string().min(2, 'Name must be at least 2 characters'),
+  username: z.string().optional().refine(
+    (v) => !v || /^[a-z0-9][a-z0-9-]{1,29}$/.test(v),
+    'Lowercase letters, numbers and dashes only, 2-30 characters'
+  ),
   phone: z.string().optional(),
   location: z.string().optional(),
   bio: z.string().optional(),
@@ -96,6 +100,7 @@ const ProfilePage: React.FC = () => {
     resolver: zodResolver(profileSchema),
     defaultValues: {
       full_name: profile?.full_name || '',
+      username: profile?.username || '',
       phone: profile?.phone || '',
       location: profile?.location || '',
       bio: profile?.bio || '',
@@ -132,6 +137,7 @@ const ProfilePage: React.FC = () => {
     if (profile) {
       form.reset({
         full_name: profile.full_name,
+        username: profile.username || '',
         phone: profile.phone || '',
         location: profile.location || '',
         bio: profile.bio || '',
@@ -153,6 +159,7 @@ const ProfilePage: React.FC = () => {
     try {
       const updates = {
         ...data,
+        username: data.username || null,
         hourly_rate: data.hourly_rate ? parseFloat(data.hourly_rate) : null,
         experience_years: data.experience_years ? parseInt(data.experience_years) : 0,
         portfolio_url: data.portfolio_url ? normalizeUrl(data.portfolio_url) : null,
@@ -404,7 +411,25 @@ const ProfilePage: React.FC = () => {
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-foreground">Profile Settings</h1>
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <h1 className="text-3xl font-bold text-foreground">Profile Settings</h1>
+          {profile?.role === 'worker' && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                if (!profile.username) {
+                  toast.error('Set a username below to get your public profile link');
+                  return;
+                }
+                navigator.clipboard.writeText(`${window.location.origin}/u/${profile.username}`);
+                toast.success('Public profile link copied');
+              }}
+            >
+              <ExternalLink className="w-4 h-4 mr-1" /> Share public profile
+            </Button>
+          )}
+        </div>
         <p className="text-muted-foreground mt-2">
           Manage your profile information and showcase your skills
         </p>
@@ -523,6 +548,25 @@ const ProfilePage: React.FC = () => {
                     {form.formState.errors.full_name && (
                       <p className="text-sm text-destructive mt-1">
                         {form.formState.errors.full_name.message}
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <Label htmlFor="username">Username</Label>
+                    <Input
+                      id="username"
+                      {...form.register('username')}
+                      placeholder="alexmoreno"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {profile?.username
+                        ? <>Public link: {window.location.origin}/u/{profile.username}</>
+                        : 'Sets your public profile link (/u/username)'}
+                    </p>
+                    {form.formState.errors.username && (
+                      <p className="text-sm text-destructive mt-1">
+                        {form.formState.errors.username.message}
                       </p>
                     )}
                   </div>

@@ -30,11 +30,11 @@ Two sessions work this repo in parallel. **Before starting any item, mark it**: 
 - [x] Roster broadcast flow: send offers to trusted-roster tier first, public after N hours. — **done: Tom** (`promoteStaleRosterShifts` 24h sweep on event-page load; manual promote already existed in CandidatesPanel)
 
 ## P2 — marketplace depth
-- [ ] Post-shift reviews → `profiles.average_rating` / `review_count` rollup (table + approval trigger).
-- [ ] Bulk payout run for production managers (approve-all + batch ACH).
-- [ ] Tax export: end-of-year CSV/1099-ready earnings per worker.
-- [ ] Invoice PDF/email delivery to worker + company.
-- [ ] Worker portfolio import (public profile slug + share link).
+- [x] Post-shift reviews → `profiles.average_rating` / `review_count` rollup (table + approval trigger). — **done: Tom** (already shipped: `reviews` table + `update_profile_rating` insert/update/delete triggers in `20251006224050`; verified present in migrated DB)
+- [x] Bulk payout run for production managers (approve-all + batch ACH). — **done: Tom** (`Approve all (ACH)` on Timesheets page: sequential approve of every submitted, clocked-out sheet with per-sheet failure reporting)
+- [x] Tax export: end-of-year CSV/1099-ready earnings per worker. — **done: Tom** (worker `Export CSV` on Payouts page already shipped; added company `Contractor CSV` on Timesheets page — per-worker gross/fees/net rollup for the tax year)
+- [x] Invoice PDF/email delivery to worker + company. — **done: Tom** (per-invoice PDF download on Payouts page via jspdf; email delivery still needs an email provider — not wired)
+- [x] Worker portfolio import (public profile slug + share link). — **done: Tom** (`/u/<username>` public page via `get_public_profile` RPC — curated fields only, no email/phone; username field + Share button on Profile Settings)
 
 ## P3 — Phase 2 intelligence
 - [ ] Smart-matching analytics: fill-rate, time-to-fill, no-show rate per event.

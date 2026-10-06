@@ -12,6 +12,8 @@ import { Invoice, Payout } from '@/lib/types';
 import { money } from '@/components/marketplace/format';
 import { IS_PAYMENTS_SANDBOX, SANDBOX_PAYOUT_LABEL, SANDBOX_TRANSFER_LABEL } from '@/lib/payments';
 import { Download, FileText, Landmark, Zap, Clock, FlaskConical } from 'lucide-react';
+import { jsPDF } from 'jspdf';
+import 'jspdf-autotable';
 
 const payoutTone: Record<Payout['status'], string> = {
   queued: 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30',
@@ -49,6 +51,31 @@ const downloadCsv = (invoices: Invoice[], year: number) => {
   a.download = `flexzora-earnings-${year}.csv`;
   a.click();
   URL.revokeObjectURL(url);
+};
+
+const downloadInvoicePdf = (inv: Invoice) => {
+  const doc = new jsPDF();
+  doc.setFontSize(18);
+  doc.text('FlexZora Contractor Invoice', 14, 18);
+  doc.setFontSize(11);
+  doc.text(`Invoice ${inv.invoice_number}`, 14, 28);
+  doc.setFontSize(10);
+  doc.text(`Issued ${format(new Date(inv.issued_at), 'MMMM d, yyyy')}${inv.paid_at ? ` · Paid ${format(new Date(inv.paid_at), 'MMMM d, yyyy')}` : ''} · ${inv.status}`, 14, 35);
+  doc.text(`Company: ${inv.company?.name ?? ''}`, 14, 42);
+  if (inv.event?.name) doc.text(`Event: ${inv.event.name}`, 14, 49);
+  doc.text(`Worker: ${inv.worker?.full_name ?? ''}${inv.worker?.email ? ` <${inv.worker.email}>` : ''}`, 14, inv.event?.name ? 56 : 49);
+  (doc as unknown as { autoTable: (o: object) => { lastAutoTable: { finalY: number } } }).autoTable({
+    startY: 64,
+    head: [['Description', 'Hours', 'Rate', 'Amount']],
+    body: inv.line_items.map((li) => [li.description, li.hours.toFixed(2), `$${Number(li.rate).toFixed(2)}`, `$${Number(li.amount).toFixed(2)}`]),
+    foot: [
+      ['Subtotal', '', '', `$${Number(inv.subtotal).toFixed(2)}`],
+      ['Platform fee', '', '', `-$${Number(inv.platform_fee).toFixed(2)}`],
+      ['Net total', '', '', `$${Number(inv.total).toFixed(2)}`],
+    ],
+    theme: 'striped',
+  });
+  doc.save(`${inv.invoice_number}.pdf`);
 };
 
 const PayoutsPage: React.FC = () => {
@@ -147,6 +174,9 @@ const PayoutsPage: React.FC = () => {
                     <p className="text-xs text-muted-foreground">{money(inv.subtotal)} − {money(inv.platform_fee)} fee</p>
                   </div>
                   <Badge variant="outline" className={inv.status === 'paid' ? 'bg-green-500/15 text-emerald-500 dark:text-green-400 border-green-500/30' : 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30'}>{inv.status}</Badge>
+                  <Button size="sm" variant="ghost" className="h-7 w-7 p-0" title="Download PDF" onClick={() => downloadInvoicePdf(inv)}>
+                    <Download className="w-3.5 h-3.5" />
+                  </Button>
                 </div>
                 <div className="mt-2 pl-7 text-xs text-muted-foreground grid grid-cols-[1fr_auto_auto_auto] gap-x-4">
                   {inv.line_items.map((li, i) => (

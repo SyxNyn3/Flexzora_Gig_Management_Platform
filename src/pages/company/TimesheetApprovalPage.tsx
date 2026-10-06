@@ -9,12 +9,12 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
-import { useCompanyTimesheets, useMyCompany, useOvertimeRules } from '@/hooks/useMarketplace';
+import { useCompanyTimesheets, useInvoices, useMyCompany, useOvertimeRules } from '@/hooks/useMarketplace';
 import { MarketplaceService } from '@/lib/marketplace/service';
 import { calculateShiftPay, FLSA_DEFAULT } from '@/lib/marketplace/overtime';
 import { PayoutMethod, Timesheet } from '@/lib/types';
 import { money } from '@/components/marketplace/format';
-import { CheckCircle2, MapPinCheck, MapPinOff, AlertTriangle, Zap, Landmark } from 'lucide-react';
+import { CheckCircle2, MapPinCheck, MapPinOff, AlertTriangle, Zap, Landmark, Download } from 'lucide-react';
 
 const statusTone: Record<Timesheet['status'], string> = {
   open: 'bg-muted text-foreground/80',
@@ -31,9 +31,13 @@ const Geo: React.FC<{ verified: boolean; distance?: number }> = ({ verified, dis
   </span>
 );
 
+const csvEscape = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`;
+
 const TimesheetApprovalPage: React.FC = () => {
   const { company } = useMyCompany();
   const sheets = useCompanyTimesheets(company?.id);
+  const taxYear = new Date().getFullYear();
+  const invoices = useInvoices({ companyId: company?.id, taxYear });
   const rules = useOvertimeRules();
   const [breaks, setBreaks] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState<string | null>(null);
@@ -86,7 +90,47 @@ const TimesheetApprovalPage: React.FC = () => {
     sheets.refetch();
   };
 
+  const approveAll = async () => {
+    const batch = grouped.review.filter((t) => t.status === 'submitted' && t.clock_out_at);
+    if (batch.length === 0) return;
+    setBusy('bulk');
+    let ok = 0;
+    const failed: string[] = [];
+    for (const t of batch) {
+      const brk = breaks[t.id] != null ? Number(breaks[t.id]) : null;
+      const { error } = await MarketplaceService.approveTimesheet(t.id, brk, 'ach');
+      if (error) failed.push(t.worker?.full_name ?? t.id);
+      else ok += 1;
+    }
+    setBusy(null);
+    if (failed.length > 0) toast.error(`Approved ${ok} of ${batch.length} — failed: ${failed.join(', ')}`);
+    else toast.success(`Payout run complete — ${ok} timesheet${ok === 1 ? '' : 's'} approved, ${money(totalPending)} queued for ACH`);
+    sheets.refetch();
+  };
+
   const totalPending = grouped.review.reduce((n, t) => n + (preview(t)?.grossPay ?? 0), 0);
+
+  const exportContractorCsv = () => {
+    const byWorker = new Map<string, { name: string; email: string; count: number; subtotal: number; fees: number; total: number }>();
+    invoices.data.forEach((i) => {
+      const key = i.worker_id;
+      const row = byWorker.get(key) ?? { name: i.worker?.full_name ?? 'Unknown', email: i.worker?.email ?? '', count: 0, subtotal: 0, fees: 0, total: 0 };
+      row.count += 1;
+      row.subtotal += Number(i.subtotal);
+      row.fees += Number(i.platform_fee);
+      row.total += Number(i.total);
+      byWorker.set(key, row);
+    });
+    const header = ['Worker', 'Email', 'Invoices', 'Gross earnings', 'Platform fees', 'Net paid'];
+    const rows = [...byWorker.values()].map((r) => [r.name, r.email, r.count, r.subtotal.toFixed(2), r.fees.toFixed(2), r.total.toFixed(2)]);
+    const csv = [header, ...rows].map((r) => r.map(csvEscape).join(',')).join('\n');
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `flexzora-contractor-payments-${taxYear}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   const Row: React.FC<{ t: Timesheet; actions?: boolean }> = ({ t, actions }) => {
     const p = preview(t);
@@ -174,9 +218,28 @@ const TimesheetApprovalPage: React.FC = () => {
           <p className="text-sm text-muted-foreground">Geofenced clock records with automatic overtime. Approval releases escrow, issues the contractor invoice and starts the payout.</p>
         </div>
         <Card>
-          <CardContent className="p-3 text-right">
+          <CardContent className="p-3 text-right space-y-2">
             <p className="text-xs text-muted-foreground">Awaiting approval</p>
             <p className="text-lg font-semibold">{money(totalPending)}</p>
+            <div className="flex justify-end gap-1">
+              <Button
+                size="sm"
+                disabled={busy !== null || !grouped.review.some((t) => t.status === 'submitted' && t.clock_out_at)}
+                onClick={approveAll}
+                title="Approve every submitted timesheet and queue the payouts for ACH"
+              >
+                <Landmark className="w-3.5 h-3.5 mr-1" /> Approve all (ACH)
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={!invoices.data.length}
+                onClick={exportContractorCsv}
+                title={`Per-worker earnings totals for ${taxYear} (1099-ready)`}
+              >
+                <Download className="w-3.5 h-3.5 mr-1" /> Contractor CSV
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>

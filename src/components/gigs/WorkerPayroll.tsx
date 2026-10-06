@@ -116,31 +116,8 @@ const WorkerPayroll: React.FC<WorkerPayrollProps> = ({ gigId, gigTitle, workers 
       setPayments(transformedPayments);
     } catch (error) {
       console.error('Error loading payments:', error);
-      // Fall back to mock data if database fails
-      const mockPayments: WorkerPayment[] = [
-        {
-          id: '1',
-          worker_id: 'worker-1',
-          worker_name: 'Marcus Webb',
-          worker_email: 'marcus.webb@flexzora.dev',
-          gig_id: gigId,
-          hours_worked: 8,
-          hourly_rate: 48,
-          overtime_hours: 2,
-          overtime_rate: 72,
-          bonus_amount: 50,
-          deductions: 0,
-          gross_pay: 578,
-          net_pay: 578,
-          status: 'paid',
-          payment_method: 'direct_deposit',
-          payment_details: { account_ending: '1234' },
-          notes: 'Clean rigging points on Ballroom C truss — keep on preferred roster',
-          created_at: '2024-01-15T10:00:00Z',
-          paid_at: '2024-01-16T14:30:00Z',
-        },
-      ];
-      setPayments(mockPayments);
+      setPayments([]);
+      toast.error('Could not load payments');
     }
   };
 

@@ -34,6 +34,7 @@ import TimesheetApprovalPage from '@/pages/company/TimesheetApprovalPage';
 import RosterPage from '@/pages/company/RosterPage';
 import ShiftMarketplacePage from '@/pages/worker/ShiftMarketplacePage';
 import PayoutsPage from '@/pages/worker/PayoutsPage';
+import PublicProfilePage from '@/pages/PublicProfilePage';
 import WaitlistAdminPage from '@/pages/admin/WaitlistAdminPage';
 
 const queryClient = new QueryClient({
@@ -146,6 +147,7 @@ const AppRoutes: React.FC = () => {
         <Route path="/" element={<LandingPage />} />
         <Route path="/waitlist" element={<WaitlistForm />} />
         <Route path="/waitlist/verify" element={<WaitlistVerification />} />
+        <Route path="/u/:username" element={<PublicProfilePage />} />
         <Route
           path="/admin/waitlist"
           element={
