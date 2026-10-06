@@ -46,15 +46,13 @@ const Dashboard: React.FC = () => {
       const now = new Date();
       return app.status === 'accepted' && startDate && startDate > now;
     }).length,
-    totalEarnings: payments
-      ? payments.filter(payment => payment.status === 'paid')
-          .reduce((sum, payment) => sum + payment.amount, 0)
-      : 15420, // Fallback to mock data
-    pendingPayments: payments
-      ? payments.filter(payment => payment.status === 'pending')
-          .reduce((sum, payment) => sum + payment.amount, 0)
-      : 2800,
-    thisMonthExpenses: 450, // Placeholder
+    totalEarnings: (payments ?? [])
+      .filter(payment => payment.status === 'paid')
+      .reduce((sum, payment) => sum + payment.amount, 0),
+    pendingPayments: (payments ?? [])
+      .filter(payment => payment.status === 'pending')
+      .reduce((sum, payment) => sum + payment.amount, 0),
+    thisMonthExpenses: 0,
   };
   
   // Get recent gigs from real data

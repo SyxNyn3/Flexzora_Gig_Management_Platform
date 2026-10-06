@@ -209,7 +209,7 @@ const AppRoutes: React.FC = () => {
           element={
             <ProtectedRoute>
               <Layout>
-                <GigManagement gigId="1" />
+                <GigManagement />
               </Layout>
             </ProtectedRoute>
           }

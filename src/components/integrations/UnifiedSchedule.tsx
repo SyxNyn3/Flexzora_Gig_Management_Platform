@@ -7,6 +7,8 @@ import { AuthKitButton } from './AuthKitButton';
 import { Calendar, AlertTriangle, Clock, MapPin, Building2, DollarSign, CheckCircle, XCircle, FolderSync as Sync, Filter, Download, Eye, EyeOff } from 'lucide-react';
 import { format, isWithinInterval, parseISO, startOfWeek, endOfWeek } from 'date-fns';
 import { toast } from 'sonner';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface UnifiedGig {
   id: string;
@@ -26,6 +28,7 @@ interface UnifiedGig {
 }
 
 const UnifiedSchedule: React.FC = () => {
+  const { profile } = useAuth();
   const [gigs, setGigs] = useState<UnifiedGig[]>([]);
   const [filteredGigs, setFilteredGigs] = useState<UnifiedGig[]>([]);
   const [selectedWeek] = useState(new Date());
@@ -35,109 +38,96 @@ const UnifiedSchedule: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadUnifiedSchedule();
-  }, []);
+    if (profile?.id) loadUnifiedSchedule();
+    else setLoading(false);
+  }, [profile?.id]);
 
   useEffect(() => {
     filterGigs();
   }, [gigs, selectedWeek, viewMode, sourceFilter, showConflicts]);
 
-  const loadUnifiedSchedule = () => {
-    // Mock unified schedule from multiple sources
-    const mockGigs: UnifiedGig[] = [
-      {
-        id: '1',
-        title: 'Load-In & Rigging Call — Main Stage',
-        company_name: 'Rhino Staging',
-        company_logo: '🦏',
-        location: 'Stadium Main Stage',
-        start_date: '2024-01-15T08:00:00Z',
-        end_date: '2024-01-15T18:00:00Z',
-        hourly_rate: 48,
-        status: 'confirmed',
-        source: 'rhino',
-        conflict_level: 'none',
-        sync_status: 'synced'
-      },
-      {
-        id: '2',
-        title: 'Show Call / System Ops — Keynote',
-        company_name: 'Giglife',
-        company_logo: '🎵',
-        location: 'Convention Center Ballroom C',
-        start_date: '2024-01-15T19:00:00Z',
-        end_date: '2024-01-15T23:00:00Z',
-        hourly_rate: 55,
-        status: 'confirmed',
-        source: 'giglife',
-        conflict_level: 'medium',
-        travel_time: 45,
-        notes: 'Tight turnaround — 1 hour travel between Stadium and Ballroom C',
-        sync_status: 'synced'
-      },
-      {
-        id: '3',
-        title: 'Strike & Load-Out — Arena Deck',
-        company_name: 'Stagehands, Inc.',
-        company_logo: '🎭',
-        location: 'Stadium Main Stage',
-        start_date: '2024-01-16T14:00:00Z',
-        end_date: '2024-01-16T22:00:00Z',
-        hourly_rate: 46,
-        status: 'pending',
-        source: 'stagehands',
-        conflict_level: 'none',
-        sync_status: 'pending'
-      },
-      {
-        id: '4',
-        title: 'Video Wall Lead — Gala Show Call',
-        company_name: 'PCE',
-        company_logo: '🌊',
-        location: 'Convention Center Ballroom C',
-        start_date: '2024-01-17T10:00:00Z',
-        end_date: '2024-01-17T20:00:00Z',
-        hourly_rate: 58,
-        status: 'confirmed',
-        source: 'pce',
-        conflict_level: 'none',
-        sync_status: 'synced'
-      },
-      {
-        id: '5',
-        title: 'Load-In & Rigging Call — Truss Build',
-        company_name: 'PCE',
-        company_logo: '🌊',
-        location: 'Convention Center Ballroom C',
-        start_date: '2024-01-18T06:00:00Z',
-        end_date: '2024-01-18T10:00:00Z',
-        hourly_rate: 44,
-        status: 'confirmed',
-        source: 'pce',
-        conflict_level: 'low',
-        travel_time: 60,
-        notes: 'Early call — plan travel time for 6 AM dock check-in',
-        sync_status: 'synced'
-      },
-      {
-        id: '6',
-        title: 'Show Call / System Ops — Festival Main',
-        company_name: 'Giglife',
-        company_logo: '🎵',
-        location: 'Golden Gate Park, SF',
-        start_date: '2024-01-18T12:00:00Z',
-        end_date: '2024-01-18T20:00:00Z',
-        hourly_rate: 55,
-        status: 'confirmed',
-        source: 'giglife',
-        conflict_level: 'high',
-        travel_time: 30,
-        notes: 'CONFLICT: Overlaps with PCE truss build — need to choose',
-        sync_status: 'error'
-      }
-    ];
+  const loadUnifiedSchedule = async () => {
+    setLoading(true);
+    const rows: UnifiedGig[] = [];
 
-    setGigs(mockGigs);
+    // Marketplace shifts the worker is booked on
+    const { data: assignments } = await supabase
+      .from('shift_assignments')
+      .select('id, status, offered_rate, shift:shifts(id, title, starts_at, ends_at, status, event:events(title, company:companies(name), venue:venues(name, city)))')
+      .eq('worker_id', profile!.id)
+      .in('status', ['offered', 'confirmed', 'completed']);
+
+    for (const a of assignments ?? []) {
+      const shift = a.shift?.[0];
+      const event = shift?.event?.[0];
+      if (!shift || !event) continue;
+      rows.push({
+        id: shift.id,
+        title: shift.title ?? event.title,
+        company_name: event.company?.[0]?.name ?? 'Company',
+        company_logo: '',
+        location: event.venue?.[0] ? [event.venue[0].name, event.venue[0].city].filter(Boolean).join(', ') : 'TBD',
+        start_date: shift.starts_at,
+        end_date: shift.ends_at,
+        hourly_rate: a.offered_rate ?? undefined,
+        status: a.status === 'offered' ? 'pending' : a.status === 'completed' ? 'completed' : 'confirmed',
+        source: 'flexora',
+        conflict_level: 'none',
+        sync_status: 'synced',
+      });
+    }
+
+    // Legacy gig applications the worker has been accepted for
+    const { data: applications } = await supabase
+      .from('gig_applications')
+      .select('id, status, proposed_rate, gig:gigs(id, title, location, start_date, end_date, hourly_rate, status, company:companies(name))')
+      .eq('worker_id', profile!.id)
+      .eq('status', 'accepted');
+
+    for (const a of applications ?? []) {
+      const gig = a.gig?.[0];
+      if (!gig) continue;
+      rows.push({
+        id: gig.id,
+        title: gig.title,
+        company_name: gig.company?.[0]?.name ?? 'Company',
+        company_logo: '',
+        location: gig.location ?? 'TBD',
+        start_date: gig.start_date,
+        end_date: gig.end_date,
+        hourly_rate: a.proposed_rate ?? gig.hourly_rate,
+        status: 'confirmed',
+        source: 'flexora',
+        conflict_level: 'none',
+        sync_status: 'synced',
+      });
+    }
+
+    rows.sort((x, y) => new Date(x.start_date).getTime() - new Date(y.start_date).getTime());
+
+    // Compute conflicts from real overlaps: overlapping windows are 'high',
+    // different-venue gaps under 2h are 'medium' travel risks.
+    for (let i = 0; i < rows.length; i++) {
+      for (let j = i + 1; j < rows.length; j++) {
+        const a = rows[i], b = rows[j];
+        const aStart = +new Date(a.start_date), aEnd = +new Date(a.end_date);
+        const bStart = +new Date(b.start_date), bEnd = +new Date(b.end_date);
+        if (aStart < bEnd && bStart < aEnd) {
+          a.conflict_level = 'high';
+          b.conflict_level = 'high';
+          b.notes = [b.notes, `Overlaps with "${a.title}"`].filter(Boolean).join(' · ');
+          continue;
+        }
+        const gap = Math.abs(bStart - aEnd) / 3600000;
+        if (gap < 2 && a.location !== b.location && a.conflict_level === 'none') {
+          a.conflict_level = 'medium';
+          a.travel_time = Math.round(gap * 60);
+          a.notes = [a.notes, `Tight turnaround to "${b.title}"`].filter(Boolean).join(' · ');
+        }
+      }
+    }
+
+    setGigs(rows);
     setLoading(false);
   };
 

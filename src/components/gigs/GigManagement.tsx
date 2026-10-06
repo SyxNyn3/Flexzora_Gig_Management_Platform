@@ -25,7 +25,7 @@ import { format } from 'date-fns';
 import { useGig, useApplications } from '@/hooks/useSupabaseQuery';
 
 interface GigManagementProps {
-  gigId: string;
+  gigId?: string;
 }
 
 // Mock data for demo
@@ -81,7 +81,7 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 
 const GigManagement: React.FC<GigManagementProps> = ({ gigId: propGigId }) => {
   const { id: routeId } = useParams();
-  const gigId = routeId ?? propGigId;
+  const gigId = routeId ?? propGigId ?? '';
   const [activeTab, setActiveTab] = useState('overview');
 
   // State for review form

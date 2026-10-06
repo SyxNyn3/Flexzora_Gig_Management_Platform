@@ -21,8 +21,9 @@ import {
   Zap,
   TrendingUp
 } from 'lucide-react';
-import { format, isToday, isTomorrow, addDays } from 'date-fns';
+import { format, isToday, isTomorrow, formatDistanceToNow } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/lib/supabase';
 
 const WorkerGigList: React.FC = () => {
   const { profile } = useAuth();
@@ -33,93 +34,63 @@ const WorkerGigList: React.FC = () => {
   const [savedGigs, setSavedGigs] = useState<string[]>([]);
 
   // Fetch gigs
-  useGigs({ status: 'published' });
+  const { data: gigsData, loading: gigsLoading } = useGigs({ status: 'published' });
+  const [applicantCounts, setApplicantCounts] = useState<Record<string, number>>({});
 
   useEffect(() => {
-    // Simulate loading delay
-    const timer = setTimeout(() => setLoading(false), 1500);
-    return () => clearTimeout(timer);
-  }, []);
+    setLoading(gigsLoading ?? false);
+  }, [gigsLoading]);
 
-  // Mock enhanced gig data
-  const enhancedGigs = [
-    {
-      id: '1',
-      title: 'A1 Audio Engineer — Show Call',
-      company: { name: 'Rhino Staging', logo_url: '', avatar: '🏟️' },
-      location: 'Stadium Main Stage',
-      start_date: new Date().toISOString(),
-      end_date: addDays(new Date(), 1).toISOString(),
-      hourly_rate: 62,
-      required_workers: 2,
-      urgency: 'high',
-      skills_required: ['FOH Mixing', 'System Tuning'],
-      description: 'A1 needed for arena show — digico SD console, L-Acoustics rig. RF coordination a plus.',
-      posted: '2 hours ago',
-      applicants: 12,
-      rating: 4.8,
-      verified: true,
-      remote: false,
-      category: 'audio'
-    },
-    {
-      id: '2',
-      title: 'L2 Lighting Tech — Gala Load-In',
-      company: { name: 'Giglife', logo_url: '', avatar: '🎵' },
-      location: 'Convention Center Ballroom C',
-      start_date: addDays(new Date(), 2).toISOString(),
-      end_date: addDays(new Date(), 2).toISOString(),
-      hourly_rate: 55,
-      required_workers: 1,
-      urgency: 'medium',
-      skills_required: ['GrandMA', 'LED Systems'],
-      description: 'L2 on grandMA3 for a corporate gala — hang, patch, and focus with the house LD.',
-      posted: '1 day ago',
-      applicants: 8,
-      rating: 4.9,
-      verified: true,
-      remote: false,
-      category: 'lighting'
-    },
-    {
-      id: '3',
-      title: 'ETCP Arena Rigger — Load-In & Rigging Call',
-      company: { name: 'PCE', logo_url: '', avatar: '🌊' },
-      location: 'Stadium Main Stage',
-      start_date: addDays(new Date(), 5).toISOString(),
-      end_date: addDays(new Date(), 5).toISOString(),
-      hourly_rate: 65,
-      required_workers: 3,
-      urgency: 'high',
-      skills_required: ['Rigging', 'Motor Points'],
-      description: 'Up-riggers for a 40-point mother grid. ETCP Arena Rigging cert required — bring card.',
-      posted: '3 days ago',
-      applicants: 15,
-      rating: 4.7,
-      verified: true,
-      remote: false,
-      category: 'rigging'
-    },
-    {
-      id: '4',
-      title: 'Video Wall Lead — Strike & Load-Out',
-      company: { name: 'Stagehands, Inc.', logo_url: '', avatar: '🎭' },
-      location: 'Convention Center Ballroom C',
-      start_date: addDays(new Date(), 1).toISOString(),
-      end_date: addDays(new Date(), 7).toISOString(),
-      hourly_rate: 58,
-      required_workers: 1,
-      urgency: 'medium',
-      skills_required: ['LED Wall', 'Video Processing'],
-      description: 'Own the LED wall strike — tile count, processor teardown, case pack for the truck.',
-      posted: '5 hours ago',
-      applicants: 6,
-      rating: 4.6,
-      verified: false,
-      remote: false,
-      category: 'video'
+  useEffect(() => {
+    const ids = (gigsData ?? []).map(g => g.id);
+    if (ids.length === 0) {
+      setApplicantCounts({});
+      return;
     }
-  ];
+    supabase
+      .from('gig_applications')
+      .select('gig_id')
+      .in('gig_id', ids)
+      .then(({ data }) => {
+        const counts: Record<string, number> = {};
+        for (const row of data ?? []) {
+          counts[row.gig_id] = (counts[row.gig_id] ?? 0) + 1;
+        }
+        setApplicantCounts(counts);
+      });
+  }, [gigsData]);
+
+  const deriveCategory = (title: string, skills: string[]): string => {
+    const hay = `${title} ${skills.join(' ')}`.toLowerCase();
+    if (/(audio|mix|foh|sound|pa\b)/.test(hay)) return 'audio';
+    if (/(light|grandma|fixture|spot|beam)/.test(hay)) return 'lighting';
+    if (/(rigg|truss|motor|fly|hoist)/.test(hay)) return 'rigging';
+    if (/(video|led|wall|camera|projection|broadcast)/.test(hay)) return 'video';
+    return 'general';
+  };
+
+  const enhancedGigs = (gigsData ?? []).map(gig => {
+    const daysOut = (new Date(gig.start_date).getTime() - Date.now()) / 86400000;
+    return {
+      id: gig.id,
+      title: gig.title,
+      company: { name: gig.company?.name ?? 'Company', logo_url: gig.company?.logo_url ?? '', avatar: '' },
+      location: gig.location,
+      start_date: gig.start_date,
+      end_date: gig.end_date,
+      hourly_rate: gig.hourly_rate ?? 0,
+      required_workers: gig.required_workers,
+      urgency: daysOut <= 2 ? 'high' : daysOut <= 7 ? 'medium' : 'low',
+      skills_required: gig.skills_required ?? [],
+      description: gig.description ?? '',
+      posted: gig.created_at ? `${formatDistanceToNow(new Date(gig.created_at))} ago` : '',
+      applicants: applicantCounts[gig.id] ?? 0,
+      rating: 0,
+      verified: false,
+      remote: gig.is_remote,
+      category: deriveCategory(gig.title, gig.skills_required ?? []),
+    };
+  });
 
   const categories = [
     { id: 'all', name: 'All Gigs', count: enhancedGigs.length },
@@ -414,7 +385,7 @@ const WorkerGigList: React.FC = () => {
                           <div className="flex items-center justify-between">
                             <div className="flex items-center space-x-4">
                               <div className="flex flex-wrap gap-1">
-                                {gig.skills_required.slice(0, 3).map((skill) => (
+                                {gig.skills_required.slice(0, 3).map((skill: string) => (
                                   <Badge key={skill} variant="secondary" className="text-xs">
                                     {skill}
                                   </Badge>

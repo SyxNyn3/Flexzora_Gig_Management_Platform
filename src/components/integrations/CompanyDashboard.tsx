@@ -16,6 +16,7 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/lib/supabase';
 
 interface WorkerProfile {
   id: string;
@@ -46,121 +47,48 @@ const CompanyDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Fetch worker profiles from database
-    const fetchWorkers = async () => {
-      try {
-        setLoading(true);
-        
-        // In a real implementation, we would fetch from the database
-        // For now, we'll use the mock data but with a delay to simulate loading
-        setTimeout(() => {
-          loadWorkerPool();
-          setLoading(false);
-        }, 1500);
-      } catch (error) {
-        console.error('Error fetching workers:', error);
-        setLoading(false);
-      }
-    };
-    
-    fetchWorkers();
+    loadWorkerPool();
   }, []);
 
   useEffect(() => {
     filterWorkers();
   }, [workers, searchTerm, skillFilter, availabilityFilter]);
 
-  const loadWorkerPool = () => {
-    // Mock worker pool data
-    const mockWorkers: WorkerProfile[] = [
-      {
-        id: 'worker-1',
-        name: 'Marcus Webb',
-        email: 'marcus.webb@flexzora.dev',
-        phone: '+1 (555) 123-4567',
-        avatar_url: '',
-        skills: ['Rigging', 'Motor Points', 'Truss Assembly'],
-        hourly_rate: 48,
-        experience_years: 8,
-        location: 'San Francisco, CA',
-        availability_status: 'available',
-        last_active: new Date().toISOString(),
-        total_gigs: 64,
-        rating: 4.8,
-        certifications: ['ETCP Arena Rigger', 'OSHA-30'],
-        preferred_roles: ['ETCP Arena Rigger', 'Load-In Lead']
-      },
-      {
-        id: 'worker-2',
-        name: 'Priya Raman',
-        email: 'priya.raman@flexzora.dev',
-        phone: '+1 (555) 234-5678',
-        avatar_url: '',
-        skills: ['GrandMA', 'LED Systems', 'Fixture Maintenance'],
-        hourly_rate: 55,
-        experience_years: 7,
-        location: 'Oakland, CA',
-        availability_status: 'busy',
-        last_active: new Date(Date.now() - 3600000).toISOString(),
-        total_gigs: 42,
-        rating: 4.9,
-        certifications: ['OSHA-30', 'Boom Lift Operator'],
-        preferred_roles: ['L2 Lighting Tech', 'Lighting Lead']
-      },
-      {
-        id: 'worker-3',
-        name: 'Devon Carter',
-        email: 'devon.carter@flexzora.dev',
-        phone: '+1 (555) 345-6789',
-        avatar_url: '',
-        skills: ['Video Processing', 'LED Wall', 'Playback'],
-        hourly_rate: 52,
-        experience_years: 5,
-        location: 'San Jose, CA',
-        availability_status: 'available',
-        last_active: new Date(Date.now() - 7200000).toISOString(),
-        total_gigs: 31,
-        rating: 4.6,
-        certifications: ['OSHA-10', 'Boom Lift Operator'],
-        preferred_roles: ['Video Wall Lead', 'Video Tech']
-      },
-      {
-        id: 'worker-4',
-        name: 'Sofia Almeida',
-        email: 'sofia.almeida@flexzora.dev',
-        phone: '+1 (555) 456-7890',
-        avatar_url: '',
-        skills: ['FOH Mixing', 'System Tuning', 'RF Coordination'],
-        hourly_rate: 62,
-        experience_years: 9,
-        location: 'Berkeley, CA',
-        availability_status: 'available',
-        last_active: new Date(Date.now() - 1800000).toISOString(),
-        total_gigs: 71,
-        rating: 4.9,
-        certifications: ['OSHA-30', 'Shure Wireless Workbench'],
-        preferred_roles: ['A1 Audio Engineer', 'System Tech']
-      },
-      {
-        id: 'worker-5',
-        name: 'Jordan Reyes',
-        email: 'jordan.reyes@flexzora.dev',
-        phone: '+1 (555) 567-8901',
-        avatar_url: '',
-        skills: ['Load-In', 'Deck Work', 'Push & Stack'],
-        hourly_rate: 40,
-        experience_years: 3,
-        location: 'Fremont, CA',
-        availability_status: 'unavailable',
-        last_active: new Date(Date.now() - 86400000).toISOString(),
-        total_gigs: 22,
-        rating: 4.5,
-        certifications: ['OSHA-10'],
-        preferred_roles: ['Stagehand', 'Deck Crew']
-      }
-    ];
+  const loadWorkerPool = async () => {
+    setLoading(true);
 
-    setWorkers(mockWorkers);
+    const { data: profiles, error } = await supabase
+      .from('profiles')
+      .select('id, full_name, email, phone, avatar_url, location, hourly_rate, experience_years, is_available, average_rating, review_count, updated_at, worker_skills(skill:skills(name)), certifications(name), gig_applications!worker_id(status)')
+      .eq('role', 'worker')
+      .order('updated_at', { ascending: false });
+
+    if (error) {
+      toast.error('Could not load worker roster');
+      setWorkers([]);
+      setLoading(false);
+      return;
+    }
+
+    setWorkers((profiles ?? []).map(p => ({
+      id: p.id,
+      name: p.full_name ?? 'Worker',
+      email: p.email ?? '',
+      phone: p.phone,
+      avatar_url: p.avatar_url,
+      skills: (p.worker_skills ?? [])
+        .map(ws => ws.skill?.[0]?.name)
+        .filter((n): n is string => !!n),
+      hourly_rate: p.hourly_rate ?? 0,
+      experience_years: p.experience_years ?? 0,
+      location: p.location ?? '',
+      availability_status: p.is_available ? 'available' : 'unavailable',
+      last_active: p.updated_at,
+      total_gigs: (p.gig_applications ?? []).filter(a => a.status === 'accepted').length,
+      rating: p.average_rating ?? 0,
+      certifications: (p.certifications ?? []).flat().map(c => c.name),
+      preferred_roles: [],
+    })));
     setLoading(false);
   };
 

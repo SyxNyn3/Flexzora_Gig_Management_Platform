@@ -14,6 +14,7 @@ import {
   Info
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
+import { supabase } from '@/lib/supabase';
 
 interface ScheduleConflict {
   id: string;
@@ -63,78 +64,52 @@ const ConflictDetection: React.FC<ConflictDetectionProps> = ({
     detectConflicts();
   }, [gigId, workers]);
 
+  const isLiveGig = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(gigId);
+
   const detectConflicts = async () => {
     setLoading(true);
-    
-    // Mock conflict detection
-    const mockConflicts: ScheduleConflict[] = [
-      {
-        id: '1',
-        worker_id: 'worker-1',
-        worker_name: 'Marcus Webb',
-        conflicting_gigs: [
-          {
-            id: 'gig-2',
-            title: 'Strike & Load-Out — Festival Main',
-            company: 'Giglife',
-            start_date: '2024-01-15T14:00:00Z',
-            end_date: '2024-01-15T22:00:00Z',
-            location: 'Golden Gate Park, SF',
-            status: 'confirmed'
-          }
-        ],
-        conflict_type: 'overlap',
-        severity: 'high',
-        auto_resolvable: false,
-        suggested_resolution: 'Contact worker to choose between gigs or adjust schedule'
-      },
-      {
-        id: '2',
-        worker_id: 'worker-2',
-        worker_name: 'Priya Raman',
-        conflicting_gigs: [
-          {
-            id: 'gig-3',
-            title: 'Load-In & Rigging Call — Truss Build',
-            company: 'PCE',
-            start_date: '2024-01-15T06:00:00Z',
-            end_date: '2024-01-15T08:00:00Z',
-            location: 'Convention Center Ballroom C',
-            status: 'confirmed'
-          }
-        ],
-        conflict_type: 'travel_time',
-        severity: 'medium',
-        auto_resolvable: true,
-        suggested_resolution: 'Allow 2 hours travel time between Ballroom C and Stadium Main Stage'
-      },
-      {
-        id: '3',
-        worker_id: 'worker-3',
-        worker_name: 'Devon Carter',
-        conflicting_gigs: [
-          {
-            id: 'gig-4',
-            title: 'Show Call / System Ops — Arena PA',
-            company: 'Rhino Staging',
-            start_date: '2024-01-14T20:00:00Z',
-            end_date: '2024-01-15T02:00:00Z',
-            location: 'Stadium Main Stage',
-            status: 'confirmed'
-          }
-        ],
-        conflict_type: 'back_to_back',
-        severity: 'low',
-        auto_resolvable: true,
-        suggested_resolution: 'Schedule allows adequate rest time between gigs'
-      }
-    ];
 
-    // Simulate API delay
-    setTimeout(() => {
-      setConflicts(mockConflicts);
+    if (!isLiveGig || workers.length === 0) {
+      setConflicts([]);
       setLoading(false);
-    }, 1000);
+      return;
+    }
+
+    const { data, error } = await supabase.rpc('worker_conflicts', {
+      p_worker_ids: workers.map(w => w.id),
+      p_start: gigStartDate,
+      p_end: gigEndDate,
+      p_buffer_minutes: 120,
+    });
+
+    if (error) {
+      setConflicts([]);
+      setLoading(false);
+      return;
+    }
+
+    const found: ScheduleConflict[] = (data ?? [])
+      .filter((row: { worker_id: string; hard_conflict: boolean; buffer_conflict: boolean }) =>
+        row.hard_conflict || row.buffer_conflict)
+      .map((row: { worker_id: string; hard_conflict: boolean; buffer_conflict: boolean }) => {
+        const worker = workers.find(w => w.id === row.worker_id);
+        const hard = row.hard_conflict;
+        return {
+          id: row.worker_id,
+          worker_id: row.worker_id,
+          worker_name: worker?.name ?? 'Crew member',
+          conflicting_gigs: [],
+          conflict_type: hard ? 'overlap' as const : 'travel_time' as const,
+          severity: hard ? 'high' as const : 'medium' as const,
+          auto_resolvable: !hard,
+          suggested_resolution: hard
+            ? 'Contact the worker — they have a confirmed booking or blocked time during this call'
+            : `Allow travel time — this worker has a confirmed call within 2 hours of ${format(parseISO(gigStartDate), 'MMM d, h:mm a')}`,
+        };
+      });
+
+    setConflicts(found);
+    setLoading(false);
   };
 
   const resolveConflict = async (conflictId: string, resolution: 'accept' | 'reject' | 'modify') => {
@@ -297,7 +272,9 @@ const ConflictDetection: React.FC<ConflictDetectionProps> = ({
                     </div>
                   </div>
 
-                  {/* Conflicting Gigs */}
+                  {/* Conflicting Gigs — hidden when the conflict came from the
+                      privacy-safe worker_conflicts RPC (booleans only, no booking details) */}
+                  {conflict.conflicting_gigs.length > 0 && (
                   <div>
                     <h4 className="font-medium mb-2">Conflicting Commitments</h4>
                     <div className="space-y-2">
@@ -320,6 +297,7 @@ const ConflictDetection: React.FC<ConflictDetectionProps> = ({
                       ))}
                     </div>
                   </div>
+                  )}
 
                   {/* Suggested Resolution */}
                   {conflict.suggested_resolution && (

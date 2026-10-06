@@ -7,11 +7,11 @@ Ordered queue for build sessions and scheduled automations. One item ≈ one ses
 Two sessions work this repo in parallel. **Before starting any item, mark it**: append `(claimed: <name> — working on it)`. Check claims before picking up work; clear your claim when done (`done: <name>`) or released. Lane names: **Mark** = cloud/manager session (d713fbae), **Tom** = desktop session (89ab957d).
 
 - Repo privacy toggle (make repo private again) — **claimed: Tom — working on it** (gh token lacks permission; asked user to flip in Settings)
-- Migration duplicate-DDL cleanup (blocks clean `supabase start` from repo files) — **claimed: Tom — working on it** (idempotency transform done; verifying replay)
-- `handle_new_user` qualified-insert + search_path fix (new migration) — **claimed: Tom — working on it**
-- `gig_messages` table + live `GigCommunication` (currently 100% mock, no table exists) — **claimed: Tom — working on it**
-- Live-wire `UnifiedSchedule` / `ConflictDetection` / `CompanyDashboard` (still mock-only) — **claimed: Tom — working on it**
-- Honest empty states: replace mock-number fallbacks (dashboard 15420 etc.) with real zeros — **claimed: Tom — working on it**
+- Migration duplicate-DDL cleanup (blocks clean `supabase start` from repo files) — **done: Tom** (all migrations idempotent; verified via double clean replay)
+- `handle_new_user` qualified-insert + search_path fix (new migration) — **done: Tom** (20261006180000)
+- `gig_messages` table + live `GigCommunication` (currently 100% mock, no table exists) — **done: Tom**
+- Live-wire `UnifiedSchedule` / `ConflictDetection` / `CompanyDashboard` (still mock-only) — **done: Tom** (+ `WorkerGigList` browse list)
+- Honest empty states: replace mock-number fallbacks (dashboard 15420 etc.) with real zeros — **done: Tom**
 - Weekly waitlist-metrics automation — **done: Mark** (automation created, pending user approval)
 - `.github/workflows/ci.yml` — **claimed: Mark — working on it**
 - PR #4 review-finding sweeps — **claimed: Mark — working on it**
