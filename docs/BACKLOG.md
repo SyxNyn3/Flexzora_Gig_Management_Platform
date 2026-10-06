@@ -37,7 +37,7 @@ Two sessions work this repo in parallel. **Before starting any item, mark it**: 
 - [x] Worker portfolio import (public profile slug + share link). — **done: Tom** (`/u/<username>` public page via `get_public_profile` RPC — curated fields only, no email/phone; username field + Share button on Profile Settings)
 
 ## P3 — Phase 2 intelligence
-- [ ] Smart-matching analytics: fill-rate, time-to-fill, no-show rate per event. — **claimed: Tom — working on it**
+- [x] Smart-matching analytics: fill-rate, time-to-fill, no-show rate per event. — **done: Tom** (stat cards on EventDetailPage — fill % vs headcount, avg broadcast→fill time, no-show %)
 - [ ] Drag-and-drop roster lanes in `RosterBuilder` (multi-lane schedule).
 - [ ] Push notifications (FCM/APNs) for clock-in reminders near call time.
 - [ ] Geofence auto-clock-out on fence exit + manager alert.
