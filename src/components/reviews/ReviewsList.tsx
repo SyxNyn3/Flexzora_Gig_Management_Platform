@@ -1,10 +1,10 @@
 import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useReviewsForWorker } from '@/hooks/useSupabaseQuery';
-import { Star, Building2, Calendar, Briefcase } from 'lucide-react';
+import { Star, Building2, Briefcase } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface ReviewsListProps {

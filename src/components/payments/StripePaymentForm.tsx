@@ -27,8 +27,6 @@ interface StripePaymentFormProps {
 const StripePaymentFormInner: React.FC<StripePaymentFormProps> = ({
   amount,
   currency = 'usd',
-  description,
-  metadata = {},
   onPaymentSuccess,
   onPaymentError,
 }) => {
@@ -66,9 +64,9 @@ const StripePaymentFormInner: React.FC<StripePaymentFormProps> = ({
         toast.success('Payment successful!');
         onPaymentSuccess?.(paymentIntent.id);
       }
-    } catch (error: any) {
-      setErrorMessage(error.message || 'An unexpected error occurred');
-      onPaymentError?.(error);
+    } catch (error) {
+      setErrorMessage((error as Error).message || 'An unexpected error occurred');
+      onPaymentError?.(error instanceof Error ? error : new Error(String(error)));
     } finally {
       setIsLoading(false);
     }
@@ -115,9 +113,9 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = (props) => {
           props.metadata
         );
         setClientSecret(secret);
-      } catch (err: any) {
+      } catch (err) {
         console.error('Failed to initialize payment:', err);
-        setError(err.message || 'Failed to initialize payment');
+        setError((err as Error).message || 'Failed to initialize payment');
       } finally {
         setLoading(false);
       }

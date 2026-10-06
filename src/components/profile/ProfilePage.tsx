@@ -13,11 +13,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { DatabaseService, normalizeUrl } from '@/lib/supabase';
 import { useSkills, useWorkerSkills, useCertifications, useReviewsForWorker } from '@/hooks/useSupabaseQuery';
 import { useCertificationTypes } from '@/hooks/useMarketplace';
-import { WorkerSkill, Certification, PortfolioItem } from '@/lib/types';
+import { Certification, PortfolioItem } from '@/lib/types';
 import ReviewsList from '@/components/reviews/ReviewsList';
 import ReviewStars from '@/components/reviews/ReviewStars';
 import { 
-  User, 
   Save,
   Award,
   Plus,
@@ -42,12 +41,12 @@ const profileSchema = z.object({
   experience_years: z.string().optional(),
   portfolio_url: z.string().optional().refine((val) => {
     if (!val) return true;
-    const urlPattern = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/;
+    const urlPattern = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/;
     return urlPattern.test(val);
   }, 'Please enter a valid URL'),
   linkedin_url: z.string().optional().refine((val) => {
     if (!val) return true;
-    const urlPattern = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/;
+    const urlPattern = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/;
     return urlPattern.test(val);
   }, 'Please enter a valid URL'),
 });
@@ -69,7 +68,7 @@ const certificationSchema = z.object({
   credential_id: z.string().optional(),
   credential_url: z.string().optional().refine((val) => {
     if (!val) return true;
-    const urlPattern = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/;
+    const urlPattern = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/;
     return urlPattern.test(val);
   }, 'Please enter a valid URL'),
 });
@@ -91,7 +90,7 @@ const ProfilePage: React.FC = () => {
   const { data: workerSkills, refetch: refetchWorkerSkills } = useWorkerSkills(profile?.id || '');
   const { data: certifications, refetch: refetchCertifications } = useCertifications(profile?.id || '');
   const certTypes = useCertificationTypes();
-  const { data: reviews = [] } = useReviewsForWorker(profile?.id || '');
+  useReviewsForWorker(profile?.id || '');
 
   const form = useForm<ProfileForm>({
     resolver: zodResolver(profileSchema),
@@ -167,9 +166,9 @@ const ProfilePage: React.FC = () => {
       await refreshProfile();
       
       toast.success('Profile updated successfully!');
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error updating profile:', error);
-      toast.error(error.message || 'Failed to update profile');
+      toast.error((error as Error).message || 'Failed to update profile');
     } finally {
       setLoading(false);
     }
@@ -211,9 +210,9 @@ const ProfilePage: React.FC = () => {
       setShowSkillDialog(false);
       skillForm.reset();
       await refetchWorkerSkills();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error adding skill:', error);
-      toast.error(error.message || 'Failed to add skill');
+      toast.error((error as Error).message || 'Failed to add skill');
     }
   };
 
@@ -224,9 +223,9 @@ const ProfilePage: React.FC = () => {
 
       toast.success('Skill removed successfully!');
       await refetchWorkerSkills();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error removing skill:', error);
-      toast.error(error.message || 'Failed to remove skill');
+      toast.error((error as Error).message || 'Failed to remove skill');
     }
   };
 
@@ -260,9 +259,9 @@ const ProfilePage: React.FC = () => {
       setEditingCert(null);
       certForm.reset();
       await refetchCertifications();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error saving certification:', error);
-      toast.error(error.message || 'Failed to save certification');
+      toast.error((error as Error).message || 'Failed to save certification');
     }
   };
 
@@ -273,9 +272,9 @@ const ProfilePage: React.FC = () => {
 
       toast.success('Certification removed successfully!');
       await refetchCertifications();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error removing certification:', error);
-      toast.error(error.message || 'Failed to remove certification');
+      toast.error((error as Error).message || 'Failed to remove certification');
     }
   };
 
@@ -309,9 +308,9 @@ const ProfilePage: React.FC = () => {
       if (error) throw new Error(error);
       
       return;
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error adding portfolio item:', error);
-      throw new Error(error.message || 'Failed to add portfolio item');
+      throw new Error((error as Error).message || 'Failed to add portfolio item');
     }
   };
   
@@ -329,9 +328,9 @@ const ProfilePage: React.FC = () => {
       if (error) throw new Error(error);
       
       return;
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error updating portfolio item:', error);
-      throw new Error(error.message || 'Failed to update portfolio item');
+      throw new Error((error as Error).message || 'Failed to update portfolio item');
     }
   };
   
@@ -346,9 +345,9 @@ const ProfilePage: React.FC = () => {
       if (error) throw new Error(error);
       
       return;
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error deleting portfolio item:', error);
-      throw new Error(error.message || 'Failed to delete portfolio item');
+      throw new Error((error as Error).message || 'Failed to delete portfolio item');
     }
   };
 

@@ -37,7 +37,7 @@ const WorkerDashboard: React.FC = () => {
   const myApplications = myApplicationsRaw || [];
   const { data: paymentsRaw } = usePayments({ workerId: profile?.id });
   const payments = paymentsRaw || [];
-  const { data: expensesRaw } = useExpenses({ workerId: profile?.id });
+  useExpenses({ workerId: profile?.id });
   
   // Set up real-time notifications
   useRealtimeNotifications(profile?.id, (notification) => {
@@ -126,11 +126,6 @@ const WorkerDashboard: React.FC = () => {
     rating: profile?.average_rating || 4.8
   };
 
-  const getDateLabel = (date: Date) => {
-    if (isToday(date)) return 'Today';
-    if (isTomorrow(date)) return 'Tomorrow';
-    return format(date, 'MMM d');
-  };
 
   const getStatusColor = (status: string) => {
     switch (status) {

@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useAuth } from '@/contexts/AuthContext';
 import { AuthKitButton } from './AuthKitButton';
-import { Mail, CheckCircle, AlertCircle, RefreshCw, Inbox, Send, Trash, Star, Clock, Calendar } from 'lucide-react';
+import { Mail, RefreshCw, Inbox, Send, Star, Clock, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
 import { Switch } from '@/components/ui/switch';
 
@@ -22,7 +20,6 @@ interface EmailSummary {
 }
 
 const GmailIntegration: React.FC = () => {
-  const { profile } = useAuth();
   const [isConnected, setIsConnected] = useState(false);
   const [emails, setEmails] = useState<EmailSummary[]>([]);
   const [loading, setLoading] = useState(false);
@@ -120,7 +117,7 @@ const GmailIntegration: React.FC = () => {
     }, 1500);
   };
 
-  const handleConnect = (connection: any) => {
+  const handleConnect = (connection: unknown) => {
     console.log('Gmail connected:', connection);
     setIsConnected(true);
     localStorage.setItem('gmail-connected', 'true');

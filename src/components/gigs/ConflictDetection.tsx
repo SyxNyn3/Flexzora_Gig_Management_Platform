@@ -2,9 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useAuth } from '@/contexts/AuthContext';
 import { 
   Calendar, 
   AlertTriangle, 
@@ -15,7 +13,7 @@ import {
   XCircle,
   Info
 } from 'lucide-react';
-import { format, isWithinInterval, parseISO } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 
 interface ScheduleConflict {
   id: string;
@@ -58,7 +56,6 @@ const ConflictDetection: React.FC<ConflictDetectionProps> = ({
   gigLocation, 
   workers 
 }) => {
-  const { profile } = useAuth();
   const [conflicts, setConflicts] = useState<ScheduleConflict[]>([]);
   const [loading, setLoading] = useState(true);
 

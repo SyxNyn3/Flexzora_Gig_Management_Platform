@@ -713,7 +713,7 @@ const CompanyIntegrations: React.FC = () => {
             <AuthKitButton 
               onConnectionSuccess={(connection) => {
                 console.log('New connection established:', connection);
-                toast.success(`Connected to ${connection.name || 'service'} successfully!`);
+                toast.success(`Connected to ${connection.name || connection.provider || 'service'} successfully!`);
               }}
             />
           </CardContent>

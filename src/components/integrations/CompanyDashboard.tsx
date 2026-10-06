@@ -1,29 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useAuth } from '@/contexts/AuthContext';
-import { DatabaseService } from '@/lib/supabase';
-import GigCommunication from '@/components/gigs/GigCommunication';
-import WorkerPayroll from '@/components/gigs/WorkerPayroll';
 import { 
   Users, 
   Send, 
   DollarSign,
   Calendar,
-  MessageSquare,
   Search,
-  Filter,
   Download,
-  Upload,
   CheckCircle,
   Clock,
-  AlertTriangle,
-  Building2
+  AlertTriangle
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -46,7 +36,6 @@ interface WorkerProfile {
 }
 
 const CompanyDashboard: React.FC = () => {
-  const { profile } = useAuth();
   const [workers, setWorkers] = useState<WorkerProfile[]>([]); 
   const [filteredWorkers, setFilteredWorkers] = useState<WorkerProfile[]>([]);
   const [searchTerm, setSearchTerm] = useState('');

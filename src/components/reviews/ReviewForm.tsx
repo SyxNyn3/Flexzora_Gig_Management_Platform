@@ -65,15 +65,15 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
         comment: data.review_text,
       };
 
-      const { data: newReview, error } = await DatabaseService.addReview(reviewData);
+      const { error } = await DatabaseService.addReview(reviewData);
 
       if (error) throw new Error(error);
 
       toast.success('Review submitted successfully!');
       if (onSuccess) onSuccess();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error submitting review:', error);
-      toast.error(error.message || 'Failed to submit review');
+      toast.error((error as Error).message || 'Failed to submit review');
     } finally {
       setLoading(false);
     }

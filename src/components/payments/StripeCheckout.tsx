@@ -58,10 +58,10 @@ const StripeCheckout: React.FC<StripeCheckoutProps> = ({
         }
         
         setClientSecret(clientSecret);
-      } catch (err: any) {
+      } catch (err) {
         console.error('Failed to initialize payment:', err);
-        setError(err.message || 'Failed to initialize payment');
-        onPaymentError?.(err);
+        setError((err as Error).message || 'Failed to initialize payment');
+        onPaymentError?.(err instanceof Error ? err : new Error(String(err)));
       } finally {
         setLoading(false);
       }

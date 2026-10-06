@@ -1,14 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useAuth } from '@/contexts/AuthContext';
 import { AuthKitButton } from './AuthKitButton';
 import { Calendar, AlertTriangle, Clock, MapPin, Building2, DollarSign, CheckCircle, XCircle, FolderSync as Sync, Filter, Download, Eye, EyeOff } from 'lucide-react';
-import { format, isWithinInterval, parseISO, startOfWeek, endOfWeek, addDays } from 'date-fns';
+import { format, isWithinInterval, parseISO, startOfWeek, endOfWeek } from 'date-fns';
 import { toast } from 'sonner';
 
 interface UnifiedGig {
@@ -29,10 +26,9 @@ interface UnifiedGig {
 }
 
 const UnifiedSchedule: React.FC = () => {
-  const { profile } = useAuth();
   const [gigs, setGigs] = useState<UnifiedGig[]>([]);
   const [filteredGigs, setFilteredGigs] = useState<UnifiedGig[]>([]);
-  const [selectedWeek, setSelectedWeek] = useState(new Date());
+  const [selectedWeek] = useState(new Date());
   const [viewMode, setViewMode] = useState<'week' | 'month'>('week');
   const [showConflicts, setShowConflicts] = useState(true);
   const [sourceFilter, setSourceFilter] = useState<string>('all');

@@ -1,19 +1,28 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useAuthKit } from '@picahq/authkit';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { PlusCircle, CheckCircle, AlertCircle, ExternalLink, Zap } from 'lucide-react';
+import { PlusCircle, CheckCircle, ExternalLink, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 
+export interface AuthKitConnection {
+  id?: string;
+  _id?: string;
+  name?: string;
+  provider?: string;
+  platform?: string;
+  connectedAt?: string;
+}
+
 interface AuthKitButtonProps {
-  onConnectionSuccess?: (connection: any) => void;
+  onConnectionSuccess?: (connection: AuthKitConnection) => void;
   className?: string;
 }
 
 export function AuthKitButton({ onConnectionSuccess, className = "" }: AuthKitButtonProps) {
   const [isConnecting, setIsConnecting] = useState(false);
-  const [connections, setConnections] = useState<any[]>([]);
+  const [connections, setConnections] = useState<AuthKitConnection[]>([]);
   const isDemoMode = !import.meta.env.VITE_SUPABASE_URL;
 
   const { open } = useAuthKit({
@@ -71,13 +80,13 @@ export function AuthKitButton({ onConnectionSuccess, className = "" }: AuthKitBu
             <div className="space-y-2">
               <h4 className="font-medium text-sm text-gray-700">Connected Services</h4>
               {connections.map((connection) => (
-                <div key={connection.id} className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
+                <div key={connection.id ?? connection._id} className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
                   <div className="flex items-center space-x-3">
                     <CheckCircle className="h-5 w-5 text-green-600" />
                     <div>
                       <p className="font-medium text-green-900">{connection.provider}</p>
                       <p className="text-sm text-green-700">
-                        Connected {new Date(connection.connectedAt).toLocaleDateString()}
+                        Connected {connection.connectedAt ? new Date(connection.connectedAt).toLocaleDateString() : 'recently'}
                       </p>
                     </div>
                   </div>

@@ -4,10 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/contexts/AuthContext';
 import PaymentProcessor from '@/components/payments/PaymentProcessor';
@@ -15,16 +14,10 @@ import ReviewForm from '@/components/reviews/ReviewForm';
 import { DatabaseService } from '@/lib/supabase';
 import { 
   DollarSign, 
-  Users, 
   Clock,
-  Calculator,
-  Download,
-  Send,
   CheckCircle,
   AlertCircle,
   Plus,
-  Edit,
-  FileText,
   CreditCard, 
   Star,
   X
@@ -48,7 +41,7 @@ interface WorkerPayment {
   net_pay: number;
   status: 'pending' | 'approved' | 'paid' | 'disputed';
   payment_method: 'direct_deposit' | 'check' | 'paypal' | 'venmo';
-  payment_details: any;
+  payment_details: Record<string, unknown>;
   notes: string;
   created_at: string;
   paid_at?: string;
@@ -111,7 +104,7 @@ const WorkerPayroll: React.FC<WorkerPayrollProps> = ({ gigId, gigTitle, workers 
           deductions: 0,
           gross_pay: payment.amount,
           net_pay: payment.amount,
-          status: payment.status as any,
+          status: payment.status as WorkerPayment['status'],
           payment_method: 'direct_deposit',
           payment_details: {},
           notes: payment.notes || '',
@@ -179,7 +172,7 @@ const WorkerPayroll: React.FC<WorkerPayrollProps> = ({ gigId, gigTitle, workers 
       const worker = workers.find(w => w.id === selectedWorker);
       if (!worker) return;
 
-      const { gross, net } = calculatePayment();
+      const { net } = calculatePayment();
 
       // Save to database
       const paymentData = {
@@ -192,7 +185,7 @@ const WorkerPayroll: React.FC<WorkerPayrollProps> = ({ gigId, gigTitle, workers 
         notes,
       };
       
-      const { data: savedPayment, error } = await DatabaseService.addPayment(paymentData);
+      const { error } = await DatabaseService.addPayment(paymentData);
       
       if (error) {
         throw new Error(error);
@@ -216,7 +209,7 @@ const WorkerPayroll: React.FC<WorkerPayrollProps> = ({ gigId, gigTitle, workers 
       payment.id === paymentId 
         ? { 
             ...payment, 
-            status: status as any,
+            status: status as WorkerPayment['status'],
             paid_at: status === 'paid' ? new Date().toISOString() : payment.paid_at
           }
         : payment

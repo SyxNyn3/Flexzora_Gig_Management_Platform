@@ -9,8 +9,6 @@ import { Slider } from '@/components/ui/slider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/supabase';
 import { Gig } from '@/lib/types';
 import { useGigs } from '@/hooks/useSupabaseQuery';
 import { 
@@ -27,11 +25,10 @@ import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 
 const GigList: React.FC = () => {
-  const { profile } = useAuth();
   const navigate = useNavigate();
   
   // Use the hook to fetch gigs
-  const { data: gigsData, loading: gigsLoading, error } = useGigs({ status: 'published' });
+  const { data: gigsData, loading: gigsLoading } = useGigs({ status: 'published' });
   const gigs = gigsData ?? [];
   
   const [filteredGigs, setFilteredGigs] = useState<Gig[]>([]);

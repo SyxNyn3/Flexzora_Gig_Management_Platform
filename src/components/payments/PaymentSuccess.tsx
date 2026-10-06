@@ -31,7 +31,7 @@ const PaymentSuccess: React.FC = () => {
         const paymentData = await retrievePaymentIntent(paymentIntentId);
         
         if (!paymentData || paymentData.error) {
-          throw new Error(paymentData?.error || 'Failed to retrieve payment details');
+          throw new Error(typeof paymentData?.error === 'string' ? paymentData.error : 'Failed to retrieve payment details');
         }
         
         setPaymentDetails(paymentData);
@@ -132,11 +132,11 @@ const PaymentSuccess: React.FC = () => {
                 {paymentDetails?.id}
               </span>
             </div>
-            {paymentDetails?.metadata?.description && (
+            {typeof paymentDetails?.metadata?.description === 'string' && (
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Description:</span>
                 <span className="font-medium">
-                  {paymentDetails.metadata.description}
+                  {String(paymentDetails.metadata.description)}
                 </span>
               </div>
             )}

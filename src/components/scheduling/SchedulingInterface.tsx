@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,32 +7,25 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/contexts/AuthContext';
-import { 
-  Calendar,
-  Clock,
-  Users,
+import {
   Plus,
   Settings,
   Filter,
   Search,
   ChevronLeft,
   ChevronRight,
-  MoreHorizontal,
   AlertTriangle,
   CheckCircle,
   X,
-  Edit,
   Trash2,
-  Copy,
   ExternalLink,
-  Zap,
   Globe,
   Smartphone
 } from 'lucide-react';
-import { format, addDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isSameDay, isSameMonth, addWeeks, subWeeks, addMonths, subMonths, parseISO, isWithinInterval } from 'date-fns';
+import { format, addDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isSameDay, isSameMonth, addWeeks, subWeeks, addMonths, subMonths, isWithinInterval } from 'date-fns';
 import { toast } from 'sonner';
 
 interface TeamMember {
@@ -69,7 +61,7 @@ interface ScheduleEvent {
   isRecurring: boolean;
   color: string;
   priority: 'low' | 'medium' | 'high';
-  metadata?: any;
+  metadata?: Record<string, unknown>;
 }
 
 interface ConflictDetection {
@@ -82,18 +74,17 @@ interface ConflictDetection {
 }
 
 const SchedulingInterface: React.FC = () => {
-  const { profile } = useAuth();
+  useAuth();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<'day' | 'week' | 'month'>('week');
   const [timeIncrement, setTimeIncrement] = useState<15 | 30 | 60>(30);
   const [selectedEvent, setSelectedEvent] = useState<ScheduleEvent | null>(null);
   const [showEventDialog, setShowEventDialog] = useState(false);
   const [showSettingsDialog, setShowSettingsDialog] = useState(false);
-  const [draggedEvent, setDraggedEvent] = useState<ScheduleEvent | null>(null);
+  const [, setDraggedEvent] = useState<ScheduleEvent | null>(null);
   const [selectedTeamMembers, setSelectedTeamMembers] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [conflicts, setConflicts] = useState<ConflictDetection[]>([]);
-  const [loading, setLoading] = useState(false);
   const [is24Hour, setIs24Hour] = useState(true);
   const [tempEventId, setTempEventId] = useState<string | null>(null);
 
@@ -246,14 +237,6 @@ const SchedulingInterface: React.FC = () => {
     setDraggedEvent(null);
   };
 
-  const handleDrop = (newStart: Date, newEnd: Date) => {
-    if (draggedEvent) {
-      updateEvent(draggedEvent.id, { start: newStart, end: newEnd });
-      setDraggedEvent(null);
-      toast.success('Event moved successfully');
-    }
-  };
-
   // Conflict detection
   const detectConflicts = useCallback(() => {
     const newConflicts: ConflictDetection[] = [];
@@ -358,11 +341,6 @@ const SchedulingInterface: React.FC = () => {
     );
   };
 
-  // Filter team members
-  const filteredTeamMembers = teamMembers.filter(member => 
-    selectedTeamMembers.length === 0 || selectedTeamMembers.includes(member.id)
-  );
-
   const getDateRange = () => {
     if (viewMode === 'day') {
       return format(currentDate, 'EEEE, MMMM d, yyyy');
@@ -423,7 +401,7 @@ const SchedulingInterface: React.FC = () => {
             </div>
 
             {/* View Mode Tabs */}
-            <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as any)}>
+            <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'day' | 'week' | 'month')}>
               <TabsList>
                 <TabsTrigger value="day">Day</TabsTrigger>
                 <TabsTrigger value="week">Week</TabsTrigger>
@@ -873,22 +851,19 @@ const SchedulingInterface: React.FC = () => {
 
   // Event Dialog Component
   function EventDialog() {
-    if (!selectedEvent) return null;
-
     // Create a local copy of the event for editing
-    const [localEvent, setLocalEvent] = useState<ScheduleEvent>({...selectedEvent});
-    
+    const [localEvent, setLocalEvent] = useState<ScheduleEvent | null>(selectedEvent ? {...selectedEvent} : null);
+
     // Update local event when selected event changes
     useEffect(() => {
-      setLocalEvent({...selectedEvent});
+      if (selectedEvent) setLocalEvent({...selectedEvent});
     }, [selectedEvent]);
 
+    if (!selectedEvent || !localEvent) return null;
+
     // Handle input changes
-    const handleInputChange = (field: string, value: any) => {
-      setLocalEvent(prev => ({
-        ...prev,
-        [field]: value
-      }));
+    const handleInputChange = (field: keyof ScheduleEvent, value: ScheduleEvent[keyof ScheduleEvent]) => {
+      setLocalEvent(prev => (prev ? { ...prev, [field]: value } : prev));
     };
 
     // Save changes
@@ -1059,7 +1034,7 @@ const SchedulingInterface: React.FC = () => {
               <Label>Time Increment</Label>
               <Select
                 value={timeIncrement.toString()}
-                onValueChange={(value) => setTimeIncrement(parseInt(value) as any)}
+                onValueChange={(value) => setTimeIncrement(parseInt(value) as 15 | 30 | 60)}
               >
                 <SelectTrigger>
                   <SelectValue />
