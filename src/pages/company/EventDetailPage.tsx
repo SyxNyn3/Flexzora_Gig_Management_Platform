@@ -16,7 +16,7 @@ import RosterBoard from '@/components/marketplace/company/RosterBoard';
 import ShiftForm from '@/components/marketplace/company/ShiftForm';
 import CandidatesPanel from '@/components/marketplace/company/CandidatesPanel';
 import BudgetSummary from '@/components/marketplace/company/BudgetSummary';
-import { ArrowLeft, MapPin, Plus, Rocket } from 'lucide-react';
+import { ArrowLeft, MapPin, Plus, Rocket, Users, Timer, UserX } from 'lucide-react';
 
 const EventDetailPage: React.FC = () => {
   const { eventId } = useParams<{ eventId: string }>();
@@ -31,6 +31,32 @@ const EventDetailPage: React.FC = () => {
   const [refreshKey, setRefreshKey] = useState(0);
 
   const selected = useMemo(() => event.data?.shifts?.find((s) => s.id === selectedId) ?? null, [event.data, selectedId]);
+
+  const stats = useMemo(() => {
+    const shifts = event.data?.shifts ?? [];
+    const totalHeadcount = shifts.reduce((n, s) => n + s.headcount, 0);
+    const booked = shifts.reduce((n, s) => n + (s.assignments ?? []).filter((a) => a.status === 'confirmed' || a.status === 'completed').length, 0);
+    const fillRate = totalHeadcount > 0 ? booked / totalHeadcount : null;
+
+    const fillHours = shifts
+      .filter((s) => s.status === 'filled' || s.status === 'completed' || s.status === 'in_progress')
+      .map((s) => {
+        const confirmed = (s.assignments ?? [])
+          .filter((a) => (a.status === 'confirmed' || a.status === 'completed') && a.confirmed_at)
+          .map((a) => new Date(a.confirmed_at!).getTime());
+        if (!confirmed.length) return null;
+        const start = new Date(s.roster_broadcast_at ?? s.public_broadcast_at ?? s.created_at).getTime();
+        return (Math.max(...confirmed) - start) / 3_600_000;
+      })
+      .filter((h): h is number => h != null && h >= 0);
+    const timeToFill = fillHours.length ? fillHours.reduce((a, b) => a + b, 0) / fillHours.length : null;
+
+    const worked = shifts.reduce((n, s) => n + (s.assignments ?? []).filter((a) => ['confirmed', 'completed', 'no_show'].includes(a.status)).length, 0);
+    const noShows = shifts.reduce((n, s) => n + (s.assignments ?? []).filter((a) => a.status === 'no_show').length, 0);
+    const noShowRate = worked > 0 ? noShows / worked : null;
+
+    return { fillRate, booked, totalHeadcount, timeToFill, noShowRate, noShows };
+  }, [event.data]);
 
   // Roster-first waterfall: roster-stage calls older than the window go public.
   useEffect(() => {
@@ -110,6 +136,36 @@ const EventDetailPage: React.FC = () => {
       </div>
 
       <BudgetSummary event={ev} refreshKey={refreshKey} />
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-xs text-muted-foreground inline-flex items-center gap-1"><Users className="w-3.5 h-3.5" /> Fill rate</p>
+            <p className="text-xl font-semibold mt-0.5">
+              {stats.fillRate != null ? `${Math.round(stats.fillRate * 100)}%` : '—'}
+            </p>
+            <p className="text-xs text-muted-foreground">{stats.booked} of {stats.totalHeadcount} seats booked</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-xs text-muted-foreground inline-flex items-center gap-1"><Timer className="w-3.5 h-3.5" /> Avg time to fill</p>
+            <p className="text-xl font-semibold mt-0.5">
+              {stats.timeToFill != null ? (stats.timeToFill < 24 ? `${stats.timeToFill.toFixed(1)} h` : `${(stats.timeToFill / 24).toFixed(1)} d`) : '—'}
+            </p>
+            <p className="text-xs text-muted-foreground">broadcast → last seat confirmed</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-xs text-muted-foreground inline-flex items-center gap-1"><UserX className="w-3.5 h-3.5" /> No-show rate</p>
+            <p className="text-xl font-semibold mt-0.5">
+              {stats.noShowRate != null ? `${Math.round(stats.noShowRate * 100)}%` : '—'}
+            </p>
+            <p className="text-xs text-muted-foreground">{stats.noShows} no-show{stats.noShows === 1 ? '' : 's'} among booked seats</p>
+          </CardContent>
+        </Card>
+      </div>
 
       <div className="grid lg:grid-cols-[1fr_400px] gap-6 items-start">
         <Card>
