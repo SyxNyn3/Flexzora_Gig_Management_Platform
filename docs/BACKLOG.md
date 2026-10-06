@@ -27,7 +27,7 @@ Two sessions work this repo in parallel. **Before starting any item, mark it**: 
 - [ ] Stripe Connect worker onboarding + real payout transfers (requires live Stripe account; `worker_sensitive.stripe_connect_account_id` is ready).
 - [ ] Seed/demo script: sample companies, venues, workers w/ certs, events+shifts for a click-through demo.
 - [x] Worker availability calendar UI (blocked/available windows editor feeding `availability` rows). — **done: Tom** (`/availability` editor + worker-dashboard link; `deleteAvailability` service method)
-- [ ] Roster broadcast flow: send offers to trusted-roster tier first, public after N hours.
+- [x] Roster broadcast flow: send offers to trusted-roster tier first, public after N hours. — **done: Tom** (`promoteStaleRosterShifts` 24h sweep on event-page load; manual promote already existed in CandidatesPanel)
 
 ## P2 — marketplace depth
 - [ ] Post-shift reviews → `profiles.average_rating` / `review_count` rollup (table + approval trigger).

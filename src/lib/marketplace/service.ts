@@ -261,6 +261,29 @@ export class MarketplaceService {
     }
   }
 
+  /**
+   * Promote roster-stage shifts past the roster-first window to the public
+   * marketplace. Called when a company views its event so the "roster first,
+   * public after N hours" waterfall holds without a cron.
+   */
+  static async promoteStaleRosterShifts(eventId: string, rosterFirstHours = 24): Promise<Result<number>> {
+    try {
+      const cutoff = new Date(Date.now() - rosterFirstHours * 3600_000).toISOString();
+      const { data, error } = await supabase
+        .from('shifts')
+        .update({ broadcast_stage: 'public', public_broadcast_at: new Date().toISOString() })
+        .eq('event_id', eventId)
+        .eq('status', 'open')
+        .eq('broadcast_stage', 'roster')
+        .lt('roster_broadcast_at', cutoff)
+        .select('id');
+      if (error) throw error;
+      return ok(data?.length ?? 0);
+    } catch (e) {
+      return fail(0, e);
+    }
+  }
+
   static async getShift(shiftId: string): Promise<Result<Shift | null>> {
     try {
       const { data, error } = await supabase.from('shifts').select(SHIFT_WITH_CONTEXT).eq('id', shiftId).single();

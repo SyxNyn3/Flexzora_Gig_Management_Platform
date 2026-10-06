@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { format, parseISO } from 'date-fns';
@@ -31,6 +31,17 @@ const EventDetailPage: React.FC = () => {
   const [refreshKey, setRefreshKey] = useState(0);
 
   const selected = useMemo(() => event.data?.shifts?.find((s) => s.id === selectedId) ?? null, [event.data, selectedId]);
+
+  // Roster-first waterfall: roster-stage calls older than the window go public.
+  useEffect(() => {
+    if (!eventId) return;
+    MarketplaceService.promoteStaleRosterShifts(eventId).then(({ data: promoted }) => {
+      if (promoted && promoted > 0) {
+        toast.info(`${promoted} call${promoted === 1 ? '' : 's'} released to the public marketplace`);
+        event.refetch();
+      }
+    });
+  }, [eventId]);
 
   const refresh = () => {
     event.refetch();
