@@ -44,4 +44,4 @@ Two sessions work this repo in parallel. **Before starting any item, mark it**: 
 
 ## Debt
 - 21 `react-hooks/exhaustive-deps` + `react-refresh` eslint warnings — burn down ~4/PR, never silence wholesale.
-- `index` bundle >500 kB — split marketplace/AI/integrations chunks via dynamic imports.
+- [x] `index` bundle split — **done: Tom** (route-level React.lazy in App.tsx + vendor manualChunks; index 2.2MB→303kB, no chunk >500kB)
