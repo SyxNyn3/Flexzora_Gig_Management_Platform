@@ -225,9 +225,14 @@ const WorkerDashboard: React.FC = () => {
                     <Calendar className="h-5 w-5 mr-2 text-primary" />
                     Today's Schedule
                   </CardTitle>
-                  <Button variant="outline" size="sm" onClick={() => navigate('/calendar')}>
-                    View All
-                  </Button>
+                  <div className="flex items-center space-x-2">
+                    <Button variant="outline" size="sm" onClick={() => navigate('/availability')}>
+                      Availability
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => navigate('/calendar')}>
+                      View All
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>

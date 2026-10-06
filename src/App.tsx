@@ -18,6 +18,7 @@ import CreateGigForm from '@/components/gigs/CreateGigForm';
 import WorkerApplications from '@/components/applications/WorkerApplications';
 import ApplicationsManager from '@/components/gigs/ApplicationsManager';
 import CalendarView from '@/components/calendar/CalendarView';
+import AvailabilityEditor from '@/components/calendar/AvailabilityEditor';
 import FinanceDashboard from '@/components/finances/FinanceDashboard';
 import ProfilePage from '@/components/profile/ProfilePage';
 import CompanyIntegrations from '@/components/integrations/CompanyIntegrations';
@@ -230,6 +231,16 @@ const AppRoutes: React.FC = () => {
             <ProtectedRoute>
               <Layout>
                 <CalendarView />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/availability"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <AvailabilityEditor />
               </Layout>
             </ProtectedRoute>
           }

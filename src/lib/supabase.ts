@@ -887,6 +887,23 @@ export class DatabaseService {
     }
   }
 
+  static async deleteAvailability(id: string) {
+    try {
+      const { error } = await supabase
+        .from('availability')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        throw new Error(`Failed to delete availability: ${error.message}`);
+      }
+
+      return { error: null };
+    } catch (error) {
+      return { error: (error as Error).message };
+    }
+  }
+
   // Company integration operations
   static async getCompanyIntegrations(workerId: string) {
     try {
