@@ -9,6 +9,8 @@ import { Slider } from '@/components/ui/slider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/lib/supabase';
 import { Gig } from '@/lib/types';
 import { useGigs } from '@/hooks/useSupabaseQuery';
 import { 
@@ -25,10 +27,12 @@ import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 
 const GigList: React.FC = () => {
+  const { profile } = useAuth();
   const navigate = useNavigate();
   
   // Use the hook to fetch gigs
-  const { data: gigs = [], loading: gigsLoading } = useGigs({ status: 'published' });
+  const { data: gigsData, loading: gigsLoading, error } = useGigs({ status: 'published' });
+  const gigs = gigsData ?? [];
   
   const [filteredGigs, setFilteredGigs] = useState<Gig[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -124,12 +128,12 @@ const GigList: React.FC = () => {
   };
 
   const getUniqueLocations = () => {
-    const locations = (gigs || []).map(gig => gig.location);
+    const locations = gigs.map(gig => gig.location);
     return [...new Set(locations)].sort();
   };
   
   const getUniqueSkills = () => {
-    const allSkills = (gigs || []).flatMap(gig => gig.skills_required || []);
+    const allSkills = gigs.flatMap(gig => gig.skills_required || []);
     return [...new Set(allSkills)].sort();
   };
 
@@ -174,8 +178,8 @@ const GigList: React.FC = () => {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-foreground">Available Gigs</h1>
-        <p className="text-muted-foreground mt-2">
+        <h1 className="text-3xl font-bold text-gray-900">Available Gigs</h1>
+        <p className="text-gray-600 mt-2">
           Discover exciting opportunities that match your skills and schedule
         </p>
       </div>
@@ -185,7 +189,7 @@ const GigList: React.FC = () => {
         <CardContent className="pt-6">
           <div className="flex flex-col gap-4">
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground/70" />
+              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
               <Input
                 placeholder="Search gigs, companies, or skills..."
                 value={searchTerm}
@@ -228,7 +232,7 @@ const GigList: React.FC = () => {
             </div>
             
             {showAdvancedFilters && (
-              <div className="bg-muted/50 p-4 rounded-lg space-y-4 mt-2">
+              <div className="bg-gray-50 p-4 rounded-lg space-y-4 mt-2">
                 <div>
                   <Label className="mb-2 block">Required Skills</Label>
                   <div className="flex flex-wrap gap-2">
@@ -311,8 +315,8 @@ const GigList: React.FC = () => {
 
       {/* Results Count */}
       <div className="mb-6">
-        <p className="text-muted-foreground">
-          Showing {filteredGigs.length} of {(gigs || []).length} gigs
+        <p className="text-gray-600">
+          Showing {filteredGigs.length} of {gigs.length} gigs
         </p>
       </div>
 
@@ -339,7 +343,7 @@ const GigList: React.FC = () => {
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <CardTitle className="text-lg group-hover:text-primary transition-colors">
+                        <CardTitle className="text-lg group-hover:text-blue-600 transition-colors">
                           {gig.title}
                         </CardTitle>
                         <CardDescription className="font-medium">
@@ -356,13 +360,13 @@ const GigList: React.FC = () => {
                 </CardHeader>
 
                 <CardContent className="space-y-4">
-                  <p className="text-muted-foreground text-sm line-clamp-2">
+                  <p className="text-gray-600 text-sm line-clamp-2">
                     {gig.description}
                   </p>
 
                   <div className="space-y-2">
-                    <div className="flex items-center text-sm text-muted-foreground">
-                      <MapPin className="h-4 w-4 mr-2 text-muted-foreground/70" />
+                    <div className="flex items-center text-sm text-gray-600">
+                      <MapPin className="h-4 w-4 mr-2 text-gray-400" />
                       {gig.location}
                       {gig.is_remote && (
                         <Badge variant="outline" className="ml-2 text-xs">
@@ -371,26 +375,26 @@ const GigList: React.FC = () => {
                       )}
                     </div>
 
-                    <div className="flex items-center text-sm text-muted-foreground">
-                      <Calendar className="h-4 w-4 mr-2 text-muted-foreground/70" />
+                    <div className="flex items-center text-sm text-gray-600">
+                      <Calendar className="h-4 w-4 mr-2 text-gray-400" />
                       {format(new Date(gig.start_date), 'MMM d, yyyy')} - {format(new Date(gig.end_date), 'MMM d, yyyy')}
                     </div>
 
                     {gig.hourly_rate && (
-                      <div className="flex items-center text-sm text-muted-foreground">
-                        <DollarSign className="h-4 w-4 mr-2 text-muted-foreground/70" />
+                      <div className="flex items-center text-sm text-gray-600">
+                        <DollarSign className="h-4 w-4 mr-2 text-gray-400" />
                         ${gig.hourly_rate}/hour
                       </div>
                     )}
 
-                    <div className="flex items-center text-sm text-muted-foreground">
-                      <Users className="h-4 w-4 mr-2 text-muted-foreground/70" />
+                    <div className="flex items-center text-sm text-gray-600">
+                      <Users className="h-4 w-4 mr-2 text-gray-400" />
                       {gig.required_workers} worker{gig.required_workers !== 1 ? 's' : ''} needed
                     </div>
 
                     {daysUntilStart > 0 && (
-                      <div className="flex items-center text-sm text-muted-foreground">
-                        <Clock className="h-4 w-4 mr-2 text-muted-foreground/70" />
+                      <div className="flex items-center text-sm text-gray-600">
+                        <Clock className="h-4 w-4 mr-2 text-gray-400" />
                         Starts in {daysUntilStart} day{daysUntilStart !== 1 ? 's' : ''}
                       </div>
                     )}
@@ -431,9 +435,9 @@ const GigList: React.FC = () => {
       ) : (
         <Card>
           <CardContent className="text-center py-12">
-            <Search className="h-12 w-12 text-muted-foreground/70 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-foreground mb-2">No gigs found</h3>
-            <p className="text-muted-foreground">
+            <Search className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No gigs found</h3>
+            <p className="text-gray-600">
               Try adjusting your search criteria or check back later for new opportunities.
             </p>
           </CardContent>

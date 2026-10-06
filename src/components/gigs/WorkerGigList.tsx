@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
+import { useGigs } from '@/hooks/useSupabaseQuery';
 import { 
   Search,
   Filter,
@@ -17,6 +20,7 @@ import {
   Bookmark,
   BookmarkCheck,
   ArrowRight,
+  Building2,
   Zap,
   TrendingUp
 } from 'lucide-react';
@@ -31,6 +35,9 @@ const WorkerGigList: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [savedGigs, setSavedGigs] = useState<string[]>([]);
 
+  // Fetch gigs
+  const { data: allGigs = [] } = useGigs({ status: 'published' });
+
   useEffect(() => {
     // Simulate loading delay
     const timer = setTimeout(() => setLoading(false), 1500);
@@ -41,16 +48,16 @@ const WorkerGigList: React.FC = () => {
   const enhancedGigs = [
     {
       id: '1',
-      title: 'A1 Audio Engineer — Show Call / System Ops',
-      company: { name: 'Solotech', logo_url: '', avatar: '🔊' },
-      location: 'Stadium Main Stage, Los Angeles, CA',
+      title: 'A1 Audio Engineer — Show Call',
+      company: { name: 'Rhino Staging', logo_url: '', avatar: '🏟️' },
+      location: 'Stadium Main Stage',
       start_date: new Date().toISOString(),
       end_date: addDays(new Date(), 1).toISOString(),
-      hourly_rate: 82,
+      hourly_rate: 62,
       required_workers: 2,
       urgency: 'high',
-      skills_required: ['FOH Mixing', 'DiGiCo', 'L-Acoustics'],
-      description: 'A1 needed for stadium show call — mix FOH on DiGiCo SD12, PA is L-Acoustics K2. System is rung out; show files provided.',
+      skills_required: ['FOH Mixing', 'System Tuning'],
+      description: 'A1 needed for arena show — digico SD console, L-Acoustics rig. RF coordination a plus.',
       posted: '2 hours ago',
       applicants: 12,
       rating: 4.8,
@@ -60,16 +67,16 @@ const WorkerGigList: React.FC = () => {
     },
     {
       id: '2',
-      title: 'L2 Lighting Tech — Arena Tour Stop',
-      company: { name: 'Bandit Lites', logo_url: '', avatar: '💡' },
-      location: 'Greek Theatre, Los Angeles, CA',
+      title: 'L2 Lighting Tech — Gala Load-In',
+      company: { name: 'Giglife', logo_url: '', avatar: '🎵' },
+      location: 'Convention Center Ballroom C',
       start_date: addDays(new Date(), 2).toISOString(),
       end_date: addDays(new Date(), 2).toISOString(),
-      hourly_rate: 74,
+      hourly_rate: 55,
       required_workers: 1,
       urgency: 'medium',
-      skills_required: ['grandMA3', 'Fixture Maintenance', 'DMX Troubleshooting'],
-      description: 'L2 for one-off arena stop. Help run the rig and keep fixtures happy through doors + show.',
+      skills_required: ['GrandMA', 'LED Systems'],
+      description: 'L2 on grandMA3 for a corporate gala — hang, patch, and focus with the house LD.',
       posted: '1 day ago',
       applicants: 8,
       rating: 4.9,
@@ -80,15 +87,15 @@ const WorkerGigList: React.FC = () => {
     {
       id: '3',
       title: 'ETCP Arena Rigger — Load-In & Rigging Call',
-      company: { name: 'Rhino Staging', logo_url: '', avatar: '🦏' },
-      location: 'Stadium Main Stage, Los Angeles, CA',
+      company: { name: 'PCE', logo_url: '', avatar: '🌊' },
+      location: 'Stadium Main Stage',
       start_date: addDays(new Date(), 5).toISOString(),
       end_date: addDays(new Date(), 5).toISOString(),
-      hourly_rate: 78,
-      required_workers: 4,
+      hourly_rate: 65,
+      required_workers: 3,
       urgency: 'high',
-      skills_required: ['ETCP Arena Rigging', 'Fall Protection', 'Chain Motors'],
-      description: 'Overnight rigging call for main stage build. ETCP Arena cert required — bring card. Tower points, truss, motors up before PA hang.',
+      skills_required: ['Rigging', 'Motor Points'],
+      description: 'Up-riggers for a 40-point mother grid. ETCP Arena Rigging cert required — bring card.',
       posted: '3 days ago',
       applicants: 15,
       rating: 4.7,
@@ -98,22 +105,22 @@ const WorkerGigList: React.FC = () => {
     },
     {
       id: '4',
-      title: 'Stagehand — Strike & Load-Out',
-      company: { name: 'Encore', logo_url: '', avatar: '🎛️' },
-      location: 'Convention Center Ballroom C, Anaheim, CA',
+      title: 'Video Wall Lead — Strike & Load-Out',
+      company: { name: 'Stagehands, Inc.', logo_url: '', avatar: '🎭' },
+      location: 'Convention Center Ballroom C',
       start_date: addDays(new Date(), 1).toISOString(),
-      end_date: addDays(new Date(), 2).toISOString(),
-      hourly_rate: 45,
-      required_workers: 8,
+      end_date: addDays(new Date(), 7).toISOString(),
+      hourly_rate: 58,
+      required_workers: 1,
       urgency: 'medium',
-      skills_required: ['Stage Strike', 'Truck Loading', 'Forklift (ANSI B56.1) preferred'],
-      description: 'Ballroom strike after corporate general session — walls down, cases packed, two trucks out by 06:00.',
+      skills_required: ['LED Wall', 'Video Processing'],
+      description: 'Own the LED wall strike — tile count, processor teardown, case pack for the truck.',
       posted: '5 hours ago',
       applicants: 6,
       rating: 4.6,
       verified: false,
       remote: false,
-      category: 'stagehand'
+      category: 'video'
     }
   ];
 
@@ -122,7 +129,7 @@ const WorkerGigList: React.FC = () => {
     { id: 'audio', name: 'Audio', count: enhancedGigs.filter(g => g.category === 'audio').length },
     { id: 'lighting', name: 'Lighting', count: enhancedGigs.filter(g => g.category === 'lighting').length },
     { id: 'rigging', name: 'Rigging', count: enhancedGigs.filter(g => g.category === 'rigging').length },
-    { id: 'stagehand', name: 'Stagehand', count: enhancedGigs.filter(g => g.category === 'stagehand').length }
+    { id: 'video', name: 'Video', count: enhancedGigs.filter(g => g.category === 'video').length }
   ];
 
   const filteredGigs = enhancedGigs.filter(gig => {
@@ -143,10 +150,10 @@ const WorkerGigList: React.FC = () => {
 
   const getUrgencyColor = (urgency: string) => {
     switch (urgency) {
-      case 'high': return 'bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/30';
-      case 'medium': return 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30';
-      case 'low': return 'bg-green-500/15 text-green-600 dark:text-green-400 border-green-500/30';
-      default: return 'bg-muted text-muted-foreground border-border';
+      case 'high': return 'bg-red-100 text-red-800 border-red-200';
+      case 'medium': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'low': return 'bg-green-100 text-green-800 border-green-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
@@ -159,9 +166,9 @@ const WorkerGigList: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-muted/50">
+      <div className="min-h-screen bg-gray-50">
         {/* Header skeleton */}
-        <div className="bg-card border-b border-border">
+        <div className="bg-white border-b border-gray-200">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
               <div>
@@ -208,14 +215,14 @@ const WorkerGigList: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-muted/50">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-card border-b border-border">
+      <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-foreground">Available Gigs</h1>
-              <p className="text-muted-foreground mt-1">
+              <h1 className="text-2xl font-bold text-gray-900">Available Gigs</h1>
+              <p className="text-gray-600 mt-1">
                 Discover opportunities that match your skills
               </p>
             </div>
@@ -234,7 +241,7 @@ const WorkerGigList: React.FC = () => {
           {/* Search */}
           <div className="mt-6">
             <div className="relative max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground/70" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
                 placeholder="Search gigs, companies, or locations..."
                 value={searchTerm}
@@ -261,8 +268,8 @@ const WorkerGigList: React.FC = () => {
                     onClick={() => setSelectedCategory(category.id)}
                     className={`w-full flex items-center justify-between p-3 rounded-lg text-left transition-colors ${
                       selectedCategory === category.id
-                        ? 'bg-primary/10 text-primary border border-primary/30'
-                        : 'hover:bg-muted/50'
+                        ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                        : 'hover:bg-gray-50'
                     }`}
                   >
                     <span className="font-medium">{category.name}</span>
@@ -281,22 +288,22 @@ const WorkerGigList: React.FC = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Applications Sent</span>
+                  <span className="text-sm text-gray-600">Applications Sent</span>
                   <span className="font-semibold">23</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Response Rate</span>
-                  <span className="font-semibold text-green-600 dark:text-green-400">87%</span>
+                  <span className="text-sm text-gray-600">Response Rate</span>
+                  <span className="font-semibold text-green-600">87%</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Avg. Rating</span>
+                  <span className="text-sm text-gray-600">Avg. Rating</span>
                   <div className="flex items-center">
                     <span className="font-semibold mr-1">{profile?.average_rating || 4.8}</span>
                     <Star className="h-4 w-4 text-yellow-500 fill-current" />
                   </div>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Saved Gigs</span>
+                  <span className="text-sm text-gray-600">Saved Gigs</span>
                   <span className="font-semibold">{savedGigs.length}</span>
                 </div>
               </CardContent>
@@ -308,16 +315,16 @@ const WorkerGigList: React.FC = () => {
             {/* Results Header */}
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h2 className="text-lg font-semibold text-foreground">
+                <h2 className="text-lg font-semibold text-gray-900">
                   {filteredGigs.length} gigs found
                 </h2>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-gray-600">
                   Showing results for "{searchTerm || 'all gigs'}"
                 </p>
               </div>
               <div className="flex items-center space-x-2">
-                <span className="text-sm text-muted-foreground">Sort by:</span>
-                <select className="text-sm border border-input rounded-md px-3 py-1">
+                <span className="text-sm text-gray-600">Sort by:</span>
+                <select className="text-sm border border-gray-300 rounded-md px-3 py-1">
                   <option>Most Recent</option>
                   <option>Highest Pay</option>
                   <option>Closest Date</option>
@@ -341,11 +348,11 @@ const WorkerGigList: React.FC = () => {
                         <div className="flex-1">
                           <div className="flex items-start justify-between mb-2">
                             <div>
-                              <h3 className="text-lg font-semibold text-foreground hover:text-primary transition-colors">
+                              <h3 className="text-lg font-semibold text-gray-900 hover:text-blue-600 transition-colors">
                                 {gig.title}
                               </h3>
                               <div className="flex items-center space-x-2 mt-1">
-                                <p className="text-muted-foreground">{gig.company.name}</p>
+                                <p className="text-gray-600">{gig.company.name}</p>
                                 {gig.verified && (
                                   <Badge variant="outline" className="text-xs">
                                     <Star className="h-3 w-3 mr-1 text-yellow-500 fill-current" />
@@ -365,7 +372,7 @@ const WorkerGigList: React.FC = () => {
                                 className="p-2"
                               >
                                 {savedGigs.includes(gig.id) ? (
-                                  <BookmarkCheck className="h-4 w-4 text-primary" />
+                                  <BookmarkCheck className="h-4 w-4 text-blue-600" />
                                 ) : (
                                   <Bookmark className="h-4 w-4" />
                                 )}
@@ -379,16 +386,16 @@ const WorkerGigList: React.FC = () => {
                             </div>
                           </div>
 
-                          <p className="text-foreground/80 mb-4 line-clamp-2">
+                          <p className="text-gray-700 mb-4 line-clamp-2">
                             {gig.description}
                           </p>
 
                           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-                            <div className="flex items-center text-sm text-muted-foreground">
+                            <div className="flex items-center text-sm text-gray-600">
                               <Calendar className="h-4 w-4 mr-2" />
                               {getDateLabel(gig.start_date)}
                             </div>
-                            <div className="flex items-center text-sm text-muted-foreground">
+                            <div className="flex items-center text-sm text-gray-600">
                               <MapPin className="h-4 w-4 mr-2" />
                               {gig.location}
                               {gig.remote && (
@@ -397,11 +404,11 @@ const WorkerGigList: React.FC = () => {
                                 </Badge>
                               )}
                             </div>
-                            <div className="flex items-center text-sm text-muted-foreground">
+                            <div className="flex items-center text-sm text-gray-600">
                               <DollarSign className="h-4 w-4 mr-2" />
                               ${gig.hourly_rate}/hour
                             </div>
-                            <div className="flex items-center text-sm text-muted-foreground">
+                            <div className="flex items-center text-sm text-gray-600">
                               <Users className="h-4 w-4 mr-2" />
                               {gig.required_workers} needed
                             </div>
@@ -422,7 +429,7 @@ const WorkerGigList: React.FC = () => {
                                 )}
                               </div>
                             </div>
-                            <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+                            <div className="flex items-center space-x-4 text-sm text-gray-500">
                               <div className="flex items-center">
                                 <Clock className="h-4 w-4 mr-1" />
                                 {gig.posted}
@@ -445,9 +452,9 @@ const WorkerGigList: React.FC = () => {
             {filteredGigs.length === 0 && (
               <Card>
                 <CardContent className="text-center py-12">
-                  <Search className="h-12 w-12 text-muted-foreground/70 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-foreground mb-2">No gigs found</h3>
-                  <p className="text-muted-foreground mb-4">
+                  <Search className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No gigs found</h3>
+                  <p className="text-gray-600 mb-4">
                     Try adjusting your search criteria or check back later for new opportunities.
                   </p>
                   <Button onClick={() => setSearchTerm('')}>

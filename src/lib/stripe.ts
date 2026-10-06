@@ -1,12 +1,14 @@
 import { loadStripe, Stripe } from '@stripe/stripe-js';
 import { supabase } from './supabase';
-import { IS_PAYMENTS_SANDBOX } from './payments';
 
-// Initialize Stripe with publishable key — skipped entirely in payments sandbox so
-// a missing key never triggers a Stripe network request or console error.
-const stripePromise = IS_PAYMENTS_SANDBOX
-  ? Promise.resolve(null as Stripe | null)
-  : loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
+// When no publishable key is configured (no Stripe account yet), the app runs
+// in demo mode: payment UIs render a sandbox flow and no network calls are made
+// to the Stripe edge functions.
+export const isStripeDemoMode = !import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+
+// Initialize Stripe with publishable key (skipped in demo mode — an empty key
+// makes loadStripe emit console warnings on every page load)
+const stripePromise = isStripeDemoMode ? null : loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
 export const getStripe = () => {
   return stripePromise;
@@ -92,20 +94,7 @@ export const createCheckoutSession = async (
 };
 
 // Function to retrieve a payment intent
-export interface PaymentIntentDetails {
-  id?: string;
-  amount?: number;
-  currency?: string;
-  status?: string;
-  error?: string;
-  metadata?: {
-    payment_id?: string;
-    gig_id?: string;
-    description?: string;
-  };
-}
-
-export const retrievePaymentIntent = async (paymentIntentId: string): Promise<PaymentIntentDetails> => {
+export const retrievePaymentIntent = async (paymentIntentId: string): Promise<any> => {
   try {
     // Call the Supabase Edge Function
     const { data, error } = await supabase.functions.invoke('retrieve-payment-intent', {
@@ -113,7 +102,7 @@ export const retrievePaymentIntent = async (paymentIntentId: string): Promise<Pa
     });
 
     if (error) throw error;
-    return data as PaymentIntentDetails;
+    return data;
   } catch (error) {
     console.error('Error retrieving payment intent:', error);
     return { error: error instanceof Error ? error.message : 'Unknown error retrieving payment intent' };
@@ -132,7 +121,7 @@ export const setupPaymentMethod = async (
     });
 
     if (error) throw error;
-    return data as PaymentIntentDetails;
+    return data;
   } catch (error) {
     console.error('Error setting up payment method:', error);
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error setting up payment method' };
@@ -148,7 +137,7 @@ export const listPaymentMethods = async (customerId: string) => {
     });
 
     if (error) throw error;
-    return data as PaymentIntentDetails;
+    return data;
   } catch (error) {
     console.error('Error listing payment methods:', error);
     return { paymentMethods: [], error: error instanceof Error ? error.message : 'Unknown error listing payment methods' };
@@ -168,7 +157,7 @@ export const createCustomer = async (
     });
 
     if (error) throw error;
-    return data as PaymentIntentDetails;
+    return data;
   } catch (error) {
     console.error('Error creating customer:', error);
     return { error: error instanceof Error ? error.message : 'Unknown error creating customer' };
@@ -189,7 +178,7 @@ export const createPaymentLink = async (
     });
 
     if (error) throw error;
-    return data as PaymentIntentDetails;
+    return data;
   } catch (error) {
     console.error('Error creating payment link:', error);
     return { error: error instanceof Error ? error.message : 'Unknown error creating payment link' };

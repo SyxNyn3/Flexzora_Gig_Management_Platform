@@ -6,8 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ProductionEvent } from '@/lib/types';
 import { EventBudgetSummary, MarketplaceService } from '@/lib/marketplace/service';
-import { IS_PAYMENTS_SANDBOX, SANDBOX_BANNER } from '@/lib/payments';
-import { supabase } from '@/lib/supabase';
+import { isStripeDemoMode } from '@/lib/stripe';
 import { money } from '../format';
 import { Landmark, Users, Wallet, TrendingUp } from 'lucide-react';
 
@@ -22,11 +21,11 @@ const ESCROW_POLL_MAX_TICKS = 20;
 const Stat: React.FC<{ icon: React.ReactNode; label: string; value: string; sub?: string; warn?: boolean }> = ({ icon, label, value, sub, warn }) => (
   <Card>
     <CardContent className="p-4 flex items-start gap-3">
-      <div className={`p-2 rounded-md ${warn ? 'bg-destructive/15 text-destructive' : 'bg-secondary/15 text-secondary'}`}>{icon}</div>
+      <div className={`p-2 rounded-md ${warn ? 'bg-red-100 text-red-700' : 'bg-blue-50 text-blue-700'}`}>{icon}</div>
       <div>
-        <p className="text-xs text-muted-foreground">{label}</p>
-        <p className={`text-lg font-semibold ${warn ? 'text-red-600 dark:text-red-400' : ''}`}>{value}</p>
-        {sub && <p className="text-xs text-muted-foreground">{sub}</p>}
+        <p className="text-xs text-gray-500">{label}</p>
+        <p className={`text-lg font-semibold ${warn ? 'text-red-700' : ''}`}>{value}</p>
+        {sub && <p className="text-xs text-gray-500">{sub}</p>}
       </div>
     </CardContent>
   </Card>
@@ -50,6 +49,11 @@ const BudgetSummary: React.FC<Props> = ({ event, refreshKey }) => {
   useEffect(() => {
     const outcome = new URLSearchParams(window.location.search).get('escrow');
     if (outcome === 'cancelled') toast.info('Escrow deposit cancelled; no funds were taken');
+    if (outcome === 'queued') {
+      toast.info('Deposit queued via Flexzora Escrow (Sandbox) — no funds were moved');
+      load();
+      return;
+    }
     if (outcome !== 'funded') return;
     toast.success('Payment received — waiting for Stripe to confirm the deposit');
     let baseline: number | null = null;
@@ -76,17 +80,6 @@ const BudgetSummary: React.FC<Props> = ({ event, refreshKey }) => {
     const n = Number(amount);
     if (!n || n <= 0) return;
     setSaving(true);
-    if (IS_PAYMENTS_SANDBOX) {
-      const { error } = await supabase
-        .from('escrow_deposits')
-        .insert({ event_id: event.id, company_id: event.company_id, amount: n, released_amount: 0, currency: 'USD', status: 'pending' });
-      setSaving(false);
-      if (error) return toast.error(error.message);
-      toast.success('Sandbox mode — deposit recorded as simulated. Connect Stripe to fund real escrow.');
-      setOpen(false);
-      setAmount('');
-      return load();
-    }
     const { data, error } = await MarketplaceService.fundEscrow(event, n);
     if (error || !data) {
       setSaving(false);
@@ -118,13 +111,13 @@ const BudgetSummary: React.FC<Props> = ({ event, refreshKey }) => {
       <Stat icon={<Wallet className="w-4 h-4" />} label="Approved / paid" value={money(summary.approvedLabor)} sub="From approved timesheets" />
       <Card>
         <CardContent className="p-4 flex items-start gap-3">
-          <div className={`p-2 rounded-md ${underFunded ? 'bg-amber-100 text-amber-700' : 'bg-green-500/10 text-green-600 dark:text-green-400'}`}>
+          <div className={`p-2 rounded-md ${underFunded ? 'bg-amber-100 text-amber-700' : 'bg-green-50 text-green-700'}`}>
             <Landmark className="w-4 h-4" />
           </div>
           <div className="flex-1">
-            <p className="text-xs text-muted-foreground">Escrow</p>
+            <p className="text-xs text-gray-500">Escrow</p>
             <p className="text-lg font-semibold">{money(summary.escrowFunded - summary.escrowReleased)}</p>
-            <p className="text-xs text-muted-foreground">{money(summary.escrowReleased)} released</p>
+            <p className="text-xs text-gray-500">{money(summary.escrowReleased)} released</p>
             <Dialog open={open} onOpenChange={setOpen}>
               <DialogTrigger asChild>
                 <Button size="sm" variant="outline" className="mt-2 w-full">Fund escrow</Button>
@@ -133,22 +126,21 @@ const BudgetSummary: React.FC<Props> = ({ event, refreshKey }) => {
                 <DialogHeader>
                   <DialogTitle>Deposit to escrow</DialogTitle>
                 </DialogHeader>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-gray-600">
                   Funds are held for <strong>{event.name}</strong> and released to crew as you approve timesheets. Shortfall vs. projected labor:{' '}
                   <strong>{money(Math.max(0, summary.projectedLabor - summary.approvedLabor - (summary.escrowFunded - summary.escrowReleased)))}</strong>
                 </p>
-                {IS_PAYMENTS_SANDBOX && (
-                  <p className="text-xs rounded-md border border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 px-3 py-2">
-                    {SANDBOX_BANNER}
-                  </p>
-                )}
                 <Input type="number" min={1} step="100" placeholder="Amount (USD)" value={amount} onChange={(e) => setAmount(e.target.value)} />
                 <Button onClick={fund} disabled={saving || !amount}>
-                  {saving ? (IS_PAYMENTS_SANDBOX ? 'Recording deposit…' : 'Redirecting to Stripe…') : IS_PAYMENTS_SANDBOX ? 'Simulate escrow deposit' : 'Continue to payment'}
+                  {saving
+                    ? isStripeDemoMode ? 'Queueing deposit…' : 'Redirecting to Stripe…'
+                    : 'Continue to payment'}
                 </Button>
-                {!IS_PAYMENTS_SANDBOX && (
-                  <p className="text-xs text-muted-foreground">You will be taken to Stripe Checkout; the balance updates once the payment settles.</p>
-                )}
+                <p className="text-xs text-gray-500">
+                  {isStripeDemoMode
+                    ? 'Sandbox mode: the deposit is queued via Flexzora Escrow (no Stripe account connected).'
+                    : 'You will be taken to Stripe Checkout; the balance updates once the payment settles.'}
+                </p>
               </DialogContent>
             </Dialog>
           </div>

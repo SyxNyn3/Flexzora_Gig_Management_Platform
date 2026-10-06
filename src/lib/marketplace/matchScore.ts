@@ -82,8 +82,8 @@ export function checkGatekeeper(worker: MatchWorkerInput, shift: MatchShiftInput
   }
 
   for (const code of shift.required_cert_codes ?? []) {
-    const matching = worker.certifications.filter((c) => c.cert_type_code === code && c.is_active);
-    if (matching.length === 0) reasons.push(`Missing required certification: ${code}`);
+    const matching = worker.certifications.filter((c) => c.cert_type_code === code && c.is_active && c.verified);
+    if (matching.length === 0) reasons.push(`Missing verified certification: ${code}`);
     else if (!matching.some((c) => certificationCoversShift(c.expiration_date, shift.starts_at))) {
       reasons.push(`Certification ${code} expires before this call`);
     }

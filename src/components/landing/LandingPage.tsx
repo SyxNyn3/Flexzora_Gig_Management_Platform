@@ -1,109 +1,148 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { StickyScrollSection } from './StickyScrollSection';
 import { Badge } from '@/components/ui/badge';
 import {
-  ArrowRight,
-  Radio,
+  Calendar,
+  DollarSign,
+  Building2,
   Users,
-  ClipboardList,
-  MapPin,
-  BadgeDollarSign,
-  LayoutDashboard,
-  Percent,
-  ShieldCheck,
-  FileSpreadsheet,
-  Award,
+  TrendingUp,
+  CheckCircle,
+  ArrowRight,
+  Star,
   Zap,
-  ChevronRight,
+  Shield,
+  Clock,
+  HardHat,
+  Radio,
+  Lightbulb,
+  AudioLines,
+  MonitorPlay,
+  Award,
 } from 'lucide-react';
 import { useWaitlistStats } from '@/hooks/useWaitlistStats';
 
-const howItWorks = [
+const roles = [
+  { icon: AudioLines, title: 'A1 Audio Engineer', desc: 'FOH & system ops' },
+  { icon: Lightbulb, title: 'L2 Lighting Tech', desc: 'Consoles & LED rigs' },
+  { icon: MonitorPlay, title: 'Video Wall Lead', desc: 'Playback & processing' },
+  { icon: HardHat, title: 'Stagehand', desc: 'Load-in, deck, strike' },
+  { icon: Radio, title: 'RF / Comms Tech', desc: 'Coordination & wireless' },
+  { icon: Award, title: 'ETCP Arena Rigger', desc: 'Certified rigging calls' },
+];
+
+const callTypes = [
+  'Load-In & Rigging Call',
+  'Show Call / System Ops',
+  'Strike & Load-Out',
+];
+
+const certifications = ['ETCP Arena Rigger', 'OSHA-30', 'Boom Lift Operator'];
+
+const features = [
+  {
+    icon: Calendar,
+    title: 'Unified Call Sheet',
+    description:
+      'Every shift across every production company in one calendar — conflict detection flags a Show Call before it collides with a load-in.',
+  },
+  {
+    icon: DollarSign,
+    title: 'Escrow-Backed Pay',
+    description:
+      'Companies fund escrow when they book. Approved timesheets release payouts automatically — no more chasing invoices after strike.',
+  },
+  {
+    icon: Building2,
+    title: 'Direct Production Network',
+    description:
+      'Connect with the staging companies already calling you. Roster broadcasts, crew offers, and gig comms in one place.',
+  },
+  {
+    icon: Shield,
+    title: 'Credential Gatekeeping',
+    description:
+      'ETCP, OSHA-30, and lift certifications are verified on your profile — companies see them before the offer goes out.',
+  },
+  {
+    icon: Clock,
+    title: 'Geofenced Timesheets',
+    description:
+      'Clock in from the dock. GPS-verified timesheets mean hours are approved faster and disputes disappear.',
+  },
+  {
+    icon: TrendingUp,
+    title: 'Match Scoring',
+    description:
+      'Open calls rank by fit — your rate, certs, distance to the venue, and past ratings decide who surfaces first.',
+  },
+];
+
+const companies = [
+  'Rhino Staging',
+  'Giglife',
+  'PCE',
+  'Stagehands Inc.',
+  'G2 Production',
+  'Onstage Systems',
+];
+
+const steps = [
   {
     number: '01',
-    title: 'Post the call',
-    description: 'Build events with modular shifts — headcount, role, rate, and required certifications per call.',
-    icon: ClipboardList,
+    title: 'Build your crew card',
+    description: 'Rate, certifications, and availability — your profile is the credential companies check first.',
   },
   {
     number: '02',
-    title: 'Match & book',
-    description: 'Your trusted roster hears it first. Match % ranks the local crew before the call goes public.',
-    icon: Percent,
+    title: 'Link your companies',
+    description: 'Connect the production accounts you already work with so calls land in one feed.',
   },
   {
     number: '03',
-    title: 'Clock in on site',
-    description: 'Geofenced check-in at the venue. No more texting "are you here yet?" at call time.',
-    icon: MapPin,
+    title: 'Take the call',
+    description: 'Accept gigs, see the venue, call time, and escrow status before you pack the truck.',
   },
   {
     number: '04',
-    title: 'Approve & pay',
-    description: 'Approve the timesheet, escrow releases, invoice auto-generates. Payouts tracked end to end.',
-    icon: BadgeDollarSign,
+    title: 'Clock out, get paid',
+    description: 'Approved timesheets release escrowed pay automatically. Track every dollar to tax season.',
   },
 ];
 
-const companyFeatures = [
-  'Multi-lane schedule & roster builder — replaces the Excel sheet',
-  'Headcount enforcement on every shift, no overbooking',
-  'Real-time budget tracking with escrow funding',
-  'Regional OT rules applied automatically at approval',
-];
-
-const workerFeatures = [
-  'Verified credential portfolio — ETCP, OSHA, lifts & certs',
-  'Ranked calls with explainable Match % per shift',
-  'One-tap geofenced clock-in, auto-generated timesheets',
-  'Transparent payouts plus tax-year earnings exports',
-];
-
-const certifications = [
-  'ETCP Arena Rigger',
-  'OSHA-30',
-  'OSHA-10',
-  'Boom Lift Operator',
-  'Forklift (ANSI B56.1)',
-  'Fall Protection',
-  'CPR / First Aid',
-];
-
-const shiftTypes = ['Load-In & Rigging Call', 'Show Call / System Ops', 'Strike & Load-Out'];
-
-const Logo: React.FC<{ className?: string }> = ({ className = 'w-8 h-8' }) => (
-  <div className={`${className} rounded-lg bg-primary flex items-center justify-center shrink-0`}>
-    <Zap className="w-1/2 h-1/2 text-primary-foreground" strokeWidth={2.5} />
-  </div>
-);
-
 const LandingPage: React.FC = () => {
   const navigate = useNavigate();
-  const stats = useWaitlistStats();
+  const { total: waitlistCount } = useWaitlistStats();
 
   return (
-    <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
+    <div className="min-h-screen bg-[#0A0A0B] text-zinc-100 antialiased">
       {/* Navigation */}
-      <nav className="sticky top-0 z-50 border-b border-border/60 bg-background/80 backdrop-blur-md">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <nav className="sticky top-0 z-50 border-b border-white/10 bg-[#0A0A0B]/80 backdrop-blur-xl">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-3">
-              <Logo />
-              <span className="text-xl font-bold tracking-tight">
-                Flex<span className="text-primary">zora</span>
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 bg-amber-400 rounded-md flex items-center justify-center">
+                <span className="text-zinc-950 font-black text-lg">F</span>
+              </div>
+              <span className="text-xl font-bold tracking-tight text-white">FlexZora</span>
+              <span className="hidden sm:inline text-[11px] font-medium tracking-[0.2em] uppercase text-zinc-500 mt-1">
+                Crew Marketplace
               </span>
             </div>
-            <div className="hidden md:flex items-center gap-8 text-sm text-muted-foreground">
-              <a href="#how-it-works" className="hover:text-foreground transition-colors">How it works</a>
-              <a href="#companies" className="hover:text-foreground transition-colors">For companies</a>
-              <a href="#crew" className="hover:text-foreground transition-colors">For crew</a>
-            </div>
-            <div className="flex items-center gap-2 sm:gap-3">
-              <Button variant="ghost" size="sm" onClick={() => navigate('/auth')} className="hidden sm:inline-flex">
-                Sign in
+            <div className="flex items-center space-x-2 sm:space-x-4">
+              <Button
+                variant="ghost"
+                onClick={() => navigate('/auth')}
+                className="hidden sm:inline-flex text-zinc-300 hover:text-white hover:bg-white/5"
+              >
+                Sign In
               </Button>
-              <Button size="sm" onClick={() => navigate('/waitlist')}>
+              <Button
+                onClick={() => navigate('/waitlist')}
+                className="bg-amber-400 text-zinc-950 hover:bg-amber-300 font-semibold"
+              >
                 Join the Founding Crew
               </Button>
             </div>
@@ -112,197 +151,376 @@ const LandingPage: React.FC = () => {
       </nav>
 
       {/* Hero */}
-      <section className="relative">
-        {/* Ambient glow + grid */}
-        <div className="absolute inset-0 pointer-events-none" aria-hidden>
-          <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[900px] h-[500px] bg-primary/[0.07] rounded-full blur-[120px]" />
-          <div className="absolute top-40 -right-40 w-[500px] h-[500px] bg-secondary/[0.05] rounded-full blur-[120px]" />
-          <div
-            className="absolute inset-0 opacity-[0.04]"
-            style={{
-              backgroundImage:
-                'linear-gradient(hsl(var(--foreground)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--foreground)) 1px, transparent 1px)',
-              backgroundSize: '64px 64px',
-            }}
-          />
-        </div>
+      <section className="relative overflow-hidden">
+        <div
+          className="absolute inset-0 opacity-[0.04]"
+          style={{
+            backgroundImage:
+              'linear-gradient(rgba(255,255,255,0.6) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.6) 1px, transparent 1px)',
+            backgroundSize: '56px 56px',
+          }}
+        />
+        <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[900px] h-[500px] bg-amber-400/10 blur-[140px] rounded-full pointer-events-none" />
 
-        <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16 sm:pt-28 sm:pb-24 text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-primary/30 bg-primary/10 text-primary text-xs sm:text-sm font-medium mb-8">
-            <Radio className="w-3.5 h-3.5 animate-pulse" />
-            The operating system for load-in, show call & load-out
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-20 lg:pt-24 lg:pb-28">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+            <div className="text-center lg:text-left">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-amber-400/30 bg-amber-400/10 text-amber-300 text-xs font-semibold tracking-wide uppercase mb-6">
+                <Zap className="w-3.5 h-3.5" />
+                Private beta — live events only
+              </div>
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-white leading-[1.05] tracking-tight mb-6">
+                From load-in to load-out,{' '}
+                <span className="text-amber-400">crew calls run through FlexZora.</span>
+              </h1>
+              <p className="text-lg lg:text-xl text-zinc-400 mb-8 leading-relaxed max-w-xl mx-auto lg:mx-0">
+                The marketplace for concert and corporate event production — staging companies post calls, verified
+                crew book them, escrow pays out the moment timesheets approve.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
+                <Button
+                  size="lg"
+                  onClick={() => navigate('/waitlist')}
+                  className="bg-amber-400 text-zinc-950 hover:bg-amber-300 font-semibold text-base px-8 h-12"
+                >
+                  Join the Founding Crew
+                  <ArrowRight className="ml-2 w-5 h-5" />
+                </Button>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  onClick={() => navigate('/schedule-demo')}
+                  className="border-zinc-700 text-zinc-200 hover:bg-white/5 hover:text-white text-base px-8 h-12"
+                >
+                  Schedule a Demo
+                </Button>
+              </div>
+              <div className="mt-6">
+                <Badge
+                  variant="outline"
+                  className="px-4 py-1.5 text-sm font-medium bg-white/5 border-white/15 text-zinc-300"
+                >
+                  <Users className="w-4 h-4 mr-2 text-amber-400" />
+                  {waitlistCount.toLocaleString()} crew &amp; companies already lined up
+                </Badge>
+              </div>
+              <div className="flex flex-wrap items-center justify-center lg:justify-start mt-8 gap-x-6 gap-y-2 text-sm text-zinc-500">
+                <span className="flex items-center">
+                  <CheckCircle className="w-4 h-4 text-amber-400 mr-2" />
+                  Early access pricing
+                </span>
+                <span className="flex items-center">
+                  <CheckCircle className="w-4 h-4 text-amber-400 mr-2" />
+                  Founding member badge
+                </span>
+                <span className="flex items-center">
+                  <CheckCircle className="w-4 h-4 text-amber-400 mr-2" />
+                  Shape the product
+                </span>
+              </div>
+            </div>
+
+            {/* Hero image mosaic */}
+            <div className="relative grid grid-cols-2 gap-4">
+              <div className="col-span-2 relative group">
+                <img
+                  src="https://images.pexels.com/photos/1190297/pexels-photo-1190297.jpeg?auto=compress&cs=tinysrgb&w=800"
+                  alt="Concert stage lighting rig"
+                  className="w-full h-64 object-cover rounded-2xl ring-1 ring-white/10"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 via-zinc-950/20 to-transparent rounded-2xl" />
+                <div className="absolute bottom-4 left-4">
+                  <div className="text-xs font-semibold tracking-widest uppercase text-amber-300 mb-1">
+                    Show Call / System Ops
+                  </div>
+                  <div className="font-semibold text-white text-lg">Stadium Main Stage</div>
+                </div>
+              </div>
+              <div className="relative group">
+                <img
+                  src="https://images.pexels.com/photos/164938/pexels-photo-164938.jpeg?auto=compress&cs=tinysrgb&w=400"
+                  alt="Audio mixing console"
+                  className="w-full h-44 object-cover rounded-xl ring-1 ring-white/10"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 to-transparent rounded-xl" />
+                <div className="absolute bottom-3 left-3">
+                  <div className="text-xs font-semibold tracking-widest uppercase text-amber-300 mb-0.5">A1 Audio</div>
+                  <div className="font-medium text-white text-sm">FOH Engineering</div>
+                </div>
+              </div>
+              <div className="relative group">
+                <img
+                  src="https://images.pexels.com/photos/1105666/pexels-photo-1105666.jpeg?auto=compress&cs=tinysrgb&w=400"
+                  alt="Stage truss and rigging"
+                  className="w-full h-44 object-cover rounded-xl ring-1 ring-white/10"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 to-transparent rounded-xl" />
+                <div className="absolute bottom-3 left-3">
+                  <div className="text-xs font-semibold tracking-widest uppercase text-amber-300 mb-0.5">Rigging</div>
+                  <div className="font-medium text-white text-sm">ETCP Certified</div>
+                </div>
+              </div>
+              <div className="absolute -top-6 -right-6 w-56 h-56 bg-amber-400/15 rounded-full blur-3xl pointer-events-none" />
+            </div>
           </div>
 
-          <h1 className="text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.05] mb-6">
-            Every call. Every crew.
-            <br />
-            <span className="text-primary">One board.</span>
-          </h1>
-
-          <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-10">
-            Flexzora replaces the Excel sheets, group texts, and payroll chaos with a platform built for concert tours
-            and corporate events — for the production companies running the room and the crews that make it happen.
-          </p>
-
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-8">
-            <Button size="lg" onClick={() => navigate('/waitlist')} className="w-full sm:w-auto text-base px-8 h-12">
-              Join the Founding Crew
-              <ArrowRight className="ml-2 w-5 h-5" />
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              onClick={() => navigate('/auth')}
-              className="w-full sm:w-auto text-base px-8 h-12"
-            >
-              Sign in
-            </Button>
-          </div>
-
-          {stats.total > 0 && (
-            <Badge variant="outline" className="px-4 py-2 text-sm border-border text-muted-foreground">
-              <Users className="w-4 h-4 mr-2 text-primary" />
-              {stats.total.toLocaleString()} founding members — {stats.companies} production companies,{' '}
-              {stats.workers} crew
-            </Badge>
-          )}
-
-          {/* Shift-type ticker */}
-          <div className="mt-14 flex flex-wrap justify-center gap-2 sm:gap-3">
-            {shiftTypes.map((s) => (
+          {/* Call types strip */}
+          <div className="mt-16 flex flex-wrap justify-center gap-3">
+            {callTypes.map((call) => (
               <span
-                key={s}
-                className="px-4 py-2 rounded-full border border-border bg-card/60 text-xs sm:text-sm text-muted-foreground tracking-wide"
+                key={call}
+                className="px-4 py-2 rounded-full border border-white/10 bg-white/[0.03] text-sm text-zinc-300 font-medium"
               >
-                {s}
+                {call}
               </span>
             ))}
+            <span className="px-4 py-2 rounded-full border border-amber-400/40 bg-amber-400/10 text-sm text-amber-300 font-medium">
+              Convention Center Ballroom C
+            </span>
           </div>
         </div>
       </section>
 
-      {/* How it works */}
-      <section id="how-it-works" className="border-t border-border/60">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
-          <div className="text-center mb-12 sm:mb-16">
-            <p className="text-primary text-sm font-semibold tracking-widest uppercase mb-3">The run of show</p>
-            <h2 className="text-3xl sm:text-4xl font-bold">From call sheet to payout in four moves</h2>
+      {/* Roles */}
+      <section className="py-20 border-t border-white/5">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-14">
+            <h2 className="text-3xl lg:text-4xl font-bold text-white mb-4">Built for the whole deck</h2>
+            <p className="text-lg text-zinc-400 max-w-2xl mx-auto">
+              Audio, lighting, video, rigging, stagehands — if you work the call, FlexZora works for you.
+            </p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-            {howItWorks.map((step) => (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            {roles.map((role) => (
               <div
-                key={step.number}
-                className="relative rounded-2xl border border-border bg-card p-6 hover:border-primary/40 transition-colors group"
+                key={role.title}
+                className="group text-center p-5 rounded-xl border border-white/5 bg-zinc-900/50 hover:border-amber-400/40 hover:bg-zinc-900 transition-colors"
               >
-                <div className="flex items-center justify-between mb-5">
-                  <step.icon className="w-6 h-6 text-primary" />
-                  <span className="text-xs font-mono text-muted-foreground">{step.number}</span>
-                </div>
-                <h3 className="text-lg font-semibold mb-2">{step.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">{step.description}</p>
+                <role.icon className="w-7 h-7 mx-auto mb-3 text-amber-400" />
+                <h3 className="font-semibold text-white text-sm mb-1">{role.title}</h3>
+                <p className="text-xs text-zinc-500">{role.desc}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* For companies / For crew */}
-      <section className="border-t border-border/60">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10">
-          <div id="companies" className="rounded-2xl border border-border bg-card p-7 sm:p-9">
-            <div className="flex items-center gap-3 mb-2">
-              <LayoutDashboard className="w-5 h-5 text-primary" />
-              <p className="text-primary text-sm font-semibold tracking-widest uppercase">For production companies</p>
-            </div>
-            <h3 className="text-2xl sm:text-3xl font-bold mb-6">Run the room, not the spreadsheet</h3>
-            <ul className="space-y-4">
-              {companyFeatures.map((f) => (
-                <li key={f} className="flex items-start gap-3 text-sm sm:text-base text-muted-foreground">
-                  <ChevronRight className="w-4 h-4 mt-1 text-primary shrink-0" />
-                  <span>{f}</span>
-                </li>
-              ))}
-            </ul>
-            <Button variant="outline" className="mt-8" onClick={() => navigate('/waitlist')}>
-              Claim company early access
-            </Button>
-          </div>
+      {/* Feature showcase */}
+      <StickyScrollSection />
 
-          <div id="crew" className="rounded-2xl border border-border bg-card p-7 sm:p-9">
-            <div className="flex items-center gap-3 mb-2">
-              <Award className="w-5 h-5 text-secondary" />
-              <p className="text-secondary text-sm font-semibold tracking-widest uppercase">For crew</p>
-            </div>
-            <h3 className="text-2xl sm:text-3xl font-bold mb-6">Your certs do the talking</h3>
-            <ul className="space-y-4">
-              {workerFeatures.map((f) => (
-                <li key={f} className="flex items-start gap-3 text-sm sm:text-base text-muted-foreground">
-                  <ChevronRight className="w-4 h-4 mt-1 text-secondary shrink-0" />
-                  <span>{f}</span>
-                </li>
-              ))}
-            </ul>
-            <Button variant="outline" className="mt-8" onClick={() => navigate('/waitlist')}>
-              Claim crew early access
-            </Button>
+      {/* Core features */}
+      <section className="py-20 border-t border-white/5">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-14">
+            <h2 className="text-3xl lg:text-4xl font-bold text-white mb-4">Everything between the call and the check</h2>
+            <p className="text-lg text-zinc-400 max-w-2xl mx-auto">
+              Scheduling, escrow, timesheets, and credentials — the boring parts of gig work, handled.
+            </p>
           </div>
-        </div>
-      </section>
-
-      {/* Certifications strip */}
-      <section className="border-t border-border/60">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 text-center">
-          <p className="text-muted-foreground text-sm mb-6 flex items-center justify-center gap-2">
-            <ShieldCheck className="w-4 h-4 text-primary" />
-            Certification-verified matching — rigger calls check ETCP before anything else
-          </p>
-          <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
-            {certifications.map((c) => (
-              <span
-                key={c}
-                className="px-3 py-1.5 rounded-full border border-border bg-card text-xs sm:text-sm text-muted-foreground"
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {features.map((feature) => (
+              <div
+                key={feature.title}
+                className="group p-6 rounded-xl border border-white/5 bg-zinc-900/50 hover:border-amber-400/30 hover:bg-zinc-900 transition-colors"
               >
-                {c}
-              </span>
+                <div className="inline-flex items-center justify-center w-11 h-11 rounded-lg bg-amber-400/10 text-amber-400 mb-5">
+                  <feature.icon className="w-5 h-5" />
+                </div>
+                <h3 className="text-lg font-semibold text-white mb-2">{feature.title}</h3>
+                <p className="text-sm text-zinc-400 leading-relaxed">{feature.description}</p>
+              </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Final CTA */}
-      <section className="border-t border-border/60 relative">
-        <div className="absolute inset-0 pointer-events-none" aria-hidden>
-          <div className="absolute -bottom-40 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-primary/[0.08] rounded-full blur-[120px]" />
-        </div>
-        <div className="relative max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28 text-center">
-          <FileSpreadsheet className="w-8 h-8 text-primary mx-auto mb-6" />
-          <h2 className="text-3xl sm:text-5xl font-bold tracking-tight mb-5">
-            Retire the call-time group text
-          </h2>
-          <p className="text-lg text-muted-foreground mb-10 max-w-xl mx-auto">
-            Join the founding crew shaping the platform — early access, founding pricing, and a direct line to what we
-            build next.
+      {/* Certifications */}
+      <section className="py-20 border-t border-white/5 bg-zinc-900/30">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-3xl lg:text-4xl font-bold text-white mb-4">Credentials that get you booked</h2>
+          <p className="text-lg text-zinc-400 max-w-2xl mx-auto mb-10">
+            Verified certifications sit on your crew card — companies filter calls by them, and rigs can't fly without
+            them.
           </p>
-          <Button size="lg" onClick={() => navigate('/waitlist')} className="text-base px-10 h-12">
-            Join the Founding Crew
-            <ArrowRight className="ml-2 w-5 h-5" />
-          </Button>
+          <div className="flex flex-wrap justify-center gap-4">
+            {certifications.map((cert) => (
+              <div
+                key={cert}
+                className="flex items-center gap-2 px-5 py-3 rounded-lg border border-amber-400/30 bg-amber-400/5"
+              >
+                <Shield className="w-4 h-4 text-amber-400" />
+                <span className="font-semibold text-white text-sm">{cert}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Partner companies */}
+      <section className="py-20 border-t border-white/5">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl lg:text-4xl font-bold text-white mb-4">Connect with industry leaders</h2>
+            <p className="text-lg text-zinc-400">
+              Integrate with the production companies you already take calls from.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            {companies.map((company) => (
+              <div
+                key={company}
+                className="px-4 py-5 rounded-lg border border-white/5 bg-zinc-900/40 text-center text-sm font-medium text-zinc-400 hover:text-white hover:border-white/15 transition-colors"
+              >
+                {company}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* How it works */}
+      <section className="py-20 border-t border-white/5 bg-zinc-900/30">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-14">
+            <h2 className="text-3xl lg:text-4xl font-bold text-white mb-4">From first call to final payout</h2>
+            <p className="text-lg text-zinc-400">Four steps between you and a paid gig.</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {steps.map((step, index) => (
+              <div key={step.number} className="relative">
+                <div className="flex items-center mb-4">
+                  <span className="text-4xl font-black text-amber-400/90">{step.number}</span>
+                  {index < steps.length - 1 && (
+                    <div className="hidden lg:block flex-1 ml-4 h-px bg-gradient-to-r from-amber-400/40 to-transparent" />
+                  )}
+                </div>
+                <h3 className="text-lg font-semibold text-white mb-2">{step.title}</h3>
+                <p className="text-sm text-zinc-400 leading-relaxed">{step.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonial */}
+      <section className="py-20 border-t border-white/5">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <div className="flex justify-center mb-6">
+            {[...Array(5)].map((_, i) => (
+              <Star key={i} className="w-5 h-5 text-amber-400 fill-amber-400" />
+            ))}
+          </div>
+          <blockquote className="text-xl lg:text-2xl font-medium text-white mb-8 leading-relaxed">
+            "I take A1 calls from three staging companies. FlexZora catches the double-bookings my calendar never did,
+            and the escrow means I'm not chasing checks after load-out."
+          </blockquote>
+          <div className="flex items-center justify-center space-x-4">
+            <div className="w-12 h-12 rounded-full bg-zinc-800 border border-white/10 flex items-center justify-center">
+              <span className="text-amber-400 font-bold">SC</span>
+            </div>
+            <div className="text-left">
+              <div className="text-white font-semibold">Sarah Chen</div>
+              <div className="text-zinc-500 text-sm">A1 Audio Engineer</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section className="py-20 border-t border-white/5 bg-zinc-900/30">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-3xl lg:text-4xl font-bold text-white mb-6">The next call should come through FlexZora</h2>
+          <p className="text-lg text-zinc-400 mb-8">
+            Founding crew members get early access pricing and a permanent badge on their profile.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Button
+              size="lg"
+              onClick={() => navigate('/waitlist')}
+              className="bg-amber-400 text-zinc-950 hover:bg-amber-300 font-semibold text-base px-8 h-12"
+            >
+              Join the Founding Crew
+              <ArrowRight className="ml-2 w-5 h-5" />
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={() => navigate('/schedule-demo')}
+              className="border-zinc-700 text-zinc-200 hover:bg-white/5 hover:text-white text-base px-8 h-12"
+            >
+              Schedule a Demo
+            </Button>
+          </div>
+          <div className="mt-8">
+            <Badge
+              variant="outline"
+              className="px-4 py-1.5 text-sm font-medium bg-white/5 border-white/15 text-zinc-300"
+            >
+              <Users className="w-4 h-4 mr-2 text-amber-400" />
+              {waitlistCount.toLocaleString()} crew &amp; companies already lined up
+            </Badge>
+          </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border/60">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <Logo className="w-7 h-7" />
-            <span className="font-semibold">Flexzora</span>
+      <footer className="border-t border-white/10 bg-zinc-950 py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+            <div className="col-span-1 md:col-span-2">
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="w-8 h-8 bg-amber-400 rounded-md flex items-center justify-center">
+                  <span className="text-zinc-950 font-black text-lg">F</span>
+                </div>
+                <span className="text-xl font-bold text-white">FlexZora</span>
+              </div>
+              <p className="text-zinc-500 mb-4 max-w-md text-sm">
+                The gig marketplace for concert and corporate event production — crew, calls, and escrow-backed pay.
+              </p>
+            </div>
+            <div>
+              <h3 className="font-semibold text-white mb-4 text-sm uppercase tracking-wider">Product</h3>
+              <ul className="space-y-2 text-zinc-500 text-sm">
+                <li>
+                  <a href="#" className="hover:text-white transition-colors">
+                    Features
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-white transition-colors">
+                    Pricing
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-white transition-colors">
+                    Integrations
+                  </a>
+                </li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="font-semibold text-white mb-4 text-sm uppercase tracking-wider">Support</h3>
+              <ul className="space-y-2 text-zinc-500 text-sm">
+                <li>
+                  <a href="#" className="hover:text-white transition-colors">
+                    Help Center
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-white transition-colors">
+                    Contact Us
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-white transition-colors">
+                    Status
+                  </a>
+                </li>
+              </ul>
+            </div>
           </div>
-          <p className="text-xs text-muted-foreground text-center">
-            Built for the people who work the show. © {new Date().getFullYear()} Flexzora
-          </p>
-          <div className="flex items-center gap-4 text-xs text-muted-foreground">
-            <a href="#how-it-works" className="hover:text-foreground transition-colors">How it works</a>
-            <a href="/waitlist" className="hover:text-foreground transition-colors">Waitlist</a>
+          <div className="border-t border-white/10 mt-8 pt-8 text-center text-zinc-600 text-sm">
+            <p>&copy; 2026 FlexZora. All rights reserved.</p>
           </div>
         </div>
       </footer>

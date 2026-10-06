@@ -4,27 +4,27 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useAuth } from '@/contexts/AuthContext';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useAuth } from '@/contexts/AuthContext';
 import PaymentProcessor from '@/components/payments/PaymentProcessor';
-import { DatabaseService } from '@/lib/supabase';
-import type { Payment } from '@/lib/types';
 import ReviewForm from '@/components/reviews/ReviewForm';
+import { DatabaseService } from '@/lib/supabase';
 import { 
   DollarSign, 
- 
+  Users, 
   Clock,
-
-
-
+  Calculator,
+  Download,
+  Send,
   CheckCircle,
   AlertCircle,
   Plus,
-
-
+  Edit,
+  FileText,
   CreditCard, 
   Star,
   X
@@ -48,7 +48,7 @@ interface WorkerPayment {
   net_pay: number;
   status: 'pending' | 'approved' | 'paid' | 'disputed';
   payment_method: 'direct_deposit' | 'check' | 'paypal' | 'venmo';
-  payment_details: Record<string, unknown>;
+  payment_details: any;
   notes: string;
   created_at: string;
   paid_at?: string;
@@ -95,7 +95,7 @@ const WorkerPayroll: React.FC<WorkerPayrollProps> = ({ gigId, gigTitle, workers 
       }
       
       // Transform database payments to WorkerPayment format
-      const transformedPayments: WorkerPayment[] = (data || []).map((payment: Payment) => {
+      const transformedPayments: WorkerPayment[] = (data || []).map((payment) => {
         const worker = workers.find(w => w.id === payment.worker_id);
         return {
           id: payment.id,
@@ -111,7 +111,7 @@ const WorkerPayroll: React.FC<WorkerPayrollProps> = ({ gigId, gigTitle, workers 
           deductions: 0,
           gross_pay: payment.amount,
           net_pay: payment.amount,
-          status: payment.status as WorkerPayment['status'],
+          status: payment.status as any,
           payment_method: 'direct_deposit',
           payment_details: {},
           notes: payment.notes || '',
@@ -128,23 +128,23 @@ const WorkerPayroll: React.FC<WorkerPayrollProps> = ({ gigId, gigTitle, workers 
         {
           id: '1',
           worker_id: 'worker-1',
-          worker_name: 'Marcus Delgado',
-          worker_email: 'm.delgado@stagework.co',
+          worker_name: 'Marcus Webb',
+          worker_email: 'marcus.webb@flexzora.dev',
           gig_id: gigId,
           hours_worked: 8,
-          hourly_rate: 68,
+          hourly_rate: 48,
           overtime_hours: 2,
-          overtime_rate: 102,
-          bonus_amount: 75,
+          overtime_rate: 72,
+          bonus_amount: 50,
           deductions: 0,
-          gross_pay: 823,
-          net_pay: 823,
+          gross_pay: 578,
+          net_pay: 578,
           status: 'paid',
           payment_method: 'direct_deposit',
           payment_details: { account_ending: '1234' },
-          notes: 'Rigging call completed ahead of schedule — clean tower points',
-          created_at: '2026-09-20T10:00:00Z',
-          paid_at: '2026-09-21T14:30:00Z',
+          notes: 'Clean rigging points on Ballroom C truss — keep on preferred roster',
+          created_at: '2024-01-15T10:00:00Z',
+          paid_at: '2024-01-16T14:30:00Z',
         },
       ];
       setPayments(mockPayments);
@@ -179,20 +179,20 @@ const WorkerPayroll: React.FC<WorkerPayrollProps> = ({ gigId, gigTitle, workers 
       const worker = workers.find(w => w.id === selectedWorker);
       if (!worker) return;
 
-      const { net } = calculatePayment();
+      const { gross, net } = calculatePayment();
 
       // Save to database
-      const paymentData: Omit<Payment, 'id' | 'created_at' | 'updated_at'> = {
+      const paymentData = {
         worker_id: selectedWorker,
         gig_id: gigId,
         company_id: profile?.id || '',
         amount: net,
         currency: 'USD',
-        status: 'pending',
+        status: 'pending' as const,
         notes,
       };
       
-      const { error } = await DatabaseService.addPayment(paymentData);
+      const { data: savedPayment, error } = await DatabaseService.addPayment(paymentData);
       
       if (error) {
         throw new Error(error);
@@ -216,7 +216,7 @@ const WorkerPayroll: React.FC<WorkerPayrollProps> = ({ gigId, gigTitle, workers 
       payment.id === paymentId 
         ? { 
             ...payment, 
-            status: status as WorkerPayment['status'],
+            status: status as any,
             paid_at: status === 'paid' ? new Date().toISOString() : payment.paid_at
           }
         : payment
@@ -258,11 +258,11 @@ const WorkerPayroll: React.FC<WorkerPayrollProps> = ({ gigId, gigTitle, workers 
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'paid': return 'bg-green-500/15 text-green-600 dark:text-green-400';
-      case 'approved': return 'bg-primary/15 text-blue-800';
-      case 'pending': return 'bg-amber-500/15 text-amber-600 dark:text-amber-400';
-      case 'disputed': return 'bg-red-500/15 text-red-600 dark:text-red-400';
-      default: return 'bg-muted text-foreground/90';
+      case 'paid': return 'bg-green-100 text-green-800';
+      case 'approved': return 'bg-blue-100 text-blue-800';
+      case 'pending': return 'bg-yellow-100 text-yellow-800';
+      case 'disputed': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -285,8 +285,8 @@ const WorkerPayroll: React.FC<WorkerPayrollProps> = ({ gigId, gigTitle, workers 
       {/* Header */}
       <div className="flex justify-between items-start">
         <div>
-          <h2 className="text-2xl font-bold text-foreground">Worker Payroll</h2>
-          <p className="text-muted-foreground mt-2">
+          <h2 className="text-2xl font-bold text-gray-900">Worker Payroll</h2>
+          <p className="text-gray-600 mt-2">
             Manage payments for {gigTitle}
           </p>
         </div>
@@ -325,7 +325,7 @@ const WorkerPayroll: React.FC<WorkerPayrollProps> = ({ gigId, gigTitle, workers 
             <CheckCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600 dark:text-green-400">${paidPayments.toLocaleString()}</div>
+            <div className="text-2xl font-bold text-green-600">${paidPayments.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">
               {payments.filter(p => p.status === 'paid').length} payments completed
             </p>
@@ -338,7 +338,7 @@ const WorkerPayroll: React.FC<WorkerPayrollProps> = ({ gigId, gigTitle, workers 
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">${pendingPayments.toLocaleString()}</div>
+            <div className="text-2xl font-bold text-yellow-600">${pendingPayments.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">
               {payments.filter(p => p.status === 'pending' || p.status === 'approved').length} payments pending
             </p>
@@ -366,7 +366,7 @@ const WorkerPayroll: React.FC<WorkerPayrollProps> = ({ gigId, gigTitle, workers 
                   </Avatar>
                   <div>
                     <h4 className="font-medium">{payment.worker_name}</h4>
-                    <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+                    <div className="flex items-center space-x-4 text-sm text-gray-600">
                       <span>{payment.hours_worked}h regular</span>
                       {payment.overtime_hours > 0 && (
                         <span>{payment.overtime_hours}h overtime</span>
@@ -374,7 +374,7 @@ const WorkerPayroll: React.FC<WorkerPayrollProps> = ({ gigId, gigTitle, workers 
                       <span>${payment.hourly_rate}/hr</span>
                     </div>
                     {payment.notes && (
-                      <p className="text-sm text-muted-foreground mt-1">{payment.notes}</p>
+                      <p className="text-sm text-gray-500 mt-1">{payment.notes}</p>
                     )}
                   </div>
                 </div>
@@ -389,7 +389,7 @@ const WorkerPayroll: React.FC<WorkerPayrollProps> = ({ gigId, gigTitle, workers 
                     </Badge>
                   </div>
                   <div className="text-lg font-semibold">${payment.net_pay.toLocaleString()}</div>
-                  <div className="text-sm text-muted-foreground">
+                  <div className="text-sm text-gray-500">
                     {payment.paid_at ? (
                       <span>Paid on {format(new Date(payment.paid_at), 'MMM d, yyyy')}</span>
                     ) : (
@@ -398,7 +398,7 @@ const WorkerPayroll: React.FC<WorkerPayrollProps> = ({ gigId, gigTitle, workers 
                   </div>
                 </div>
 
-                {profile?.role === 'company' && (
+                {profile?.role === 'company' && payment.status !== 'paid' && (
                   <div className="flex space-x-2 ml-4">
                     {payment.status === 'pending' && (
                       <Button
@@ -431,20 +431,22 @@ const WorkerPayroll: React.FC<WorkerPayrollProps> = ({ gigId, gigTitle, workers 
                         </Button>
                       </div>
                     )}
-                    {payment.status === 'paid' && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setSelectedWorkerForReview(payment.worker_id);
-                          setShowReviewForm(true);
-                        }}
-                      >
-                        <Star className="h-4 w-4 mr-1" />
-                        Review
-                      </Button>
-                    )}
                   </div>
+                )}
+
+                {profile?.role === 'company' && payment.status === 'paid' && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="ml-4"
+                    onClick={() => {
+                      setSelectedWorkerForReview(payment.worker_id);
+                      setShowReviewForm(true);
+                    }}
+                  >
+                    <Star className="h-4 w-4 mr-1" />
+                    Review
+                  </Button>
                 )}
               </div>
             ))}
@@ -542,7 +544,7 @@ const WorkerPayroll: React.FC<WorkerPayrollProps> = ({ gigId, gigTitle, workers 
             </div>
 
             {selectedWorker && hoursWorked && (
-              <div className="bg-muted/50 p-4 rounded-lg">
+              <div className="bg-gray-50 p-4 rounded-lg">
                 <h4 className="font-medium mb-2">Payment Calculation</h4>
                 <div className="space-y-1 text-sm">
                   <div className="flex justify-between">
@@ -562,7 +564,7 @@ const WorkerPayroll: React.FC<WorkerPayrollProps> = ({ gigId, gigTitle, workers 
                     </div>
                   )}
                   {deductions && parseFloat(deductions) > 0 && (
-                    <div className="flex justify-between text-red-600 dark:text-red-400">
+                    <div className="flex justify-between text-red-600">
                       <span>Deductions:</span>
                       <span>-${parseFloat(deductions).toFixed(2)}</span>
                     </div>
@@ -604,7 +606,7 @@ const WorkerPayroll: React.FC<WorkerPayrollProps> = ({ gigId, gigTitle, workers 
                   <div className="flex justify-between items-center">
                     <div>
                       <p className="font-medium">{selectedPayment.worker_name}</p>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-sm text-gray-600">
                         {selectedPayment.hours_worked} hours at ${selectedPayment.hourly_rate}/hr
                         {selectedPayment.overtime_hours > 0 && ` + ${selectedPayment.overtime_hours} overtime hours`}
                       </p>
@@ -635,8 +637,8 @@ const WorkerPayroll: React.FC<WorkerPayrollProps> = ({ gigId, gigTitle, workers 
       
       {/* Review Form Dialog */}
       {showReviewForm && selectedWorkerForReview && (
-        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-card rounded-lg w-full max-w-md">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg w-full max-w-md">
             <div className="p-4 border-b flex justify-between items-center">
               <h3 className="text-lg font-semibold">Write a Review</h3>
               <Button 

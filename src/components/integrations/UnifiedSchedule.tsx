@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useAuth } from '@/contexts/AuthContext';
 import { AuthKitButton } from './AuthKitButton';
 import { Calendar, AlertTriangle, Clock, MapPin, Building2, DollarSign, CheckCircle, XCircle, FolderSync as Sync, Filter, Download, Eye, EyeOff } from 'lucide-react';
+import { format, isWithinInterval, parseISO, startOfWeek, endOfWeek, addDays } from 'date-fns';
 import { toast } from 'sonner';
-import { format, isWithinInterval, parseISO, startOfWeek, endOfWeek } from 'date-fns';
 
 interface UnifiedGig {
   id: string;
@@ -18,7 +21,7 @@ interface UnifiedGig {
   end_date: string;
   hourly_rate?: number;
   status: 'confirmed' | 'pending' | 'completed' | 'cancelled';
-  source: 'flexzora' | 'rhino' | 'giglife' | 'stagehands' | 'pce' | 'other';
+  source: 'flexora' | 'rhino' | 'giglife' | 'stagehands' | 'pce' | 'other';
   conflict_level: 'none' | 'low' | 'medium' | 'high';
   travel_time?: number;
   notes?: string;
@@ -26,9 +29,10 @@ interface UnifiedGig {
 }
 
 const UnifiedSchedule: React.FC = () => {
+  const { profile } = useAuth();
   const [gigs, setGigs] = useState<UnifiedGig[]>([]);
   const [filteredGigs, setFilteredGigs] = useState<UnifiedGig[]>([]);
-  const [selectedWeek] = useState(new Date());
+  const [selectedWeek, setSelectedWeek] = useState(new Date());
   const [viewMode, setViewMode] = useState<'week' | 'month'>('week');
   const [showConflicts, setShowConflicts] = useState(true);
   const [sourceFilter, setSourceFilter] = useState<string>('all');
@@ -40,7 +44,6 @@ const UnifiedSchedule: React.FC = () => {
 
   useEffect(() => {
     filterGigs();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gigs, selectedWeek, viewMode, sourceFilter, showConflicts]);
 
   const loadUnifiedSchedule = () => {
@@ -48,13 +51,13 @@ const UnifiedSchedule: React.FC = () => {
     const mockGigs: UnifiedGig[] = [
       {
         id: '1',
-        title: 'Load-In & Rigging Call',
+        title: 'Load-In & Rigging Call — Main Stage',
         company_name: 'Rhino Staging',
         company_logo: '🦏',
-        location: 'Stadium Main Stage, Los Angeles, CA',
-        start_date: '2026-10-05T07:00:00Z',
-        end_date: '2026-10-05T17:00:00Z',
-        hourly_rate: 58,
+        location: 'Stadium Main Stage',
+        start_date: '2024-01-15T08:00:00Z',
+        end_date: '2024-01-15T18:00:00Z',
+        hourly_rate: 48,
         status: 'confirmed',
         source: 'rhino',
         conflict_level: 'none',
@@ -62,29 +65,29 @@ const UnifiedSchedule: React.FC = () => {
       },
       {
         id: '2',
-        title: 'Show Call / System Ops',
-        company_name: 'Solotech',
-        company_logo: '🔊',
-        location: 'Stadium Main Stage, Los Angeles, CA',
-        start_date: '2026-10-05T18:00:00Z',
-        end_date: '2026-10-05T23:30:00Z',
-        hourly_rate: 72,
+        title: 'Show Call / System Ops — Keynote',
+        company_name: 'Giglife',
+        company_logo: '🎵',
+        location: 'Convention Center Ballroom C',
+        start_date: '2024-01-15T19:00:00Z',
+        end_date: '2024-01-15T23:00:00Z',
+        hourly_rate: 55,
         status: 'confirmed',
         source: 'giglife',
         conflict_level: 'medium',
-        travel_time: 40,
-        notes: 'Tight turn from load-in — FOH handoff at 18:00',
+        travel_time: 45,
+        notes: 'Tight turnaround — 1 hour travel between Stadium and Ballroom C',
         sync_status: 'synced'
       },
       {
         id: '3',
-        title: 'Ballroom AV Build',
-        company_name: 'Encore',
-        company_logo: '🎛️',
-        location: 'Convention Center Ballroom C, Anaheim, CA',
-        start_date: '2026-10-06T08:00:00Z',
-        end_date: '2026-10-06T18:00:00Z',
-        hourly_rate: 56,
+        title: 'Strike & Load-Out — Arena Deck',
+        company_name: 'Stagehands, Inc.',
+        company_logo: '🎭',
+        location: 'Stadium Main Stage',
+        start_date: '2024-01-16T14:00:00Z',
+        end_date: '2024-01-16T22:00:00Z',
+        hourly_rate: 46,
         status: 'pending',
         source: 'stagehands',
         conflict_level: 'none',
@@ -92,13 +95,13 @@ const UnifiedSchedule: React.FC = () => {
       },
       {
         id: '4',
-        title: 'LED Wall Calibration',
-        company_name: 'Freeman AV',
-        company_logo: '📺',
-        location: 'Convention Center Ballroom C, Anaheim, CA',
-        start_date: '2026-10-07T09:00:00Z',
-        end_date: '2026-10-07T15:00:00Z',
-        hourly_rate: 78,
+        title: 'Video Wall Lead — Gala Show Call',
+        company_name: 'PCE',
+        company_logo: '🌊',
+        location: 'Convention Center Ballroom C',
+        start_date: '2024-01-17T10:00:00Z',
+        end_date: '2024-01-17T20:00:00Z',
+        hourly_rate: 58,
         status: 'confirmed',
         source: 'pce',
         conflict_level: 'none',
@@ -106,34 +109,34 @@ const UnifiedSchedule: React.FC = () => {
       },
       {
         id: '5',
-        title: 'Strike & Load-Out',
-        company_name: 'Rhino Staging',
-        company_logo: '🦏',
-        location: 'Stadium Main Stage, Los Angeles, CA',
-        start_date: '2026-10-08T00:30:00Z',
-        end_date: '2026-10-08T08:00:00Z',
-        hourly_rate: 64,
+        title: 'Load-In & Rigging Call — Truss Build',
+        company_name: 'PCE',
+        company_logo: '🌊',
+        location: 'Convention Center Ballroom C',
+        start_date: '2024-01-18T06:00:00Z',
+        end_date: '2024-01-18T10:00:00Z',
+        hourly_rate: 44,
         status: 'confirmed',
-        source: 'rhino',
+        source: 'pce',
         conflict_level: 'low',
-        travel_time: 55,
-        notes: 'Overnight strike — OT rules apply after 8h',
+        travel_time: 60,
+        notes: 'Early call — plan travel time for 6 AM dock check-in',
         sync_status: 'synced'
       },
       {
         id: '6',
-        title: 'Festival Stage B — Front Fill Crew',
-        company_name: 'Clair Global',
-        company_logo: '🎪',
-        location: 'Fairgrounds Speedway, Pomona, CA',
-        start_date: '2026-10-09T10:00:00Z',
-        end_date: '2026-10-09T22:00:00Z',
-        hourly_rate: 60,
+        title: 'Show Call / System Ops — Festival Main',
+        company_name: 'Giglife',
+        company_logo: '🎵',
+        location: 'Golden Gate Park, SF',
+        start_date: '2024-01-18T12:00:00Z',
+        end_date: '2024-01-18T20:00:00Z',
+        hourly_rate: 55,
         status: 'confirmed',
-        source: 'flexzora',
+        source: 'giglife',
         conflict_level: 'high',
-        travel_time: 35,
-        notes: 'CONFLICT: overlaps LED wall call — confirm one first',
+        travel_time: 30,
+        notes: 'CONFLICT: Overlaps with PCE truss build — need to choose',
         sync_status: 'error'
       }
     ];
@@ -180,40 +183,40 @@ const UnifiedSchedule: React.FC = () => {
 
   const getConflictColor = (level: string) => {
     switch (level) {
-      case 'high': return 'border-l-red-500 bg-red-500/10';
-      case 'medium': return 'border-l-yellow-500 bg-amber-500/10';
-      case 'low': return 'border-l-blue-500 bg-primary/10';
-      default: return 'border-l-green-500 bg-card';
+      case 'high': return 'border-l-red-500 bg-red-50';
+      case 'medium': return 'border-l-yellow-500 bg-yellow-50';
+      case 'low': return 'border-l-blue-500 bg-blue-50';
+      default: return 'border-l-green-500 bg-white';
     }
   };
 
   const getSourceColor = (source: string) => {
     switch (source) {
-      case 'rhino': return 'bg-secondary/15 text-secondary dark:text-purple-400';
-      case 'giglife': return 'bg-secondary/15 text-primary dark:text-blue-400';
-      case 'stagehands': return 'bg-green-500/15 text-green-600 dark:text-green-400';
-      case 'pce': return 'bg-cyan-500/15 text-cyan-600 dark:text-cyan-400';
-      case 'flexzora': return 'bg-amber-500/15 text-amber-600 dark:text-amber-400';
-      default: return 'bg-muted text-muted-foreground';
+      case 'rhino': return 'bg-purple-100 text-purple-800';
+      case 'giglife': return 'bg-blue-100 text-blue-800';
+      case 'stagehands': return 'bg-green-100 text-green-800';
+      case 'pce': return 'bg-cyan-100 text-cyan-800';
+      case 'flexora': return 'bg-indigo-100 text-indigo-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'confirmed': return 'bg-green-500/15 text-green-600 dark:text-green-400';
-      case 'pending': return 'bg-amber-500/15 text-amber-600 dark:text-amber-400';
-      case 'completed': return 'bg-muted text-muted-foreground';
-      case 'cancelled': return 'bg-red-500/15 text-red-600 dark:text-red-400';
-      default: return 'bg-muted text-muted-foreground';
+      case 'confirmed': return 'bg-green-100 text-green-800';
+      case 'pending': return 'bg-yellow-100 text-yellow-800';
+      case 'completed': return 'bg-gray-100 text-gray-800';
+      case 'cancelled': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
   };
 
   const getSyncIcon = (status: string) => {
     switch (status) {
-      case 'synced': return <CheckCircle className="h-4 w-4 text-success" />;
-      case 'pending': return <Sync className="h-4 w-4 text-warning animate-spin" />;
-      case 'error': return <XCircle className="h-4 w-4 text-destructive" />;
-      default: return <Clock className="h-4 w-4 text-muted-foreground" />;
+      case 'synced': return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case 'pending': return <Sync className="h-4 w-4 text-yellow-500 animate-spin" />;
+      case 'error': return <XCircle className="h-4 w-4 text-red-500" />;
+      default: return <Clock className="h-4 w-4 text-gray-500" />;
     }
   };
 
@@ -229,7 +232,7 @@ const UnifiedSchedule: React.FC = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     );
   }
@@ -239,8 +242,8 @@ const UnifiedSchedule: React.FC = () => {
       {/* Header */}
       <div className="flex justify-between items-start">
         <div>
-          <h2 className="text-2xl font-bold text-foreground">Unified Schedule</h2>
-          <p className="text-muted-foreground mt-2">
+          <h2 className="text-2xl font-bold text-gray-900">Unified Schedule</h2>
+          <p className="text-gray-600 mt-2">
             All your gigs from connected companies in one view
           </p>
         </div>
@@ -261,9 +264,9 @@ const UnifiedSchedule: React.FC = () => {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center">
-              <Calendar className="h-8 w-8 text-primary" />
+              <Calendar className="h-8 w-8 text-blue-600" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-muted-foreground">This Week</p>
+                <p className="text-sm font-medium text-gray-600">This Week</p>
                 <p className="text-2xl font-bold">{filteredGigs.length} gigs</p>
               </div>
             </div>
@@ -273,9 +276,9 @@ const UnifiedSchedule: React.FC = () => {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center">
-              <DollarSign className="h-8 w-8 text-green-600 dark:text-green-400" />
+              <DollarSign className="h-8 w-8 text-green-600" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-muted-foreground">Potential Earnings</p>
+                <p className="text-sm font-medium text-gray-600">Potential Earnings</p>
                 <p className="text-2xl font-bold">${totalEarnings.toLocaleString()}</p>
               </div>
             </div>
@@ -285,10 +288,10 @@ const UnifiedSchedule: React.FC = () => {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center">
-              <AlertTriangle className="h-8 w-8 text-amber-600 dark:text-amber-400" />
+              <AlertTriangle className="h-8 w-8 text-yellow-600" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-muted-foreground">Conflicts</p>
-                <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">{conflictCount}</p>
+                <p className="text-sm font-medium text-gray-600">Conflicts</p>
+                <p className="text-2xl font-bold text-yellow-600">{conflictCount}</p>
               </div>
             </div>
           </CardContent>
@@ -297,9 +300,9 @@ const UnifiedSchedule: React.FC = () => {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center">
-              <Building2 className="h-8 w-8 text-secondary" />
+              <Building2 className="h-8 w-8 text-purple-600" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-muted-foreground">Companies</p>
+                <p className="text-sm font-medium text-gray-600">Companies</p>
                 <p className="text-2xl font-bold">
                   {new Set(filteredGigs.map(g => g.company_name)).size}
                 </p>
@@ -314,7 +317,7 @@ const UnifiedSchedule: React.FC = () => {
         <CardContent className="pt-6">
           <div className="flex flex-wrap items-center gap-4">
             <div className="flex items-center space-x-2">
-              <Filter className="h-4 w-4 text-muted-foreground" />
+              <Filter className="h-4 w-4 text-gray-500" />
               <span className="text-sm font-medium">Filters:</span>
             </div>
             
@@ -328,7 +331,7 @@ const UnifiedSchedule: React.FC = () => {
               <option value="giglife">Giglife</option>
               <option value="stagehands">Stagehands Inc.</option>
               <option value="pce">PCE</option>
-              <option value="flexzora">Flexzora</option>
+              <option value="flexora">Flexora</option>
               <option value="other">Other</option>
             </select>
 
@@ -363,9 +366,9 @@ const UnifiedSchedule: React.FC = () => {
 
       {/* Conflicts Alert */}
       {conflictCount > 0 && (
-        <Alert className="border-amber-500/30 bg-amber-500/10">
+        <Alert className="border-yellow-200 bg-yellow-50">
           <AlertTriangle className="h-4 w-4" />
-          <AlertDescription className="text-amber-600 dark:text-amber-400">
+          <AlertDescription className="text-yellow-800">
             <strong>{conflictCount} scheduling conflict{conflictCount !== 1 ? 's' : ''} detected.</strong> 
             Review your schedule to resolve overlapping commitments.
           </AlertDescription>
@@ -393,7 +396,7 @@ const UnifiedSchedule: React.FC = () => {
                         {getSyncIcon(gig.sync_status)}
                       </div>
                       
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-muted-foreground">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
                         <div className="flex items-center">
                           <Clock className="h-4 w-4 mr-2" />
                           {format(parseISO(gig.start_date), 'MMM d, h:mm a')} - {format(parseISO(gig.end_date), 'h:mm a')}
@@ -411,14 +414,14 @@ const UnifiedSchedule: React.FC = () => {
                       </div>
 
                       {gig.notes && (
-                        <div className="mt-3 p-3 bg-muted/50 rounded-lg">
-                          <p className="text-sm text-foreground/80">{gig.notes}</p>
+                        <div className="mt-3 p-3 bg-gray-50 rounded-lg">
+                          <p className="text-sm text-gray-700">{gig.notes}</p>
                         </div>
                       )}
 
                       {gig.conflict_level !== 'none' && (
                         <div className="mt-3">
-                          <Badge className="bg-red-500/15 text-red-600 dark:text-red-400">
+                          <Badge className="bg-red-100 text-red-800">
                             <AlertTriangle className="h-3 w-3 mr-1" />
                             {gig.conflict_level.toUpperCase()} CONFLICT
                           </Badge>
@@ -433,7 +436,7 @@ const UnifiedSchedule: React.FC = () => {
                         ${((new Date(gig.end_date).getTime() - new Date(gig.start_date).getTime()) / (1000 * 60 * 60) * gig.hourly_rate).toLocaleString()}
                       </div>
                     )}
-                    <div className="text-sm text-muted-foreground">
+                    <div className="text-sm text-gray-500">
                       {Math.round((new Date(gig.end_date).getTime() - new Date(gig.start_date).getTime()) / (1000 * 60 * 60))} hours
                     </div>
                   </div>
@@ -444,9 +447,9 @@ const UnifiedSchedule: React.FC = () => {
         ) : (
           <Card>
             <CardContent className="text-center py-12">
-              <Calendar className="h-12 w-12 text-muted-foreground/70 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-foreground mb-2">No Gigs Scheduled</h3>
-              <p className="text-muted-foreground">
+              <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No Gigs Scheduled</h3>
+              <p className="text-gray-600">
                 No gigs found for the selected time period and filters.
               </p>
             </CardContent>
@@ -459,7 +462,7 @@ const UnifiedSchedule: React.FC = () => {
         <AuthKitButton 
           onConnectionSuccess={(connection) => {
             console.log('Schedule integration connected:', connection);
-            toast.success(`Connected ${connection.name} to your schedule!`);
+            toast.success(`Connected ${connection.provider} to your schedule!`);
           }}
         />
       </div>

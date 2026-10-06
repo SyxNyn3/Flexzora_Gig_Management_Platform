@@ -715,8 +715,7 @@ export class DatabaseService {
             title
           )
         `)
-        .eq('worker_id', workerId)
-        .eq('is_public', true)
+        .eq('reviewee_id', workerId)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -740,7 +739,7 @@ export class DatabaseService {
             avatar_url,
             role
           ),
-          worker:profiles!worker_id(
+          reviewee:profiles!reviewee_id(
             full_name,
             avatar_url
           ),
