@@ -49,47 +49,47 @@ $$ LANGUAGE plpgsql;
 
 -- Trigger to create profile when user signs up
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
-CREATE TRIGGER on_auth_user_created
+CREATE OR REPLACE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION handle_new_user();
 
 -- Ensure updated_at triggers exist on all relevant tables
 DROP TRIGGER IF EXISTS update_profiles_updated_at ON profiles;
-CREATE TRIGGER update_profiles_updated_at
+CREATE OR REPLACE TRIGGER update_profiles_updated_at
   BEFORE UPDATE ON profiles
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 DROP TRIGGER IF EXISTS update_companies_updated_at ON companies;
-CREATE TRIGGER update_companies_updated_at
+CREATE OR REPLACE TRIGGER update_companies_updated_at
   BEFORE UPDATE ON companies
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 DROP TRIGGER IF EXISTS update_gigs_updated_at ON gigs;
-CREATE TRIGGER update_gigs_updated_at
+CREATE OR REPLACE TRIGGER update_gigs_updated_at
   BEFORE UPDATE ON gigs
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 DROP TRIGGER IF EXISTS update_payments_updated_at ON payments;
-CREATE TRIGGER update_payments_updated_at
+CREATE OR REPLACE TRIGGER update_payments_updated_at
   BEFORE UPDATE ON payments
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 DROP TRIGGER IF EXISTS update_expenses_updated_at ON expenses;
-CREATE TRIGGER update_expenses_updated_at
+CREATE OR REPLACE TRIGGER update_expenses_updated_at
   BEFORE UPDATE ON expenses
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 DROP TRIGGER IF EXISTS update_certifications_updated_at ON certifications;
-CREATE TRIGGER update_certifications_updated_at
+CREATE OR REPLACE TRIGGER update_certifications_updated_at
   BEFORE UPDATE ON certifications
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 DROP TRIGGER IF EXISTS update_company_integrations_updated_at ON company_integrations;
-CREATE TRIGGER update_company_integrations_updated_at
+CREATE OR REPLACE TRIGGER update_company_integrations_updated_at
   BEFORE UPDATE ON company_integrations
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 DROP TRIGGER IF EXISTS update_calendar_events_updated_at ON calendar_events;
-CREATE TRIGGER update_calendar_events_updated_at
+CREATE OR REPLACE TRIGGER update_calendar_events_updated_at
   BEFORE UPDATE ON calendar_events
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

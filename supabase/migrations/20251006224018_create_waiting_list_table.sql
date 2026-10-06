@@ -55,16 +55,16 @@ ALTER TABLE waiting_list ENABLE ROW LEVEL SECURITY;
 
 -- Create policy for public to insert their own entries
 DROP POLICY IF EXISTS "Anyone can add themselves to the waiting list" ON waiting_list;
-CREATE POLICY "Anyone can add themselves to the waiting list"
-  ON waiting_list
+DROP POLICY IF EXISTS "Anyone can add themselves to the waiting list" ON waiting_list;
+CREATE POLICY "Anyone can add themselves to the waiting list" ON waiting_list
   FOR INSERT
   TO public
   WITH CHECK (true);
 
 -- Create policy for admins to view all entries
 DROP POLICY IF EXISTS "Admins can view all waiting list entries" ON waiting_list;
-CREATE POLICY "Admins can view all waiting list entries"
-  ON waiting_list
+DROP POLICY IF EXISTS "Admins can view all waiting list entries" ON waiting_list;
+CREATE POLICY "Admins can view all waiting list entries" ON waiting_list
   FOR SELECT
   TO authenticated
   USING (
@@ -75,7 +75,7 @@ CREATE POLICY "Admins can view all waiting list entries"
     )
   );
 
--- Create function to increment referral count
+-- CREATE OR REPLACE FUNCTION to increment referral count
 CREATE OR REPLACE FUNCTION increment_referral_count()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -88,15 +88,15 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Create trigger to increment referral count on new entry
+-- CREATE OR REPLACE TRIGGER to increment referral count on new entry
 DROP TRIGGER IF EXISTS after_waitlist_insert ON waiting_list;
-CREATE TRIGGER after_waitlist_insert
+CREATE OR REPLACE TRIGGER after_waitlist_insert
 AFTER INSERT ON waiting_list
 FOR EACH ROW
 EXECUTE FUNCTION increment_referral_count();
 
--- Create index on email for faster lookups
+-- CREATE INDEX IF NOT EXISTS on email for faster lookups
 CREATE INDEX IF NOT EXISTS idx_waiting_list_email ON waiting_list(email);
 
--- Create index on referral_code for faster lookups
+-- CREATE INDEX IF NOT EXISTS on referral_code for faster lookups
 CREATE INDEX IF NOT EXISTS idx_waiting_list_referral_code ON waiting_list(referral_code);

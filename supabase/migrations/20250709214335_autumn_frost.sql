@@ -297,7 +297,7 @@ BEGIN
     SELECT 1 FROM pg_trigger 
     WHERE tgname = 'after_application_status_change'
   ) THEN
-    CREATE TRIGGER after_application_status_change
+    CREATE OR REPLACE TRIGGER after_application_status_change
     AFTER UPDATE OF status ON gig_applications
     FOR EACH ROW
     WHEN (OLD.status IS DISTINCT FROM NEW.status)
@@ -309,7 +309,7 @@ BEGIN
     SELECT 1 FROM pg_trigger 
     WHERE tgname = 'after_application_insert'
   ) THEN
-    CREATE TRIGGER after_application_insert
+    CREATE OR REPLACE TRIGGER after_application_insert
     AFTER INSERT ON gig_applications
     FOR EACH ROW
     EXECUTE FUNCTION notify_on_application_status_change();
@@ -320,7 +320,7 @@ BEGIN
     SELECT 1 FROM pg_trigger 
     WHERE tgname = 'after_payment_status_change'
   ) THEN
-    CREATE TRIGGER after_payment_status_change
+    CREATE OR REPLACE TRIGGER after_payment_status_change
     AFTER UPDATE OF status ON payments
     FOR EACH ROW
     WHEN (OLD.status IS DISTINCT FROM NEW.status)
@@ -332,7 +332,7 @@ BEGIN
     SELECT 1 FROM pg_trigger 
     WHERE tgname = 'after_gig_insert'
   ) THEN
-    CREATE TRIGGER after_gig_insert
+    CREATE OR REPLACE TRIGGER after_gig_insert
     AFTER INSERT ON gigs
     FOR EACH ROW
     EXECUTE FUNCTION notify_on_gig_creation();
@@ -343,7 +343,7 @@ BEGIN
     SELECT 1 FROM pg_trigger 
     WHERE tgname = 'after_gig_publish'
   ) THEN
-    CREATE TRIGGER after_gig_publish
+    CREATE OR REPLACE TRIGGER after_gig_publish
     AFTER UPDATE OF status ON gigs
     FOR EACH ROW
     WHEN (OLD.status IS DISTINCT FROM NEW.status AND NEW.status = 'published')

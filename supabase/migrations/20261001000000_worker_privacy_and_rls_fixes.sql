@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS worker_sensitive (
 ALTER TABLE worker_sensitive ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "worker_sensitive self only" ON worker_sensitive;
+DROP POLICY IF EXISTS "worker_sensitive self only" ON worker_sensitive;
 CREATE POLICY "worker_sensitive self only" ON worker_sensitive FOR ALL TO authenticated
   USING (worker_id = current_profile_id())
   WITH CHECK (worker_id = current_profile_id());
@@ -37,10 +38,10 @@ BEGIN
 END $$ LANGUAGE plpgsql;
 
 DROP TRIGGER IF EXISTS worker_sensitive_sync_geo ON worker_sensitive;
-CREATE TRIGGER worker_sensitive_sync_geo BEFORE INSERT OR UPDATE OF latitude, longitude ON worker_sensitive
+CREATE OR REPLACE TRIGGER worker_sensitive_sync_geo BEFORE INSERT OR UPDATE OF latitude, longitude ON worker_sensitive
   FOR EACH ROW EXECUTE FUNCTION worker_sensitive_sync_geo();
 DROP TRIGGER IF EXISTS worker_sensitive_touch ON worker_sensitive;
-CREATE TRIGGER worker_sensitive_touch BEFORE UPDATE ON worker_sensitive FOR EACH ROW EXECUTE FUNCTION touch_updated_at();
+CREATE OR REPLACE TRIGGER worker_sensitive_touch BEFORE UPDATE ON worker_sensitive FOR EACH ROW EXECUTE FUNCTION touch_updated_at();
 
 -- Copy any already-populated values, then drop the public columns.
 INSERT INTO worker_sensitive (worker_id, latitude, longitude, geo, stripe_connect_account_id, payouts_enabled)
@@ -116,6 +117,7 @@ GRANT EXECUTE ON FUNCTION worker_conflicts(uuid[], timestamptz, timestamptz, int
 -- SEC: a company may only insert an offer — 'confirmed' requires worker consent
 -- ---------------------------------------------------------------------------
 DROP POLICY IF EXISTS "workers apply" ON shift_assignments;
+DROP POLICY IF EXISTS "workers apply" ON shift_assignments;
 CREATE POLICY "workers apply" ON shift_assignments FOR INSERT TO authenticated
   WITH CHECK (
     (worker_id = current_profile_id() AND status = 'applied' AND offered_rate IS NULL
@@ -145,6 +147,7 @@ $$;
 GRANT EXECUTE ON FUNCTION owns_venue(uuid) TO authenticated;
 
 DROP POLICY IF EXISTS "events managed by company" ON events;
+DROP POLICY IF EXISTS "events managed by company" ON events;
 CREATE POLICY "events managed by company" ON events FOR ALL TO authenticated
   USING (owns_company(company_id))
   WITH CHECK (owns_company(company_id) AND (venue_id IS NULL OR owns_venue(venue_id)));
@@ -152,6 +155,7 @@ CREATE POLICY "events managed by company" ON events FOR ALL TO authenticated
 -- ---------------------------------------------------------------------------
 -- SEC: blocked availability only for companies the worker works with
 -- ---------------------------------------------------------------------------
+DROP POLICY IF EXISTS "companies see blocked availability" ON availability;
 DROP POLICY IF EXISTS "companies see blocked availability" ON availability;
 CREATE POLICY "companies see blocked availability" ON availability FOR SELECT TO authenticated
   USING (worker_id = current_profile_id()

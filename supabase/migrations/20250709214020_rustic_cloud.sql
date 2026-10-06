@@ -124,13 +124,13 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Trigger to create calendar events after gig insertion
-CREATE TRIGGER after_gig_insert
+CREATE OR REPLACE TRIGGER after_gig_insert
 AFTER INSERT ON gigs
 FOR EACH ROW
 EXECUTE FUNCTION create_calendar_event_from_gig();
 
 -- Trigger to update calendar events after gig update
-CREATE TRIGGER after_gig_update
+CREATE OR REPLACE TRIGGER after_gig_update
 AFTER UPDATE ON gigs
 FOR EACH ROW
 WHEN (
@@ -144,7 +144,7 @@ WHEN (
 EXECUTE FUNCTION update_calendar_event_from_gig();
 
 -- Trigger to delete calendar events after gig deletion
-CREATE TRIGGER after_gig_delete
+CREATE OR REPLACE TRIGGER after_gig_delete
 AFTER DELETE ON gigs
 FOR EACH ROW
 EXECUTE FUNCTION delete_calendar_event_from_gig();
@@ -195,7 +195,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Trigger to create calendar events when applications are accepted
-CREATE TRIGGER after_application_update
+CREATE OR REPLACE TRIGGER after_application_update
 AFTER UPDATE ON gig_applications
 FOR EACH ROW
 WHEN (OLD.status IS DISTINCT FROM NEW.status)

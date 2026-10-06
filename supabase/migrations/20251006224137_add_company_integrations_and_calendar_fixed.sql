@@ -51,7 +51,7 @@ CREATE TABLE IF NOT EXISTS calendar_events (
   updated_at timestamptz DEFAULT now()
 );
 
--- Create indexes
+-- CREATE INDEX IF NOT EXISTSes
 CREATE INDEX IF NOT EXISTS idx_company_integrations_worker_id ON company_integrations(worker_id);
 CREATE INDEX IF NOT EXISTS idx_calendar_events_user_id ON calendar_events(user_id);
 CREATE INDEX IF NOT EXISTS idx_calendar_events_start_time ON calendar_events(start_time);
@@ -62,23 +62,25 @@ ALTER TABLE calendar_events ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies for company_integrations
 DROP POLICY IF EXISTS "Workers can manage own integrations" ON company_integrations;
+DROP POLICY IF EXISTS "Workers can manage own integrations" ON company_integrations;
 CREATE POLICY "Workers can manage own integrations" ON company_integrations FOR ALL TO authenticated 
   USING (EXISTS (SELECT 1 FROM profiles WHERE profiles.id = company_integrations.worker_id AND profiles.user_id = auth.uid()));
 
 -- RLS Policies for calendar_events
+DROP POLICY IF EXISTS "Users can manage own calendar events" ON calendar_events;
 DROP POLICY IF EXISTS "Users can manage own calendar events" ON calendar_events;
 CREATE POLICY "Users can manage own calendar events" ON calendar_events FOR ALL TO authenticated 
   USING (EXISTS (SELECT 1 FROM profiles WHERE profiles.id = calendar_events.user_id AND profiles.user_id = auth.uid()));
 
 -- Triggers for updated_at
 DROP TRIGGER IF EXISTS update_company_integrations_updated_at ON company_integrations;
-CREATE TRIGGER update_company_integrations_updated_at
+CREATE OR REPLACE TRIGGER update_company_integrations_updated_at
 BEFORE UPDATE ON company_integrations
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
 
 DROP TRIGGER IF EXISTS update_calendar_events_updated_at ON calendar_events;
-CREATE TRIGGER update_calendar_events_updated_at
+CREATE OR REPLACE TRIGGER update_calendar_events_updated_at
 BEFORE UPDATE ON calendar_events
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();

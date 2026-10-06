@@ -68,8 +68,8 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Create trigger for new user creation
-CREATE TRIGGER on_auth_user_created
+-- CREATE OR REPLACE TRIGGER for new user creation
+CREATE OR REPLACE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
@@ -79,20 +79,24 @@ DROP POLICY IF EXISTS "Users can update own profile" ON profiles;
 DROP POLICY IF EXISTS "Users can view all profiles" ON profiles;
 
 -- Create more permissive policies for profile management
+DROP POLICY IF EXISTS "Users can insert own profile" ON profiles;
 CREATE POLICY "Users can insert own profile" ON profiles
   FOR INSERT TO authenticated
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update own profile" ON profiles;
 CREATE POLICY "Users can update own profile" ON profiles
   FOR UPDATE TO authenticated
   USING (auth.uid() = user_id)
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can view all profiles" ON profiles;
 CREATE POLICY "Users can view all profiles" ON profiles
   FOR SELECT TO authenticated
   USING (true);
 
 -- Allow service role to manage profiles (for triggers)
+DROP POLICY IF EXISTS "Service role can manage profiles" ON profiles;
 CREATE POLICY "Service role can manage profiles" ON profiles
   FOR ALL TO service_role
   USING (true)

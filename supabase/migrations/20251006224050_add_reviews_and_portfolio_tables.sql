@@ -71,18 +71,18 @@ BEGIN
     SELECT 1 FROM information_schema.columns
     WHERE table_name = 'profiles' AND column_name = 'average_rating'
   ) THEN
-    ALTER TABLE profiles ADD COLUMN average_rating numeric(3,2) DEFAULT 0;
+    ALTER TABLE profiles ADD COLUMN IF NOT EXISTS average_rating numeric(3,2) DEFAULT 0;
   END IF;
   
   IF NOT EXISTS (
     SELECT 1 FROM information_schema.columns
     WHERE table_name = 'profiles' AND column_name = 'review_count'
   ) THEN
-    ALTER TABLE profiles ADD COLUMN review_count integer DEFAULT 0;
+    ALTER TABLE profiles ADD COLUMN IF NOT EXISTS review_count integer DEFAULT 0;
   END IF;
 END $$;
 
--- Create indexes
+-- CREATE INDEX IF NOT EXISTSes
 CREATE INDEX IF NOT EXISTS idx_reviews_reviewer_id ON reviews(reviewer_id);
 CREATE INDEX IF NOT EXISTS idx_reviews_reviewee_id ON reviews(reviewee_id);
 CREATE INDEX IF NOT EXISTS idx_reviews_gig_id ON reviews(gig_id);
@@ -94,8 +94,10 @@ ALTER TABLE portfolio_items ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies for reviews
 DROP POLICY IF EXISTS "Anyone can view reviews" ON reviews;
+DROP POLICY IF EXISTS "Anyone can view reviews" ON reviews;
 CREATE POLICY "Anyone can view reviews" ON reviews FOR SELECT TO authenticated USING (true);
 
+DROP POLICY IF EXISTS "Users can create reviews for completed gigs" ON reviews;
 DROP POLICY IF EXISTS "Users can create reviews for completed gigs" ON reviews;
 CREATE POLICY "Users can create reviews for completed gigs" ON reviews FOR INSERT TO authenticated
   WITH CHECK (
@@ -107,6 +109,7 @@ CREATE POLICY "Users can create reviews for completed gigs" ON reviews FOR INSER
   );
 
 DROP POLICY IF EXISTS "Users can update own reviews" ON reviews;
+DROP POLICY IF EXISTS "Users can update own reviews" ON reviews;
 CREATE POLICY "Users can update own reviews" ON reviews FOR UPDATE TO authenticated
   USING (
     EXISTS (
@@ -116,6 +119,7 @@ CREATE POLICY "Users can update own reviews" ON reviews FOR UPDATE TO authentica
     )
   );
 
+DROP POLICY IF EXISTS "Users can delete own reviews" ON reviews;
 DROP POLICY IF EXISTS "Users can delete own reviews" ON reviews;
 CREATE POLICY "Users can delete own reviews" ON reviews FOR DELETE TO authenticated
   USING (
@@ -128,8 +132,10 @@ CREATE POLICY "Users can delete own reviews" ON reviews FOR DELETE TO authentica
 
 -- RLS Policies for portfolio_items
 DROP POLICY IF EXISTS "Anyone can view portfolio items" ON portfolio_items;
+DROP POLICY IF EXISTS "Anyone can view portfolio items" ON portfolio_items;
 CREATE POLICY "Anyone can view portfolio items" ON portfolio_items FOR SELECT TO authenticated USING (true);
 
+DROP POLICY IF EXISTS "Workers can manage own portfolio" ON portfolio_items;
 DROP POLICY IF EXISTS "Workers can manage own portfolio" ON portfolio_items;
 CREATE POLICY "Workers can manage own portfolio" ON portfolio_items FOR ALL TO authenticated
   USING (
@@ -164,33 +170,33 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Triggers for rating updates
 DROP TRIGGER IF EXISTS after_review_insert ON reviews;
-CREATE TRIGGER after_review_insert
+CREATE OR REPLACE TRIGGER after_review_insert
 AFTER INSERT ON reviews
 FOR EACH ROW
 EXECUTE FUNCTION update_profile_rating();
 
 DROP TRIGGER IF EXISTS after_review_update ON reviews;
-CREATE TRIGGER after_review_update
+CREATE OR REPLACE TRIGGER after_review_update
 AFTER UPDATE ON reviews
 FOR EACH ROW
 EXECUTE FUNCTION update_profile_rating();
 
 DROP TRIGGER IF EXISTS after_review_delete ON reviews;
-CREATE TRIGGER after_review_delete
+CREATE OR REPLACE TRIGGER after_review_delete
 AFTER DELETE ON reviews
 FOR EACH ROW
 EXECUTE FUNCTION update_profile_rating();
 
 -- Trigger for portfolio_items updated_at
 DROP TRIGGER IF EXISTS update_portfolio_items_updated_at ON portfolio_items;
-CREATE TRIGGER update_portfolio_items_updated_at
+CREATE OR REPLACE TRIGGER update_portfolio_items_updated_at
 BEFORE UPDATE ON portfolio_items
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
 
 -- Trigger for reviews updated_at
 DROP TRIGGER IF EXISTS update_reviews_updated_at ON reviews;
-CREATE TRIGGER update_reviews_updated_at
+CREATE OR REPLACE TRIGGER update_reviews_updated_at
 BEFORE UPDATE ON reviews
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();

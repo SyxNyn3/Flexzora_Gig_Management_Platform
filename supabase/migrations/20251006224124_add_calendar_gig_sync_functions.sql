@@ -170,13 +170,13 @@ $$ LANGUAGE plpgsql;
 
 -- Triggers
 DROP TRIGGER IF EXISTS after_gig_insert ON gigs;
-CREATE TRIGGER after_gig_insert
+CREATE OR REPLACE TRIGGER after_gig_insert
 AFTER INSERT ON gigs
 FOR EACH ROW
 EXECUTE FUNCTION create_calendar_event_from_gig();
 
 DROP TRIGGER IF EXISTS after_gig_update ON gigs;
-CREATE TRIGGER after_gig_update
+CREATE OR REPLACE TRIGGER after_gig_update
 AFTER UPDATE ON gigs
 FOR EACH ROW
 WHEN (
@@ -190,13 +190,13 @@ WHEN (
 EXECUTE FUNCTION update_calendar_event_from_gig();
 
 DROP TRIGGER IF EXISTS after_gig_delete ON gigs;
-CREATE TRIGGER after_gig_delete
+CREATE OR REPLACE TRIGGER after_gig_delete
 AFTER DELETE ON gigs
 FOR EACH ROW
 EXECUTE FUNCTION delete_calendar_event_from_gig();
 
 DROP TRIGGER IF EXISTS after_application_update ON gig_applications;
-CREATE TRIGGER after_application_update
+CREATE OR REPLACE TRIGGER after_application_update
 AFTER UPDATE ON gig_applications
 FOR EACH ROW
 WHEN (OLD.status IS DISTINCT FROM NEW.status)

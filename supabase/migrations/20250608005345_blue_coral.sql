@@ -31,19 +31,34 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- User roles enum
-CREATE TYPE user_role AS ENUM ('admin', 'worker', 'company');
+DO $$ BEGIN
+  CREATE TYPE user_role AS ENUM ('admin', 'worker', 'company');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- Gig status enum
-CREATE TYPE gig_status AS ENUM ('draft', 'published', 'in_progress', 'completed', 'cancelled');
+DO $$ BEGIN
+  CREATE TYPE gig_status AS ENUM ('draft', 'published', 'in_progress', 'completed', 'cancelled');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- Application status enum
-CREATE TYPE application_status AS ENUM ('pending', 'accepted', 'rejected', 'withdrawn');
+DO $$ BEGIN
+  CREATE TYPE application_status AS ENUM ('pending', 'accepted', 'rejected', 'withdrawn');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- Payment status enum
-CREATE TYPE payment_status AS ENUM ('pending', 'paid', 'overdue', 'cancelled');
+DO $$ BEGIN
+  CREATE TYPE payment_status AS ENUM ('pending', 'paid', 'overdue', 'cancelled');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- Expense category enum
-CREATE TYPE expense_category AS ENUM ('travel', 'equipment', 'meals', 'accommodation', 'other');
+DO $$ BEGIN
+  CREATE TYPE expense_category AS ENUM ('travel', 'equipment', 'meals', 'accommodation', 'other');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- Profiles table
 CREATE TABLE IF NOT EXISTS profiles (
@@ -240,44 +255,59 @@ ALTER TABLE expenses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies for profiles
+DROP POLICY IF EXISTS "Users can view all profiles" ON profiles;
 CREATE POLICY "Users can view all profiles" ON profiles FOR SELECT TO authenticated USING (true);
+DROP POLICY IF EXISTS "Users can update own profile" ON profiles;
 CREATE POLICY "Users can update own profile" ON profiles FOR UPDATE TO authenticated USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can insert own profile" ON profiles;
 CREATE POLICY "Users can insert own profile" ON profiles FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
 
 -- RLS Policies for companies
+DROP POLICY IF EXISTS "Anyone can view companies" ON companies;
 CREATE POLICY "Anyone can view companies" ON companies FOR SELECT TO authenticated USING (true);
+DROP POLICY IF EXISTS "Company admins can manage companies" ON companies;
 CREATE POLICY "Company admins can manage companies" ON companies FOR ALL TO authenticated USING (
   EXISTS (SELECT 1 FROM profiles WHERE profiles.user_id = auth.uid() AND profiles.role = 'company')
 );
 
 -- RLS Policies for skills
+DROP POLICY IF EXISTS "Anyone can view skills" ON skills;
 CREATE POLICY "Anyone can view skills" ON skills FOR SELECT TO authenticated USING (true);
+DROP POLICY IF EXISTS "Admins can manage skills" ON skills;
 CREATE POLICY "Admins can manage skills" ON skills FOR ALL TO authenticated USING (
   EXISTS (SELECT 1 FROM profiles WHERE profiles.user_id = auth.uid() AND profiles.role = 'admin')
 );
 
 -- RLS Policies for worker_skills
+DROP POLICY IF EXISTS "Anyone can view worker skills" ON worker_skills;
 CREATE POLICY "Anyone can view worker skills" ON worker_skills FOR SELECT TO authenticated USING (true);
+DROP POLICY IF EXISTS "Workers can manage own skills" ON worker_skills;
 CREATE POLICY "Workers can manage own skills" ON worker_skills FOR ALL TO authenticated USING (
   EXISTS (SELECT 1 FROM profiles WHERE profiles.id = worker_id AND profiles.user_id = auth.uid())
 );
 
 -- RLS Policies for certifications
+DROP POLICY IF EXISTS "Anyone can view certifications" ON certifications;
 CREATE POLICY "Anyone can view certifications" ON certifications FOR SELECT TO authenticated USING (true);
+DROP POLICY IF EXISTS "Workers can manage own certifications" ON certifications;
 CREATE POLICY "Workers can manage own certifications" ON certifications FOR ALL TO authenticated USING (
   EXISTS (SELECT 1 FROM profiles WHERE profiles.id = worker_id AND profiles.user_id = auth.uid())
 );
 
 -- RLS Policies for gigs
+DROP POLICY IF EXISTS "Anyone can view published gigs" ON gigs;
 CREATE POLICY "Anyone can view published gigs" ON gigs FOR SELECT TO authenticated USING (status = 'published' OR status = 'completed');
+DROP POLICY IF EXISTS "Companies can manage own gigs" ON gigs;
 CREATE POLICY "Companies can manage own gigs" ON gigs FOR ALL TO authenticated USING (
   EXISTS (SELECT 1 FROM profiles WHERE profiles.id = created_by AND profiles.user_id = auth.uid())
 );
 
 -- RLS Policies for gig_applications
+DROP POLICY IF EXISTS "Workers can view own applications" ON gig_applications;
 CREATE POLICY "Workers can view own applications" ON gig_applications FOR SELECT TO authenticated USING (
   EXISTS (SELECT 1 FROM profiles WHERE profiles.id = worker_id AND profiles.user_id = auth.uid())
 );
+DROP POLICY IF EXISTS "Companies can view applications to their gigs" ON gig_applications;
 CREATE POLICY "Companies can view applications to their gigs" ON gig_applications FOR SELECT TO authenticated USING (
   EXISTS (
     SELECT 1 FROM gigs 
@@ -285,30 +315,36 @@ CREATE POLICY "Companies can view applications to their gigs" ON gig_application
     WHERE gigs.id = gig_id AND profiles.user_id = auth.uid()
   )
 );
+DROP POLICY IF EXISTS "Workers can manage own applications" ON gig_applications;
 CREATE POLICY "Workers can manage own applications" ON gig_applications FOR ALL TO authenticated USING (
   EXISTS (SELECT 1 FROM profiles WHERE profiles.id = worker_id AND profiles.user_id = auth.uid())
 );
 
 -- RLS Policies for availability
+DROP POLICY IF EXISTS "Workers can manage own availability" ON availability;
 CREATE POLICY "Workers can manage own availability" ON availability FOR ALL TO authenticated USING (
   EXISTS (SELECT 1 FROM profiles WHERE profiles.id = worker_id AND profiles.user_id = auth.uid())
 );
 
 -- RLS Policies for payments
+DROP POLICY IF EXISTS "Users can view own payments" ON payments;
 CREATE POLICY "Users can view own payments" ON payments FOR SELECT TO authenticated USING (
   EXISTS (SELECT 1 FROM profiles WHERE profiles.id = worker_id AND profiles.user_id = auth.uid()) OR
   EXISTS (SELECT 1 FROM profiles WHERE profiles.id IN (SELECT created_by FROM gigs WHERE gigs.id = gig_id) AND profiles.user_id = auth.uid())
 );
 
 -- RLS Policies for expenses
+DROP POLICY IF EXISTS "Workers can manage own expenses" ON expenses;
 CREATE POLICY "Workers can manage own expenses" ON expenses FOR ALL TO authenticated USING (
   EXISTS (SELECT 1 FROM profiles WHERE profiles.id = worker_id AND profiles.user_id = auth.uid())
 );
 
 -- RLS Policies for notifications
+DROP POLICY IF EXISTS "Users can view own notifications" ON notifications;
 CREATE POLICY "Users can view own notifications" ON notifications FOR SELECT TO authenticated USING (
   EXISTS (SELECT 1 FROM profiles WHERE profiles.id = user_id AND profiles.user_id = auth.uid())
 );
+DROP POLICY IF EXISTS "Users can update own notifications" ON notifications;
 CREATE POLICY "Users can update own notifications" ON notifications FOR UPDATE TO authenticated USING (
   EXISTS (SELECT 1 FROM profiles WHERE profiles.id = user_id AND profiles.user_id = auth.uid())
 );
@@ -338,9 +374,9 @@ END;
 $$ language 'plpgsql';
 
 -- Add updated_at triggers
-CREATE TRIGGER update_profiles_updated_at BEFORE UPDATE ON profiles FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
-CREATE TRIGGER update_companies_updated_at BEFORE UPDATE ON companies FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
-CREATE TRIGGER update_certifications_updated_at BEFORE UPDATE ON certifications FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
-CREATE TRIGGER update_gigs_updated_at BEFORE UPDATE ON gigs FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
-CREATE TRIGGER update_payments_updated_at BEFORE UPDATE ON payments FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
-CREATE TRIGGER update_expenses_updated_at BEFORE UPDATE ON expenses FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+CREATE OR REPLACE TRIGGER update_profiles_updated_at BEFORE UPDATE ON profiles FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+CREATE OR REPLACE TRIGGER update_companies_updated_at BEFORE UPDATE ON companies FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+CREATE OR REPLACE TRIGGER update_certifications_updated_at BEFORE UPDATE ON certifications FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+CREATE OR REPLACE TRIGGER update_gigs_updated_at BEFORE UPDATE ON gigs FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+CREATE OR REPLACE TRIGGER update_payments_updated_at BEFORE UPDATE ON payments FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+CREATE OR REPLACE TRIGGER update_expenses_updated_at BEFORE UPDATE ON expenses FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();

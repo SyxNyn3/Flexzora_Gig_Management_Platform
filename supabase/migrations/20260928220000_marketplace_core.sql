@@ -96,7 +96,7 @@ BEGIN
 END $$ LANGUAGE plpgsql;
 
 DROP TRIGGER IF EXISTS profiles_sync_geo ON profiles;
-CREATE TRIGGER profiles_sync_geo BEFORE INSERT OR UPDATE OF latitude, longitude ON profiles
+CREATE OR REPLACE TRIGGER profiles_sync_geo BEFORE INSERT OR UPDATE OF latitude, longitude ON profiles
   FOR EACH ROW EXECUTE FUNCTION sync_profile_geo();
 
 CREATE INDEX IF NOT EXISTS profiles_geo_idx ON profiles USING GIST (geo);
@@ -154,7 +154,7 @@ BEGIN
 END $$ LANGUAGE plpgsql;
 
 DROP TRIGGER IF EXISTS certifications_verification_guard ON certifications;
-CREATE TRIGGER certifications_verification_guard BEFORE INSERT OR UPDATE ON certifications
+CREATE OR REPLACE TRIGGER certifications_verification_guard BEFORE INSERT OR UPDATE ON certifications
   FOR EACH ROW EXECUTE FUNCTION guard_certification_verification();
 CREATE INDEX IF NOT EXISTS certifications_type_idx ON certifications (worker_id, cert_type_code) WHERE is_active;
 
@@ -199,7 +199,7 @@ BEGIN
 END $$ LANGUAGE plpgsql;
 
 DROP TRIGGER IF EXISTS venues_sync_geo ON venues;
-CREATE TRIGGER venues_sync_geo BEFORE INSERT OR UPDATE OF latitude, longitude ON venues
+CREATE OR REPLACE TRIGGER venues_sync_geo BEFORE INSERT OR UPDATE OF latitude, longitude ON venues
   FOR EACH ROW EXECUTE FUNCTION sync_venue_geo();
 
 CREATE INDEX IF NOT EXISTS venues_geo_idx ON venues USING GIST (geo);
@@ -354,7 +354,7 @@ BEGIN
 END $$ LANGUAGE plpgsql;
 
 DROP TRIGGER IF EXISTS shift_assignments_fill ON shift_assignments;
-CREATE TRIGGER shift_assignments_fill AFTER INSERT OR UPDATE OF status OR DELETE ON shift_assignments
+CREATE OR REPLACE TRIGGER shift_assignments_fill AFTER INSERT OR UPDATE OF status OR DELETE ON shift_assignments
   FOR EACH ROW EXECUTE FUNCTION sync_shift_fill_status();
 
 -- Direct (PostgREST) updates may only walk the state machine from their own side;
@@ -401,7 +401,7 @@ BEGIN
 END $$ LANGUAGE plpgsql;
 
 DROP TRIGGER IF EXISTS shift_assignments_guard ON shift_assignments;
-CREATE TRIGGER shift_assignments_guard BEFORE UPDATE ON shift_assignments
+CREATE OR REPLACE TRIGGER shift_assignments_guard BEFORE UPDATE ON shift_assignments
   FOR EACH ROW EXECUTE FUNCTION guard_assignment_update();
 
 CREATE OR REPLACE FUNCTION guard_assignment_insert() RETURNS trigger AS $$
@@ -414,7 +414,7 @@ BEGIN
 END $$ LANGUAGE plpgsql;
 
 DROP TRIGGER IF EXISTS shift_assignments_guard_insert ON shift_assignments;
-CREATE TRIGGER shift_assignments_guard_insert BEFORE INSERT ON shift_assignments
+CREATE OR REPLACE TRIGGER shift_assignments_guard_insert BEFORE INSERT ON shift_assignments
   FOR EACH ROW EXECUTE FUNCTION guard_assignment_insert();
 
 -- ---------------------------------------------------------------------------
@@ -507,7 +507,7 @@ BEGIN
 END $$ LANGUAGE plpgsql;
 
 DROP TRIGGER IF EXISTS timesheets_guard ON timesheets;
-CREATE TRIGGER timesheets_guard BEFORE UPDATE ON timesheets
+CREATE OR REPLACE TRIGGER timesheets_guard BEFORE UPDATE ON timesheets
   FOR EACH ROW EXECUTE FUNCTION guard_timesheet_update();
 
 -- ---------------------------------------------------------------------------
@@ -599,7 +599,7 @@ BEGIN
   FOREACH t IN ARRAY ARRAY['venues','events','shifts','shift_assignments','timesheets','escrow_deposits','payouts']
   LOOP
     EXECUTE format('DROP TRIGGER IF EXISTS %I_touch ON %I', t, t);
-    EXECUTE format('CREATE TRIGGER %I_touch BEFORE UPDATE ON %I FOR EACH ROW EXECUTE FUNCTION touch_updated_at()', t, t);
+    EXECUTE format('CREATE OR REPLACE TRIGGER %I_touch BEFORE UPDATE ON %I FOR EACH ROW EXECUTE FUNCTION touch_updated_at()', t, t);
   END LOOP;
 END $$;
 
@@ -896,46 +896,57 @@ LANGUAGE sql STABLE SECURITY DEFINER AS $$
 $$;
 
 DROP POLICY IF EXISTS "cert types readable" ON certification_types;
+DROP POLICY IF EXISTS "cert types readable" ON certification_types;
 CREATE POLICY "cert types readable" ON certification_types FOR SELECT TO authenticated USING (true);
 
 DROP POLICY IF EXISTS "ot rules readable" ON overtime_rules;
+DROP POLICY IF EXISTS "ot rules readable" ON overtime_rules;
 CREATE POLICY "ot rules readable" ON overtime_rules FOR SELECT TO authenticated USING (true);
 
+DROP POLICY IF EXISTS "venues readable" ON venues;
 DROP POLICY IF EXISTS "venues readable" ON venues;
 CREATE POLICY "venues readable" ON venues FOR SELECT TO authenticated
   USING (owns_company(company_id)
      OR EXISTS (SELECT 1 FROM events e JOIN shifts s ON s.event_id = e.id
                 WHERE e.venue_id = venues.id AND (worker_can_see_shift(s.id) OR is_party_to_shift(s.id))));
 DROP POLICY IF EXISTS "venues managed by company" ON venues;
+DROP POLICY IF EXISTS "venues managed by company" ON venues;
 CREATE POLICY "venues managed by company" ON venues FOR ALL TO authenticated
   USING (owns_company(company_id)) WITH CHECK (owns_company(company_id));
 
+DROP POLICY IF EXISTS "events readable" ON events;
 DROP POLICY IF EXISTS "events readable" ON events;
 CREATE POLICY "events readable" ON events FOR SELECT TO authenticated
   USING (owns_company(company_id)
      OR EXISTS (SELECT 1 FROM shifts s WHERE s.event_id = events.id AND (worker_can_see_shift(s.id) OR is_party_to_shift(s.id))));
 DROP POLICY IF EXISTS "events managed by company" ON events;
+DROP POLICY IF EXISTS "events managed by company" ON events;
 CREATE POLICY "events managed by company" ON events FOR ALL TO authenticated
   USING (owns_company(company_id)) WITH CHECK (owns_company(company_id));
 
+DROP POLICY IF EXISTS "event budgets owner only" ON event_budgets;
 DROP POLICY IF EXISTS "event budgets owner only" ON event_budgets;
 CREATE POLICY "event budgets owner only" ON event_budgets FOR ALL TO authenticated
   USING (owns_event(event_id))
   WITH CHECK (owns_event(event_id));
 
 DROP POLICY IF EXISTS "shifts readable" ON shifts;
+DROP POLICY IF EXISTS "shifts readable" ON shifts;
 CREATE POLICY "shifts readable" ON shifts FOR SELECT TO authenticated
   USING (worker_can_see_shift(id) OR is_party_to_shift(id)
      OR owns_event(event_id));
+DROP POLICY IF EXISTS "shifts managed by company" ON shifts;
 DROP POLICY IF EXISTS "shifts managed by company" ON shifts;
 CREATE POLICY "shifts managed by company" ON shifts FOR ALL TO authenticated
   USING (owns_event(event_id))
   WITH CHECK (owns_event(event_id));
 
 DROP POLICY IF EXISTS "assignments visible to parties" ON shift_assignments;
+DROP POLICY IF EXISTS "assignments visible to parties" ON shift_assignments;
 CREATE POLICY "assignments visible to parties" ON shift_assignments FOR SELECT TO authenticated
   USING (worker_id = current_profile_id()
      OR owns_shift(shift_id));
+DROP POLICY IF EXISTS "workers apply" ON shift_assignments;
 DROP POLICY IF EXISTS "workers apply" ON shift_assignments;
 CREATE POLICY "workers apply" ON shift_assignments FOR INSERT TO authenticated
   WITH CHECK (
@@ -946,42 +957,52 @@ CREATE POLICY "workers apply" ON shift_assignments FOR INSERT TO authenticated
     OR owns_shift(shift_id));
 DROP POLICY IF EXISTS "parties update assignment" ON shift_assignments;
 -- allowed transitions per party are enforced by guard_assignment_update()
+DROP POLICY IF EXISTS "parties update assignment" ON shift_assignments;
 CREATE POLICY "parties update assignment" ON shift_assignments FOR UPDATE TO authenticated
   USING (worker_id = current_profile_id()
      OR owns_shift(shift_id));
 
 DROP POLICY IF EXISTS "roster visible to company and member" ON preferred_rosters;
+DROP POLICY IF EXISTS "roster visible to company and member" ON preferred_rosters;
 CREATE POLICY "roster visible to company and member" ON preferred_rosters FOR SELECT TO authenticated
   USING (owns_company(company_id) OR worker_id = current_profile_id());
+DROP POLICY IF EXISTS "roster managed by company" ON preferred_rosters;
 DROP POLICY IF EXISTS "roster managed by company" ON preferred_rosters;
 CREATE POLICY "roster managed by company" ON preferred_rosters FOR ALL TO authenticated
   USING (owns_company(company_id)) WITH CHECK (owns_company(company_id));
 
+DROP POLICY IF EXISTS "timesheets visible to parties" ON timesheets;
 DROP POLICY IF EXISTS "timesheets visible to parties" ON timesheets;
 CREATE POLICY "timesheets visible to parties" ON timesheets FOR SELECT TO authenticated
   USING (worker_id = current_profile_id()
      OR owns_shift(shift_id));
 DROP POLICY IF EXISTS "workers edit own open timesheets" ON timesheets;
 -- column-level restrictions are enforced by guard_timesheet_update()
+DROP POLICY IF EXISTS "workers edit own open timesheets" ON timesheets;
 CREATE POLICY "workers edit own open timesheets" ON timesheets FOR UPDATE TO authenticated
   USING (worker_id = current_profile_id() AND status IN ('open','submitted'));
+DROP POLICY IF EXISTS "company edits timesheets" ON timesheets;
 DROP POLICY IF EXISTS "company edits timesheets" ON timesheets;
 CREATE POLICY "company edits timesheets" ON timesheets FOR UPDATE TO authenticated
   USING (owns_shift(shift_id));
 
 DROP POLICY IF EXISTS "escrow visible to company" ON escrow_deposits;
+DROP POLICY IF EXISTS "escrow visible to company" ON escrow_deposits;
 CREATE POLICY "escrow visible to company" ON escrow_deposits FOR SELECT TO authenticated
   USING (owns_company(company_id));
 -- companies open a deposit as 'pending'; only mark_escrow_funded() (webhook) can fund it
+DROP POLICY IF EXISTS "company opens pending deposit" ON escrow_deposits;
 DROP POLICY IF EXISTS "company opens pending deposit" ON escrow_deposits;
 CREATE POLICY "company opens pending deposit" ON escrow_deposits FOR INSERT TO authenticated
   WITH CHECK (owns_company(company_id) AND status = 'pending' AND released_amount = 0 AND funded_at IS NULL
      AND EXISTS (SELECT 1 FROM events e WHERE e.id = event_id AND e.company_id = escrow_deposits.company_id));
 
 DROP POLICY IF EXISTS "invoices visible to parties" ON invoices;
+DROP POLICY IF EXISTS "invoices visible to parties" ON invoices;
 CREATE POLICY "invoices visible to parties" ON invoices FOR SELECT TO authenticated
   USING (worker_id = current_profile_id() OR owns_company(company_id));
 
+DROP POLICY IF EXISTS "payouts visible to parties" ON payouts;
 DROP POLICY IF EXISTS "payouts visible to parties" ON payouts;
 CREATE POLICY "payouts visible to parties" ON payouts FOR SELECT TO authenticated
   USING (worker_id = current_profile_id()
@@ -996,6 +1017,7 @@ GRANT EXECUTE ON FUNCTION shift_has_room(uuid, uuid) TO authenticated;
 
 -- Hiring companies see only the windows a worker has blocked out (no free-time detail),
 -- so matching can zero availability on declared conflicts.
+DROP POLICY IF EXISTS "companies see blocked availability" ON availability;
 DROP POLICY IF EXISTS "companies see blocked availability" ON availability;
 CREATE POLICY "companies see blocked availability" ON availability FOR SELECT TO authenticated
   USING (is_available = false AND EXISTS (SELECT 1 FROM companies c WHERE c.created_by = current_profile_id()));

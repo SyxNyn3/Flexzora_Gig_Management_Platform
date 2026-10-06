@@ -6,8 +6,12 @@ Ordered queue for build sessions and scheduled automations. One item ≈ one ses
 
 Two sessions work this repo in parallel (cloud + desktop). **Before starting any item, mark it**: append `(claimed: <lane> — working on it)`. Check claims before picking up work; clear your claim when done (`done: <lane>`) or released. Lane names: `cloud` (session d713fbae), `desktop` (session 89ab957d).
 
-- Repo privacy toggle (make repo private again) — **claimed: desktop — working on it**
-- Migration duplicate-DDL cleanup (blocks clean `supabase start` from repo files) — **claimed: desktop — working on it**
+- Repo privacy toggle (make repo private again) — **claimed: desktop — working on it** (gh token lacks permission; asked user to flip in Settings)
+- Migration duplicate-DDL cleanup (blocks clean `supabase start` from repo files) — **claimed: desktop — working on it** (idempotency transform done; verifying replay)
+- `handle_new_user` qualified-insert + search_path fix (new migration) — **claimed: desktop — working on it**
+- `gig_messages` table + live `GigCommunication` (currently 100% mock, no table exists) — **claimed: desktop — working on it**
+- Live-wire `UnifiedSchedule` / `ConflictDetection` / `CompanyDashboard` (still mock-only) — **claimed: desktop — working on it**
+- Honest empty states: replace mock-number fallbacks (dashboard 15420 etc.) with real zeros — **claimed: desktop — working on it**
 - Weekly waitlist-metrics automation — **done: cloud** (automation created, pending user approval)
 - Everything below is unclaimed.
 

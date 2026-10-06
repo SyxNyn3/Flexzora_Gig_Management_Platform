@@ -256,7 +256,7 @@ BEGIN
     WHERE tgname = 'after_application_status_change'
     AND tgrelid = 'gig_applications'::regclass
   ) THEN
-    CREATE TRIGGER after_application_status_change
+    CREATE OR REPLACE TRIGGER after_application_status_change
     AFTER UPDATE OF status ON gig_applications
     FOR EACH ROW
     WHEN (OLD.status IS DISTINCT FROM NEW.status)
@@ -273,7 +273,7 @@ BEGIN
     WHERE tgname = 'after_payment_status_change'
     AND tgrelid = 'payments'::regclass
   ) THEN
-    CREATE TRIGGER after_payment_status_change
+    CREATE OR REPLACE TRIGGER after_payment_status_change
     AFTER UPDATE OF status ON payments
     FOR EACH ROW
     WHEN (OLD.status IS DISTINCT FROM NEW.status)
@@ -290,7 +290,7 @@ BEGIN
     WHERE tgname = 'after_gig_publish'
     AND tgrelid = 'gigs'::regclass
   ) THEN
-    CREATE TRIGGER after_gig_publish
+    CREATE OR REPLACE TRIGGER after_gig_publish
     AFTER UPDATE OF status ON gigs
     FOR EACH ROW
     WHEN (OLD.status IS DISTINCT FROM NEW.status AND NEW.status = 'published')

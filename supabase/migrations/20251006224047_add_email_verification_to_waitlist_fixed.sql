@@ -20,7 +20,7 @@ BEGIN
     SELECT 1 FROM information_schema.columns
     WHERE table_name = 'waiting_list' AND column_name = 'verification_token'
   ) THEN
-    ALTER TABLE waiting_list ADD COLUMN verification_token text;
+    ALTER TABLE waiting_list ADD COLUMN IF NOT EXISTS verification_token text;
   END IF;
   
   -- Add verified_at column if it doesn't exist
@@ -28,7 +28,7 @@ BEGIN
     SELECT 1 FROM information_schema.columns
     WHERE table_name = 'waiting_list' AND column_name = 'verified_at'
   ) THEN
-    ALTER TABLE waiting_list ADD COLUMN verified_at timestamptz;
+    ALTER TABLE waiting_list ADD COLUMN IF NOT EXISTS verified_at timestamptz;
   END IF;
 END $$;
 
@@ -43,7 +43,7 @@ BEGIN
       SELECT oid FROM pg_type WHERE typname = 'waitlist_status'
     )
   ) THEN
-    ALTER TYPE waitlist_status ADD VALUE 'verified';
+    ALTER TYPE waitlist_status ADD VALUE IF NOT EXISTS 'verified';
   END IF;
 END $$;
 

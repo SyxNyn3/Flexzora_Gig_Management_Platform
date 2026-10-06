@@ -38,6 +38,7 @@ END $$;
 GRANT EXECUTE ON FUNCTION waitlist_referral_status(text) TO anon, authenticated;
 
 DROP POLICY IF EXISTS "Admins can update waiting list entries" ON waiting_list;
+DROP POLICY IF EXISTS "Admins can update waiting list entries" ON waiting_list;
 CREATE POLICY "Admins can update waiting list entries" ON waiting_list FOR UPDATE TO authenticated
   USING (EXISTS (SELECT 1 FROM profiles WHERE profiles.user_id = auth.uid() AND profiles.role = 'admin'))
   WITH CHECK (EXISTS (SELECT 1 FROM profiles WHERE profiles.user_id = auth.uid() AND profiles.role = 'admin'));
