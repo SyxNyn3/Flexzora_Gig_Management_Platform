@@ -13,10 +13,12 @@ Two sessions work this repo in parallel. **Before starting any item, mark it**: 
 - Live-wire `UnifiedSchedule` / `ConflictDetection` / `CompanyDashboard` (still mock-only) — **claimed: Tom — working on it**
 - Honest empty states: replace mock-number fallbacks (dashboard 15420 etc.) with real zeros — **claimed: Tom — working on it**
 - Weekly waitlist-metrics automation — **done: Mark** (automation created, pending user approval)
+- `.github/workflows/ci.yml` — **claimed: Mark — working on it**
+- PR #4 review-finding sweeps — **claimed: Mark — working on it**
 - Everything below is unclaimed.
 
 ## P0 — ship blockers
-- [ ] Add `.github/workflows/ci.yml`: `npx eslint src`, `npx tsc --noEmit -p tsconfig.app.json`, `npx vitest run`, `npm run build` on every PR (free minutes).
+- [x] Add `.github/workflows/ci.yml`: `npx eslint src`, `npx tsc --noEmit -p tsconfig.app.json`, `npx vitest run`, `npm run build` on every PR (free minutes). — **claimed: Mark — working on it**
 - [ ] Merge #2 (waitlist funnel), retarget #4 to `main`, then land both.
 - [ ] `supabase db push` to the live project; deploy edge functions (`submit-waitlist`, `verify-waitlist-email`, `resend-waitlist-verification`, `stripe-webhook` with `--no-verify-jwt`); set `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `VITE_STRIPE_PUBLISHABLE_KEY` when the Stripe account exists.
 
