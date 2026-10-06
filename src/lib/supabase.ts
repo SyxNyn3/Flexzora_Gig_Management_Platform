@@ -355,7 +355,7 @@ export class DatabaseService {
         .from('gig_applications')
         .select(`
           *,
-          gig:gigs(*),
+          gig:gigs(*, company:companies(id, name, logo_url)),
           worker:profiles(*)
         `)
         .order('application_date', { ascending: false });

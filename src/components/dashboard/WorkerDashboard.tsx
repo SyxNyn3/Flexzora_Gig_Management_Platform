@@ -20,10 +20,9 @@ import {
   Briefcase,
   Users,
   Building2,
-  Mail
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { format, isToday, isTomorrow, addDays } from 'date-fns';
+import { format, isToday, isTomorrow } from 'date-fns';
 
 const WorkerDashboard: React.FC = () => {
   const { profile } = useAuth();
@@ -56,49 +55,34 @@ const WorkerDashboard: React.FC = () => {
     return () => clearTimeout(timer);
   }, []);
 
-  // Mock data for demo
-  const upcomingGigs = [
-    {
-      id: '1',
-      title: 'Load-In & Rigging Call',
-      company: 'Rhino Staging',
-      date: new Date(),
-      time: '7:00 AM - 3:00 PM',
-      location: 'Stadium Main Stage',
-      rate: 48,
-      status: 'confirmed',
-      avatar: '🏟️'
-    },
-    {
-      id: '2',
-      title: 'Show Call / System Ops',
-      company: 'Giglife',
-      date: addDays(new Date(), 1),
-      time: '4:00 PM - 12:00 AM',
-      location: 'Convention Center Ballroom C',
-      rate: 55,
-      status: 'confirmed',
-      avatar: '🎛️'
-    }
-  ];
+  // PostgREST many-to-one embeds come back as objects, not arrays — normalize both shapes
+  const one = <T,>(v: T | T[] | null | undefined): T | undefined =>
+    Array.isArray(v) ? v[0] : (v ?? undefined);
 
-  // Use real data with fallback to mock data
-  const recentApplications = myApplications.length > 0 
-    ? myApplications.slice(0, 3) 
-    : [
-        {
-          id: '1',
-          gig: { title: 'L2 Lighting Tech — Festival Main Stage', location: 'Golden Gate Park' },
-          status: 'pending',
-          application_date: '2024-01-10T10:00:00Z',
-        },
-        {
-          id: '2',
-          gig: { title: 'Strike & Load-Out — Arena Rigging Crew', location: 'Stadium Main Stage' },
-          status: 'accepted',
-          application_date: '2024-01-08T15:30:00Z',
-        },
-      ];
+  // Schedule from real accepted applications
+  const upcomingGigs = myApplications
+    .map(a => ({ a, gig: one(a.gig) }))
+    .filter(({ gig }) => !!gig?.start_date && new Date(gig.start_date) >= new Date(new Date().toDateString()))
+    .map(({ a, gig }) => ({
+      id: gig!.id,
+      title: gig!.title,
+      company: one(gig!.company)?.name ?? 'Company',
+      date: new Date(gig!.start_date),
+      time: gig!.end_date
+        ? `${format(new Date(gig!.start_date), 'h:mm a')} - ${format(new Date(gig!.end_date), 'h:mm a')}`
+        : '',
+      location: gig!.location ?? 'TBD',
+      rate: a.proposed_rate ?? gig!.hourly_rate ?? 0,
+      status: a.status,
+      avatar: '',
+    }));
+
+  const recentApplications = myApplications.slice(0, 3);
+
+  // Companies the worker is booked with
+  const connectedCompanies = [...new Map(
+    upcomingGigs.map(g => [g.company, g.company] as const)
+  ).values()];
       
   const todaysGigs = upcomingGigs.filter(gig => isToday(gig.date));
   const tomorrowsGigs = upcomingGigs.filter(gig => isTomorrow(gig.date));
@@ -447,48 +431,26 @@ const WorkerDashboard: React.FC = () => {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between p-3 bg-emerald-500/10 rounded-lg border border-emerald-500/30">
-                    <div className="flex items-center">
-                      <div className="text-lg mr-3">🦏</div>
-                      <div>
-                        <p className="font-medium text-sm">Rhino Staging</p>
-                        <p className="text-xs text-muted-foreground">15 gigs</p>
+                {connectedCompanies.length > 0 ? (
+                  <div className="space-y-3">
+                    {connectedCompanies.map(name => (
+                      <div key={name} className="flex items-center justify-between p-3 bg-emerald-500/10 rounded-lg border border-emerald-500/30">
+                        <div className="flex items-center">
+                          <Building2 className="h-5 w-5 mr-3 text-muted-foreground" />
+                          <div>
+                            <p className="font-medium text-sm">{name}</p>
+                            <p className="text-xs text-muted-foreground">{upcomingGigs.filter(g => g.company === name).length} upcoming</p>
+                          </div>
+                        </div>
+                        <CheckCircle className="h-4 w-4 text-emerald-500" />
                       </div>
-                    </div>
-                    <CheckCircle className="h-4 w-4 text-emerald-500" />
+                    ))}
                   </div>
-                  
-                  <div className="flex items-center justify-between p-3 bg-primary/10 rounded-lg border border-primary/30">
-                    <div className="flex items-center">
-                      <div className="text-lg mr-3">🎵</div>
-                      <div>
-                        <p className="font-medium text-sm">Giglife</p>
-                        <p className="text-xs text-muted-foreground">8 gigs</p>
-                      </div>
-                    </div>
-                    <CheckCircle className="h-4 w-4 text-primary" />
-                  </div>
-
-                  <div className="flex items-center justify-between p-3 bg-destructive/10 rounded-lg border border-destructive/30">
-                    <div className="flex items-center">
-                      <div className="text-lg mr-3">📧</div>
-                      <div>
-                        <p className="font-medium text-sm">Gmail</p>
-                        <p className="text-xs text-muted-foreground">Connected</p>
-                      </div>
-                    </div>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="h-6 px-2"
-                      onClick={() => navigate('/integrations/gmail')}
-                    >
-                      <Mail className="h-3 w-3 mr-1" />
-                      View
-                    </Button>
-                  </div>
-                </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground py-4 text-center">
+                    No connected companies yet — companies that book you will appear here.
+                  </p>
+                )}
               </CardContent>
             </Card>
 
@@ -500,7 +462,7 @@ const WorkerDashboard: React.FC = () => {
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Gigs Completed</span>
-                  <span className="font-semibold">12</span>
+                  <span className="font-semibold">{stats.completedGigs}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Hours Worked</span>

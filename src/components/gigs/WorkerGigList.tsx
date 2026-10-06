@@ -36,10 +36,23 @@ const WorkerGigList: React.FC = () => {
   // Fetch gigs
   const { data: gigsData, loading: gigsLoading } = useGigs({ status: 'published' });
   const [applicantCounts, setApplicantCounts] = useState<Record<string, number>>({});
+  const [appStats, setAppStats] = useState({ sent: 0, responded: 0 });
 
   useEffect(() => {
     setLoading(gigsLoading ?? false);
   }, [gigsLoading]);
+
+  useEffect(() => {
+    if (!profile?.id) return;
+    supabase
+      .from('gig_applications')
+      .select('status')
+      .eq('worker_id', profile.id)
+      .then(({ data }) => {
+        const rows = data ?? [];
+        setAppStats({ sent: rows.length, responded: rows.filter(r => r.status !== 'pending').length });
+      });
+  }, [profile?.id]);
 
   useEffect(() => {
     const ids = (gigsData ?? []).map(g => g.id);
@@ -257,16 +270,18 @@ const WorkerGigList: React.FC = () => {
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Applications Sent</span>
-                  <span className="font-semibold">23</span>
+                  <span className="font-semibold">{appStats.sent}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Response Rate</span>
-                  <span className="font-semibold text-emerald-500">87%</span>
+                  <span className="font-semibold text-emerald-500">
+                    {appStats.sent > 0 ? `${Math.round((appStats.responded / appStats.sent) * 100)}%` : '—'}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Avg. Rating</span>
                   <div className="flex items-center">
-                    <span className="font-semibold mr-1">{profile?.average_rating || 4.8}</span>
+                    <span className="font-semibold mr-1">{profile?.average_rating || 0}</span>
                     <Star className="h-4 w-4 text-yellow-500 fill-current" />
                   </div>
                 </div>

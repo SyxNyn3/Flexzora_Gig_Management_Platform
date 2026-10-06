@@ -54,6 +54,10 @@ const CompanyDashboard: React.FC = () => {
     filterWorkers();
   }, [workers, searchTerm, skillFilter, availabilityFilter]);
 
+  // PostgREST many-to-one embeds come back as objects, not arrays — normalize both shapes
+  const one = <T,>(v: T | T[] | null | undefined): T | undefined =>
+    Array.isArray(v) ? v[0] : (v ?? undefined);
+
   const loadWorkerPool = async () => {
     setLoading(true);
 
@@ -77,7 +81,7 @@ const CompanyDashboard: React.FC = () => {
       phone: p.phone,
       avatar_url: p.avatar_url,
       skills: (p.worker_skills ?? [])
-        .map(ws => ws.skill?.[0]?.name)
+        .map(ws => one(ws.skill)?.name)
         .filter((n): n is string => !!n),
       hourly_rate: p.hourly_rate ?? 0,
       experience_years: p.experience_years ?? 0,
@@ -86,7 +90,7 @@ const CompanyDashboard: React.FC = () => {
       last_active: p.updated_at,
       total_gigs: (p.gig_applications ?? []).filter(a => a.status === 'accepted').length,
       rating: p.average_rating ?? 0,
-      certifications: (p.certifications ?? []).flat().map(c => c.name),
+      certifications: (p.certifications ?? []).map(c => Array.isArray(c) ? c[0]?.name : c.name).filter((n): n is string => !!n),
       preferred_roles: [],
     })));
     setLoading(false);

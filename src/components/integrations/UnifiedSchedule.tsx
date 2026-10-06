@@ -46,6 +46,10 @@ const UnifiedSchedule: React.FC = () => {
     filterGigs();
   }, [gigs, selectedWeek, viewMode, sourceFilter, showConflicts]);
 
+  // PostgREST many-to-one embeds come back as objects, not arrays — normalize both shapes
+  const one = <T,>(v: T | T[] | null | undefined): T | undefined =>
+    Array.isArray(v) ? v[0] : (v ?? undefined);
+
   const loadUnifiedSchedule = async () => {
     setLoading(true);
     const rows: UnifiedGig[] = [];
@@ -58,15 +62,15 @@ const UnifiedSchedule: React.FC = () => {
       .in('status', ['offered', 'confirmed', 'completed']);
 
     for (const a of assignments ?? []) {
-      const shift = a.shift?.[0];
-      const event = shift?.event?.[0];
+      const shift = one(a.shift);
+      const event = one(shift?.event);
       if (!shift || !event) continue;
       rows.push({
         id: shift.id,
         title: shift.title ?? event.title,
-        company_name: event.company?.[0]?.name ?? 'Company',
+        company_name: one(event.company)?.name ?? 'Company',
         company_logo: '',
-        location: event.venue?.[0] ? [event.venue[0].name, event.venue[0].city].filter(Boolean).join(', ') : 'TBD',
+        location: one(event.venue) ? [one(event.venue)!.name, one(event.venue)!.city].filter(Boolean).join(', ') : 'TBD',
         start_date: shift.starts_at,
         end_date: shift.ends_at,
         hourly_rate: a.offered_rate ?? undefined,
@@ -85,12 +89,12 @@ const UnifiedSchedule: React.FC = () => {
       .eq('status', 'accepted');
 
     for (const a of applications ?? []) {
-      const gig = a.gig?.[0];
+      const gig = one(a.gig);
       if (!gig) continue;
       rows.push({
         id: gig.id,
         title: gig.title,
-        company_name: gig.company?.[0]?.name ?? 'Company',
+        company_name: one(gig.company)?.name ?? 'Company',
         company_logo: '',
         location: gig.location ?? 'TBD',
         start_date: gig.start_date,
