@@ -90,6 +90,16 @@ export interface Database {
         Insert: Omit<Review, 'id' | 'created_at' | 'updated_at'>;
         Update: Partial<Omit<Review, 'id' | 'created_at' | 'updated_at'>>;
       };
+      gig_messages: {
+        Row: GigMessageRow;
+        Insert: Omit<GigMessageRow, 'id' | 'created_at'>;
+        Update: Partial<Omit<GigMessageRow, 'id' | 'created_at' | 'gig_id' | 'sender_id'>>;
+      };
+      gig_message_confirmations: {
+        Row: GigMessageConfirmation;
+        Insert: GigMessageConfirmation;
+        Update: never;
+      };
       certification_types: {
         Row: CertificationType;
         Insert: Omit<CertificationType, 'created_at'>;
@@ -297,6 +307,25 @@ export interface GigApplication {
   notes?: string;
   gig?: Gig;
   worker?: Profile;
+}
+
+export interface GigMessageRow {
+  id: string;
+  gig_id: string;
+  sender_id: string;
+  message_type: 'general' | 'instructions' | 'payment' | 'logistics' | 'safety';
+  title: string;
+  content: string;
+  recipients: string[];
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  requires_confirmation: boolean;
+  created_at: string;
+}
+
+export interface GigMessageConfirmation {
+  message_id: string;
+  worker_id: string;
+  confirmed_at: string;
 }
 
 export interface Availability {

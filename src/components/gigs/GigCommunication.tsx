@@ -22,6 +22,8 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { supabase } from '@/lib/supabase';
+import type { GigMessageRow, GigMessageConfirmation } from '@/lib/types';
 
 interface GigMessage {
   id: string;
@@ -64,9 +66,36 @@ const GigCommunication: React.FC<GigCommunicationProps> = ({ gigId, gigTitle, wo
   const [content, setContent] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const isLiveGig = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(gigId);
+
   useEffect(() => {
-    loadMockMessages();
+    if (isLiveGig) {
+      loadMessages();
+    } else {
+      loadMockMessages();
+    }
   }, [gigId]);
+
+  const loadMessages = async () => {
+    const { data, error } = await supabase
+      .from('gig_messages')
+      .select('*, sender:profiles!sender_id(full_name, role), confirmations:gig_message_confirmations(worker_id, confirmed_at)')
+      .eq('gig_id', gigId)
+      .order('created_at', { ascending: false });
+    if (error) {
+      toast.error('Could not load messages');
+      return;
+    }
+    setMessages(((data ?? []) as (GigMessageRow & {
+      sender?: { full_name?: string; role?: 'company' | 'worker' };
+      confirmations?: GigMessageConfirmation[];
+    })[]).map((row) => ({
+      ...row,
+      sender_name: row.sender?.full_name ?? 'Team member',
+      sender_role: row.sender?.role === 'worker' ? 'worker' : 'company',
+      confirmations: row.confirmations ?? [],
+    })));
+  };
 
   const loadMockMessages = () => {
     const mockMessages: GigMessage[] = [
@@ -145,37 +174,57 @@ const GigCommunication: React.FC<GigCommunicationProps> = ({ gigId, gigTitle, wo
       return;
     }
 
+    if (!isLiveGig) {
+      toast.info('Demo roster — messages send on a live gig');
+      setShowMessageDialog(false);
+      resetForm();
+      return;
+    }
+
     setLoading(true);
-    try {
-      const newMessage: GigMessage = {
-        id: Date.now().toString(),
+    const { data, error } = await supabase
+      .from('gig_messages')
+      .insert({
         gig_id: gigId,
-        sender_id: profile?.id || 'demo',
-        sender_name: profile?.full_name || 'Demo User',
-        sender_role: profile?.role as 'company' | 'worker',
-        message_type: messageType as GigMessage['message_type'],
+        sender_id: profile!.id,
+        message_type: messageType as GigMessageRow['message_type'],
         title,
         content,
         recipients: selectedRecipients,
-        priority: priority as GigMessage['priority'],
+        priority: priority as GigMessageRow['priority'],
         requires_confirmation: requiresConfirmation,
-        confirmations: [],
-        created_at: new Date().toISOString(),
-      };
+      })
+      .select()
+      .single();
 
-      setMessages(prev => [newMessage, ...prev]);
+    if (error) {
+      toast.error('Failed to send message');
+    } else if (data) {
+      setMessages(prev => [{
+        ...data,
+        sender_name: profile?.full_name || 'Team member',
+        sender_role: 'company',
+        confirmations: [],
+      }, ...prev]);
       setShowMessageDialog(false);
       resetForm();
-      toast.success('Message sent successfully!');
-    } catch {
-      toast.error('Failed to send message');
-    } finally {
-      setLoading(false);
+      toast.success('Message sent');
     }
+    setLoading(false);
   };
 
   const confirmMessage = async (messageId: string) => {
     if (!profile) return;
+
+    if (isLiveGig) {
+      const { error } = await supabase
+        .from('gig_message_confirmations')
+        .insert({ message_id: messageId, worker_id: profile.id });
+      if (error) {
+        toast.error('Could not record confirmation');
+        return;
+      }
+    }
 
     setMessages(prev => prev.map(msg => {
       if (msg.id === messageId) {
