@@ -2,6 +2,15 @@
 
 Ordered queue for build sessions and scheduled automations. One item ≈ one session unless noted.
 
+## Claims (lane coordination)
+
+Two sessions work this repo in parallel (cloud + desktop). **Before starting any item, mark it**: append `(claimed: <lane> — working on it)`. Check claims before picking up work; clear your claim when done (`done: <lane>`) or released. Lane names: `cloud` (session d713fbae), `desktop` (session 89ab957d).
+
+- Repo privacy toggle (make repo private again) — **claimed: desktop — working on it**
+- Migration duplicate-DDL cleanup (blocks clean `supabase start` from repo files) — **claimed: desktop — working on it**
+- Weekly waitlist-metrics automation — **done: cloud** (automation created, pending user approval)
+- Everything below is unclaimed.
+
 ## P0 — ship blockers
 - [ ] Add `.github/workflows/ci.yml`: `npx eslint src`, `npx tsc --noEmit -p tsconfig.app.json`, `npx vitest run`, `npm run build` on every PR (free minutes).
 - [ ] Merge #2 (waitlist funnel), retarget #4 to `main`, then land both.
