@@ -27,22 +27,25 @@ const ClockCard: React.FC<Props> = ({ assignment, onChanged }) => {
   const canClockIn = shift && !clockedIn && new Date(shift.starts_at).getTime() - now < 60 * 60_000;
 
   const clock = async (kind: 'in' | 'out') => {
-    if (!venue) return toast.error('This event has no venue coordinates; ask the production manager to add one.');
     setBusy(true);
     setLocating('Getting GPS fix…');
     try {
       const pos = await getCurrentPosition();
       const here = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-      const fence = checkGeofence(here, { lat: venue.latitude, lng: venue.longitude }, venue.geofence_radius_m, pos.coords.accuracy);
-      setLocating(fence.inside ? `Inside geofence (${Math.round(fence.distanceM)} m)` : `${Math.round(fence.distanceM)} m from venue`);
-      if (!fence.inside && kind === 'in') {
-        toast.error(`You're ${Math.round(fence.distanceM)} m from ${venue.name}. Clock-in requires being within ${venue.geofence_radius_m} m.`);
-        setBusy(false);
-        return;
+      if (venue) {
+        const fence = checkGeofence(here, { lat: venue.latitude, lng: venue.longitude }, venue.geofence_radius_m, pos.coords.accuracy);
+        setLocating(fence.inside ? `Inside geofence (${Math.round(fence.distanceM)} m)` : `${Math.round(fence.distanceM)} m from venue`);
+        if (!fence.inside && kind === 'in') {
+          toast.error(`You're ${Math.round(fence.distanceM)} m from ${venue.name}. Clock-in requires being within ${venue.geofence_radius_m} m.`);
+          setBusy(false);
+          return;
+        }
+      } else {
+        setLocating('No geofence on this event — GPS is recorded but not verified');
       }
       const { error } = await MarketplaceService.clockEvent(assignment.id, kind, here.lat, here.lng);
       if (error) throw new Error(error);
-      toast.success(kind === 'in' ? `Clocked in at ${venue.name}` : 'Clocked out — timesheet submitted for approval');
+      toast.success(kind === 'in' ? (venue ? `Clocked in at ${venue.name}` : 'Clocked in') : 'Clocked out — timesheet submitted for approval');
       onChanged();
     } catch (e) {
       toast.error(e instanceof GeolocationPositionError ? 'Location permission is required to clock in.' : (e as Error).message);

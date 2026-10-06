@@ -41,6 +41,30 @@ serve(async (req) => {
         const session = event.data.object as Stripe.Checkout.Session;
         const depositId = session.metadata?.escrow_deposit_id;
         if (depositId && session.payment_status === "paid") {
+          // The deposit row is the source of truth: a session that names someone
+          // else's deposit, the wrong event, or too small an amount must not
+          // mark it funded.
+          const { data: deposit, error: lookupError } = await supabase
+            .from("escrow_deposits")
+            .select("id, event_id, company_id, amount, currency, status")
+            .eq("id", depositId)
+            .maybeSingle();
+          if (lookupError) throw lookupError;
+          if (!deposit) {
+            console.warn(`checkout session ${session.id} references unknown deposit ${depositId}`);
+            break;
+          }
+          const claimedEvent = session.metadata?.event_id;
+          if (claimedEvent && claimedEvent !== deposit.event_id) {
+            console.warn(`deposit ${depositId} is for event ${deposit.event_id}, session says ${claimedEvent}`);
+            break;
+          }
+          const paidCents = session.amount_total ?? 0;
+          const dueCents = Math.round(Number(deposit.amount) * 100);
+          if (paidCents < dueCents || (session.currency ?? "").toLowerCase() !== String(deposit.currency).toLowerCase()) {
+            console.warn(`deposit ${depositId} needs ${dueCents} ${deposit.currency}, session paid ${paidCents} ${session.currency}`);
+            break;
+          }
           const paymentRef = typeof session.payment_intent === "string" ? session.payment_intent : session.id;
           const { error } = await supabase.rpc("mark_escrow_funded", {
             p_deposit_id: depositId,

@@ -166,14 +166,22 @@ export interface Profile {
   linkedin_url?: string;
   portfolio_items?: PortfolioItem[];
   is_available?: boolean;
-  latitude?: number;
-  longitude?: number;
   travel_radius_km?: number;
   day_rate?: number;
-  stripe_connect_account_id?: string;
-  payouts_enabled?: boolean;
   average_rating?: number;
   review_count?: number;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Private per-worker data — RLS restricts this row to the worker themselves. */
+export interface WorkerSensitive {
+  worker_id: string;
+  latitude?: number;
+  longitude?: number;
+  geo?: unknown;
+  stripe_connect_account_id?: string;
+  payouts_enabled?: boolean;
   created_at: string;
   updated_at: string;
 }

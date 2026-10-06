@@ -53,22 +53,6 @@ serve(async (req) => {
       .single();
 
     if (lookupError || !waitlistEntry) {
-      // Token already consumed (link opened twice): report success idempotently.
-      // No referral_code in this response — a code must only be issued to the
-      // token holder, never to an arbitrary email+token submission.
-      const { data: verifiedEntry } = await supabase
-        .from("waiting_list")
-        .select("id")
-        .eq("email", email)
-        .eq("status", "verified")
-        .is("verification_token", null)
-        .maybeSingle();
-      if (verifiedEntry) {
-        return new Response(
-          JSON.stringify({ message: "Email already verified", already_verified: true }),
-          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
       return new Response(
         JSON.stringify({ error: "Invalid verification token or email" }),
         {
@@ -93,12 +77,13 @@ serve(async (req) => {
       );
     }
 
-    // Update status to verified and clear the verification token
+    // Mark verified. The token stays on the row so reopening the same link
+    // returns the referral code again — only someone holding the unguessable
+    // token from the email can reach this path, so replay is safe.
     const { data: updatedEntry, error: updateError } = await supabase
       .from("waiting_list")
-      .update({ 
-        status: 'verified',
-        verification_token: null // Clear the token after use
+      .update({
+        status: 'verified'
       })
       .eq("id", waitlistEntry.id)
       .select()

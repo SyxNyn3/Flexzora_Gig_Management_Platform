@@ -26,11 +26,15 @@ export interface BookedWindow {
 export interface MatchWorkerInput {
   id: string;
   location: LatLng | null;
+  /** Server-computed distance to the venue when raw coordinates stay private. */
+  distanceKm?: number | null;
   travelRadiusKm: number;
   certifications: Pick<Certification, 'cert_type_code' | 'is_active' | 'expiration_date' | 'verified'>[];
   skills: Pick<WorkerSkill, 'skill_id' | 'proficiency_level'>[];
   bookedWindows: BookedWindow[];
   unavailableWindows?: BookedWindow[];
+  /** Set by callers that resolve conflicts via worker_conflicts() instead of windows. */
+  conflicts?: { hard: boolean; buffer: boolean };
   avgRating: number | null;        // 1..5
   reliabilityRate: number | null;  // 0..1
   completedShifts: number;
@@ -102,20 +106,26 @@ export function checkGatekeeper(worker: MatchWorkerInput, shift: MatchShiftInput
 
 /** 100 at the venue, linear falloff to 0 at the worker's travel radius (min 10 km). */
 export function proximityScore(worker: MatchWorkerInput, shift: MatchShiftInput): { score: number; distanceKm: number | null } {
+  const radius = Math.max(worker.travelRadiusKm || 80, 10);
+  if (worker.distanceKm != null && shift.venueLocation) {
+    return { score: clamp(100 * (1 - worker.distanceKm / radius)), distanceKm: Math.round(worker.distanceKm * 10) / 10 };
+  }
   if (!worker.location || !shift.venueLocation) return { score: 50, distanceKm: null };
   const d = distanceKm(worker.location, shift.venueLocation);
-  const radius = Math.max(worker.travelRadiusKm || 80, 10);
   return { score: clamp(100 * (1 - d / radius)), distanceKm: Math.round(d * 10) / 10 };
 }
 
 /** 100 if free; 0 on hard conflict with a confirmed booking or declared unavailability; 60 if only the buffer is violated. */
 export function availabilityScore(worker: MatchWorkerInput, shift: MatchShiftInput): number {
   const window: BookedWindow = { starts_at: shift.starts_at, ends_at: shift.ends_at };
-  const hardConflict =
-    worker.bookedWindows.some((w) => windowsOverlap(w, window)) ||
-    (worker.unavailableWindows ?? []).some((w) => windowsOverlap(w, window));
+  const hardConflict = worker.conflicts
+    ? worker.conflicts.hard
+    : worker.bookedWindows.some((w) => windowsOverlap(w, window)) ||
+      (worker.unavailableWindows ?? []).some((w) => windowsOverlap(w, window));
   if (hardConflict) return 0;
-  const bufferConflict = worker.bookedWindows.some((w) => windowsOverlap(w, window, shift.bufferMinutes ?? 60));
+  const bufferConflict = worker.conflicts
+    ? worker.conflicts.buffer
+    : worker.bookedWindows.some((w) => windowsOverlap(w, window, shift.bufferMinutes ?? 60));
   return bufferConflict ? 60 : 100;
 }
 

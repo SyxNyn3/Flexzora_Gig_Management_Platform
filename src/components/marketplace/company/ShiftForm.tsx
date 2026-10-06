@@ -50,7 +50,10 @@ const ShiftForm: React.FC<Props> = ({ eventDate, skills, certTypes, initial, onS
 
   const projected = useMemo(() => {
     if (!form.starts_at || !form.ends_at) return 0;
-    return projectedShiftCost(new Date(form.starts_at).toISOString(), new Date(form.ends_at).toISOString(), form.hourly_rate, form.headcount);
+    const start = new Date(form.starts_at);
+    const end = new Date(form.ends_at);
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end <= start) return 0;
+    return projectedShiftCost(start.toISOString(), end.toISOString(), form.hourly_rate, form.headcount);
   }, [form.starts_at, form.ends_at, form.hourly_rate, form.headcount]);
 
   return (

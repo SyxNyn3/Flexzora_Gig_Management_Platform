@@ -467,36 +467,48 @@ export class MarketplaceService {
   /** Builds match inputs for every available worker and ranks them for the given shift. */
   static async rankCandidates(shift: Shift, companyId: string): Promise<Result<(MatchResult & { worker: Profile })[]>> {
     try {
-      const [workersRes, certsRes, skillsRes, bookingsRes, historyRes, rosterRes, blockedRes] = await Promise.all([
+      const [workersRes, certsRes, skillsRes, historyRes, rosterRes] = await Promise.all([
         supabase.from('profiles').select('*').eq('role', 'worker').eq('is_available', true),
         supabase.from('certifications').select('worker_id, cert_type_code, is_active, expiration_date, verified').eq('is_active', true),
         supabase.from('worker_skills').select('worker_id, skill_id, proficiency_level'),
-        supabase
-          .from('shift_assignments')
-          .select('worker_id, shift:shifts!inner(starts_at, ends_at)')
-          .eq('status', 'confirmed')
-          .gte('shift.ends_at', new Date(new Date(shift.starts_at).getTime() - 7 * 86_400_000).toISOString()),
         supabase.from('shift_assignments').select('worker_id, status').in('status', ['completed', 'no_show', 'withdrawn']),
         supabase.from('preferred_rosters').select('worker_id, tier').eq('company_id', companyId),
-        supabase
-          .from('availability')
-          .select('worker_id, start_time, end_time')
-          .eq('is_available', false)
-          .lte('start_time', shift.ends_at)
-          .gte('end_time', shift.starts_at),
       ]);
-      for (const r of [workersRes, certsRes, skillsRes, bookingsRes, historyRes, rosterRes, blockedRes]) {
+      for (const r of [workersRes, certsRes, skillsRes, historyRes, rosterRes]) {
         if (r.error) throw r.error;
       }
-      const blockedByWorker = groupBy(blockedRes.data ?? [], (b) => b.worker_id as string);
 
       const workers = (workersRes.data ?? []) as Profile[];
+      const workerIds = workers.map((w) => w.id);
+
+      // Proximity and conflict checks go through SECURITY DEFINER functions so
+      // raw coordinates and other companies' bookings never leave the database.
+      const venue = shift.event?.venue;
+      const [distancesRes, conflictsRes] = await Promise.all([
+        venue
+          ? supabase.rpc('worker_distances', { p_worker_ids: workerIds, p_lat: venue.latitude, p_lng: venue.longitude })
+          : Promise.resolve({ data: [] as { worker_id: string; distance_km: number | null }[], error: null }),
+        supabase.rpc('worker_conflicts', {
+          p_worker_ids: workerIds,
+          p_start: shift.starts_at,
+          p_end: shift.ends_at,
+          p_buffer_minutes: 60,
+        }),
+      ]);
+      if (distancesRes.error) throw distancesRes.error;
+      if (conflictsRes.error) throw conflictsRes.error;
+      const distanceByWorker = new Map(
+        ((distancesRes.data ?? []) as { worker_id: string; distance_km: number | null }[]).map((d) => [d.worker_id, d.distance_km]),
+      );
+      const conflictsByWorker = new Map(
+        ((conflictsRes.data ?? []) as { worker_id: string; hard_conflict: boolean; buffer_conflict: boolean }[]).map((c) => [
+          c.worker_id,
+          { hard: c.hard_conflict, buffer: c.buffer_conflict },
+        ]),
+      );
+
       const certsByWorker = groupBy(certsRes.data ?? [], (c) => c.worker_id as string);
       const skillsByWorker = groupBy(skillsRes.data ?? [], (s) => s.worker_id as string);
-      const bookingsByWorker = groupBy(
-        (bookingsRes.data ?? []) as unknown as { worker_id: string; shift: { starts_at: string; ends_at: string } }[],
-        (b) => b.worker_id,
-      );
       const historyByWorker = groupBy(historyRes.data ?? [], (h) => h.worker_id as string);
       const rosterByWorker = new Map((rosterRes.data ?? []).map((r) => [r.worker_id as string, r.tier as RosterTier]));
 
@@ -506,12 +518,13 @@ export class MarketplaceService {
         const bad = history.length - completed;
         return {
           id: w.id,
-          location: w.latitude != null && w.longitude != null ? { lat: w.latitude, lng: w.longitude } : null,
+          location: null,
+          distanceKm: distanceByWorker.get(w.id) ?? null,
           travelRadiusKm: w.travel_radius_km ?? 80,
           certifications: (certsByWorker.get(w.id) ?? []) as Pick<Certification, 'cert_type_code' | 'is_active' | 'expiration_date' | 'verified'>[],
           skills: (skillsByWorker.get(w.id) ?? []) as Pick<WorkerSkill, 'skill_id' | 'proficiency_level'>[],
-          bookedWindows: (bookingsByWorker.get(w.id) ?? []).map((b) => b.shift),
-          unavailableWindows: (blockedByWorker.get(w.id) ?? []).map(toWindow),
+          bookedWindows: [],
+          conflicts: conflictsByWorker.get(w.id) ?? { hard: false, buffer: false },
           avgRating: w.average_rating ?? null,
           reliabilityRate: history.length ? completed / (completed + bad) : null,
           completedShifts: completed,
@@ -519,7 +532,6 @@ export class MarketplaceService {
         };
       });
 
-      const venue = shift.event?.venue;
       const ranked = rankWorkersForShift(inputs, {
         id: shift.id,
         starts_at: shift.starts_at,
@@ -540,8 +552,9 @@ export class MarketplaceService {
   /** Match score for a single worker against many shifts (worker-side marketplace view). */
   static async scoreShiftsForWorker(workerId: string, shifts: Shift[]): Promise<Result<Map<string, MatchResult>>> {
     try {
-      const [profileRes, certsRes, skillsRes, bookingsRes, historyRes, rosterRes, blockedRes] = await Promise.all([
+      const [profileRes, sensitiveRes, certsRes, skillsRes, bookingsRes, historyRes, rosterRes, blockedRes] = await Promise.all([
         supabase.from('profiles').select('*').eq('id', workerId).single(),
+        supabase.from('worker_sensitive').select('latitude, longitude').eq('worker_id', workerId).maybeSingle(),
         supabase.from('certifications').select('cert_type_code, is_active, expiration_date, verified').eq('worker_id', workerId).eq('is_active', true),
         supabase.from('worker_skills').select('skill_id, proficiency_level').eq('worker_id', workerId),
         supabase.from('shift_assignments').select('shift:shifts!inner(starts_at, ends_at)').eq('worker_id', workerId).eq('status', 'confirmed'),
@@ -549,10 +562,11 @@ export class MarketplaceService {
         supabase.from('preferred_rosters').select('company_id, tier').eq('worker_id', workerId),
         supabase.from('availability').select('start_time, end_time').eq('worker_id', workerId).eq('is_available', false),
       ]);
-      for (const r of [profileRes, certsRes, skillsRes, bookingsRes, historyRes, rosterRes, blockedRes]) {
+      for (const r of [profileRes, sensitiveRes, certsRes, skillsRes, bookingsRes, historyRes, rosterRes, blockedRes]) {
         if (r.error) throw r.error;
       }
       const w = profileRes.data as Profile;
+      const sensitive = sensitiveRes.data as { latitude: number | null; longitude: number | null } | null;
       const history = historyRes.data ?? [];
       const completed = history.filter((h) => h.status === 'completed').length;
       const rosterByCompany = new Map((rosterRes.data ?? []).map((r) => [r.company_id as string, r.tier as RosterTier]));
@@ -560,7 +574,7 @@ export class MarketplaceService {
 
       const base: Omit<MatchWorkerInput, 'rosterTier'> = {
         id: w.id,
-        location: w.latitude != null && w.longitude != null ? { lat: w.latitude, lng: w.longitude } : null,
+        location: sensitive?.latitude != null && sensitive?.longitude != null ? { lat: sensitive.latitude, lng: sensitive.longitude } : null,
         travelRadiusKm: w.travel_radius_km ?? 80,
         certifications: (certsRes.data ?? []) as Pick<Certification, 'cert_type_code' | 'is_active' | 'expiration_date' | 'verified'>[],
         skills: (skillsRes.data ?? []) as Pick<WorkerSkill, 'skill_id' | 'proficiency_level'>[],

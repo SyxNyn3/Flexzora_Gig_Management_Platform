@@ -44,8 +44,8 @@ const BudgetSummary: React.FC<Props> = ({ event, refreshKey }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [event.id, refreshKey]);
 
-  // Back from Stripe Checkout: the webhook funds the deposit asynchronously, so poll the
-  // budget until the funded balance moves (or give up after a minute).
+  // Back from Stripe Checkout: the webhook flips the deposit pending → funded
+  // asynchronously, so poll the deposits until none are pending (or give up).
   useEffect(() => {
     const outcome = new URLSearchParams(window.location.search).get('escrow');
     if (outcome === 'cancelled') toast.info('Escrow deposit cancelled; no funds were taken');
@@ -56,20 +56,16 @@ const BudgetSummary: React.FC<Props> = ({ event, refreshKey }) => {
     }
     if (outcome !== 'funded') return;
     toast.success('Payment received — waiting for Stripe to confirm the deposit');
-    let baseline: number | null = null;
     let ticks = 0;
     const timer = window.setInterval(async () => {
-      const { data } = await MarketplaceService.getEventBudget(event);
-      if (!data) return;
-      if (baseline === null) {
-        baseline = data.escrowFunded;
-        return;
-      }
       ticks += 1;
-      if (data.escrowFunded > baseline || ticks >= ESCROW_POLL_MAX_TICKS) {
+      const { data: deposits } = await MarketplaceService.getEscrow(event.id);
+      const confirmed = deposits != null && deposits.length > 0 && deposits.every((d) => d.status !== 'pending');
+      if (confirmed || ticks >= ESCROW_POLL_MAX_TICKS) {
         window.clearInterval(timer);
-        setSummary(data);
-        if (data.escrowFunded > baseline) toast.success('Escrow deposit confirmed');
+        const { data } = await MarketplaceService.getEventBudget(event);
+        if (data) setSummary(data);
+        if (confirmed) toast.success('Escrow deposit confirmed');
       }
     }, ESCROW_POLL_MS);
     return () => window.clearInterval(timer);
