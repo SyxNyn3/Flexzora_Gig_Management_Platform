@@ -1,0 +1,60 @@
+# Flexzora — Supabase project configuration.
+#
+# The important part of this file is the per-function `verify_jwt` policy: it
+# makes deploy-time auth requirements explicit and version-controlled instead
+# of depending on which `--no-verify-jwt` flags were last typed by hand.
+#
+#   verify_jwt = false → callable without a user session (public forms,
+#                        pre-login lookups, Stripe webhooks, and
+#                        function-to-function calls that carry service creds)
+#   verify_jwt = true  → Supabase gateway rejects requests without a valid
+#                        user/service JWT before the function runs
+#
+# Functions that still verify the caller inside their own code (checkout,
+# payment intents, authkit-token) do BOTH: the gateway gate plus an explicit
+# auth.getUser() so identity is never trusted from client-supplied strings.
+
+project_id = "qgjtrosadftjrplubjaw"
+
+# --- Public endpoints (no user session exists yet) -------------------------
+
+[functions.submit-waitlist]
+verify_jwt = false
+
+[functions.resend-waitlist-verification]
+verify_jwt = false
+
+[functions.verify-waitlist-email]
+verify_jwt = false
+
+[functions.schedule-demo]
+verify_jwt = false
+
+# Username → email lookup used by the pre-login sign-in form.
+[functions.lookup-user]
+verify_jwt = false
+
+# Stripe calls this directly; authenticity comes from the webhook signature,
+# not a Supabase JWT.
+[functions.stripe-webhook]
+verify_jwt = false
+
+# --- Authenticated endpoints ------------------------------------------------
+
+# Invoked function-to-function by submit/resend-waitlist-verification using
+# the service-role key, which satisfies JWT verification. Keeping this gated
+# stops anonymous callers from triggering it directly.
+[functions.send-waitlist-verification]
+verify_jwt = true
+
+[functions.create-checkout-session]
+verify_jwt = true
+
+[functions.create-payment-intent]
+verify_jwt = true
+
+[functions.retrieve-payment-intent]
+verify_jwt = true
+
+[functions.authkit-token]
+verify_jwt = true

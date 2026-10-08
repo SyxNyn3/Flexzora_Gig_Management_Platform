@@ -49,27 +49,16 @@ export const createPaymentIntent = async (
   }
 };
 
-// Function to create a checkout session via Supabase Edge Function
+// Function to create a checkout session via Supabase Edge Function.
+// The edge function derives the amount, currency, line items and redirect URLs
+// from the escrow deposit row server-side — the client only names the deposit.
 export const createCheckoutSession = async (
-  lineItems: Array<{
-    price_data: {
-      currency: string;
-      product_data: {
-        name: string;
-        description?: string;
-      };
-      unit_amount: number;
-    };
-    quantity: number;
-  }>,
-  successUrl: string,
-  cancelUrl: string,
-  metadata: Record<string, string> = {}
+  escrowDepositId: string
 ): Promise<{ sessionId: string | null; url: string | null; error: string | null }> => {
   try {
     // Call the Supabase Edge Function
     const { data, error } = await supabase.functions.invoke('create-checkout-session', {
-      body: { lineItems, successUrl, cancelUrl, metadata },
+      body: { escrow_deposit_id: escrowDepositId },
     });
 
     if (error) throw error;

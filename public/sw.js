@@ -1,44 +1,62 @@
-const CACHE_NAME = 'flexzora-v1';
-const urlsToCache = [
-  '/',
-  '/index.html',
-  '/src/main.tsx',
-  '/src/index.css',
-];
+const CACHE_NAME = 'flexzora-v2';
+
+// Only same-origin static assets are cacheable. API calls and auth traffic are
+// never cached.
+const isCacheable = (request, response) =>
+  request.method === 'GET' &&
+  new URL(request.url).origin === self.location.origin &&
+  !request.url.includes('/auth/') &&
+  !request.url.includes('/rest/') &&
+  !request.url.includes('/functions/') &&
+  response && response.ok;
 
 self.addEventListener('install', (event) => {
+  // Take over immediately — the previous cache-first worker pinned stale builds.
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then((cache) => {
-        console.log('Opened cache');
-        return cache.addAll(urlsToCache);
-      })
+    caches.keys().then((cacheNames) =>
+      Promise.all(
+        cacheNames.map((cacheName) =>
+          cacheName !== CACHE_NAME ? caches.delete(cacheName) : undefined
+        )
+      )
+    ).then(() => self.clients.claim())
   );
 });
 
 self.addEventListener('fetch', (event) => {
-  event.respondWith(
-    caches.match(event.request)
-      .then((response) => {
-        if (response) {
-          return response;
-        }
-        return fetch(event.request);
-      })
-  );
-});
+  const { request } = event;
 
-self.addEventListener('activate', (event) => {
-  const cacheWhitelist = [CACHE_NAME];
-  event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheWhitelist.indexOf(cacheName) === -1) {
-            return caches.delete(cacheName);
-          }
+  // Navigations: network-first so deployed updates are picked up, falling back
+  // to the cached shell when offline.
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put('/index.html', copy));
+          return response;
         })
-      );
-    })
+        .catch(() => caches.match('/index.html').then((r) => r || Response.error()))
+    );
+    return;
+  }
+
+  // Static assets: cache-first with background population.
+  event.respondWith(
+    caches.match(request).then(
+      (cached) =>
+        cached ||
+        fetch(request).then((response) => {
+          if (isCacheable(request, response)) {
+            const copy = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+          }
+          return response;
+        })
+    )
   );
 });

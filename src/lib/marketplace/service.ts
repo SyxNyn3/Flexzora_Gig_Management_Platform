@@ -783,19 +783,7 @@ export class MarketplaceService {
         .single();
       if (error) throw error;
 
-      const checkout = await createCheckoutSession(
-        [{
-          price_data: {
-            currency: 'usd',
-            product_data: { name: `Escrow deposit – ${event.name}`, description: 'Held in escrow and released to crew as timesheets are approved' },
-            unit_amount: Math.round(amount * 100),
-          },
-          quantity: 1,
-        }],
-        `${returnTo}?escrow=funded`,
-        `${returnTo}?escrow=cancelled`,
-        { escrow_deposit_id: deposit.id, event_id: event.id, company_id: event.company_id },
-      );
+      const checkout = await createCheckoutSession(deposit.id);
       if (checkout.error || !checkout.url) throw new Error(checkout.error ?? 'Stripe Checkout did not return a URL');
       return ok({ deposit: deposit as EscrowDeposit, checkoutUrl: checkout.url });
     } catch (e) {

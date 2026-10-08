@@ -26,11 +26,24 @@ serve(async (req) => {
     // Parse the request body
     const { identifier } = await req.json();
     
-    if (!identifier) {
+    if (!identifier || typeof identifier !== "string") {
       return new Response(
-        JSON.stringify({ error: "Identifier (username or email) is required" }),
+        JSON.stringify({ error: "Username is required" }),
         {
           status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // Usernames only. Accepting an email here turns this endpoint into an
+    // account-enumeration oracle ("user not found" vs. found reveals whether an
+    // address is registered). Email sign-in needs no lookup, so reject '@'.
+    if (identifier.includes("@") || identifier.length > 64) {
+      return new Response(
+        JSON.stringify({ error: "User not found" }),
+        {
+          status: 404,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         }
       );

@@ -4,7 +4,7 @@ Ordered queue for build sessions and scheduled automations. One item ≈ one ses
 
 ## Claims (lane coordination)
 
-Two sessions work this repo in parallel. **Before starting any item, mark it**: append `(claimed: <name> — working on it)`. Check claims before picking up work; clear your claim when done (`done: <name>`) or released. Lane names: **Mark** = cloud/manager session (d713fbae), **Tom** = desktop session (89ab957d).
+Two sessions work this repo in parallel. **Before starting any item, mark it**: append `(claimed: <name> — working on it)`. Check claims before picking up work; clear your claim when done (`done: <name>`) or released. Lane names: **Mark** = cloud/manager session (d713fbae), **Tom** = desktop session (89ab957d), **Devin** = desktop session (security pass, 2026-10-08).
 
 - Repo privacy toggle (make repo private again) — **claimed: Tom — working on it** (gh token lacks permission; asked user to flip in Settings)
 - Migration duplicate-DDL cleanup (blocks clean `supabase start` from repo files) — **done: Tom** (all migrations idempotent; verified via double clean replay)
@@ -15,6 +15,17 @@ Two sessions work this repo in parallel. **Before starting any item, mark it**: 
 - Weekly waitlist-metrics automation — **done: Mark** (automation created, pending user approval)
 - `.github/workflows/ci.yml` — **claimed: Mark — working on it**
 - PR #4 review-finding sweeps — **claimed: Mark — working on it**
+- Security sweep: edge-function auth & search_path — **done: Devin**
+  - `authkit-token` verified the raw Authorization string as identity — now calls `auth.getUser(jwt)` and mints AuthKit tokens as `user.id` only.
+  - `create-checkout-session` took client `lineItems`/`successUrl`/`cancelUrl` — now takes only `escrow_deposit_id`, derives amount/items/redirects server-side, verifies caller owns the deposit's company.
+  - `retrieve-payment-intent` returned the full Stripe object to anyone — now JWT + escrow-ownership check + minimal field projection (404 not 403, no oracle).
+  - `create-payment-intent` — now verifies JWT, enforces amount bounds + currency allowlist, stamps `supabase_user_id` into metadata.
+  - `lookup-user` — rejects email identifiers (usernames only); kills the account-enumeration oracle.
+  - `send-waitlist-verification` — no longer returns `verification_link` in the response.
+  - New migration `20261008000000` pins `search_path` on every public `SECURITY DEFINER` function lacking it (pg_temp shadowing risk — same class as the `handle_new_user` fix).
+  - New `supabase/config.toml` pins `verify_jwt` per function so deploy-time auth policy is versioned, not flag-dependent.
+  - `public/sw.js` — was cache-first-forever (stale builds pinned); now network-first for navigations, cache-first only for same-origin static assets, never caches API/auth traffic.
+  - Still open: `schedule-demo` drops submissions on the floor (validates then fakes success — needs a `demo_requests` table or CRM hookup); `stripe.ts` calls 4 edge functions that don't exist (`setup-payment-method`, `list-payment-methods`, `create-customer`, `create-payment-link`); `.env` sits in git history with anon/publishable keys (low — public by design); stray scratch files `00`/`01` duplicate migration `20251006224047`.
 - Everything below is unclaimed.
 
 ## P0 — ship blockers

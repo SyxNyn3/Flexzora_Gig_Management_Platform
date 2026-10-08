@@ -88,11 +88,11 @@ serve(async (req) => {
       `
     };
 
-    // Return success response
+    // Return success response. Never return the verification link — it is a
+    // bearer token; handing it to the HTTP caller defeats email verification.
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         message: "Verification email sent successfully",
-        verification_link: verificationLink // For testing purposes
       }),
       {
         status: 200,
