@@ -25,7 +25,9 @@ Two sessions work this repo in parallel. **Before starting any item, mark it**: 
   - New migration `20261008000000` pins `search_path` on every public `SECURITY DEFINER` function lacking it (pg_temp shadowing risk — same class as the `handle_new_user` fix).
   - New `supabase/config.toml` pins `verify_jwt` per function so deploy-time auth policy is versioned, not flag-dependent.
   - `public/sw.js` — was cache-first-forever (stale builds pinned); now network-first for navigations, cache-first only for same-origin static assets, never caches API/auth traffic.
-  - Still open: `schedule-demo` drops submissions on the floor (validates then fakes success — needs a `demo_requests` table or CRM hookup); `stripe.ts` calls 4 edge functions that don't exist (`setup-payment-method`, `list-payment-methods`, `create-customer`, `create-payment-link`); `.env` sits in git history with anon/publishable keys (low — public by design); stray scratch files `00`/`01` duplicate migration `20251006224047`.
+  - `schedule-demo` dropped every submission — now persists to new `demo_requests` table (`20261008010000`, service-role-only RLS).
+  - Removed dead `stripe.ts` exports calling edge functions that were never deployed (`setup-payment-method`, `list-payment-methods`, `create-customer`, `create-payment-link`).
+  - Still open: `.env` sits in git history with anon/publishable keys (low — public by design); stray scratch files `00`/`01` duplicate migration `20251006224047`; `send-waitlist-verification`/`resend` still only log the email — no real mail provider wired (needs e.g. Resend/SES key); sales-team notification for demo requests is a TODO in `schedule-demo`.
 - Everything below is unclaimed.
 
 ## P0 — ship blockers

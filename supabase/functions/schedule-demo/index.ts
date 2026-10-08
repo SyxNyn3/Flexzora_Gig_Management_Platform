@@ -46,7 +46,7 @@ serve(async (req) => {
     ];
     
     const missingFields = requiredFields.filter(field => !requestData[field]);
-    
+
     if (missingFields.length > 0) {
       return new Response(
         JSON.stringify({ error: `Missing required fields: ${missingFields.join(', ')}` }),
@@ -57,25 +57,76 @@ serve(async (req) => {
       );
     }
 
-    // Store the demo request in the database
-    // In a real implementation, you would create a 'demo_requests' table
-    // For now, we'll simulate success
-    
-    // In a real implementation, you would also:
-    // 1. Create a calendar event
-    // 2. Send confirmation emails
-    // 3. Notify the sales team
-    // 4. Add the contact to your CRM
+    // Basic email sanity check — this is a public endpoint.
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(requestData.contact_email))) {
+      return new Response(
+        JSON.stringify({ error: "Invalid contact email" }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
 
-    // Simulate processing time
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // Persist the demo request. preferred_date may arrive in any of a few
+    // formats; reject anything that doesn't parse to a real date.
+    const preferredDate = new Date(requestData.preferred_date);
+    if (Number.isNaN(preferredDate.getTime())) {
+      return new Response(
+        JSON.stringify({ error: "Invalid preferred_date" }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
 
-    // Return success response
+    const { data: demoRequest, error: insertError } = await supabase
+      .from("demo_requests")
+      .insert({
+        company_name: String(requestData.company_name),
+        contact_name: String(requestData.contact_name),
+        contact_email: String(requestData.contact_email),
+        contact_phone: String(requestData.contact_phone),
+        company_website: requestData.company_website || null,
+        company_size: requestData.company_size ?? null,
+        industry_focus: requestData.industry_focus ?? null,
+        num_workers_managed: requestData.num_workers_managed ?? null,
+        annual_gigs: requestData.annual_gigs ?? null,
+        current_software: requestData.current_software ?? null,
+        communication_methods: String(requestData.communication_methods),
+        payroll_process: requestData.payroll_process ?? null,
+        pain_points: String(requestData.pain_points),
+        preferred_date: preferredDate.toISOString().slice(0, 10),
+        preferred_time: String(requestData.preferred_time),
+        additional_notes: requestData.additional_notes || null,
+        has_roster: Boolean(requestData.has_roster),
+        has_scheduling_docs: Boolean(requestData.has_scheduling_docs),
+        has_payment_docs: Boolean(requestData.has_payment_docs),
+        marketing_consent: Boolean(requestData.marketing_consent),
+      })
+      .select("id")
+      .single();
+
+    if (insertError) {
+      console.error("Error storing demo request:", insertError);
+      return new Response(
+        JSON.stringify({ error: "Error scheduling demo" }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // TODO: notify the sales team / create a calendar event once an email or
+    // CRM provider is wired up.
+
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         message: "Demo request successfully submitted",
-        demo_id: `demo-${Date.now()}`,
-        status: "scheduled"
+        demo_id: demoRequest.id,
+        status: "new"
       }),
       {
         status: 200,
