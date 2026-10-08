@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- dynamic AI agent payloads/ML plumbing */
 export interface AgentConfig {
   id: string;
   name: string;

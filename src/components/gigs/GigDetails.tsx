@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
@@ -109,7 +109,7 @@ const GigDetails: React.FC = () => {
     if (!id || !profile) return;
 
     try {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('gig_applications')
         .select('*')
         .eq('gig_id', id)
@@ -119,7 +119,7 @@ const GigDetails: React.FC = () => {
       if (data) {
         setApplication(data);
       }
-    } catch (error) {
+    } catch {
       // No existing application found, which is fine
     }
   };
@@ -147,9 +147,9 @@ const GigDetails: React.FC = () => {
       toast.success('Application submitted successfully!');
       setShowApplicationDialog(false);
       checkExistingApplication();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error submitting application:', error);
-      toast.error(error.message || 'Failed to submit application');
+      toast.error((error as Error).message || 'Failed to submit application');
     } finally {
       setSubmitting(false);
     }
@@ -176,17 +176,17 @@ const GigDetails: React.FC = () => {
 
   const getApplicationStatusColor = (status: string) => {
     switch (status) {
-      case 'accepted': return 'bg-green-100 text-green-800';
-      case 'rejected': return 'bg-red-100 text-red-800';
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'accepted': return 'bg-green-500/15 text-emerald-500 dark:text-green-400';
+      case 'rejected': return 'bg-red-500/15 text-destructive dark:text-red-400';
+      case 'pending': return 'bg-amber-500/15 text-amber-600 dark:text-amber-400';
+      default: return 'bg-muted text-foreground/90';
     }
   };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-96">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
       </div>
     );
   }
@@ -196,8 +196,8 @@ const GigDetails: React.FC = () => {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Card>
           <CardContent className="text-center py-12">
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Gig not found</h3>
-            <p className="text-gray-600 mb-4">
+            <h3 className="text-lg font-medium text-foreground mb-2">Gig not found</h3>
+            <p className="text-muted-foreground mb-4">
               The gig you're looking for doesn't exist or has been removed.
             </p>
             <Button onClick={() => navigate('/gigs')}>
@@ -256,7 +256,7 @@ const GigDetails: React.FC = () => {
               {gig.creator && (
                 <div className="mt-4">
                   <Separator className="my-4" />
-                  <p className="text-sm text-gray-600 mb-2">Posted by:</p>
+                  <p className="text-sm text-muted-foreground mb-2">Posted by:</p>
                   <div className="flex items-center">
                     <Avatar className="h-8 w-8 mr-2">
                       <AvatarFallback>{gig.creator.full_name?.split(' ').map(n => n[0]).join('') || 'U'}</AvatarFallback>
@@ -275,14 +275,14 @@ const GigDetails: React.FC = () => {
               <CardTitle>Job Description</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-gray-700 leading-relaxed">
+              <p className="text-foreground/80 leading-relaxed">
                 {gig.description}
               </p>
 
               {gig.special_requirements && (
                 <div className="mt-6">
                   <h4 className="font-medium mb-2">Special Requirements</h4>
-                  <p className="text-gray-600">{gig.special_requirements}</p>
+                  <p className="text-muted-foreground">{gig.special_requirements}</p>
                 </div>
               )}
 
@@ -291,7 +291,7 @@ const GigDetails: React.FC = () => {
                   <h4 className="font-medium mb-2">Equipment Provided</h4>
                   <ul className="list-disc list-inside space-y-1">
                     {gig.equipment_provided.map((equipment, index) => (
-                      <li key={index} className="text-gray-600">{equipment}</li>
+                      <li key={index} className="text-muted-foreground">{equipment}</li>
                     ))}
                   </ul>
                 </div>
@@ -333,11 +333,11 @@ const GigDetails: React.FC = () => {
                 <Badge className={getApplicationStatusColor(application.status)}>
                   {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
                 </Badge>
-                <p className="text-sm text-gray-600 mt-2">
+                <p className="text-sm text-muted-foreground mt-2">
                   Applied on {format(new Date(application.application_date), 'MMM d, yyyy')}
                 </p>
                 {application.proposed_rate && (
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-muted-foreground">
                     Proposed rate: ${application.proposed_rate}/hour
                   </p>
                 )}
@@ -352,7 +352,7 @@ const GigDetails: React.FC = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center text-sm">
-                <MapPin className="h-4 w-4 mr-2 text-gray-400" />
+                <MapPin className="h-4 w-4 mr-2 text-muted-foreground/70" />
                 <span>{gig.location}</span>
                 {gig.is_remote && (
                   <Badge variant="outline" className="ml-2 text-xs">
@@ -362,28 +362,28 @@ const GigDetails: React.FC = () => {
               </div>
 
               <div className="flex items-center text-sm">
-                <Calendar className="h-4 w-4 mr-2 text-gray-400" />
+                <Calendar className="h-4 w-4 mr-2 text-muted-foreground/70" />
                 <div>
                   <div>{format(new Date(gig.start_date), 'MMM d, yyyy h:mm a')}</div>
-                  <div className="text-gray-500">to {format(new Date(gig.end_date), 'MMM d, yyyy h:mm a')}</div>
+                  <div className="text-muted-foreground">to {format(new Date(gig.end_date), 'MMM d, yyyy h:mm a')}</div>
                 </div>
               </div>
 
               {gig.hourly_rate && (
                 <div className="flex items-center text-sm">
-                  <DollarSign className="h-4 w-4 mr-2 text-gray-400" />
+                  <DollarSign className="h-4 w-4 mr-2 text-muted-foreground/70" />
                   <span>${gig.hourly_rate}/hour</span>
                 </div>
               )}
 
               <div className="flex items-center text-sm">
-                <Users className="h-4 w-4 mr-2 text-gray-400" />
+                <Users className="h-4 w-4 mr-2 text-muted-foreground/70" />
                 <span>{gig.required_workers} worker{gig.required_workers !== 1 ? 's' : ''} needed</span>
               </div>
 
               {daysUntilStart > 0 && (
                 <div className="flex items-center text-sm">
-                  <Clock className="h-4 w-4 mr-2 text-gray-400" />
+                  <Clock className="h-4 w-4 mr-2 text-muted-foreground/70" />
                   <span>Starts in {daysUntilStart} day{daysUntilStart !== 1 ? 's' : ''}</span>
                 </div>
               )}
@@ -409,7 +409,7 @@ const GigDetails: React.FC = () => {
               </CardHeader>
               <CardContent>
                 {gig.company.description && (
-                  <p className="text-sm text-gray-600 mb-4">
+                  <p className="text-sm text-muted-foreground mb-4">
                     {gig.company.description}
                   </p>
                 )}
@@ -441,7 +441,7 @@ const GigDetails: React.FC = () => {
                 <Button 
                   variant="outline" 
                   className="w-full"
-                  onClick={() => navigate(`/profile/${gig.creator.id}`)}
+                  onClick={() => navigate(`/profile/${gig.creator?.id}`)}
                 >
                   View Profile & Reviews
                 </Button>
@@ -483,7 +483,7 @@ const GigDetails: React.FC = () => {
                 onChange={(e) => setProposedRate(e.target.value)}
               />
               {gig.hourly_rate && (
-                <p className="text-sm text-gray-500 mt-1">
+                <p className="text-sm text-muted-foreground mt-1">
                   Posted rate: ${gig.hourly_rate}/hour
                 </p>
               )}

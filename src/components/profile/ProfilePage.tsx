@@ -11,12 +11,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { DatabaseService, normalizeUrl } from '@/lib/supabase';
-import { useSkills, useWorkerSkills, useCertifications } from '@/hooks/useSupabaseQuery';
-import { WorkerSkill, Certification, PortfolioItem } from '@/lib/types';
+import { useSkills, useWorkerSkills, useCertifications, useReviewsForWorker } from '@/hooks/useSupabaseQuery';
+import { useCertificationTypes } from '@/hooks/useMarketplace';
+import { Certification, PortfolioItem } from '@/lib/types';
 import ReviewsList from '@/components/reviews/ReviewsList';
 import ReviewStars from '@/components/reviews/ReviewStars';
 import { 
-  User, 
   Save,
   Award,
   Plus,
@@ -34,6 +34,10 @@ import PortfolioSection from './PortfolioSection';
 
 const profileSchema = z.object({
   full_name: z.string().min(2, 'Name must be at least 2 characters'),
+  username: z.string().optional().refine(
+    (v) => !v || /^[a-z0-9][a-z0-9-]{1,29}$/.test(v),
+    'Lowercase letters, numbers and dashes only, 2-30 characters'
+  ),
   phone: z.string().optional(),
   location: z.string().optional(),
   bio: z.string().optional(),
@@ -41,12 +45,12 @@ const profileSchema = z.object({
   experience_years: z.string().optional(),
   portfolio_url: z.string().optional().refine((val) => {
     if (!val) return true;
-    const urlPattern = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/;
+    const urlPattern = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/;
     return urlPattern.test(val);
   }, 'Please enter a valid URL'),
   linkedin_url: z.string().optional().refine((val) => {
     if (!val) return true;
-    const urlPattern = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/;
+    const urlPattern = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/;
     return urlPattern.test(val);
   }, 'Please enter a valid URL'),
 });
@@ -57,7 +61,10 @@ const skillSchema = z.object({
   years_experience: z.number().min(0).max(50),
 });
 
+const OTHER_CERT_TYPE = '__other__';
+
 const certificationSchema = z.object({
+  cert_type_code: z.string().optional(),
   name: z.string().min(2, 'Certification name is required'),
   issuing_organization: z.string().optional(),
   issue_date: z.string().optional(),
@@ -65,7 +72,7 @@ const certificationSchema = z.object({
   credential_id: z.string().optional(),
   credential_url: z.string().optional().refine((val) => {
     if (!val) return true;
-    const urlPattern = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/;
+    const urlPattern = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/;
     return urlPattern.test(val);
   }, 'Please enter a valid URL'),
 });
@@ -83,15 +90,17 @@ const ProfilePage: React.FC = () => {
   const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>([]);
 
   // Fetch data using custom hooks 
-  const { data: skills = [] } = useSkills();
-  const { data: workerSkills = [], refetch: refetchWorkerSkills } = useWorkerSkills(profile?.id || '');
-  const { data: certifications = [], refetch: refetchCertifications } = useCertifications(profile?.id || '');
-  const { data: reviews = [] } = useReviewsForWorker(profile?.id || '');
+  const { data: skills } = useSkills();
+  const { data: workerSkills, refetch: refetchWorkerSkills } = useWorkerSkills(profile?.id || '');
+  const { data: certifications, refetch: refetchCertifications } = useCertifications(profile?.id || '');
+  const certTypes = useCertificationTypes();
+  useReviewsForWorker(profile?.id || '');
 
   const form = useForm<ProfileForm>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
       full_name: profile?.full_name || '',
+      username: profile?.username || '',
       phone: profile?.phone || '',
       location: profile?.location || '',
       bio: profile?.bio || '',
@@ -128,6 +137,7 @@ const ProfilePage: React.FC = () => {
     if (profile) {
       form.reset({
         full_name: profile.full_name,
+        username: profile.username || '',
         phone: profile.phone || '',
         location: profile.location || '',
         bio: profile.bio || '',
@@ -149,6 +159,7 @@ const ProfilePage: React.FC = () => {
     try {
       const updates = {
         ...data,
+        username: data.username || null,
         hourly_rate: data.hourly_rate ? parseFloat(data.hourly_rate) : null,
         experience_years: data.experience_years ? parseInt(data.experience_years) : 0,
         portfolio_url: data.portfolio_url ? normalizeUrl(data.portfolio_url) : null,
@@ -162,9 +173,9 @@ const ProfilePage: React.FC = () => {
       await refreshProfile();
       
       toast.success('Profile updated successfully!');
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error updating profile:', error);
-      toast.error(error.message || 'Failed to update profile');
+      toast.error((error as Error).message || 'Failed to update profile');
     } finally {
       setLoading(false);
     }
@@ -175,7 +186,7 @@ const ProfilePage: React.FC = () => {
 
     try {
       // Check if skill already exists
-      const existingSkill = workerSkills.find(ws => 
+      const existingSkill = (workerSkills ?? []).find(ws => 
         ws.skill?.name.toLowerCase() === data.skill_name.toLowerCase()
       );
 
@@ -185,7 +196,7 @@ const ProfilePage: React.FC = () => {
       }
 
       // Find or create skill
-      let skillId = skills.find(s => s.name.toLowerCase() === data.skill_name.toLowerCase())?.id;
+      let skillId = (skills ?? []).find(s => s.name.toLowerCase() === data.skill_name.toLowerCase())?.id;
       
       if (!skillId) {
         // For demo mode or if skill doesn't exist, create a mock skill ID
@@ -206,9 +217,9 @@ const ProfilePage: React.FC = () => {
       setShowSkillDialog(false);
       skillForm.reset();
       await refetchWorkerSkills();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error adding skill:', error);
-      toast.error(error.message || 'Failed to add skill');
+      toast.error((error as Error).message || 'Failed to add skill');
     }
   };
 
@@ -219,9 +230,9 @@ const ProfilePage: React.FC = () => {
 
       toast.success('Skill removed successfully!');
       await refetchWorkerSkills();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error removing skill:', error);
-      toast.error(error.message || 'Failed to remove skill');
+      toast.error((error as Error).message || 'Failed to remove skill');
     }
   };
 
@@ -231,6 +242,7 @@ const ProfilePage: React.FC = () => {
     try {
       const certData = {
         worker_id: profile.id,
+        cert_type_code: data.cert_type_code && data.cert_type_code !== OTHER_CERT_TYPE ? data.cert_type_code : undefined,
         name: data.name,
         issuing_organization: data.issuing_organization || undefined,
         issue_date: data.issue_date || undefined,
@@ -254,9 +266,9 @@ const ProfilePage: React.FC = () => {
       setEditingCert(null);
       certForm.reset();
       await refetchCertifications();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error saving certification:', error);
-      toast.error(error.message || 'Failed to save certification');
+      toast.error((error as Error).message || 'Failed to save certification');
     }
   };
 
@@ -267,15 +279,16 @@ const ProfilePage: React.FC = () => {
 
       toast.success('Certification removed successfully!');
       await refetchCertifications();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error removing certification:', error);
-      toast.error(error.message || 'Failed to remove certification');
+      toast.error((error as Error).message || 'Failed to remove certification');
     }
   };
 
   const editCertification = (cert: Certification) => {
     setEditingCert(cert);
     certForm.reset({
+      cert_type_code: cert.cert_type_code || OTHER_CERT_TYPE,
       name: cert.name,
       issuing_organization: cert.issuing_organization || '',
       issue_date: cert.issue_date || '',
@@ -286,14 +299,14 @@ const ProfilePage: React.FC = () => {
     setShowCertDialog(true);
   };
 
-  const handleAddPortfolioItem = async (item: Omit<PortfolioItem, 'id'>) => {
+  const handleAddPortfolioItem = async (item: Omit<PortfolioItem, 'id' | 'worker_id' | 'created_at' | 'updated_at'>) => {
     if (!profile) return;
     
     try {
-      const newItem: PortfolioItem = {
+      const newItem = {
         ...item,
         id: `portfolio-${Date.now()}`,
-      };
+      } as PortfolioItem;
       
       const updatedItems = [...portfolioItems, newItem];
       setPortfolioItems(updatedItems);
@@ -302,9 +315,9 @@ const ProfilePage: React.FC = () => {
       if (error) throw new Error(error);
       
       return;
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error adding portfolio item:', error);
-      throw new Error(error.message || 'Failed to add portfolio item');
+      throw new Error((error as Error).message || 'Failed to add portfolio item');
     }
   };
   
@@ -322,9 +335,9 @@ const ProfilePage: React.FC = () => {
       if (error) throw new Error(error);
       
       return;
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error updating portfolio item:', error);
-      throw new Error(error.message || 'Failed to update portfolio item');
+      throw new Error((error as Error).message || 'Failed to update portfolio item');
     }
   };
   
@@ -339,9 +352,9 @@ const ProfilePage: React.FC = () => {
       if (error) throw new Error(error);
       
       return;
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error deleting portfolio item:', error);
-      throw new Error(error.message || 'Failed to delete portfolio item');
+      throw new Error((error as Error).message || 'Failed to delete portfolio item');
     }
   };
 
@@ -358,12 +371,12 @@ const ProfilePage: React.FC = () => {
 
   const getProficiencyColor = (level: number) => {
     switch (level) {
-      case 1: return 'bg-red-100 text-red-800';
+      case 1: return 'bg-destructive/10 text-red-800';
       case 2: return 'bg-orange-100 text-orange-800';
-      case 3: return 'bg-yellow-100 text-yellow-800';
-      case 4: return 'bg-blue-100 text-blue-800';
-      case 5: return 'bg-green-100 text-green-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 3: return 'bg-amber-500/10 text-yellow-800';
+      case 4: return 'bg-primary/10 text-primary';
+      case 5: return 'bg-emerald-500/10 text-green-800';
+      default: return 'bg-muted text-foreground';
     }
   };
 
@@ -398,8 +411,26 @@ const ProfilePage: React.FC = () => {
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Profile Settings</h1>
-        <p className="text-gray-600 mt-2">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <h1 className="text-3xl font-bold text-foreground">Profile Settings</h1>
+          {profile?.role === 'worker' && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                if (!profile.username) {
+                  toast.error('Set a username below to get your public profile link');
+                  return;
+                }
+                navigator.clipboard.writeText(`${window.location.origin}/u/${profile.username}`);
+                toast.success('Public profile link copied');
+              }}
+            >
+              <ExternalLink className="w-4 h-4 mr-1" /> Share public profile
+            </Button>
+          )}
+        </div>
+        <p className="text-muted-foreground mt-2">
           Manage your profile information and showcase your skills
         </p>
       </div>
@@ -428,9 +459,9 @@ const ProfilePage: React.FC = () => {
                 </Button>
               </div>
               <h3 className="font-medium">{profile.full_name}</h3>
-              <p className="text-sm text-gray-600">{profile.email}</p>
+              <p className="text-sm text-muted-foreground">{profile.email}</p>
               <Badge className="mt-2">
-                {profile.role.charAt(0).toUpperCase() + profile.role.slice(1)}
+                {profile.role ? profile.role.charAt(0).toUpperCase() + profile.role.slice(1) : 'User'}
               </Badge>
             </CardContent>
           </Card>
@@ -441,35 +472,35 @@ const ProfilePage: React.FC = () => {
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Experience</span>
+                <span className="text-sm text-muted-foreground">Experience</span>
                 <span className="font-medium">{profile.experience_years || 0} years</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Skills</span>
-                <span className="font-medium">{workerSkills.length}</span>
+                <span className="text-sm text-muted-foreground">Skills</span>
+                <span className="font-medium">{(workerSkills ?? []).length}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Certifications</span>
-                <span className="font-medium">{certifications.length}</span>
+                <span className="text-sm text-muted-foreground">Certifications</span>
+                <span className="font-medium">{(certifications ?? []).length}</span>
               </div>
               {profile.average_rating && (
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Rating</span>
+                  <span className="text-sm text-muted-foreground">Rating</span>
                   <div className="flex items-center">
                     <ReviewStars rating={profile.average_rating} size="sm" />
                     <span className="ml-1 font-medium">{profile.average_rating.toFixed(1)}</span>
                   </div>
                 </div>
               )}
-              {profile.review_count > 0 && (
+              {(profile.review_count ?? 0) > 0 && (
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Reviews</span>
+                  <span className="text-sm text-muted-foreground">Reviews</span>
                   <span className="font-medium">{profile.review_count}</span>
                 </div>
               )}
               {profile.hourly_rate && (
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Hourly Rate</span>
+                  <span className="text-sm text-muted-foreground">Hourly Rate</span>
                   <span className="font-medium">${profile.hourly_rate}/hr</span>
                 </div>
               )}
@@ -477,7 +508,7 @@ const ProfilePage: React.FC = () => {
           </Card>
           
           {/* Rating Summary */}
-          {profile.role === 'worker' && profile.review_count > 0 && (
+          {profile.role === 'worker' && (profile.review_count ?? 0) > 0 && (
             <Card className="mt-6">
               <CardHeader>
                 <CardTitle>Rating Summary</CardTitle>
@@ -487,7 +518,7 @@ const ProfilePage: React.FC = () => {
                   <span className="text-3xl font-bold">{profile.average_rating?.toFixed(1) || '0.0'}</span>
                   <ReviewStars rating={profile.average_rating || 0} size="lg" />
                 </div>
-                <p className="text-center text-sm text-gray-600">
+                <p className="text-center text-sm text-muted-foreground">
                   Based on {profile.review_count} {profile.review_count === 1 ? 'review' : 'reviews'}
                 </p>
               </CardContent>
@@ -515,8 +546,27 @@ const ProfilePage: React.FC = () => {
                       {...form.register('full_name')}
                     />
                     {form.formState.errors.full_name && (
-                      <p className="text-sm text-red-600 mt-1">
+                      <p className="text-sm text-destructive mt-1">
                         {form.formState.errors.full_name.message}
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <Label htmlFor="username">Username</Label>
+                    <Input
+                      id="username"
+                      {...form.register('username')}
+                      placeholder="alexmoreno"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {profile?.username
+                        ? <>Public link: {window.location.origin}/u/{profile.username}</>
+                        : 'Sets your public profile link (/u/username)'}
+                    </p>
+                    {form.formState.errors.username && (
+                      <p className="text-sm text-destructive mt-1">
+                        {form.formState.errors.username.message}
                       </p>
                     )}
                   </div>
@@ -586,7 +636,7 @@ const ProfilePage: React.FC = () => {
                         placeholder="www.yourportfolio.com"
                       />
                       {form.formState.errors.portfolio_url && (
-                        <p className="text-sm text-red-600 mt-1">
+                        <p className="text-sm text-destructive mt-1">
                           {form.formState.errors.portfolio_url.message}
                         </p>
                       )}
@@ -600,7 +650,7 @@ const ProfilePage: React.FC = () => {
                         placeholder="linkedin.com/in/yourprofile"
                       />
                       {form.formState.errors.linkedin_url && (
-                        <p className="text-sm text-red-600 mt-1">
+                        <p className="text-sm text-destructive mt-1">
                           {form.formState.errors.linkedin_url.message}
                         </p>
                       )}
@@ -635,12 +685,12 @@ const ProfilePage: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {workerSkills.length > 0 ? (
+                  {(workerSkills ?? []).length > 0 ? (
                     <div className="grid grid-cols-1 gap-3">
-                      {workerSkills.map((workerSkill) => (
+                      {(workerSkills ?? []).map((workerSkill) => (
                         <div
                           key={workerSkill.id}
-                          className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                          className="flex items-center justify-between p-3 bg-muted/40 rounded-lg"
                         >
                           <div className="flex items-center space-x-3">
                             <div>
@@ -651,7 +701,7 @@ const ProfilePage: React.FC = () => {
                                 <Badge className={getProficiencyColor(workerSkill.proficiency_level)}>
                                   {getProficiencyLabel(workerSkill.proficiency_level)}
                                 </Badge>
-                                <span className="text-xs text-gray-500">
+                                <span className="text-xs text-muted-foreground">
                                   {workerSkill.years_experience} years
                                 </span>
                               </div>
@@ -661,7 +711,7 @@ const ProfilePage: React.FC = () => {
                             size="sm"
                             variant="ghost"
                             onClick={() => removeSkill(workerSkill.id)}
-                            className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                            className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
                           >
                             <X className="h-4 w-4" />
                           </Button>
@@ -669,7 +719,7 @@ const ProfilePage: React.FC = () => {
                       ))}
                     </div>
                   ) : (
-                    <p className="text-gray-500 text-center py-8">
+                    <p className="text-muted-foreground text-center py-8">
                       No skills added yet. Add your first skill to showcase your expertise.
                     </p>
                   )}
@@ -696,18 +746,23 @@ const ProfilePage: React.FC = () => {
                 </div>
               </CardHeader>
               <CardContent>
-                {certifications.length > 0 ? (
+                {(certifications ?? []).length > 0 ? (
                   <div className="space-y-4">
-                    {certifications.map((cert) => (
+                    {(certifications ?? []).map((cert) => (
                       <div key={cert.id} className="flex items-start justify-between p-4 border rounded-lg">
                         <div className="flex items-start space-x-3 flex-1">
-                          <Award className="h-5 w-5 text-blue-600 mt-1" />
+                          <Award className="h-5 w-5 text-primary mt-1" />
                           <div className="flex-1">
-                            <h4 className="font-medium">{cert.name}</h4>
+                            <h4 className="font-medium flex items-center gap-2">
+                              {cert.name}
+                              {cert.cert_type_code && (
+                                <Badge variant="outline" className="text-[10px]">{cert.cert_type_code}</Badge>
+                              )}
+                            </h4>
                             {cert.issuing_organization && (
-                              <p className="text-sm text-gray-600">{cert.issuing_organization}</p>
+                              <p className="text-sm text-muted-foreground">{cert.issuing_organization}</p>
                             )}
-                            <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500">
+                            <div className="flex items-center space-x-4 mt-2 text-xs text-muted-foreground">
                               {cert.issue_date && (
                                 <span>Issued: {new Date(cert.issue_date).getFullYear()}</span>
                               )}
@@ -719,7 +774,7 @@ const ProfilePage: React.FC = () => {
                                   href={cert.credential_url} 
                                   target="_blank" 
                                   rel="noopener noreferrer"
-                                  className="flex items-center text-blue-600 hover:text-blue-700"
+                                  className="flex items-center text-primary hover:text-primary"
                                 >
                                   <ExternalLink className="h-3 w-3 mr-1" />
                                   View
@@ -729,9 +784,15 @@ const ProfilePage: React.FC = () => {
                           </div>
                         </div>
                         <div className="flex items-center space-x-2">
-                          <Badge variant={cert.is_active ? "default" : "secondary"}>
-                            {cert.is_active ? 'Active' : 'Inactive'}
+                          <Badge
+                            variant="outline"
+                            className={cert.verified
+                              ? 'border-green-300 bg-emerald-500/10 text-emerald-500'
+                              : 'border-amber-300 bg-amber-50 text-amber-500'}
+                          >
+                            {cert.verified ? 'Verified' : 'Pending'}
                           </Badge>
+                          {!cert.is_active && <Badge variant="secondary">Inactive</Badge>}
                           <Button
                             size="sm"
                             variant="ghost"
@@ -744,7 +805,7 @@ const ProfilePage: React.FC = () => {
                             size="sm"
                             variant="ghost"
                             onClick={() => removeCertification(cert.id)}
-                            className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                            className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -753,7 +814,7 @@ const ProfilePage: React.FC = () => {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-gray-500 text-center py-8">
+                  <p className="text-muted-foreground text-center py-8">
                     No certifications added yet. Add your first certification to showcase your expertise.
                   </p>
                 )}
@@ -807,7 +868,7 @@ const ProfilePage: React.FC = () => {
                 placeholder="e.g., Camera Operation, Sound Engineering"
               />
               {skillForm.formState.errors.skill_name && (
-                <p className="text-sm text-red-600 mt-1">
+                <p className="text-sm text-destructive mt-1">
                   {skillForm.formState.errors.skill_name.message}
                 </p>
               )}
@@ -873,6 +934,36 @@ const ProfilePage: React.FC = () => {
           
           <form onSubmit={certForm.handleSubmit(onAddCertification)} className="space-y-4">
             <div>
+              <Label>Credential type</Label>
+              <Select
+                value={certForm.watch('cert_type_code') || undefined}
+                onValueChange={(value) => {
+                  certForm.setValue('cert_type_code', value);
+                  const type = certTypes.data.find((t) => t.code === value);
+                  if (type) {
+                    certForm.setValue('name', type.name);
+                    if (type.issuing_body && !certForm.getValues('issuing_organization')) {
+                      certForm.setValue('issuing_organization', type.issuing_body);
+                    }
+                  }
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Pick a recognized credential (unlocks gated calls)" />
+                </SelectTrigger>
+                <SelectContent>
+                  {certTypes.data.map((t) => (
+                    <SelectItem key={t.code} value={t.code}>{t.name}</SelectItem>
+                  ))}
+                  <SelectItem value={OTHER_CERT_TYPE}>Other / not in catalog</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground mt-1">
+                Calls that require a credential (e.g. ETCP for rigging) only match certifications linked to a catalog type.
+              </p>
+            </div>
+
+            <div>
               <Label htmlFor="cert_name">Certification Name</Label>
               <Input
                 id="cert_name"
@@ -880,7 +971,7 @@ const ProfilePage: React.FC = () => {
                 placeholder="e.g., Certified Audio Engineer"
               />
               {certForm.formState.errors.name && (
-                <p className="text-sm text-red-600 mt-1">
+                <p className="text-sm text-destructive mt-1">
                   {certForm.formState.errors.name.message}
                 </p>
               )}
@@ -932,7 +1023,7 @@ const ProfilePage: React.FC = () => {
                 placeholder="e.g., verify.organization.com"
               />
               {certForm.formState.errors.credential_url && (
-                <p className="text-sm text-red-600 mt-1">
+                <p className="text-sm text-destructive mt-1">
                   {certForm.formState.errors.credential_url.message}
                 </p>
               )}

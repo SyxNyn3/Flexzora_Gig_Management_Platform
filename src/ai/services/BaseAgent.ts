@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- dynamic AI agent payloads/ML plumbing */
 import { AgentConfig, AgentState, AgentTask, AgentMessage } from '../types';
 
 export abstract class BaseAgent {

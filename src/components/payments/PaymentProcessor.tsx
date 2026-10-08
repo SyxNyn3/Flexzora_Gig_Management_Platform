@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { Payment, Gig } from '@/lib/types';
-import { CreditCard, DollarSign, CheckCircle, AlertCircle } from 'lucide-react';
+import { CreditCard, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import StripeCheckout from '@/components/payments/StripeCheckout';
+import { isStripeDemoMode } from '@/lib/stripe';
 
 interface PaymentProcessorProps {
   payment?: Payment;
@@ -18,7 +18,7 @@ interface PaymentProcessorProps {
 const PaymentProcessor: React.FC<PaymentProcessorProps> = ({ payment, gig, onSuccess }) => {
   const { profile } = useAuth();
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
-  const [processing, setProcessing] = useState(false);
+  const [, setProcessing] = useState(false);
 
   const handlePayNow = () => {
     if (!payment) {
@@ -29,12 +29,21 @@ const PaymentProcessor: React.FC<PaymentProcessorProps> = ({ payment, gig, onSuc
     setShowPaymentDialog(true);
   };
 
-  const handlePaymentSuccess = async (paymentIntentId: string) => {
+  const handlePaymentSuccess = async () => {
     if (!payment || !profile) return;
     
     try {
       setProcessing(true);
-      
+
+      // Sandbox mode (no Stripe key): keep the row pending — only a real
+      // Stripe-confirmed payment may mark it paid.
+      if (isStripeDemoMode) {
+        toast.success('Transfer queued via Flexzora Escrow (Sandbox) — no funds moved yet');
+        setShowPaymentDialog(false);
+        if (onSuccess) onSuccess();
+        return;
+      }
+
       // Update payment status in database
       const { error } = await supabase
         .from('payments')
@@ -56,9 +65,9 @@ const PaymentProcessor: React.FC<PaymentProcessorProps> = ({ payment, gig, onSuc
       if (onSuccess) {
         onSuccess();
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error updating payment status:', error);
-      toast.error(error.message || 'Failed to update payment status');
+      toast.error((error as Error).message || 'Failed to update payment status');
     } finally {
       setProcessing(false);
     }

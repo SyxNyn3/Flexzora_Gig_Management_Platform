@@ -92,20 +92,20 @@ const WorkerApplications: React.FC = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-96">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-muted/50">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200">
+      <div className="bg-card border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">My Applications</h1>
-              <p className="text-gray-600 mt-1">
+              <h1 className="text-2xl font-bold text-foreground">My Applications</h1>
+              <p className="text-muted-foreground mt-1">
                 Track your gig applications and responses
               </p>
             </div>
@@ -128,12 +128,12 @@ const WorkerApplications: React.FC = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Total Applications</span>
+                  <span className="text-sm text-muted-foreground">Total Applications</span>
                   <span className="font-semibold text-lg">{stats.total}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Response Rate</span>
-                  <span className="font-semibold text-lg text-green-600">{stats.responseRate}%</span>
+                  <span className="text-sm text-muted-foreground">Response Rate</span>
+                  <span className="font-semibold text-lg text-emerald-500 dark:text-green-400">{stats.responseRate}%</span>
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
@@ -167,17 +167,17 @@ const WorkerApplications: React.FC = () => {
                 <CardTitle className="text-lg">💡 Application Tips</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3 text-sm">
-                <div className="p-3 bg-blue-50 rounded-lg">
+                <div className="p-3 bg-primary/10 rounded-lg">
                   <p className="font-medium text-blue-900">Personalize your cover letter</p>
-                  <p className="text-blue-700">Mention specific skills relevant to each gig</p>
+                  <p className="text-primary">Mention specific skills relevant to each gig</p>
                 </div>
-                <div className="p-3 bg-green-50 rounded-lg">
+                <div className="p-3 bg-green-500/10 rounded-lg">
                   <p className="font-medium text-green-900">Apply early</p>
-                  <p className="text-green-700">Early applications get more attention</p>
+                  <p className="text-emerald-500 dark:text-green-400">Early applications get more attention</p>
                 </div>
-                <div className="p-3 bg-purple-50 rounded-lg">
+                <div className="p-3 bg-secondary/10 rounded-lg">
                   <p className="font-medium text-purple-900">Follow up professionally</p>
-                  <p className="text-purple-700">Send a polite follow-up after 3-5 days</p>
+                  <p className="text-purple-400">Send a polite follow-up after 3-5 days</p>
                 </div>
               </CardContent>
             </Card>
@@ -207,11 +207,11 @@ const WorkerApplications: React.FC = () => {
                 {filteredApplications.length === 0 && (
                   <Card>
                     <CardContent className="text-center py-12">
-                      <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">
+                      <MessageSquare className="h-12 w-12 text-muted-foreground/70 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-foreground mb-2">
                         No {selectedTab === 'all' ? '' : selectedTab} applications
                       </h3>
-                      <p className="text-gray-600 mb-4">
+                      <p className="text-muted-foreground mb-4">
                         {selectedTab === 'all' 
                           ? "You haven't applied to any gigs yet."
                           : `No ${selectedTab} applications found.`

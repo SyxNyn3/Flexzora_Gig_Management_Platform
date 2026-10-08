@@ -22,22 +22,18 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
-import { Company, Skill, DatabaseService } from '@/lib/types';
+import { Company, Skill } from '@/lib/types';
 import { 
   Plus, 
   X, 
-  Calendar, 
-  MapPin, 
-  DollarSign,
-  Users,
+
+
   Save,
   ArrowLeft,
   Check,
   ChevronsUpDown,
-  Building
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
 const gigSchema = z.object({
@@ -77,7 +73,7 @@ const CreateGigForm: React.FC = () => {
   const [openSkillsCombobox, setOpenSkillsCombobox] = useState(false);
   const [equipmentProvided, setEquipmentProvided] = useState<string[]>([]);
   const [newEquipment, setNewEquipment] = useState('');
-  const [predefinedEquipment, setPredefinedEquipment] = useState<string[]>([
+  const [predefinedEquipment] = useState<string[]>([
     'Camera', 'Lighting Kit', 'Sound System', 'Microphones', 'Tripods',
     'Monitors', 'Cables', 'Headphones', 'Batteries', 'Memory Cards',
     'Laptop', 'Software Licenses', 'Drone', 'Stabilizer', 'Green Screen'
@@ -228,9 +224,9 @@ const CreateGigForm: React.FC = () => {
       companyForm.reset();
       
       toast.success('Company added successfully!');
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error adding company:', error);
-      toast.error(error.message || 'Failed to add company');
+      toast.error((error as Error).message || 'Failed to add company');
     } finally {
       setLoading(false);
     }
@@ -268,9 +264,9 @@ const CreateGigForm: React.FC = () => {
       setNewSkillCategory('');
       
       toast.success('Skill added successfully!');
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error adding skill:', error);
-      toast.error(error.message || 'Failed to add skill');
+      toast.error((error as Error).message || 'Failed to add skill');
     } finally {
       setLoading(false);
     }
@@ -309,9 +305,9 @@ const CreateGigForm: React.FC = () => {
 
       toast.success('Gig created successfully!');
       navigate(`/gigs/${newGig.id}`);
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error creating gig:', error);
-      toast.error(error.message || 'Failed to create gig');
+      toast.error((error as Error).message || 'Failed to create gig');
     } finally {
       setLoading(false);
     }
@@ -322,8 +318,8 @@ const CreateGigForm: React.FC = () => {
       <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Card>
           <CardContent className="text-center py-12">
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Access Denied</h3>
-            <p className="text-gray-600 mb-4">
+            <h3 className="text-lg font-medium text-foreground mb-2">Access Denied</h3>
+            <p className="text-muted-foreground mb-4">
               Only company accounts can create gigs.
             </p>
             <Button onClick={() => navigate('/gigs')}>
@@ -358,8 +354,8 @@ const CreateGigForm: React.FC = () => {
           Back
         </Button>
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Create New Gig</h1>
-          <p className="text-gray-600 mt-2">
+          <h1 className="text-3xl font-bold text-foreground">Create New Gig</h1>
+          <p className="text-muted-foreground mt-2">
             Post a new gig opportunity for workers
           </p>
         </div>
@@ -383,7 +379,7 @@ const CreateGigForm: React.FC = () => {
                 placeholder="e.g., Camera Operator for Corporate Event"
               />
               {form.formState.errors.title && (
-                <p className="text-sm text-red-600 mt-1">
+                <p className="text-sm text-destructive dark:text-red-400 mt-1">
                   {form.formState.errors.title.message}
                 </p>
               )}
@@ -398,7 +394,7 @@ const CreateGigForm: React.FC = () => {
                 placeholder="Describe the gig, responsibilities, and what you're looking for..."
               />
               {form.formState.errors.description && (
-                <p className="text-sm text-red-600 mt-1">
+                <p className="text-sm text-destructive dark:text-red-400 mt-1">
                   {form.formState.errors.description.message}
                 </p>
               )}
@@ -483,7 +479,7 @@ const CreateGigForm: React.FC = () => {
                 </Popover>
               </div>
               {form.formState.errors.company_id && (
-                <p className="text-sm text-red-600 mt-1">
+                <p className="text-sm text-destructive dark:text-red-400 mt-1">
                   {form.formState.errors.company_id.message}
                 </p>
               )}
@@ -509,7 +505,7 @@ const CreateGigForm: React.FC = () => {
                   placeholder="City, State or Full Address"
                 />
                 {form.formState.errors.location && (
-                  <p className="text-sm text-red-600 mt-1">
+                  <p className="text-sm text-destructive dark:text-red-400 mt-1">
                     {form.formState.errors.location.message}
                   </p>
                 )}
@@ -534,7 +530,7 @@ const CreateGigForm: React.FC = () => {
                   {...form.register('start_date')}
                 />
                 {form.formState.errors.start_date && (
-                  <p className="text-sm text-red-600 mt-1">
+                  <p className="text-sm text-destructive dark:text-red-400 mt-1">
                     {form.formState.errors.start_date.message}
                   </p>
                 )}
@@ -548,7 +544,7 @@ const CreateGigForm: React.FC = () => {
                   {...form.register('end_date')}
                 />
                 {form.formState.errors.end_date && (
-                  <p className="text-sm text-red-600 mt-1">
+                  <p className="text-sm text-destructive dark:text-red-400 mt-1">
                     {form.formState.errors.end_date.message}
                   </p>
                 )}
@@ -598,7 +594,7 @@ const CreateGigForm: React.FC = () => {
                   {...form.register('required_workers')}
                 />
                 {form.formState.errors.required_workers && (
-                  <p className="text-sm text-red-600 mt-1">
+                  <p className="text-sm text-destructive dark:text-red-400 mt-1">
                     {form.formState.errors.required_workers.message}
                   </p>
                 )}
@@ -669,7 +665,7 @@ const CreateGigForm: React.FC = () => {
                             >
                               {skill.name}
                               {skill.category && (
-                                <span className="ml-2 text-xs text-gray-500">
+                                <span className="ml-2 text-xs text-muted-foreground">
                                   {skill.category}
                                 </span>
                               )}
@@ -713,7 +709,7 @@ const CreateGigForm: React.FC = () => {
             <div>
               <Label>Equipment Provided</Label>
               <div className="mt-2 mb-3">
-                <Label className="text-sm text-gray-600 mb-2">Select from common equipment:</Label>
+                <Label className="text-sm text-muted-foreground mb-2">Select from common equipment:</Label>
                 <div className="flex flex-wrap gap-2 mt-1">
                   {predefinedEquipment.map((equipment) => (
                     <Button
@@ -729,7 +725,7 @@ const CreateGigForm: React.FC = () => {
                   ))}
                 </div>
               </div>
-              <Label className="text-sm text-gray-600">Or add custom equipment:</Label>
+              <Label className="text-sm text-muted-foreground">Or add custom equipment:</Label>
               <div className="flex gap-2 mt-2">
                 <Input
                   value={newEquipment}
@@ -813,7 +809,7 @@ const CreateGigForm: React.FC = () => {
                 placeholder="Enter company name"
               />
               {companyForm.formState.errors.name && (
-                <p className="text-sm text-red-600 mt-1">
+                <p className="text-sm text-destructive dark:text-red-400 mt-1">
                   {companyForm.formState.errors.name.message}
                 </p>
               )}
@@ -838,7 +834,7 @@ const CreateGigForm: React.FC = () => {
                   placeholder="https://example.com"
                 />
                 {companyForm.formState.errors.website_url && (
-                  <p className="text-sm text-red-600 mt-1">
+                  <p className="text-sm text-destructive dark:text-red-400 mt-1">
                     {companyForm.formState.errors.website_url.message}
                   </p>
                 )}
@@ -853,7 +849,7 @@ const CreateGigForm: React.FC = () => {
                   placeholder="contact@example.com"
                 />
                 {companyForm.formState.errors.contact_email && (
-                  <p className="text-sm text-red-600 mt-1">
+                  <p className="text-sm text-destructive dark:text-red-400 mt-1">
                     {companyForm.formState.errors.contact_email.message}
                   </p>
                 )}

@@ -20,10 +20,9 @@ import {
   Briefcase,
   Users,
   Building2,
-  Mail
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { format, isToday, isTomorrow, addDays } from 'date-fns';
+import { format, isToday, isTomorrow } from 'date-fns';
 
 const WorkerDashboard: React.FC = () => {
   const { profile } = useAuth();
@@ -37,7 +36,7 @@ const WorkerDashboard: React.FC = () => {
   const myApplications = myApplicationsRaw || [];
   const { data: paymentsRaw } = usePayments({ workerId: profile?.id });
   const payments = paymentsRaw || [];
-  const { data: expensesRaw } = useExpenses({ workerId: profile?.id });
+  useExpenses({ workerId: profile?.id });
   
   // Set up real-time notifications
   useRealtimeNotifications(profile?.id, (notification) => {
@@ -56,49 +55,34 @@ const WorkerDashboard: React.FC = () => {
     return () => clearTimeout(timer);
   }, []);
 
-  // Mock data for demo
-  const upcomingGigs = [
-    {
-      id: '1',
-      title: 'Corporate Event Setup',
-      company: 'TechCorp Events',
-      date: new Date(),
-      time: '9:00 AM - 5:00 PM',
-      location: 'San Francisco, CA',
-      rate: 45,
-      status: 'confirmed',
-      avatar: '🏢'
-    },
-    {
-      id: '2',
-      title: 'Wedding Photography',
-      company: 'Dream Weddings',
-      date: addDays(new Date(), 1),
-      time: '2:00 PM - 10:00 PM',
-      location: 'Napa Valley, CA',
-      rate: 55,
-      status: 'confirmed',
-      avatar: '💒'
-    }
-  ];
+  // PostgREST many-to-one embeds come back as objects, not arrays — normalize both shapes
+  const one = <T,>(v: T | T[] | null | undefined): T | undefined =>
+    Array.isArray(v) ? v[0] : (v ?? undefined);
 
-  // Use real data with fallback to mock data
-  const recentApplications = myApplications.length > 0 
-    ? myApplications.slice(0, 3) 
-    : [
-        {
-          id: '1',
-          gig: { title: 'Video Editor for Documentary', location: 'Remote' },
-          status: 'pending',
-          application_date: '2024-01-10T10:00:00Z',
-        },
-        {
-          id: '2',
-          gig: { title: 'Stage Manager for Theater', location: 'New York, NY' },
-          status: 'accepted',
-          application_date: '2024-01-08T15:30:00Z',
-        },
-      ];
+  // Schedule from real accepted applications
+  const upcomingGigs = myApplications
+    .map(a => ({ a, gig: one(a.gig) }))
+    .filter(({ gig }) => !!gig?.start_date && new Date(gig.start_date) >= new Date(new Date().toDateString()))
+    .map(({ a, gig }) => ({
+      id: gig!.id,
+      title: gig!.title,
+      company: one(gig!.company)?.name ?? 'Company',
+      date: new Date(gig!.start_date),
+      time: gig!.end_date
+        ? `${format(new Date(gig!.start_date), 'h:mm a')} - ${format(new Date(gig!.end_date), 'h:mm a')}`
+        : '',
+      location: gig!.location ?? 'TBD',
+      rate: a.proposed_rate ?? gig!.hourly_rate ?? 0,
+      status: a.status,
+      avatar: '',
+    }));
+
+  const recentApplications = myApplications.slice(0, 3);
+
+  // Companies the worker is booked with
+  const connectedCompanies = [...new Map(
+    upcomingGigs.map(g => [g.company, g.company] as const)
+  ).values()];
       
   const todaysGigs = upcomingGigs.filter(gig => isToday(gig.date));
   const tomorrowsGigs = upcomingGigs.filter(gig => isTomorrow(gig.date));
@@ -118,49 +102,44 @@ const WorkerDashboard: React.FC = () => {
     .reduce((sum, payment) => sum + payment.amount, 0);
     
   const stats = {
-    totalEarnings: totalEarnings || 15420, // Fallback to mock data if no real data
-    thisMonth: thisMonth || 3200,
+    totalEarnings: totalEarnings || 0,
+    thisMonth: thisMonth || 0,
     pendingApplications: (recentApplications || []).filter(app => app.status === 'pending').length,
     upcomingGigs: upcomingGigs.length,
-    completedGigs: payments.filter(p => p.status === 'paid').length || 28,
-    rating: profile?.average_rating || 4.8
+    completedGigs: payments.filter(p => p.status === 'paid').length,
+    rating: profile?.average_rating || 0
   };
 
-  const getDateLabel = (date: Date) => {
-    if (isToday(date)) return 'Today';
-    if (isTomorrow(date)) return 'Tomorrow';
-    return format(date, 'MMM d');
-  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'confirmed': return 'bg-green-100 text-green-800';
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'accepted': return 'bg-blue-100 text-blue-800';
-      case 'rejected': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'confirmed': return 'bg-emerald-500/10 text-green-800';
+      case 'pending': return 'bg-amber-500/10 text-yellow-800';
+      case 'accepted': return 'bg-primary/10 text-primary';
+      case 'rejected': return 'bg-destructive/10 text-red-800';
+      default: return 'bg-muted text-foreground';
     }
   };
 
   if (loading && !profile) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
       </div>
     );
   }
   
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200">
+      <div className="bg-card border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">
+              <h1 className="text-2xl font-bold text-foreground">
                 {greeting}, {profile?.full_name?.split(' ')[0]}! 👋
               </h1>
-              <p className="text-gray-600 mt-1">
+              <p className="text-muted-foreground mt-1">
                 Here's what's happening with your gigs today
               </p>
             </div>
@@ -243,24 +222,29 @@ const WorkerDashboard: React.FC = () => {
               <CardHeader className="pb-4">
                 <div className="flex items-center justify-between">
                   <CardTitle className="flex items-center">
-                    <Calendar className="h-5 w-5 mr-2 text-blue-600" />
+                    <Calendar className="h-5 w-5 mr-2 text-primary" />
                     Today's Schedule
                   </CardTitle>
-                  <Button variant="outline" size="sm" onClick={() => navigate('/calendar')}>
-                    View All
-                  </Button>
+                  <div className="flex items-center space-x-2">
+                    <Button variant="outline" size="sm" onClick={() => navigate('/availability')}>
+                      Availability
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => navigate('/calendar')}>
+                      View All
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
                 {todaysGigs.length > 0 ? (
                   <div className="space-y-4">
                     {todaysGigs.map((gig) => (
-                      <div key={gig.id} className="flex items-center p-4 bg-blue-50 rounded-lg border border-blue-200">
+                      <div key={gig.id} className="flex items-center p-4 bg-primary/10 rounded-lg border border-primary/30">
                         <div className="text-3xl mr-4">{gig.avatar}</div>
                         <div className="flex-1">
-                          <h3 className="font-semibold text-gray-900">{gig.title}</h3>
-                          <p className="text-sm text-gray-600">{gig.company}</p>
-                          <div className="flex items-center mt-2 space-x-4 text-sm text-gray-500">
+                          <h3 className="font-semibold text-foreground">{gig.title}</h3>
+                          <p className="text-sm text-muted-foreground">{gig.company}</p>
+                          <div className="flex items-center mt-2 space-x-4 text-sm text-muted-foreground">
                             <div className="flex items-center">
                               <Clock className="h-4 w-4 mr-1" />
                               {gig.time}
@@ -283,9 +267,9 @@ const WorkerDashboard: React.FC = () => {
                   </div>
                 ) : (
                   <div className="text-center py-8">
-                    <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No gigs today</h3>
-                    <p className="text-gray-600 mb-4">Take a break or look for new opportunities!</p>
+                    <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-foreground mb-2">No gigs today</h3>
+                    <p className="text-muted-foreground mb-4">Take a break or look for new opportunities!</p>
                     <Button onClick={() => navigate('/gigs')}>
                       Browse Available Gigs
                     </Button>
@@ -299,18 +283,18 @@ const WorkerDashboard: React.FC = () => {
               <Card>
                 <CardHeader className="pb-4">
                   <CardTitle className="flex items-center">
-                    <Clock className="h-5 w-5 mr-2 text-green-600" />
+                    <Clock className="h-5 w-5 mr-2 text-emerald-500" />
                     Tomorrow's Preview
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
                     {tomorrowsGigs.map((gig) => (
-                      <div key={gig.id} className="flex items-center p-3 bg-green-50 rounded-lg border border-green-200">
+                      <div key={gig.id} className="flex items-center p-3 bg-emerald-500/10 rounded-lg border border-emerald-500/30">
                         <div className="text-2xl mr-3">{gig.avatar}</div>
                         <div className="flex-1">
-                          <h4 className="font-medium text-gray-900">{gig.title}</h4>
-                          <p className="text-sm text-gray-600">{gig.time} • {gig.location}</p>
+                          <h4 className="font-medium text-foreground">{gig.title}</h4>
+                          <p className="text-sm text-muted-foreground">{gig.time} • {gig.location}</p>
                         </div>
                         <Badge className={getStatusColor(gig.status)}>
                           {gig.status}
@@ -340,14 +324,14 @@ const WorkerDashboard: React.FC = () => {
                   {(availableGigs || []).slice(0, 3).map((gig) => (
                     <div 
                       key={gig.id} 
-                      className="p-4 border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors cursor-pointer"
+                      className="p-4 border border-border rounded-lg hover:border-primary/40 hover:bg-primary/10 transition-colors cursor-pointer"
                       onClick={() => navigate(`/gigs/${gig.id}`)}
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <h4 className="font-semibold text-gray-900">{gig.title}</h4>
-                          <p className="text-sm text-gray-600 mt-1">{gig.company?.name}</p>
-                          <div className="flex items-center mt-2 space-x-4 text-sm text-gray-500">
+                          <h4 className="font-semibold text-foreground">{gig.title}</h4>
+                          <p className="text-sm text-muted-foreground mt-1">{gig.company?.name}</p>
+                          <div className="flex items-center mt-2 space-x-4 text-sm text-muted-foreground">
                             <div className="flex items-center">
                               <Calendar className="h-4 w-4 mr-1" />
                               {format(new Date(gig.start_date), 'MMM d')}
@@ -364,7 +348,7 @@ const WorkerDashboard: React.FC = () => {
                             )}
                           </div>
                         </div>
-                        <ArrowRight className="h-5 w-5 text-gray-400" />
+                        <ArrowRight className="h-5 w-5 text-muted-foreground" />
                       </div>
                     </div>
                   ))}
@@ -414,12 +398,12 @@ const WorkerDashboard: React.FC = () => {
                 {recentApplications.length > 0 ? (
                   <div className="space-y-3">
                     {recentApplications.map((application) => (
-                      <div key={application.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div key={application.id} className="flex items-center justify-between p-3 bg-muted/40 rounded-lg">
                         <div className="flex-1">
-                          <h4 className="font-medium text-sm text-gray-900">
+                          <h4 className="font-medium text-sm text-foreground">
                             {application.gig?.title}
                           </h4>
-                          <p className="text-xs text-gray-600">
+                          <p className="text-xs text-muted-foreground">
                             Applied {format(new Date(application.application_date), 'MMM d')}
                           </p>
                         </div>
@@ -431,8 +415,8 @@ const WorkerDashboard: React.FC = () => {
                   </div>
                 ) : (
                   <div className="text-center py-4">
-                    <AlertCircle className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                    <p className="text-sm text-gray-600">No recent applications</p>
+                    <AlertCircle className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                    <p className="text-sm text-muted-foreground">No recent applications</p>
                   </div>
                 )}
               </CardContent>
@@ -452,48 +436,26 @@ const WorkerDashboard: React.FC = () => {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
-                    <div className="flex items-center">
-                      <div className="text-lg mr-3">🦏</div>
-                      <div>
-                        <p className="font-medium text-sm">Rhino Staging</p>
-                        <p className="text-xs text-gray-600">15 gigs</p>
+                {connectedCompanies.length > 0 ? (
+                  <div className="space-y-3">
+                    {connectedCompanies.map(name => (
+                      <div key={name} className="flex items-center justify-between p-3 bg-emerald-500/10 rounded-lg border border-emerald-500/30">
+                        <div className="flex items-center">
+                          <Building2 className="h-5 w-5 mr-3 text-muted-foreground" />
+                          <div>
+                            <p className="font-medium text-sm">{name}</p>
+                            <p className="text-xs text-muted-foreground">{upcomingGigs.filter(g => g.company === name).length} upcoming</p>
+                          </div>
+                        </div>
+                        <CheckCircle className="h-4 w-4 text-emerald-500" />
                       </div>
-                    </div>
-                    <CheckCircle className="h-4 w-4 text-green-600" />
+                    ))}
                   </div>
-                  
-                  <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
-                    <div className="flex items-center">
-                      <div className="text-lg mr-3">🎵</div>
-                      <div>
-                        <p className="font-medium text-sm">Giglife</p>
-                        <p className="text-xs text-gray-600">8 gigs</p>
-                      </div>
-                    </div>
-                    <CheckCircle className="h-4 w-4 text-blue-600" />
-                  </div>
-
-                  <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-200">
-                    <div className="flex items-center">
-                      <div className="text-lg mr-3">📧</div>
-                      <div>
-                        <p className="font-medium text-sm">Gmail</p>
-                        <p className="text-xs text-gray-600">Connected</p>
-                      </div>
-                    </div>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="h-6 px-2"
-                      onClick={() => navigate('/integrations/gmail')}
-                    >
-                      <Mail className="h-3 w-3 mr-1" />
-                      View
-                    </Button>
-                  </div>
-                </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground py-4 text-center">
+                    No connected companies yet — companies that book you will appear here.
+                  </p>
+                )}
               </CardContent>
             </Card>
 
@@ -504,15 +466,15 @@ const WorkerDashboard: React.FC = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Gigs Completed</span>
-                  <span className="font-semibold">12</span>
+                  <span className="text-sm text-muted-foreground">Gigs Completed</span>
+                  <span className="font-semibold">{stats.completedGigs}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Hours Worked</span>
+                  <span className="text-sm text-muted-foreground">Hours Worked</span>
                   <span className="font-semibold">{stats.completedGigs * 8}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Avg. Rating</span>
+                  <span className="text-sm text-muted-foreground">Avg. Rating</span>
                   <div className="flex items-center">
                     <span className="font-semibold mr-1">{stats.rating}</span>
                     <Star className="h-4 w-4 text-yellow-500 fill-current" />
@@ -520,7 +482,7 @@ const WorkerDashboard: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Response Rate</span>
+                  <span className="text-sm text-muted-foreground">Response Rate</span>
                   <span className="font-semibold">{Math.round((myApplications.length - stats.pendingApplications) / Math.max(myApplications.length, 1) * 100)}%</span>
                 </div>
               </CardContent>

@@ -1,14 +1,13 @@
-import React, { useEffect, useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useEffect } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase, DatabaseService } from '@/lib/supabase';
-import { Notification } from '@/lib/types';
+import { DatabaseService } from '@/lib/supabase';
 import { useNotifications, useRealtimeNotifications } from '@/hooks/useSupabaseQuery';
-import { Bell, CheckCircle, AlertCircle, Info, X } from 'lucide-react';
+import { Bell, CheckCircle, AlertCircle, Info } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 
@@ -80,7 +79,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
       case 'error':
         return <AlertCircle className="h-5 w-5 text-red-500" />;
       default:
-        return <Info className="h-5 w-5 text-blue-500" />;
+        return <Info className="h-5 w-5 text-primary" />;
     }
   };
 
@@ -118,7 +117,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
         <ScrollArea className="h-[400px] pr-4">
           {loading ? (
             <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             </div>
           ) : safeNotifications.length > 0 ? (
             <div className="space-y-3">
@@ -126,7 +125,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
                 <Card 
                   key={notification.id} 
                   className={`cursor-pointer transition-colors ${
-                    !notification.read ? 'bg-blue-50 border-blue-200' : 'hover:bg-gray-50'
+                    !notification.read ? 'bg-primary/10 border-primary/30' : 'hover:bg-muted/50'
                   }`}
                   onClick={() => !notification.read && markAsRead(notification.id)}
                 >
@@ -135,17 +134,17 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
                       {getNotificationIcon(notification.type)}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
-                          <h4 className={`text-sm font-medium ${!notification.read ? 'text-gray-900' : 'text-gray-700'}`}>
+                          <h4 className={`text-sm font-medium ${!notification.read ? 'text-foreground' : 'text-foreground/80'}`}>
                             {notification.title}
                           </h4>
                           {!notification.read && (
-                            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                            <div className="w-2 h-2 bg-secondary rounded-full"></div>
                           )}
                         </div>
-                        <p className="text-sm text-gray-600 mt-1">
+                        <p className="text-sm text-muted-foreground mt-1">
                           {notification.message}
                         </p>
-                        <p className="text-xs text-gray-500 mt-2">
+                        <p className="text-xs text-muted-foreground mt-2">
                           {format(new Date(notification.created_at), 'MMM d, yyyy h:mm a')}
                         </p>
                       </div>
@@ -156,9 +155,9 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
             </div>
           ) : (
             <div className="text-center py-8">
-              <Bell className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No notifications</h3>
-              <p className="text-gray-600">
+              <Bell className="h-12 w-12 text-muted-foreground/70 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-foreground mb-2">No notifications</h3>
+              <p className="text-muted-foreground">
                 You're all caught up! New notifications will appear here.
               </p>
             </div>

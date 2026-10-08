@@ -17,8 +17,8 @@ ALTER TABLE public.follows ENABLE ROW LEVEL SECURITY;
 
 -- Create policies for the follows table
 -- Users can view follows where they are either the follower or the followed
-CREATE POLICY "Users can view their follow relationships" 
-ON public.follows
+DROP POLICY IF EXISTS "Users can view their follow relationships" ON public.follows;
+CREATE POLICY "Users can view their follow relationships" ON public.follows
 FOR SELECT
 TO authenticated
 USING (
@@ -31,8 +31,8 @@ USING (
 );
 
 -- Users can create follows where they are the follower
-CREATE POLICY "Users can create their own follows" 
-ON public.follows
+DROP POLICY IF EXISTS "Users can create their own follows" ON public.follows;
+CREATE POLICY "Users can create their own follows" ON public.follows
 FOR INSERT
 TO authenticated
 WITH CHECK (
@@ -42,8 +42,8 @@ WITH CHECK (
 );
 
 -- Users can delete follows where they are the follower
-CREATE POLICY "Users can delete their own follows" 
-ON public.follows
+DROP POLICY IF EXISTS "Users can delete their own follows" ON public.follows;
+CREATE POLICY "Users can delete their own follows" ON public.follows
 FOR DELETE
 TO authenticated
 USING (
@@ -58,7 +58,7 @@ BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM pg_sequences WHERE schemaname = 'public' AND sequencename = 'follows_id_seq'
   ) THEN
-    CREATE SEQUENCE public.follows_id_seq;
+    CREATE SEQUENCE IF NOT EXISTS public.follows_id_seq;
     ALTER TABLE public.follows ALTER COLUMN id SET DEFAULT nextval('public.follows_id_seq');
   END IF;
 END $$;

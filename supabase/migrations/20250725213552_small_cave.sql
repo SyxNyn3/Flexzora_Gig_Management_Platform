@@ -116,7 +116,7 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Step 4: Create the trigger
-CREATE TRIGGER after_application_status_change
+CREATE OR REPLACE TRIGGER after_application_status_change
   AFTER UPDATE OF status ON gig_applications
   FOR EACH ROW
   WHEN (OLD.status IS DISTINCT FROM NEW.status)
@@ -133,7 +133,7 @@ BEGIN
   ) THEN
     RAISE NOTICE 'SUCCESS: Trigger "after_application_status_change" has been created successfully';
   ELSE
-    RAISE NOTICE 'ERROR: Failed to create trigger "after_application_status_change"';
+    RAISE NOTICE 'ERROR: Failed to CREATE OR REPLACE TRIGGER "after_application_status_change"';
   END IF;
 END $$;
 

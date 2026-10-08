@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,32 +7,25 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/contexts/AuthContext';
-import { 
-  Calendar,
-  Clock,
-  Users,
+import {
   Plus,
   Settings,
   Filter,
   Search,
   ChevronLeft,
   ChevronRight,
-  MoreHorizontal,
   AlertTriangle,
   CheckCircle,
   X,
-  Edit,
   Trash2,
-  Copy,
   ExternalLink,
-  Zap,
   Globe,
   Smartphone
 } from 'lucide-react';
-import { format, addDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isSameDay, isSameMonth, addWeeks, subWeeks, addMonths, subMonths, parseISO, isWithinInterval } from 'date-fns';
+import { format, addDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isSameDay, isSameMonth, addWeeks, subWeeks, addMonths, subMonths, isWithinInterval } from 'date-fns';
 import { toast } from 'sonner';
 
 interface TeamMember {
@@ -69,7 +61,7 @@ interface ScheduleEvent {
   isRecurring: boolean;
   color: string;
   priority: 'low' | 'medium' | 'high';
-  metadata?: any;
+  metadata?: Record<string, unknown>;
 }
 
 interface ConflictDetection {
@@ -82,18 +74,17 @@ interface ConflictDetection {
 }
 
 const SchedulingInterface: React.FC = () => {
-  const { profile } = useAuth();
+  useAuth();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<'day' | 'week' | 'month'>('week');
   const [timeIncrement, setTimeIncrement] = useState<15 | 30 | 60>(30);
   const [selectedEvent, setSelectedEvent] = useState<ScheduleEvent | null>(null);
   const [showEventDialog, setShowEventDialog] = useState(false);
   const [showSettingsDialog, setShowSettingsDialog] = useState(false);
-  const [draggedEvent, setDraggedEvent] = useState<ScheduleEvent | null>(null);
+  const [, setDraggedEvent] = useState<ScheduleEvent | null>(null);
   const [selectedTeamMembers, setSelectedTeamMembers] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [conflicts, setConflicts] = useState<ConflictDetection[]>([]);
-  const [loading, setLoading] = useState(false);
   const [is24Hour, setIs24Hour] = useState(true);
   const [tempEventId, setTempEventId] = useState<string | null>(null);
 
@@ -102,86 +93,86 @@ const SchedulingInterface: React.FC = () => {
     {
       id: '1',
       name: 'Sarah Johnson',
-      email: 'sarah@company.com',
+      email: 'sarah@rhinostaging.com',
       avatar_url: '',
-      role: 'Project Manager',
-      color: '#3B82F6',
+      role: 'Production Manager',
+      color: '#F59E0B',
       isAvailable: true,
-      workingHours: { start: '09:00', end: '17:00', days: [1, 2, 3, 4, 5] }
+      workingHours: { start: '06:00', end: '18:00', days: [1, 2, 3, 4, 5, 6] }
     },
     {
       id: '2',
-      name: 'Mike Chen',
-      email: 'mike@company.com',
+      name: 'Marcus Webb',
+      email: 'marcus.webb@flexzora.dev',
       avatar_url: '',
-      role: 'Developer',
+      role: 'A1 Audio Engineer',
       color: '#10B981',
       isAvailable: true,
-      workingHours: { start: '10:00', end: '18:00', days: [1, 2, 3, 4, 5] }
+      workingHours: { start: '08:00', end: '22:00', days: [1, 2, 3, 4, 5, 6] }
     },
     {
       id: '3',
-      name: 'Emily Davis',
-      email: 'emily@company.com',
+      name: 'Priya Raman',
+      email: 'priya.raman@flexzora.dev',
       avatar_url: '',
-      role: 'Designer',
+      role: 'L2 Lighting Tech',
       color: '#8B5CF6',
       isAvailable: false,
-      workingHours: { start: '09:00', end: '17:00', days: [1, 2, 3, 4, 5] }
+      workingHours: { start: '08:00', end: '22:00', days: [1, 2, 3, 4, 5, 6] }
     },
     {
       id: '4',
-      name: 'Alex Rodriguez',
-      email: 'alex@company.com',
+      name: 'Devon Carter',
+      email: 'devon.carter@flexzora.dev',
       avatar_url: '',
-      role: 'Consultant',
-      color: '#F59E0B',
+      role: 'Video Wall Lead',
+      color: '#3B82F6',
       isAvailable: true,
-      workingHours: { start: '08:00', end: '16:00', days: [1, 2, 3, 4, 5] }
+      workingHours: { start: '07:00', end: '19:00', days: [1, 2, 3, 4, 5, 6, 0] }
     }
   ]);
 
   const [events, setEvents] = useState<ScheduleEvent[]>([
     {
       id: '1',
-      title: 'Client Meeting - Project Kickoff',
-      description: 'Initial project discussion and requirements gathering',
-      start: new Date(2024, 0, 15, 10, 0),
-      end: new Date(2024, 0, 15, 11, 30),
+      title: 'Load-In & Rigging Call — Ballroom C',
+      description: 'Truss build, motor points, LED wall assembly. All blacks + steel-toes, dock door 4.',
+      start: new Date(2024, 0, 15, 7, 0),
+      end: new Date(2024, 0, 15, 15, 0),
       type: 'meeting',
       status: 'confirmed',
-      assignedTo: ['1', '2'],
-      client: { name: 'John Smith', email: 'john@client.com', phone: '+1 555-0123' },
-      location: 'Conference Room A',
+      assignedTo: ['1', '2', '3'],
+      client: { name: 'Rhino Staging', email: 'ops@rhinostaging.com', phone: '+1 555-0123' },
+      location: 'Convention Center Ballroom C',
       isRecurring: false,
-      color: '#3B82F6',
+      color: '#F59E0B',
       priority: 'high'
     },
     {
       id: '2',
-      title: 'Design Review',
-      description: 'Review wireframes and mockups',
-      start: new Date(2024, 0, 15, 14, 0),
-      end: new Date(2024, 0, 15, 15, 0),
+      title: 'Show Call / System Ops — Keynote',
+      description: 'Run FOH, lighting console, and video wall for the general session',
+      start: new Date(2024, 0, 15, 16, 0),
+      end: new Date(2024, 0, 15, 23, 0),
       type: 'meeting',
       status: 'pending',
-      assignedTo: ['3'],
-      location: 'Design Studio',
+      assignedTo: ['2', '4'],
+      location: 'Convention Center Ballroom C',
       isRecurring: false,
       color: '#8B5CF6',
-      priority: 'medium'
+      priority: 'high'
     },
     {
       id: '3',
-      title: 'Development Sprint Planning',
-      description: 'Plan next sprint tasks and timeline',
-      start: new Date(2024, 0, 16, 9, 0),
-      end: new Date(2024, 0, 16, 10, 30),
+      title: 'Strike & Load-Out — Stadium Main Stage',
+      description: 'Break the rig, count steel, load trucks back to the shop',
+      start: new Date(2024, 0, 16, 8, 0),
+      end: new Date(2024, 0, 16, 14, 0),
       type: 'meeting',
       status: 'confirmed',
-      assignedTo: ['2', '4'],
-      location: 'Virtual - Zoom',
-      isRecurring: true,
+      assignedTo: ['1', '3', '4'],
+      location: 'Stadium Main Stage',
+      isRecurring: false,
       color: '#10B981',
       priority: 'high'
     }
@@ -244,14 +235,6 @@ const SchedulingInterface: React.FC = () => {
 
   const handleDragEnd = () => {
     setDraggedEvent(null);
-  };
-
-  const handleDrop = (newStart: Date, newEnd: Date) => {
-    if (draggedEvent) {
-      updateEvent(draggedEvent.id, { start: newStart, end: newEnd });
-      setDraggedEvent(null);
-      toast.success('Event moved successfully');
-    }
   };
 
   // Conflict detection
@@ -358,11 +341,6 @@ const SchedulingInterface: React.FC = () => {
     );
   };
 
-  // Filter team members
-  const filteredTeamMembers = teamMembers.filter(member => 
-    selectedTeamMembers.length === 0 || selectedTeamMembers.includes(member.id)
-  );
-
   const getDateRange = () => {
     if (viewMode === 'day') {
       return format(currentDate, 'EEEE, MMMM d, yyyy');
@@ -376,12 +354,12 @@ const SchedulingInterface: React.FC = () => {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50">
+    <div className="h-screen flex flex-col bg-muted/40">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
+      <div className="bg-card border-b border-border px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <h1 className="text-2xl font-bold text-gray-900">Schedule</h1>
+            <h1 className="text-2xl font-bold text-foreground">Schedule</h1>
             <div className="flex items-center space-x-2">
               <Button
                 variant="outline"
@@ -405,7 +383,7 @@ const SchedulingInterface: React.FC = () => {
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
-            <div className="text-lg font-medium text-gray-700">
+            <div className="text-lg font-medium text-foreground">
               {getDateRange()}
             </div>
           </div>
@@ -413,7 +391,7 @@ const SchedulingInterface: React.FC = () => {
           <div className="flex items-center space-x-3">
             {/* Search */}
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search events..."
                 value={searchQuery}
@@ -423,7 +401,7 @@ const SchedulingInterface: React.FC = () => {
             </div>
 
             {/* View Mode Tabs */}
-            <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as any)}>
+            <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'day' | 'week' | 'month')}>
               <TabsList>
                 <TabsTrigger value="day">Day</TabsTrigger>
                 <TabsTrigger value="week">Week</TabsTrigger>
@@ -444,13 +422,13 @@ const SchedulingInterface: React.FC = () => {
 
         {/* Conflicts Alert */}
         {conflicts.length > 0 && (
-          <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+          <div className="mt-4 p-3 bg-destructive/10 border border-destructive/30 rounded-lg">
             <div className="flex items-center">
-              <AlertTriangle className="h-5 w-5 text-red-600 mr-2" />
+              <AlertTriangle className="h-5 w-5 text-destructive mr-2" />
               <span className="text-red-800 font-medium">
                 {conflicts.length} scheduling conflict{conflicts.length !== 1 ? 's' : ''} detected
               </span>
-              <Button variant="link" className="ml-auto text-red-600">
+              <Button variant="link" className="ml-auto text-destructive">
                 Review Conflicts
               </Button>
             </div>
@@ -460,11 +438,11 @@ const SchedulingInterface: React.FC = () => {
 
       <div className="flex-1 flex overflow-hidden">
         {/* Sidebar */}
-        <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
+        <div className="w-80 bg-card border-r border-border flex flex-col">
           {/* Team Members */}
-          <div className="p-4 border-b border-gray-200">
+          <div className="p-4 border-b border-border">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="font-medium text-gray-900">Team Members</h3>
+              <h3 className="font-medium text-foreground">Team Members</h3>
               <Button variant="ghost" size="sm">
                 <Filter className="h-4 w-4" />
               </Button>
@@ -476,8 +454,8 @@ const SchedulingInterface: React.FC = () => {
                     key={member.id}
                     className={`flex items-center space-x-3 p-2 rounded-lg cursor-pointer transition-colors ${
                       selectedTeamMembers.includes(member.id)
-                        ? 'bg-blue-50 border border-blue-200'
-                        : 'hover:bg-gray-50'
+                        ? 'bg-primary/10 border border-primary/30'
+                        : 'hover:bg-accent'
                     }`}
                     onClick={() => {
                       setSelectedTeamMembers(prev =>
@@ -501,10 +479,10 @@ const SchedulingInterface: React.FC = () => {
                       />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">
+                      <p className="text-sm font-medium text-foreground truncate">
                         {member.name}
                       </p>
-                      <p className="text-xs text-gray-500 truncate">
+                      <p className="text-xs text-muted-foreground truncate">
                         {member.role}
                       </p>
                     </div>
@@ -519,35 +497,35 @@ const SchedulingInterface: React.FC = () => {
           </div>
 
           {/* Quick Stats */}
-          <div className="p-4 border-b border-gray-200">
-            <h3 className="font-medium text-gray-900 mb-3">Today's Overview</h3>
+          <div className="p-4 border-b border-border">
+            <h3 className="font-medium text-foreground mb-3">Today's Overview</h3>
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Total Events</span>
+                <span className="text-sm text-muted-foreground">Total Events</span>
                 <span className="font-medium">{getEventsForView().length}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Confirmed</span>
-                <span className="font-medium text-green-600">
+                <span className="text-sm text-muted-foreground">Confirmed</span>
+                <span className="font-medium text-emerald-500">
                   {getEventsForView().filter(e => e.status === 'confirmed').length}
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Pending</span>
+                <span className="text-sm text-muted-foreground">Pending</span>
                 <span className="font-medium text-yellow-600">
                   {getEventsForView().filter(e => e.status === 'pending').length}
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Conflicts</span>
-                <span className="font-medium text-red-600">{conflicts.length}</span>
+                <span className="text-sm text-muted-foreground">Conflicts</span>
+                <span className="font-medium text-destructive">{conflicts.length}</span>
               </div>
             </div>
           </div>
 
           {/* Calendar Integration */}
           <div className="p-4">
-            <h3 className="font-medium text-gray-900 mb-3">Calendar Integration</h3>
+            <h3 className="font-medium text-foreground mb-3">Calendar Integration</h3>
             <div className="space-y-2">
               <Button variant="outline" className="w-full justify-start">
                 <Globe className="h-4 w-4 mr-2" />
@@ -557,12 +535,12 @@ const SchedulingInterface: React.FC = () => {
               <Button variant="outline" className="w-full justify-start">
                 <ExternalLink className="h-4 w-4 mr-2" />
                 Outlook
-                <X className="h-4 w-4 ml-auto text-gray-400" />
+                <X className="h-4 w-4 ml-auto text-muted-foreground" />
               </Button>
               <Button variant="outline" className="w-full justify-start">
                 <Smartphone className="h-4 w-4 mr-2" />
                 Apple Calendar
-                <X className="h-4 w-4 ml-auto text-gray-400" />
+                <X className="h-4 w-4 ml-auto text-muted-foreground" />
               </Button>
             </div>
           </div>
@@ -593,18 +571,18 @@ const SchedulingInterface: React.FC = () => {
     return (
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Week Header */}
-        <div className="bg-white border-b border-gray-200">
+        <div className="bg-card border-b border-border">
           <div className="grid grid-cols-8 gap-0">
-            <div className="p-4 border-r border-gray-200">
-              <div className="text-xs text-gray-500 uppercase tracking-wide">Time</div>
+            <div className="p-4 border-r border-border">
+              <div className="text-xs text-muted-foreground uppercase tracking-wide">Time</div>
             </div>
             {weekDays.map((day) => (
-              <div key={day.toISOString()} className="p-4 text-center border-r border-gray-200 last:border-r-0">
-                <div className="text-xs text-gray-500 uppercase tracking-wide">
+              <div key={day.toISOString()} className="p-4 text-center border-r border-border last:border-r-0">
+                <div className="text-xs text-muted-foreground uppercase tracking-wide">
                   {format(day, 'EEE')}
                 </div>
                 <div className={`text-lg font-medium mt-1 ${
-                  isSameDay(day, new Date()) ? 'text-blue-600' : 'text-gray-900'
+                  isSameDay(day, new Date()) ? 'text-primary' : 'text-foreground'
                 }`}>
                   {format(day, 'd')}
                 </div>
@@ -618,13 +596,13 @@ const SchedulingInterface: React.FC = () => {
           <div className="relative">
             {timeSlots.map((slot) => (
               <div key={slot.time} className="grid grid-cols-8 border-b border-gray-100">
-                <div className="p-2 text-xs text-gray-500 border-r border-gray-200 text-right pr-4">
+                <div className="p-2 text-xs text-muted-foreground border-r border-border text-right pr-4">
                   {slot.minute === 0 ? formatTime(slot.hour, slot.minute) : ''}
                 </div>
                 {weekDays.map((day) => (
                   <div
                     key={`${day.toISOString()}-${slot.time}`}
-                    className="relative border-r border-gray-100 last:border-r-0 min-h-[40px] hover:bg-gray-50 cursor-pointer"
+                    className="relative border-r border-gray-100 last:border-r-0 min-h-[40px] hover:bg-accent cursor-pointer"
                     onClick={() => {
                       const startTime = new Date(day);
                       startTime.setHours(slot.hour, slot.minute, 0, 0);
@@ -670,12 +648,12 @@ const SchedulingInterface: React.FC = () => {
     return (
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Day Header */}
-        <div className="bg-white border-b border-gray-200 p-4">
+        <div className="bg-card border-b border-border p-4">
           <div className="text-center">
-            <div className="text-sm text-gray-500 uppercase tracking-wide">
+            <div className="text-sm text-muted-foreground uppercase tracking-wide">
               {format(currentDate, 'EEEE')}
             </div>
-            <div className="text-2xl font-bold text-gray-900 mt-1">
+            <div className="text-2xl font-bold text-foreground mt-1">
               {format(currentDate, 'MMMM d, yyyy')}
             </div>
           </div>
@@ -686,11 +664,11 @@ const SchedulingInterface: React.FC = () => {
           <div className="relative">
             {timeSlots.map((slot) => (
               <div key={slot.time} className="flex border-b border-gray-100">
-                <div className="w-20 p-2 text-xs text-gray-500 border-r border-gray-200 text-right pr-4">
+                <div className="w-20 p-2 text-xs text-muted-foreground border-r border-border text-right pr-4">
                   {slot.minute === 0 ? formatTime(slot.hour, slot.minute) : ''}
                 </div>
                 <div
-                  className="flex-1 relative min-h-[60px] hover:bg-gray-50 cursor-pointer"
+                  className="flex-1 relative min-h-[60px] hover:bg-accent cursor-pointer"
                   onClick={() => {
                     const startTime = new Date(currentDate);
                     startTime.setHours(slot.hour, slot.minute, 0, 0);
@@ -747,11 +725,11 @@ const SchedulingInterface: React.FC = () => {
     return (
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Month Header */}
-        <div className="bg-white border-b border-gray-200">
+        <div className="bg-card border-b border-border">
           <div className="grid grid-cols-7 gap-0">
             {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((dayName) => (
-              <div key={dayName} className="p-4 text-center border-r border-gray-200 last:border-r-0">
-                <div className="text-xs text-gray-500 uppercase tracking-wide font-medium">
+              <div key={dayName} className="p-4 text-center border-r border-border last:border-r-0">
+                <div className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
                   {dayName}
                 </div>
               </div>
@@ -764,8 +742,8 @@ const SchedulingInterface: React.FC = () => {
           {days.map((day) => (
             <div
               key={day.toISOString()}
-              className={`border-r border-b border-gray-200 last:border-r-0 p-2 min-h-[120px] cursor-pointer hover:bg-gray-50 ${
-                !isSameMonth(day, currentDate) ? 'bg-gray-50 text-gray-400' : 'bg-white'
+              className={`border-r border-b border-border last:border-r-0 p-2 min-h-[120px] cursor-pointer hover:bg-accent ${
+                !isSameMonth(day, currentDate) ? 'bg-muted/40 text-muted-foreground' : 'bg-card'
               }`}
               onClick={() => {
                 const startTime = new Date(day);
@@ -776,7 +754,7 @@ const SchedulingInterface: React.FC = () => {
               }}
             >
               <div className={`text-sm font-medium mb-1 ${
-                isSameDay(day, new Date()) ? 'text-blue-600' : ''
+                isSameDay(day, new Date()) ? 'text-primary' : ''
               }`}>
                 {format(day, 'd')}
               </div>
@@ -799,7 +777,7 @@ const SchedulingInterface: React.FC = () => {
                     </div>
                   ))}
                 {getEventsForView().filter(event => isSameDay(new Date(event.start), day)).length > 3 && (
-                  <div className="text-xs text-gray-500">
+                  <div className="text-xs text-muted-foreground">
                     +{getEventsForView().filter(event => isSameDay(new Date(event.start), day)).length - 3} more
                   </div>
                 )}
@@ -842,14 +820,14 @@ const SchedulingInterface: React.FC = () => {
         onDragStart={onDragStart}
         onDragEnd={onDragEnd}
       >
-        <div className="text-xs font-medium text-gray-900 truncate">
+        <div className="text-xs font-medium text-foreground truncate">
           {event.title}
         </div>
-        <div className="text-xs text-gray-600 truncate">
+        <div className="text-xs text-muted-foreground truncate">
           {formatDisplayTime(event.start)} - {formatDisplayTime(event.end)}
         </div>
         {event.client && (
-          <div className="text-xs text-gray-500 truncate">
+          <div className="text-xs text-muted-foreground truncate">
             {event.client.name}
           </div>
         )}
@@ -873,22 +851,19 @@ const SchedulingInterface: React.FC = () => {
 
   // Event Dialog Component
   function EventDialog() {
-    if (!selectedEvent) return null;
-
     // Create a local copy of the event for editing
-    const [localEvent, setLocalEvent] = useState<ScheduleEvent>({...selectedEvent});
-    
+    const [localEvent, setLocalEvent] = useState<ScheduleEvent | null>(selectedEvent ? {...selectedEvent} : null);
+
     // Update local event when selected event changes
     useEffect(() => {
-      setLocalEvent({...selectedEvent});
+      if (selectedEvent) setLocalEvent({...selectedEvent});
     }, [selectedEvent]);
 
+    if (!selectedEvent || !localEvent) return null;
+
     // Handle input changes
-    const handleInputChange = (field: string, value: any) => {
-      setLocalEvent(prev => ({
-        ...prev,
-        [field]: value
-      }));
+    const handleInputChange = (field: keyof ScheduleEvent, value: ScheduleEvent[keyof ScheduleEvent]) => {
+      setLocalEvent(prev => (prev ? { ...prev, [field]: value } : prev));
     };
 
     // Save changes
@@ -996,7 +971,7 @@ const SchedulingInterface: React.FC = () => {
             </div>
 
             {selectedEvent.client && (
-              <div className="p-4 bg-gray-50 rounded-lg">
+              <div className="p-4 bg-muted/40 rounded-lg">
                 <h4 className="font-medium mb-2">Client Information</h4>
                 <div className="space-y-2 text-sm">
                   <div>Name: {selectedEvent.client.name}</div>
@@ -1059,7 +1034,7 @@ const SchedulingInterface: React.FC = () => {
               <Label>Time Increment</Label>
               <Select
                 value={timeIncrement.toString()}
-                onValueChange={(value) => setTimeIncrement(parseInt(value) as any)}
+                onValueChange={(value) => setTimeIncrement(parseInt(value) as 15 | 30 | 60)}
               >
                 <SelectTrigger>
                   <SelectValue />

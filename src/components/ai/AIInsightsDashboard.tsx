@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- dynamic AI agent payloads/ML plumbing */
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -135,11 +136,11 @@ const AIInsightsDashboard: React.FC = () => {
   const getSeverityIcon = (severity: string) => {
     switch (severity) {
       case 'success':
-        return <CheckCircle className="h-5 w-5 text-green-600" />;
+        return <CheckCircle className="h-5 w-5 text-emerald-500 dark:text-green-400" />;
       case 'warning':
-        return <AlertTriangle className="h-5 w-5 text-yellow-600" />;
+        return <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400" />;
       default:
-        return <Brain className="h-5 w-5 text-blue-600" />;
+        return <Brain className="h-5 w-5 text-primary" />;
     }
   };
 
@@ -181,7 +182,7 @@ const AIInsightsDashboard: React.FC = () => {
       <Card>
         <CardHeader>
           <div className="flex items-center space-x-2">
-            <Brain className="h-6 w-6 text-blue-600" />
+            <Brain className="h-6 w-6 text-primary" />
             <CardTitle>AI Insights</CardTitle>
           </div>
           <CardDescription>
@@ -250,7 +251,7 @@ const AIInsightsDashboard: React.FC = () => {
                       {agent.status}
                     </Badge>
                   </div>
-                  <div className="text-xs text-gray-500">
+                  <div className="text-xs text-muted-foreground">
                     {agent.success_count} tasks completed
                   </div>
                 </div>

@@ -271,7 +271,7 @@ CREATE TABLE IF NOT EXISTS follows (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- Create indexes for better performance
+-- CREATE INDEX IF NOT EXISTSes for better performance
 CREATE INDEX IF NOT EXISTS idx_profiles_user_id ON profiles(user_id);
 CREATE INDEX IF NOT EXISTS idx_profiles_role ON profiles(role);
 CREATE INDEX IF NOT EXISTS idx_companies_created_by ON companies(created_by);
@@ -318,16 +318,22 @@ DROP POLICY IF EXISTS "Users can update own profile" ON profiles;
 DROP POLICY IF EXISTS "Service role can manage profiles" ON profiles;
 
 -- Profiles policies
+DROP POLICY IF EXISTS "Service role can manage profiles" ON profiles;
 CREATE POLICY "Service role can manage profiles" ON profiles FOR ALL TO service_role USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Users can view all profiles" ON profiles;
 CREATE POLICY "Users can view all profiles" ON profiles FOR SELECT TO authenticated USING (true);
+DROP POLICY IF EXISTS "Users can insert own profile" ON profiles;
 CREATE POLICY "Users can insert own profile" ON profiles FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can update own profile" ON profiles;
 CREATE POLICY "Users can update own profile" ON profiles FOR UPDATE TO authenticated USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
 -- Companies policies
 DROP POLICY IF EXISTS "Anyone can view companies" ON companies;
 DROP POLICY IF EXISTS "Company admins can manage companies" ON companies;
 
+DROP POLICY IF EXISTS "Anyone can view companies" ON companies;
 CREATE POLICY "Anyone can view companies" ON companies FOR SELECT TO authenticated USING (true);
+DROP POLICY IF EXISTS "Company admins can manage companies" ON companies;
 CREATE POLICY "Company admins can manage companies" ON companies FOR ALL TO authenticated 
   USING (EXISTS (SELECT 1 FROM profiles WHERE profiles.user_id = auth.uid() AND profiles.role = 'company'));
 
@@ -335,7 +341,9 @@ CREATE POLICY "Company admins can manage companies" ON companies FOR ALL TO auth
 DROP POLICY IF EXISTS "Anyone can view skills" ON skills;
 DROP POLICY IF EXISTS "Admins can manage skills" ON skills;
 
+DROP POLICY IF EXISTS "Anyone can view skills" ON skills;
 CREATE POLICY "Anyone can view skills" ON skills FOR SELECT TO authenticated USING (true);
+DROP POLICY IF EXISTS "Admins can manage skills" ON skills;
 CREATE POLICY "Admins can manage skills" ON skills FOR ALL TO authenticated 
   USING (EXISTS (SELECT 1 FROM profiles WHERE profiles.user_id = auth.uid() AND profiles.role = 'admin'));
 
@@ -343,7 +351,9 @@ CREATE POLICY "Admins can manage skills" ON skills FOR ALL TO authenticated
 DROP POLICY IF EXISTS "Anyone can view worker skills" ON worker_skills;
 DROP POLICY IF EXISTS "Workers can manage own skills" ON worker_skills;
 
+DROP POLICY IF EXISTS "Anyone can view worker skills" ON worker_skills;
 CREATE POLICY "Anyone can view worker skills" ON worker_skills FOR SELECT TO authenticated USING (true);
+DROP POLICY IF EXISTS "Workers can manage own skills" ON worker_skills;
 CREATE POLICY "Workers can manage own skills" ON worker_skills FOR ALL TO authenticated 
   USING (EXISTS (SELECT 1 FROM profiles WHERE profiles.id = worker_skills.worker_id AND profiles.user_id = auth.uid()));
 
@@ -351,7 +361,9 @@ CREATE POLICY "Workers can manage own skills" ON worker_skills FOR ALL TO authen
 DROP POLICY IF EXISTS "Anyone can view certifications" ON certifications;
 DROP POLICY IF EXISTS "Workers can manage own certifications" ON certifications;
 
+DROP POLICY IF EXISTS "Anyone can view certifications" ON certifications;
 CREATE POLICY "Anyone can view certifications" ON certifications FOR SELECT TO authenticated USING (true);
+DROP POLICY IF EXISTS "Workers can manage own certifications" ON certifications;
 CREATE POLICY "Workers can manage own certifications" ON certifications FOR ALL TO authenticated 
   USING (EXISTS (SELECT 1 FROM profiles WHERE profiles.id = certifications.worker_id AND profiles.user_id = auth.uid()));
 
@@ -359,8 +371,10 @@ CREATE POLICY "Workers can manage own certifications" ON certifications FOR ALL 
 DROP POLICY IF EXISTS "Anyone can view published gigs" ON gigs;
 DROP POLICY IF EXISTS "Companies can manage own gigs" ON gigs;
 
+DROP POLICY IF EXISTS "Anyone can view published gigs" ON gigs;
 CREATE POLICY "Anyone can view published gigs" ON gigs FOR SELECT TO authenticated 
   USING (status = 'published' OR status = 'completed');
+DROP POLICY IF EXISTS "Companies can manage own gigs" ON gigs;
 CREATE POLICY "Companies can manage own gigs" ON gigs FOR ALL TO authenticated 
   USING (EXISTS (SELECT 1 FROM profiles WHERE profiles.id = gigs.created_by AND profiles.user_id = auth.uid()));
 
@@ -369,20 +383,25 @@ DROP POLICY IF EXISTS "Workers can view own applications" ON gig_applications;
 DROP POLICY IF EXISTS "Workers can manage own applications" ON gig_applications;
 DROP POLICY IF EXISTS "Companies can view applications to their gigs" ON gig_applications;
 
+DROP POLICY IF EXISTS "Workers can view own applications" ON gig_applications;
 CREATE POLICY "Workers can view own applications" ON gig_applications FOR SELECT TO authenticated 
   USING (EXISTS (SELECT 1 FROM profiles WHERE profiles.id = gig_applications.worker_id AND profiles.user_id = auth.uid()));
+DROP POLICY IF EXISTS "Workers can manage own applications" ON gig_applications;
 CREATE POLICY "Workers can manage own applications" ON gig_applications FOR ALL TO authenticated 
   USING (EXISTS (SELECT 1 FROM profiles WHERE profiles.id = gig_applications.worker_id AND profiles.user_id = auth.uid()));
+DROP POLICY IF EXISTS "Companies can view applications to their gigs" ON gig_applications;
 CREATE POLICY "Companies can view applications to their gigs" ON gig_applications FOR SELECT TO authenticated 
   USING (EXISTS (SELECT 1 FROM gigs JOIN profiles ON profiles.id = gigs.created_by 
                  WHERE gigs.id = gig_applications.gig_id AND profiles.user_id = auth.uid()));
 
 -- Availability policies
 DROP POLICY IF EXISTS "Workers can manage own availability" ON availability;
+DROP POLICY IF EXISTS "Workers can manage own availability" ON availability;
 CREATE POLICY "Workers can manage own availability" ON availability FOR ALL TO authenticated 
   USING (EXISTS (SELECT 1 FROM profiles WHERE profiles.id = availability.worker_id AND profiles.user_id = auth.uid()));
 
 -- Payments policies
+DROP POLICY IF EXISTS "Users can view own payments" ON payments;
 DROP POLICY IF EXISTS "Users can view own payments" ON payments;
 CREATE POLICY "Users can view own payments" ON payments FOR SELECT TO authenticated 
   USING (
@@ -392,6 +411,7 @@ CREATE POLICY "Users can view own payments" ON payments FOR SELECT TO authentica
 
 -- Expenses policies
 DROP POLICY IF EXISTS "Workers can manage own expenses" ON expenses;
+DROP POLICY IF EXISTS "Workers can manage own expenses" ON expenses;
 CREATE POLICY "Workers can manage own expenses" ON expenses FOR ALL TO authenticated 
   USING (EXISTS (SELECT 1 FROM profiles WHERE profiles.id = expenses.worker_id AND profiles.user_id = auth.uid()));
 
@@ -399,17 +419,21 @@ CREATE POLICY "Workers can manage own expenses" ON expenses FOR ALL TO authentic
 DROP POLICY IF EXISTS "Users can view own notifications" ON notifications;
 DROP POLICY IF EXISTS "Users can update own notifications" ON notifications;
 
+DROP POLICY IF EXISTS "Users can view own notifications" ON notifications;
 CREATE POLICY "Users can view own notifications" ON notifications FOR SELECT TO authenticated 
   USING (EXISTS (SELECT 1 FROM profiles WHERE profiles.id = notifications.user_id AND profiles.user_id = auth.uid()));
+DROP POLICY IF EXISTS "Users can update own notifications" ON notifications;
 CREATE POLICY "Users can update own notifications" ON notifications FOR UPDATE TO authenticated 
   USING (EXISTS (SELECT 1 FROM profiles WHERE profiles.id = notifications.user_id AND profiles.user_id = auth.uid()));
 
 -- Company integrations policies
 DROP POLICY IF EXISTS "Workers can manage own integrations" ON company_integrations;
+DROP POLICY IF EXISTS "Workers can manage own integrations" ON company_integrations;
 CREATE POLICY "Workers can manage own integrations" ON company_integrations FOR ALL TO authenticated 
   USING (EXISTS (SELECT 1 FROM profiles WHERE profiles.id = company_integrations.worker_id AND profiles.user_id = auth.uid()));
 
 -- Calendar events policies
+DROP POLICY IF EXISTS "Users can manage own calendar events" ON calendar_events;
 DROP POLICY IF EXISTS "Users can manage own calendar events" ON calendar_events;
 CREATE POLICY "Users can manage own calendar events" ON calendar_events FOR ALL TO authenticated 
   USING (EXISTS (SELECT 1 FROM profiles WHERE profiles.id = calendar_events.user_id AND profiles.user_id = auth.uid()));
@@ -419,15 +443,18 @@ DROP POLICY IF EXISTS "Users can view their follow relationships" ON follows;
 DROP POLICY IF EXISTS "Users can create their own follows" ON follows;
 DROP POLICY IF EXISTS "Users can delete their own follows" ON follows;
 
+DROP POLICY IF EXISTS "Users can view their follow relationships" ON follows;
 CREATE POLICY "Users can view their follow relationships" ON follows FOR SELECT TO authenticated 
   USING (
     follower_id IN (SELECT id FROM profiles WHERE profiles.user_id = auth.uid()) OR 
     followed_user_id IN (SELECT id FROM profiles WHERE profiles.user_id = auth.uid())
   );
 
+DROP POLICY IF EXISTS "Users can create their own follows" ON follows;
 CREATE POLICY "Users can create their own follows" ON follows FOR INSERT TO authenticated 
   WITH CHECK (follower_id IN (SELECT id FROM profiles WHERE profiles.user_id = auth.uid()));
 
+DROP POLICY IF EXISTS "Users can delete their own follows" ON follows;
 CREATE POLICY "Users can delete their own follows" ON follows FOR DELETE TO authenticated 
   USING (follower_id IN (SELECT id FROM profiles WHERE profiles.user_id = auth.uid()));
 
@@ -444,35 +471,35 @@ $$ language 'plpgsql';
 DO $$ 
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'update_profiles_updated_at') THEN
-    CREATE TRIGGER update_profiles_updated_at BEFORE UPDATE ON profiles FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+    CREATE OR REPLACE TRIGGER update_profiles_updated_at BEFORE UPDATE ON profiles FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
   END IF;
   
   IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'update_companies_updated_at') THEN
-    CREATE TRIGGER update_companies_updated_at BEFORE UPDATE ON companies FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+    CREATE OR REPLACE TRIGGER update_companies_updated_at BEFORE UPDATE ON companies FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
   END IF;
   
   IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'update_certifications_updated_at') THEN
-    CREATE TRIGGER update_certifications_updated_at BEFORE UPDATE ON certifications FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+    CREATE OR REPLACE TRIGGER update_certifications_updated_at BEFORE UPDATE ON certifications FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
   END IF;
   
   IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'update_gigs_updated_at') THEN
-    CREATE TRIGGER update_gigs_updated_at BEFORE UPDATE ON gigs FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+    CREATE OR REPLACE TRIGGER update_gigs_updated_at BEFORE UPDATE ON gigs FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
   END IF;
   
   IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'update_payments_updated_at') THEN
-    CREATE TRIGGER update_payments_updated_at BEFORE UPDATE ON payments FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+    CREATE OR REPLACE TRIGGER update_payments_updated_at BEFORE UPDATE ON payments FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
   END IF;
   
   IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'update_expenses_updated_at') THEN
-    CREATE TRIGGER update_expenses_updated_at BEFORE UPDATE ON expenses FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+    CREATE OR REPLACE TRIGGER update_expenses_updated_at BEFORE UPDATE ON expenses FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
   END IF;
   
   IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'update_company_integrations_updated_at') THEN
-    CREATE TRIGGER update_company_integrations_updated_at BEFORE UPDATE ON company_integrations FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+    CREATE OR REPLACE TRIGGER update_company_integrations_updated_at BEFORE UPDATE ON company_integrations FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
   END IF;
   
   IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'update_calendar_events_updated_at') THEN
-    CREATE TRIGGER update_calendar_events_updated_at BEFORE UPDATE ON calendar_events FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+    CREATE OR REPLACE TRIGGER update_calendar_events_updated_at BEFORE UPDATE ON calendar_events FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
   END IF;
 END $$;
 
@@ -555,7 +582,7 @@ $$ language 'plpgsql' SECURITY DEFINER;
 DO $$ 
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'on_auth_user_created') THEN
-    CREATE TRIGGER on_auth_user_created
+    CREATE OR REPLACE TRIGGER on_auth_user_created
       AFTER INSERT ON auth.users
       FOR EACH ROW EXECUTE FUNCTION handle_new_user();
   END IF;

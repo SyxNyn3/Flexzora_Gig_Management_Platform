@@ -9,11 +9,11 @@ import {
 } from '@stripe/react-stripe-js';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { createPaymentIntent } from '@/lib/stripe';
+import { createPaymentIntent, isStripeDemoMode } from '@/lib/stripe';
 import { toast } from 'sonner';
 
 // Load Stripe outside of component to avoid recreating Stripe object on every render
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '');
+const stripePromise = isStripeDemoMode ? null : loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
 interface StripePaymentFormProps {
   amount: number;
@@ -27,8 +27,6 @@ interface StripePaymentFormProps {
 const StripePaymentFormInner: React.FC<StripePaymentFormProps> = ({
   amount,
   currency = 'usd',
-  description,
-  metadata = {},
   onPaymentSuccess,
   onPaymentError,
 }) => {
@@ -66,9 +64,9 @@ const StripePaymentFormInner: React.FC<StripePaymentFormProps> = ({
         toast.success('Payment successful!');
         onPaymentSuccess?.(paymentIntent.id);
       }
-    } catch (error: any) {
-      setErrorMessage(error.message || 'An unexpected error occurred');
-      onPaymentError?.(error);
+    } catch (error) {
+      setErrorMessage((error as Error).message || 'An unexpected error occurred');
+      onPaymentError?.(error instanceof Error ? error : new Error(String(error)));
     } finally {
       setIsLoading(false);
     }
@@ -84,7 +82,7 @@ const StripePaymentFormInner: React.FC<StripePaymentFormProps> = ({
       </div>
 
       {errorMessage && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-md text-red-800 text-sm">
+        <div className="p-3 bg-destructive/10 border border-destructive/30 rounded-md text-red-800 text-sm">
           {errorMessage}
         </div>
       )}
@@ -115,9 +113,9 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = (props) => {
           props.metadata
         );
         setClientSecret(secret);
-      } catch (err: any) {
+      } catch (err) {
         console.error('Failed to initialize payment:', err);
-        setError(err.message || 'Failed to initialize payment');
+        setError((err as Error).message || 'Failed to initialize payment');
       } finally {
         setLoading(false);
       }
@@ -131,7 +129,7 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = (props) => {
       <Card>
         <CardContent className="pt-6">
           <div className="flex items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
           </div>
         </CardContent>
       </Card>
@@ -142,7 +140,7 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = (props) => {
     return (
       <Card>
         <CardContent className="pt-6">
-          <div className="p-4 bg-red-50 border border-red-200 rounded-md text-red-800">
+          <div className="p-4 bg-destructive/10 border border-destructive/30 rounded-md text-red-800">
             <p className="font-medium">Payment initialization failed</p>
             <p className="text-sm mt-1">{error}</p>
           </div>
@@ -182,7 +180,7 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = (props) => {
           <StripePaymentFormInner {...props} />
         </Elements>
       </CardContent>
-      <CardFooter className="flex justify-between text-xs text-gray-500">
+      <CardFooter className="flex justify-between text-xs text-muted-foreground">
         <div>Secure payment powered by Stripe</div>
         <div>All card information is encrypted</div>
       </CardFooter>

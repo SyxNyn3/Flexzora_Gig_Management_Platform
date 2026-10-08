@@ -295,33 +295,33 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Trigger for application status changes
-CREATE TRIGGER after_application_status_change
+CREATE OR REPLACE TRIGGER after_application_status_change
 AFTER UPDATE OF status ON gig_applications
 FOR EACH ROW
 WHEN (OLD.status IS DISTINCT FROM NEW.status)
 EXECUTE FUNCTION notify_on_application_status_change();
 
 -- Trigger for new applications
-CREATE TRIGGER after_application_insert
+CREATE OR REPLACE TRIGGER after_application_insert
 AFTER INSERT ON gig_applications
 FOR EACH ROW
 EXECUTE FUNCTION notify_on_application_status_change();
 
 -- Trigger for payment status changes
-CREATE TRIGGER after_payment_status_change
+CREATE OR REPLACE TRIGGER after_payment_status_change
 AFTER UPDATE OF status ON payments
 FOR EACH ROW
 WHEN (OLD.status IS DISTINCT FROM NEW.status)
 EXECUTE FUNCTION notify_on_payment_status_change();
 
 -- Trigger for new gig creation
-CREATE TRIGGER after_gig_insert
+CREATE OR REPLACE TRIGGER after_gig_insert
 AFTER INSERT ON gigs
 FOR EACH ROW
 EXECUTE FUNCTION notify_on_gig_creation();
 
 -- Trigger for gig status changes to published
-CREATE TRIGGER after_gig_publish
+CREATE OR REPLACE TRIGGER after_gig_publish
 AFTER UPDATE OF status ON gigs
 FOR EACH ROW
 WHEN (OLD.status IS DISTINCT FROM NEW.status AND NEW.status = 'published')

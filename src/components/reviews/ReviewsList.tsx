@@ -1,10 +1,10 @@
 import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useReviewsForWorker } from '@/hooks/useSupabaseQuery';
-import { Star, Building2, Calendar, Briefcase } from 'lucide-react';
+import { Star, Building2, Briefcase } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface ReviewsListProps {
@@ -13,7 +13,8 @@ interface ReviewsListProps {
 }
 
 const ReviewsList: React.FC<ReviewsListProps> = ({ workerId, limit }) => {
-  const { data: reviews = [], loading, error } = useReviewsForWorker(workerId);
+  const { data: reviewsData, loading, error } = useReviewsForWorker(workerId);
+  const reviews = reviewsData ?? [];
   
   // Limit the number of reviews if specified
   const displayedReviews = limit ? reviews.slice(0, limit) : reviews;
@@ -43,7 +44,7 @@ const ReviewsList: React.FC<ReviewsListProps> = ({ workerId, limit }) => {
     return (
       <Card>
         <CardContent className="p-6 text-center">
-          <p className="text-red-600">Error loading reviews: {error}</p>
+          <p className="text-destructive">Error loading reviews: {error}</p>
         </CardContent>
       </Card>
     );
@@ -54,7 +55,7 @@ const ReviewsList: React.FC<ReviewsListProps> = ({ workerId, limit }) => {
       <Card>
         <CardContent className="p-6 text-center">
           <Star className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-          <p className="text-gray-500">No reviews yet</p>
+          <p className="text-muted-foreground">No reviews yet</p>
         </CardContent>
       </Card>
     );
@@ -69,7 +70,7 @@ const ReviewsList: React.FC<ReviewsListProps> = ({ workerId, limit }) => {
               <Avatar className="h-10 w-10">
                 <AvatarImage src={review.reviewer?.avatar_url} />
                 <AvatarFallback>
-                  {review.reviewer?.full_name?.split(' ').map(n => n[0]).join('') || 'U'}
+                  {review.reviewer?.full_name?.split(' ').map((n: string) => n[0]).join('') || 'U'}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1">
@@ -85,7 +86,7 @@ const ReviewsList: React.FC<ReviewsListProps> = ({ workerId, limit }) => {
                           }`}
                         />
                       ))}
-                      <span className="ml-2 text-sm text-gray-600">
+                      <span className="ml-2 text-sm text-muted-foreground">
                         {format(new Date(review.created_at), 'MMM d, yyyy')}
                       </span>
                     </div>
@@ -99,13 +100,13 @@ const ReviewsList: React.FC<ReviewsListProps> = ({ workerId, limit }) => {
                 </div>
                 
                 {review.gig && (
-                  <div className="flex items-center mt-2 text-sm text-gray-600">
+                  <div className="flex items-center mt-2 text-sm text-muted-foreground">
                     <Briefcase className="h-4 w-4 mr-1" />
                     <span>For: {review.gig.title}</span>
                   </div>
                 )}
                 
-                <p className="mt-3 text-gray-700">{review.review_text}</p>
+                <p className="mt-3 text-foreground">{review.comment}</p>
               </div>
             </div>
           </CardContent>

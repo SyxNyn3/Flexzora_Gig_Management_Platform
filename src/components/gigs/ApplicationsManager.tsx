@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -7,14 +7,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
-import { GigApplication, Gig } from '@/lib/types';
+import { GigApplication } from '@/lib/types';
 import { 
   CheckCircle, 
   XCircle, 
   Clock, 
   User,
-  Mail,
-  Phone,
   MapPin,
   DollarSign,
   Calendar,
@@ -129,9 +127,9 @@ const ApplicationsManager: React.FC<ApplicationsManagerProps> = ({ gigId }) => {
       setSelectedApplication(null);
       setResponseNotes('');
       await fetchApplications();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error updating application:', error);
-      toast.error(error.message || 'Failed to update application');
+      toast.error((error as Error).message || 'Failed to update application');
     } finally {
       setSubmitting(false);
     }
@@ -145,11 +143,11 @@ const ApplicationsManager: React.FC<ApplicationsManagerProps> = ({ gigId }) => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'accepted': return 'bg-green-100 text-green-800';
-      case 'rejected': return 'bg-red-100 text-red-800';
-      case 'withdrawn': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'pending': return 'bg-amber-500/15 text-amber-600 dark:text-amber-400';
+      case 'accepted': return 'bg-green-500/15 text-emerald-500 dark:text-green-400';
+      case 'rejected': return 'bg-red-500/15 text-destructive dark:text-red-400';
+      case 'withdrawn': return 'bg-muted text-foreground/90';
+      default: return 'bg-muted text-foreground/90';
     }
   };
 
@@ -165,7 +163,7 @@ const ApplicationsManager: React.FC<ApplicationsManagerProps> = ({ gigId }) => {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-96">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
       </div>
     );
   }
@@ -174,10 +172,10 @@ const ApplicationsManager: React.FC<ApplicationsManagerProps> = ({ gigId }) => {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h2 className="text-2xl font-bold text-gray-900">
+        <h2 className="text-2xl font-bold text-foreground">
           {gigId ? 'Gig Applications' : 'Application Management'}
         </h2>
-        <p className="text-gray-600 mt-2">
+        <p className="text-muted-foreground mt-2">
           {profile?.role === 'company' 
             ? 'Review and respond to worker applications'
             : 'Track your gig applications'
@@ -206,7 +204,7 @@ const ApplicationsManager: React.FC<ApplicationsManagerProps> = ({ gigId }) => {
                           <h3 className="font-semibold text-lg">
                             {application.worker?.full_name}
                           </h3>
-                          <p className="text-sm text-gray-600">
+                          <p className="text-sm text-muted-foreground">
                             Applied for: {application.gig?.title}
                           </p>
                         </div>
@@ -218,7 +216,7 @@ const ApplicationsManager: React.FC<ApplicationsManagerProps> = ({ gigId }) => {
                         </Badge>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4 text-sm text-gray-600">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4 text-sm text-muted-foreground">
                         <div className="flex items-center">
                           <Calendar className="h-4 w-4 mr-2" />
                           Applied {format(new Date(application.application_date), 'MMM d, yyyy')}
@@ -249,7 +247,7 @@ const ApplicationsManager: React.FC<ApplicationsManagerProps> = ({ gigId }) => {
                       {application.cover_letter && (
                         <div className="mb-4">
                           <h4 className="font-medium mb-2">Cover Letter:</h4>
-                          <p className="text-gray-700 text-sm bg-gray-50 p-3 rounded-lg">
+                          <p className="text-foreground/80 text-sm bg-muted/50 p-3 rounded-lg">
                             {application.cover_letter}
                           </p>
                         </div>
@@ -258,7 +256,7 @@ const ApplicationsManager: React.FC<ApplicationsManagerProps> = ({ gigId }) => {
                       {application.worker?.bio && (
                         <div className="mb-4">
                           <h4 className="font-medium mb-2">About:</h4>
-                          <p className="text-gray-700 text-sm">
+                          <p className="text-foreground/80 text-sm">
                             {application.worker.bio}
                           </p>
                         </div>
@@ -267,7 +265,7 @@ const ApplicationsManager: React.FC<ApplicationsManagerProps> = ({ gigId }) => {
                       {application.notes && (
                         <div className="mb-4">
                           <h4 className="font-medium mb-2">Response Notes:</h4>
-                          <p className="text-gray-700 text-sm bg-blue-50 p-3 rounded-lg">
+                          <p className="text-foreground/80 text-sm bg-primary/10 p-3 rounded-lg">
                             {application.notes}
                           </p>
                         </div>
@@ -304,9 +302,9 @@ const ApplicationsManager: React.FC<ApplicationsManagerProps> = ({ gigId }) => {
       ) : (
         <Card>
           <CardContent className="text-center py-12">
-            <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No Applications</h3>
-            <p className="text-gray-600">
+            <MessageSquare className="h-12 w-12 text-muted-foreground/70 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-foreground mb-2">No Applications</h3>
+            <p className="text-muted-foreground">
               {profile?.role === 'company' 
                 ? 'No applications have been received yet.'
                 : 'You haven\'t applied to any gigs yet.'

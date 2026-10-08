@@ -12,14 +12,12 @@ import { PortfolioItem } from '@/lib/types';
 import { 
   Plus, 
   Image, 
-  Link as LinkIcon, 
   Calendar, 
   Briefcase,
   Edit,
   Trash2,
   Star,
   ExternalLink,
-  Move
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useForm } from 'react-hook-form';
@@ -41,7 +39,7 @@ type PortfolioItemForm = z.infer<typeof portfolioItemSchema>;
 
 interface PortfolioSectionProps {
   portfolioItems: PortfolioItem[];
-  onAddItem: (item: Omit<PortfolioItem, 'id'>) => Promise<void>;
+  onAddItem: (item: Omit<PortfolioItem, 'id' | 'worker_id' | 'created_at' | 'updated_at'>) => Promise<void>;
   onUpdateItem: (id: string, item: Partial<PortfolioItem>) => Promise<void>;
   onDeleteItem: (id: string) => Promise<void>;
 }
@@ -111,8 +109,8 @@ const PortfolioSection: React.FC<PortfolioSectionProps> = ({
         toast.success('Portfolio item added successfully!');
       }
       setShowItemDialog(false);
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to save portfolio item');
+    } catch (error) {
+      toast.error((error as Error).message || 'Failed to save portfolio item');
     } finally {
       setLoading(false);
     }
@@ -123,20 +121,20 @@ const PortfolioSection: React.FC<PortfolioSectionProps> = ({
       try {
         await onDeleteItem(id);
         toast.success('Portfolio item deleted successfully!');
-      } catch (error: any) {
-        toast.error(error.message || 'Failed to delete portfolio item');
+      } catch (error) {
+        toast.error((error as Error).message || 'Failed to delete portfolio item');
       }
     }
   };
 
   const getCategoryColor = (category?: string) => {
     switch (category?.toLowerCase()) {
-      case 'video': return 'bg-blue-100 text-blue-800';
-      case 'audio': return 'bg-purple-100 text-purple-800';
-      case 'lighting': return 'bg-yellow-100 text-yellow-800';
-      case 'event': return 'bg-green-100 text-green-800';
+      case 'video': return 'bg-primary/15 text-primary';
+      case 'audio': return 'bg-secondary/15 text-purple-800';
+      case 'lighting': return 'bg-amber-500/15 text-amber-600 dark:text-amber-400';
+      case 'event': return 'bg-green-500/15 text-emerald-500 dark:text-green-400';
       case 'photography': return 'bg-pink-100 text-pink-800';
-      default: return 'bg-gray-100 text-gray-800';
+      default: return 'bg-muted text-foreground/90';
     }
   };
 
@@ -165,7 +163,7 @@ const PortfolioSection: React.FC<PortfolioSectionProps> = ({
                 className="border rounded-lg overflow-hidden hover:shadow-md transition-shadow group"
               >
                 {item.image_url ? (
-                  <div className="relative h-40 bg-gray-100">
+                  <div className="relative h-40 bg-muted">
                     <img 
                       src={item.image_url} 
                       alt={item.title} 
@@ -173,7 +171,7 @@ const PortfolioSection: React.FC<PortfolioSectionProps> = ({
                     />
                     {item.is_featured && (
                       <div className="absolute top-2 right-2">
-                        <Badge className="bg-yellow-100 text-yellow-800">
+                        <Badge className="bg-amber-500/15 text-amber-600 dark:text-amber-400">
                           <Star className="h-3 w-3 mr-1 fill-yellow-500" />
                           Featured
                         </Badge>
@@ -181,11 +179,11 @@ const PortfolioSection: React.FC<PortfolioSectionProps> = ({
                     )}
                   </div>
                 ) : (
-                  <div className="h-40 bg-gray-100 flex items-center justify-center">
-                    <Image className="h-12 w-12 text-gray-400" />
+                  <div className="h-40 bg-muted flex items-center justify-center">
+                    <Image className="h-12 w-12 text-muted-foreground/70" />
                     {item.is_featured && (
                       <div className="absolute top-2 right-2">
-                        <Badge className="bg-yellow-100 text-yellow-800">
+                        <Badge className="bg-amber-500/15 text-amber-600 dark:text-amber-400">
                           <Star className="h-3 w-3 mr-1 fill-yellow-500" />
                           Featured
                         </Badge>
@@ -209,7 +207,7 @@ const PortfolioSection: React.FC<PortfolioSectionProps> = ({
                       <Button 
                         variant="ghost" 
                         size="sm" 
-                        className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                        className="h-8 w-8 p-0 text-destructive dark:text-red-400 hover:text-destructive dark:hover:text-red-400 hover:bg-red-500/10"
                         onClick={() => handleDeleteItem(item.id)}
                       >
                         <Trash2 className="h-4 w-4" />
@@ -224,12 +222,12 @@ const PortfolioSection: React.FC<PortfolioSectionProps> = ({
                   )}
                   
                   {item.description && (
-                    <p className="text-sm text-gray-600 mt-2 line-clamp-2">
+                    <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
                       {item.description}
                     </p>
                   )}
                   
-                  <div className="flex flex-wrap gap-4 mt-3 text-xs text-gray-500">
+                  <div className="flex flex-wrap gap-4 mt-3 text-xs text-muted-foreground">
                     {item.client && (
                       <div className="flex items-center">
                         <Briefcase className="h-3 w-3 mr-1" />
@@ -250,7 +248,7 @@ const PortfolioSection: React.FC<PortfolioSectionProps> = ({
                         href={item.url} 
                         target="_blank" 
                         rel="noopener noreferrer"
-                        className="text-sm text-blue-600 hover:text-blue-800 flex items-center"
+                        className="text-sm text-primary hover:text-primary flex items-center"
                       >
                         <ExternalLink className="h-3 w-3 mr-1" />
                         View Project
@@ -263,9 +261,9 @@ const PortfolioSection: React.FC<PortfolioSectionProps> = ({
           </div>
         ) : (
           <div className="text-center py-8">
-            <Briefcase className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No portfolio items yet</h3>
-            <p className="text-gray-600 mb-4">
+            <Briefcase className="h-12 w-12 text-muted-foreground/70 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-foreground mb-2">No portfolio items yet</h3>
+            <p className="text-muted-foreground mb-4">
               Showcase your best work by adding portfolio items.
             </p>
             <Button onClick={handleAddItem}>
@@ -302,10 +300,10 @@ const PortfolioSection: React.FC<PortfolioSectionProps> = ({
               <Input
                 id="title"
                 {...form.register('title')}
-                placeholder="e.g., Corporate Event Video Production"
+                placeholder="e.g., Stadium Show — FOH System Build"
               />
               {form.formState.errors.title && (
-                <p className="text-sm text-red-600 mt-1">
+                <p className="text-sm text-destructive dark:text-red-400 mt-1">
                   {form.formState.errors.title.message}
                 </p>
               )}
@@ -347,7 +345,7 @@ const PortfolioSection: React.FC<PortfolioSectionProps> = ({
                 <Input
                   id="client"
                   {...form.register('client')}
-                  placeholder="e.g., TechCorp Events"
+                  placeholder="e.g., Rhino Staging"
                 />
               </div>
             </div>
@@ -370,7 +368,7 @@ const PortfolioSection: React.FC<PortfolioSectionProps> = ({
                   placeholder="https://example.com/project"
                 />
                 {form.formState.errors.url && (
-                  <p className="text-sm text-red-600 mt-1">
+                  <p className="text-sm text-destructive dark:text-red-400 mt-1">
                     {form.formState.errors.url.message}
                   </p>
                 )}
@@ -385,11 +383,11 @@ const PortfolioSection: React.FC<PortfolioSectionProps> = ({
                 placeholder="https://example.com/image.jpg"
               />
               {form.formState.errors.image_url && (
-                <p className="text-sm text-red-600 mt-1">
+                <p className="text-sm text-destructive dark:text-red-400 mt-1">
                   {form.formState.errors.image_url.message}
                 </p>
               )}
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 Enter a URL for an image that represents this project
               </p>
             </div>

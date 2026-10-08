@@ -10,10 +10,10 @@ interface AuthContextType {
   session: Session | null;
   profile: Profile | null;
   loading: boolean;
-  signUp: (email: string, password: string, userData: any) => Promise<any>;
-  signIn: (email: string, password: string) => Promise<any>;
-  signOut: () => Promise<any>;
-  updateProfile: (updates: Partial<Database['public']['Tables']['profiles']['Update']>) => Promise<any>;
+  signUp: (email: string, password: string, userData: { full_name: string; role: string; [key: string]: unknown }) => Promise<{ data: { user: User | null; session: Session | null } | null; error: { message: string } | null }>;
+  signIn: (email: string, password: string) => Promise<{ data: { user: User | null; session: Session | null } | null; error: { message: string } | null }>;
+  signOut: () => Promise<{ error: { message: string } | null }>;
+  updateProfile: (updates: Partial<Database['public']['Tables']['profiles']['Update']>) => Promise<{ data?: unknown; error: string | null }>;
   refreshProfile: () => Promise<void>;
 }
 
@@ -49,8 +49,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         }
         
-        // Then validate with Supabase
-        const { data: { session: supabaseSession }, error } = await supabase.auth.getSession();
+        // Then validate with Supabase — bound the wait so a stalled refresh-token
+        // exchange can't leave users on "Loading Flexzora…" forever
+        const sessionResult = await Promise.race([
+          supabase.auth.getSession(),
+          new Promise<null>((resolve) => setTimeout(() => resolve(null), 8000)),
+        ]);
+        if (!mounted) return;
+        if (!sessionResult) {
+          clearAuthData();
+          setSession(null);
+          setUser(null);
+          setLoading(false);
+          return;
+        }
+        const { data: { session: supabaseSession }, error } = sessionResult;
         
         if (!mounted) return;
         
@@ -127,8 +140,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       let error = null;
 
       try {
-        // First try to get existing profile
-        const result = await DatabaseService.getProfile(userId);
+        // First try to get existing profile — bound the wait so a stalled
+        // query can't leave users on the loading screen forever
+        const result = await Promise.race([
+          DatabaseService.getProfile(userId),
+          new Promise<null>((resolve) => setTimeout(() => resolve(null), 8000)),
+        ]);
+        if (!result) {
+          console.warn('Profile fetch timed out; continuing without profile');
+          return;
+        }
         profileData = result.data;
         error = result.error;
         
@@ -139,7 +160,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           profileData = createResult.data;
           error = createResult.error;
         }
-      } catch (err) {
+      } catch {
         console.log('Profile not found, will create one on first update');
         // Profile doesn't exist yet, that's okay for new users
       }
@@ -164,7 +185,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await fetchProfile(user.id);
   };
 
-  const signUp = async (email: string, password: string, userData: any) => {
+  const signUp = async (email: string, password: string, userData: { full_name: string; role: string; [key: string]: unknown }) => {
     try {
       // Validate input data
       if (!userData.full_name || !userData.role) {
@@ -184,7 +205,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) {
         console.error('Supabase signup error:', error);
-        return { data: null, error };
+        return { data: null, error: { message: error instanceof Error ? error.message : 'Unknown error' } };
       }
 
       // If user was created but not confirmed, that's still success
@@ -202,9 +223,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       return { data, error: null };
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error in signUp:', error);
-      return { data: null, error };
+      return { data: null, error: { message: error instanceof Error ? error.message : 'Unknown error' } };
     }
   };
 
@@ -238,9 +259,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Profile will be fetched automatically via onAuthStateChange
 
       return { data, error: null };
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error in signIn:', error);
-      return { data: null, error };
+      return { data: null, error: { message: error instanceof Error ? error.message : 'Unknown error' } };
     }
   };
 
@@ -261,9 +282,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       return { error: null };
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error in signOut:', error);
-      return { error };
+      return { error: { message: error instanceof Error ? error.message : 'Unknown error' } };
     }
   };
 
@@ -298,9 +319,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       return { data, error: null };
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error updating profile:', error);
-      return { data: null, error: error.message };
+      return { data: null, error: (error as Error).message };
     }
   };
 

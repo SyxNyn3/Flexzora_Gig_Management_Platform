@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useAuth } from '@/contexts/AuthContext';
 import { AuthKitButton } from './AuthKitButton';
-import { Mail, CheckCircle, AlertCircle, RefreshCw, Inbox, Send, Trash, Star, Clock, Calendar } from 'lucide-react';
+import { Mail, RefreshCw, Inbox, Send, Star, Clock, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
 import { Switch } from '@/components/ui/switch';
 
@@ -22,7 +20,6 @@ interface EmailSummary {
 }
 
 const GmailIntegration: React.FC = () => {
-  const { profile } = useAuth();
   const [isConnected, setIsConnected] = useState(false);
   const [emails, setEmails] = useState<EmailSummary[]>([]);
   const [loading, setLoading] = useState(false);
@@ -48,9 +45,9 @@ const GmailIntegration: React.FC = () => {
       const mockEmails: EmailSummary[] = [
         {
           id: '1',
-          subject: 'Confirmation: Camera Operator for TechCorp Event',
-          sender: 'bookings@techcorp-events.com',
-          preview: 'Thank you for accepting the gig. Here are the details for the upcoming event...',
+          subject: 'Call Confirmed: A1 Audio Engineer — Stadium Main Stage',
+          sender: 'ops@rhinostaging.com',
+          preview: 'You are confirmed for the Show Call. Call time 4:00 PM, dock door 4, all blacks...',
           date: '2024-06-14T10:30:00Z',
           isRead: true,
           hasAttachment: true,
@@ -59,9 +56,9 @@ const GmailIntegration: React.FC = () => {
         },
         {
           id: '2',
-          subject: 'Schedule Update: Festival Setup',
+          subject: 'Call Time Moved: Festival Main Stage Load-In',
           sender: 'coordinator@giglife.com',
-          preview: 'Please note the updated call time for the festival setup has changed to 7:00 AM...',
+          preview: 'Heads up — the Load-In & Rigging call moved to 6:00 AM due to venue curfew...',
           date: '2024-06-13T15:45:00Z',
           isRead: false,
           hasAttachment: false,
@@ -70,9 +67,9 @@ const GmailIntegration: React.FC = () => {
         },
         {
           id: '3',
-          subject: 'Payment Confirmation - Wedding Photography',
-          sender: 'accounting@dreamweddings.com',
-          preview: 'Your payment of $550.00 has been processed for the Johnson wedding on June 10th...',
+          subject: 'Escrow Released — Ballroom C Keynote',
+          sender: 'payouts@flexzora.com',
+          preview: 'Your timesheet was approved and $578.00 has been released from escrow...',
           date: '2024-06-12T09:15:00Z',
           isRead: true,
           hasAttachment: true,
@@ -81,9 +78,9 @@ const GmailIntegration: React.FC = () => {
         },
         {
           id: '4',
-          subject: 'New Gig Opportunity: Sound Engineer Needed',
+          subject: 'New Call: ETCP Arena Rigger — Truss Build',
           sender: 'jobs@rhinostaging.com',
-          preview: 'Based on your profile, we have a new gig opportunity that matches your skills...',
+          preview: 'Your ETCP Arena Rigger cert matches an open Load-In & Rigging call this week...',
           date: '2024-06-11T14:20:00Z',
           isRead: false,
           hasAttachment: false,
@@ -103,9 +100,9 @@ const GmailIntegration: React.FC = () => {
         },
         {
           id: '6',
-          subject: 'Special Discount on Camera Equipment',
-          sender: 'sales@camerastore.com',
-          preview: 'As a valued customer, we\'re offering you 15% off your next purchase...',
+          subject: '15% Off Steel-Toes and Gloves',
+          sender: 'sales@workwearstore.com',
+          preview: 'Gear up for the season — discounts on PPE, gloves, and show blacks...',
           date: '2024-06-09T11:30:00Z',
           isRead: true,
           hasAttachment: false,
@@ -120,7 +117,7 @@ const GmailIntegration: React.FC = () => {
     }, 1500);
   };
 
-  const handleConnect = (connection: any) => {
+  const handleConnect = (connection: unknown) => {
     console.log('Gmail connected:', connection);
     setIsConnected(true);
     localStorage.setItem('gmail-connected', 'true');
@@ -152,8 +149,8 @@ const GmailIntegration: React.FC = () => {
       {/* Header */}
       <div className="flex justify-between items-start">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Gmail Integration</h2>
-          <p className="text-gray-600 mt-2">
+          <h2 className="text-2xl font-bold text-foreground">Gmail Integration</h2>
+          <p className="text-muted-foreground mt-2">
             Connect your Gmail account to automatically track gig-related emails
           </p>
         </div>
@@ -163,7 +160,7 @@ const GmailIntegration: React.FC = () => {
               <RefreshCw className="h-4 w-4 mr-2" />
               Refresh
             </Button>
-            <Button variant="outline" onClick={handleDisconnect} className="text-red-600 hover:text-red-700 hover:bg-red-50">
+            <Button variant="outline" onClick={handleDisconnect} className="text-destructive hover:text-destructive hover:bg-destructive/10">
               Disconnect
             </Button>
           </div>
@@ -175,9 +172,9 @@ const GmailIntegration: React.FC = () => {
         <Card>
           <CardContent className="pt-6">
             <div className="text-center py-8">
-              <Mail className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Connect Your Gmail Account</h3>
-              <p className="text-gray-600 mb-6 max-w-md mx-auto">
+              <Mail className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-foreground mb-2">Connect Your Gmail Account</h3>
+              <p className="text-muted-foreground mb-6 max-w-md mx-auto">
                 Connect your Gmail account to automatically import and categorize gig-related emails, track job offers, and never miss important communications.
               </p>
               
@@ -195,9 +192,9 @@ const GmailIntegration: React.FC = () => {
             <Card>
               <CardContent className="pt-6">
                 <div className="flex items-center">
-                  <Inbox className="h-8 w-8 text-blue-600" />
+                  <Inbox className="h-8 w-8 text-primary" />
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Total Emails</p>
+                    <p className="text-sm font-medium text-muted-foreground">Total Emails</p>
                     <p className="text-2xl font-bold">{emails.length}</p>
                   </div>
                 </div>
@@ -207,9 +204,9 @@ const GmailIntegration: React.FC = () => {
             <Card>
               <CardContent className="pt-6">
                 <div className="flex items-center">
-                  <Calendar className="h-8 w-8 text-green-600" />
+                  <Calendar className="h-8 w-8 text-emerald-500" />
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Gig Related</p>
+                    <p className="text-sm font-medium text-muted-foreground">Gig Related</p>
                     <p className="text-2xl font-bold">{gigRelatedCount}</p>
                   </div>
                 </div>
@@ -221,7 +218,7 @@ const GmailIntegration: React.FC = () => {
                 <div className="flex items-center">
                   <Mail className="h-8 w-8 text-yellow-600" />
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Unread</p>
+                    <p className="text-sm font-medium text-muted-foreground">Unread</p>
                     <p className="text-2xl font-bold">{unreadCount}</p>
                   </div>
                 </div>
@@ -233,7 +230,7 @@ const GmailIntegration: React.FC = () => {
                 <div className="flex items-center">
                   <Clock className="h-8 w-8 text-purple-600" />
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Last Synced</p>
+                    <p className="text-sm font-medium text-muted-foreground">Last Synced</p>
                     <p className="text-sm font-medium">
                       {lastSynced ? lastSynced.toLocaleTimeString() : 'Never'}
                     </p>
@@ -269,7 +266,7 @@ const GmailIntegration: React.FC = () => {
             <CardContent>
               {loading ? (
                 <div className="flex items-center justify-center py-12">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                 </div>
               ) : filteredEmails.length > 0 ? (
                 <div className="space-y-3">
@@ -277,8 +274,8 @@ const GmailIntegration: React.FC = () => {
                     <div 
                       key={email.id} 
                       className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                        email.isRead ? 'bg-white' : 'bg-blue-50 border-blue-200'
-                      } hover:bg-gray-50`}
+                        email.isRead ? 'bg-card' : 'bg-primary/10 border-primary/30'
+                      } hover:bg-accent`}
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex-1 min-w-0">
@@ -286,16 +283,16 @@ const GmailIntegration: React.FC = () => {
                             {!email.isRead && (
                               <div className="w-2 h-2 bg-blue-600 rounded-full mr-2"></div>
                             )}
-                            <h4 className={`font-medium ${email.isRead ? 'text-gray-700' : 'text-gray-900'}`}>
+                            <h4 className={`font-medium ${email.isRead ? 'text-foreground' : 'text-foreground'}`}>
                               {email.subject}
                             </h4>
                           </div>
-                          <p className="text-sm text-gray-600 mt-1">{email.sender}</p>
-                          <p className="text-sm text-gray-500 mt-1 line-clamp-1">{email.preview}</p>
+                          <p className="text-sm text-muted-foreground mt-1">{email.sender}</p>
+                          <p className="text-sm text-muted-foreground mt-1 line-clamp-1">{email.preview}</p>
                           
                           <div className="flex items-center mt-2 space-x-2">
                             {email.isGigRelated && (
-                              <Badge className="bg-green-100 text-green-800">Gig Related</Badge>
+                              <Badge className="bg-emerald-500/10 text-green-800">Gig Related</Badge>
                             )}
                             {email.hasAttachment && (
                               <Badge variant="outline" className="text-xs">Attachment</Badge>
@@ -307,7 +304,7 @@ const GmailIntegration: React.FC = () => {
                             ))}
                           </div>
                         </div>
-                        <div className="text-xs text-gray-500 whitespace-nowrap ml-4">
+                        <div className="text-xs text-muted-foreground whitespace-nowrap ml-4">
                           {new Date(email.date).toLocaleDateString()}
                         </div>
                       </div>
@@ -316,9 +313,9 @@ const GmailIntegration: React.FC = () => {
                 </div>
               ) : (
                 <div className="text-center py-12">
-                  <Mail className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No emails found</h3>
-                  <p className="text-gray-600">
+                  <Mail className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-foreground mb-2">No emails found</h3>
+                  <p className="text-muted-foreground">
                     {activeTab === 'gig-related' 
                       ? "No gig-related emails found. Try switching to 'All Emails'."
                       : "Your inbox is empty."}
@@ -333,12 +330,12 @@ const GmailIntegration: React.FC = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
-                  <Calendar className="h-5 w-5 mr-2 text-blue-600" />
+                  <Calendar className="h-5 w-5 mr-2 text-primary" />
                   Auto-Calendar
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-600 mb-4">
+                <p className="text-muted-foreground mb-4">
                   Automatically detect dates and times in emails and add them to your calendar.
                 </p>
                 <div className="flex items-center justify-between">
@@ -356,7 +353,7 @@ const GmailIntegration: React.FC = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-600 mb-4">
+                <p className="text-muted-foreground mb-4">
                   Automatically categorize emails as gig-related based on content and sender.
                 </p>
                 <div className="flex items-center justify-between">
@@ -369,12 +366,12 @@ const GmailIntegration: React.FC = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
-                  <Send className="h-5 w-5 mr-2 text-green-600" />
+                  <Send className="h-5 w-5 mr-2 text-emerald-500" />
                   Notifications
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-600 mb-4">
+                <p className="text-muted-foreground mb-4">
                   Get notified when you receive important gig-related emails.
                 </p>
                 <div className="flex items-center justify-between">

@@ -1,14 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useAuth } from '@/contexts/AuthContext';
 import { AuthKitButton } from './AuthKitButton';
 import { Calendar, AlertTriangle, Clock, MapPin, Building2, DollarSign, CheckCircle, XCircle, FolderSync as Sync, Filter, Download, Eye, EyeOff } from 'lucide-react';
-import { format, isWithinInterval, parseISO, startOfWeek, endOfWeek, addDays } from 'date-fns';
+import { format, isWithinInterval, parseISO, startOfWeek, endOfWeek } from 'date-fns';
+import { toast } from 'sonner';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface UnifiedGig {
   id: string;
@@ -31,120 +31,102 @@ const UnifiedSchedule: React.FC = () => {
   const { profile } = useAuth();
   const [gigs, setGigs] = useState<UnifiedGig[]>([]);
   const [filteredGigs, setFilteredGigs] = useState<UnifiedGig[]>([]);
-  const [selectedWeek, setSelectedWeek] = useState(new Date());
+  const [selectedWeek] = useState(new Date());
   const [viewMode, setViewMode] = useState<'week' | 'month'>('week');
   const [showConflicts, setShowConflicts] = useState(true);
   const [sourceFilter, setSourceFilter] = useState<string>('all');
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadUnifiedSchedule();
-  }, []);
+  // PostgREST many-to-one embeds come back as objects, not arrays — normalize both shapes
+  const one = <T,>(v: T | T[] | null | undefined): T | undefined =>
+    Array.isArray(v) ? v[0] : (v ?? undefined);
 
-  useEffect(() => {
-    filterGigs();
-  }, [gigs, selectedWeek, viewMode, sourceFilter, showConflicts]);
+  const loadUnifiedSchedule = useCallback(async () => {
+    setLoading(true);
+    const rows: UnifiedGig[] = [];
 
-  const loadUnifiedSchedule = () => {
-    // Mock unified schedule from multiple sources
-    const mockGigs: UnifiedGig[] = [
-      {
-        id: '1',
-        title: 'Corporate Event Setup',
-        company_name: 'Rhino Staging',
-        company_logo: '🦏',
-        location: 'San Francisco, CA',
-        start_date: '2024-01-15T08:00:00Z',
-        end_date: '2024-01-15T18:00:00Z',
-        hourly_rate: 45,
-        status: 'confirmed',
-        source: 'rhino',
+    // Marketplace shifts the worker is booked on
+    const { data: assignments } = await supabase
+      .from('shift_assignments')
+      .select('id, status, offered_rate, shift:shifts(id, title, starts_at, ends_at, status, event:events(title, company:companies(name), venue:venues(name, city)))')
+      .eq('worker_id', profile!.id)
+      .in('status', ['offered', 'confirmed', 'completed']);
+
+    for (const a of assignments ?? []) {
+      const shift = one(a.shift);
+      const event = one(shift?.event);
+      if (!shift || !event) continue;
+      rows.push({
+        id: shift.id,
+        title: shift.title ?? event.title,
+        company_name: one(event.company)?.name ?? 'Company',
+        company_logo: '',
+        location: one(event.venue) ? [one(event.venue)!.name, one(event.venue)!.city].filter(Boolean).join(', ') : 'TBD',
+        start_date: shift.starts_at,
+        end_date: shift.ends_at,
+        hourly_rate: a.offered_rate ?? undefined,
+        status: a.status === 'offered' ? 'pending' : a.status === 'completed' ? 'completed' : 'confirmed',
+        source: 'flexora',
         conflict_level: 'none',
-        sync_status: 'synced'
-      },
-      {
-        id: '2',
-        title: 'Concert Sound Check',
-        company_name: 'Giglife',
-        company_logo: '🎵',
-        location: 'Oakland, CA',
-        start_date: '2024-01-15T19:00:00Z',
-        end_date: '2024-01-15T23:00:00Z',
-        hourly_rate: 50,
+        sync_status: 'synced',
+      });
+    }
+
+    // Legacy gig applications the worker has been accepted for
+    const { data: applications } = await supabase
+      .from('gig_applications')
+      .select('id, status, proposed_rate, gig:gigs(id, title, location, start_date, end_date, hourly_rate, status, company:companies(name))')
+      .eq('worker_id', profile!.id)
+      .eq('status', 'accepted');
+
+    for (const a of applications ?? []) {
+      const gig = one(a.gig);
+      if (!gig) continue;
+      rows.push({
+        id: gig.id,
+        title: gig.title,
+        company_name: one(gig.company)?.name ?? 'Company',
+        company_logo: '',
+        location: gig.location ?? 'TBD',
+        start_date: gig.start_date,
+        end_date: gig.end_date,
+        hourly_rate: a.proposed_rate ?? gig.hourly_rate,
         status: 'confirmed',
-        source: 'giglife',
-        conflict_level: 'medium',
-        travel_time: 45,
-        notes: 'Tight schedule - 1 hour travel time between venues',
-        sync_status: 'synced'
-      },
-      {
-        id: '3',
-        title: 'Theater Production',
-        company_name: 'Stagehands, Inc.',
-        company_logo: '🎭',
-        location: 'San Francisco, CA',
-        start_date: '2024-01-16T14:00:00Z',
-        end_date: '2024-01-16T22:00:00Z',
-        hourly_rate: 48,
-        status: 'pending',
-        source: 'stagehands',
+        source: 'flexora',
         conflict_level: 'none',
-        sync_status: 'pending'
-      },
-      {
-        id: '4',
-        title: 'Wedding Photography',
-        company_name: 'Dream Weddings',
-        company_logo: '💒',
-        location: 'Napa Valley, CA',
-        start_date: '2024-01-17T10:00:00Z',
-        end_date: '2024-01-17T20:00:00Z',
-        hourly_rate: 55,
-        status: 'confirmed',
-        source: 'other',
-        conflict_level: 'none',
-        sync_status: 'synced'
-      },
-      {
-        id: '5',
-        title: 'Equipment Load-in',
-        company_name: 'PCE',
-        company_logo: '🌊',
-        location: 'San Jose, CA',
-        start_date: '2024-01-18T06:00:00Z',
-        end_date: '2024-01-18T10:00:00Z',
-        hourly_rate: 42,
-        status: 'confirmed',
-        source: 'pce',
-        conflict_level: 'low',
-        travel_time: 60,
-        notes: 'Early morning start - plan travel time',
-        sync_status: 'synced'
-      },
-      {
-        id: '6',
-        title: 'Festival Setup',
-        company_name: 'Giglife',
-        company_logo: '🎵',
-        location: 'Golden Gate Park, SF',
-        start_date: '2024-01-18T12:00:00Z',
-        end_date: '2024-01-18T20:00:00Z',
-        hourly_rate: 50,
-        status: 'confirmed',
-        source: 'giglife',
-        conflict_level: 'high',
-        travel_time: 30,
-        notes: 'CONFLICT: Overlaps with PCE gig - need to choose',
-        sync_status: 'error'
+        sync_status: 'synced',
+      });
+    }
+
+    rows.sort((x, y) => new Date(x.start_date).getTime() - new Date(y.start_date).getTime());
+
+    // Compute conflicts from real overlaps: overlapping windows are 'high',
+    // different-venue gaps under 2h are 'medium' travel risks.
+    for (let i = 0; i < rows.length; i++) {
+      for (let j = i + 1; j < rows.length; j++) {
+        const a = rows[i], b = rows[j];
+        const aStart = +new Date(a.start_date), aEnd = +new Date(a.end_date);
+        const bStart = +new Date(b.start_date), bEnd = +new Date(b.end_date);
+        if (aStart < bEnd && bStart < aEnd) {
+          a.conflict_level = 'high';
+          b.conflict_level = 'high';
+          b.notes = [b.notes, `Overlaps with "${a.title}"`].filter(Boolean).join(' · ');
+          continue;
+        }
+        const gap = Math.abs(bStart - aEnd) / 3600000;
+        if (gap < 2 && a.location !== b.location && a.conflict_level === 'none') {
+          a.conflict_level = 'medium';
+          a.travel_time = Math.round(gap * 60);
+          a.notes = [a.notes, `Tight turnaround to "${b.title}"`].filter(Boolean).join(' · ');
+        }
       }
-    ];
+    }
 
-    setGigs(mockGigs);
+    setGigs(rows);
     setLoading(false);
-  };
+  }, [profile]);
 
-  const filterGigs = () => {
+  const filterGigs = useCallback(() => {
     let filtered = gigs;
 
     // Filter by date range
@@ -168,7 +150,16 @@ const UnifiedSchedule: React.FC = () => {
     }
 
     setFilteredGigs(filtered);
-  };
+  }, [gigs, selectedWeek, viewMode, sourceFilter, showConflicts]);
+
+  useEffect(() => {
+    if (profile?.id) loadUnifiedSchedule();
+    else setLoading(false);
+  }, [profile?.id, loadUnifiedSchedule]);
+
+  useEffect(() => {
+    filterGigs();
+  }, [filterGigs]);
 
   const syncAllSources = async () => {
     setGigs(prev => prev.map(gig => ({ ...gig, sync_status: 'pending' as const })));
@@ -182,31 +173,31 @@ const UnifiedSchedule: React.FC = () => {
 
   const getConflictColor = (level: string) => {
     switch (level) {
-      case 'high': return 'border-l-red-500 bg-red-50';
-      case 'medium': return 'border-l-yellow-500 bg-yellow-50';
-      case 'low': return 'border-l-blue-500 bg-blue-50';
-      default: return 'border-l-green-500 bg-white';
+      case 'high': return 'border-l-red-500 bg-destructive/10';
+      case 'medium': return 'border-l-yellow-500 bg-amber-500/10';
+      case 'low': return 'border-l-blue-500 bg-primary/10';
+      default: return 'border-l-green-500 bg-card';
     }
   };
 
   const getSourceColor = (source: string) => {
     switch (source) {
       case 'rhino': return 'bg-purple-100 text-purple-800';
-      case 'giglife': return 'bg-blue-100 text-blue-800';
-      case 'stagehands': return 'bg-green-100 text-green-800';
+      case 'giglife': return 'bg-primary/10 text-primary';
+      case 'stagehands': return 'bg-emerald-500/10 text-green-800';
       case 'pce': return 'bg-cyan-100 text-cyan-800';
       case 'flexora': return 'bg-indigo-100 text-indigo-800';
-      default: return 'bg-gray-100 text-gray-800';
+      default: return 'bg-muted text-foreground';
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'confirmed': return 'bg-green-100 text-green-800';
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'completed': return 'bg-gray-100 text-gray-800';
-      case 'cancelled': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'confirmed': return 'bg-emerald-500/10 text-green-800';
+      case 'pending': return 'bg-amber-500/10 text-yellow-800';
+      case 'completed': return 'bg-muted text-foreground';
+      case 'cancelled': return 'bg-destructive/10 text-red-800';
+      default: return 'bg-muted text-foreground';
     }
   };
 
@@ -215,7 +206,7 @@ const UnifiedSchedule: React.FC = () => {
       case 'synced': return <CheckCircle className="h-4 w-4 text-green-500" />;
       case 'pending': return <Sync className="h-4 w-4 text-yellow-500 animate-spin" />;
       case 'error': return <XCircle className="h-4 w-4 text-red-500" />;
-      default: return <Clock className="h-4 w-4 text-gray-500" />;
+      default: return <Clock className="h-4 w-4 text-muted-foreground" />;
     }
   };
 
@@ -231,7 +222,7 @@ const UnifiedSchedule: React.FC = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
@@ -241,8 +232,8 @@ const UnifiedSchedule: React.FC = () => {
       {/* Header */}
       <div className="flex justify-between items-start">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Unified Schedule</h2>
-          <p className="text-gray-600 mt-2">
+          <h2 className="text-2xl font-bold text-foreground">Unified Schedule</h2>
+          <p className="text-muted-foreground mt-2">
             All your gigs from connected companies in one view
           </p>
         </div>
@@ -263,9 +254,9 @@ const UnifiedSchedule: React.FC = () => {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center">
-              <Calendar className="h-8 w-8 text-blue-600" />
+              <Calendar className="h-8 w-8 text-primary" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">This Week</p>
+                <p className="text-sm font-medium text-muted-foreground">This Week</p>
                 <p className="text-2xl font-bold">{filteredGigs.length} gigs</p>
               </div>
             </div>
@@ -275,9 +266,9 @@ const UnifiedSchedule: React.FC = () => {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center">
-              <DollarSign className="h-8 w-8 text-green-600" />
+              <DollarSign className="h-8 w-8 text-emerald-500" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Potential Earnings</p>
+                <p className="text-sm font-medium text-muted-foreground">Potential Earnings</p>
                 <p className="text-2xl font-bold">${totalEarnings.toLocaleString()}</p>
               </div>
             </div>
@@ -289,7 +280,7 @@ const UnifiedSchedule: React.FC = () => {
             <div className="flex items-center">
               <AlertTriangle className="h-8 w-8 text-yellow-600" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Conflicts</p>
+                <p className="text-sm font-medium text-muted-foreground">Conflicts</p>
                 <p className="text-2xl font-bold text-yellow-600">{conflictCount}</p>
               </div>
             </div>
@@ -301,7 +292,7 @@ const UnifiedSchedule: React.FC = () => {
             <div className="flex items-center">
               <Building2 className="h-8 w-8 text-purple-600" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Companies</p>
+                <p className="text-sm font-medium text-muted-foreground">Companies</p>
                 <p className="text-2xl font-bold">
                   {new Set(filteredGigs.map(g => g.company_name)).size}
                 </p>
@@ -316,7 +307,7 @@ const UnifiedSchedule: React.FC = () => {
         <CardContent className="pt-6">
           <div className="flex flex-wrap items-center gap-4">
             <div className="flex items-center space-x-2">
-              <Filter className="h-4 w-4 text-gray-500" />
+              <Filter className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm font-medium">Filters:</span>
             </div>
             
@@ -365,7 +356,7 @@ const UnifiedSchedule: React.FC = () => {
 
       {/* Conflicts Alert */}
       {conflictCount > 0 && (
-        <Alert className="border-yellow-200 bg-yellow-50">
+        <Alert className="border-yellow-200 bg-amber-500/10">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription className="text-yellow-800">
             <strong>{conflictCount} scheduling conflict{conflictCount !== 1 ? 's' : ''} detected.</strong> 
@@ -395,7 +386,7 @@ const UnifiedSchedule: React.FC = () => {
                         {getSyncIcon(gig.sync_status)}
                       </div>
                       
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-muted-foreground">
                         <div className="flex items-center">
                           <Clock className="h-4 w-4 mr-2" />
                           {format(parseISO(gig.start_date), 'MMM d, h:mm a')} - {format(parseISO(gig.end_date), 'h:mm a')}
@@ -413,14 +404,14 @@ const UnifiedSchedule: React.FC = () => {
                       </div>
 
                       {gig.notes && (
-                        <div className="mt-3 p-3 bg-gray-50 rounded-lg">
-                          <p className="text-sm text-gray-700">{gig.notes}</p>
+                        <div className="mt-3 p-3 bg-muted/40 rounded-lg">
+                          <p className="text-sm text-foreground">{gig.notes}</p>
                         </div>
                       )}
 
                       {gig.conflict_level !== 'none' && (
                         <div className="mt-3">
-                          <Badge className="bg-red-100 text-red-800">
+                          <Badge className="bg-destructive/10 text-red-800">
                             <AlertTriangle className="h-3 w-3 mr-1" />
                             {gig.conflict_level.toUpperCase()} CONFLICT
                           </Badge>
@@ -435,7 +426,7 @@ const UnifiedSchedule: React.FC = () => {
                         ${((new Date(gig.end_date).getTime() - new Date(gig.start_date).getTime()) / (1000 * 60 * 60) * gig.hourly_rate).toLocaleString()}
                       </div>
                     )}
-                    <div className="text-sm text-gray-500">
+                    <div className="text-sm text-muted-foreground">
                       {Math.round((new Date(gig.end_date).getTime() - new Date(gig.start_date).getTime()) / (1000 * 60 * 60))} hours
                     </div>
                   </div>
@@ -446,9 +437,9 @@ const UnifiedSchedule: React.FC = () => {
         ) : (
           <Card>
             <CardContent className="text-center py-12">
-              <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No Gigs Scheduled</h3>
-              <p className="text-gray-600">
+              <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-foreground mb-2">No Gigs Scheduled</h3>
+              <p className="text-muted-foreground">
                 No gigs found for the selected time period and filters.
               </p>
             </CardContent>

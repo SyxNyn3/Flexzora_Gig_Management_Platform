@@ -94,9 +94,9 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({
       } else if (paymentIntent && paymentIntent.status === 'succeeded') {
         onPaymentSuccess(paymentIntent.id);
       }
-    } catch (error: any) {
-      setErrorMessage(error.message || 'An unexpected error occurred');
-      onPaymentError(error);
+    } catch (error) {
+      setErrorMessage((error as Error).message || 'An unexpected error occurred');
+      onPaymentError(error instanceof Error ? error : new Error(String(error)));
     } finally {
       setIsLoading(false);
     }
@@ -129,7 +129,7 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({
           options={{
             mode: 'billing',
             fields: {
-              phone: 'optional',
+              phone: 'auto',
             },
             validation: {
               phone: {

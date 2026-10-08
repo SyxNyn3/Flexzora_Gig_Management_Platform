@@ -1,18 +1,23 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <meta name="description" content="AI-powered gig platform for the production industry. Connect with opportunities, manage schedules, and grow your career." />
-    <meta name="theme-color" content="#2563eb" />
+    <meta name="description" content="The operating system for live-event crews. Post the call, match the crew, clock in on site, pay on approval." />
+    <meta name="theme-color" content="#0B0D10" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <meta name="apple-mobile-web-app-title" content="FlexZora" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Flexzora" />
     <link rel="manifest" href="/manifest.json" />
     <link rel="apple-touch-icon" href="/icon-192x192.png" />
-    <title>FlexZora - AI-Powered Gig Platform</title>
+    <title>Flexzora — The OS for live-event crews</title>
+    <style>
+      /* Paint the shell dark before the CSS bundle arrives — prevents a white flash on cold load. */
+      html { background-color: hsl(222 24% 7%); color-scheme: dark; }
+      body { background-color: hsl(222 24% 7%); }
+    </style>
   </head>
   <body>
     <div id="root"></div>

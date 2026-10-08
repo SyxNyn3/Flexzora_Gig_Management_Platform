@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- dynamic AI agent payloads/ML plumbing */
 import { BaseAgent, MessageBus } from '../../services/BaseAgent';
 import { AgentConfig, AgentTask, MatchScore } from '../../types';
 import { supabase } from '@/lib/supabase';

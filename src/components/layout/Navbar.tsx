@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
-import { Bell, Calendar, DollarSign, Settings, LogOut, User, Briefcase, Plus, MessageSquare, Building2, Users, Link as LinkIcon, CalendarDays, Mail } from 'lucide-react';
+import { Bell, Calendar, DollarSign, LogOut, User, Briefcase, Plus, MessageSquare, Building2, Users, Link as LinkIcon, CalendarDays, Mail } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import NotificationCenter from '@/components/notifications/NotificationCenter';
 
@@ -28,7 +28,9 @@ const Navbar: React.FC = () => {
 
   const workerNavItems = [
     { path: '/dashboard', label: 'Dashboard', icon: Briefcase },
-    { path: '/gigs', label: 'Gigs', icon: Calendar },
+    { path: '/shifts', label: 'Shifts', icon: Calendar },
+    { path: '/payouts', label: 'Payouts', icon: DollarSign },
+    { path: '/gigs', label: 'Gigs', icon: Briefcase },
     { path: '/applications', label: 'Applications', icon: MessageSquare },
     { path: '/integrations', label: 'Integrations', icon: LinkIcon },
     { path: '/schedule', label: 'Schedule', icon: CalendarDays },
@@ -37,18 +39,23 @@ const Navbar: React.FC = () => {
 
   const companyNavItems = [
     { path: '/dashboard', label: 'Dashboard', icon: Briefcase },
-    { path: '/gigs', label: 'Gigs', icon: Calendar },
+    { path: '/events', label: 'Events', icon: CalendarDays },
+    { path: '/timesheets', label: 'Timesheets', icon: Calendar },
+    { path: '/roster', label: 'Roster', icon: Users },
+    { path: '/gigs', label: 'Gigs', icon: Briefcase },
     { path: '/workforce', label: 'Workforce', icon: Users },
-    { path: '/applications', label: 'Applications', icon: MessageSquare },
-    { path: '/schedule', label: 'Schedule', icon: CalendarDays },
     { path: '/finances', label: 'Finances', icon: DollarSign },
   ];
 
-  const navItems = profile?.role === 'company' ? companyNavItems : workerNavItems;
+  const navItems = profile?.role === 'company'
+    ? companyNavItems
+    : profile?.role === 'admin'
+      ? [...workerNavItems, { path: '/admin/waitlist', label: 'Waitlist', icon: Users }]
+      : workerNavItems;
 
   return (
     <>
-      <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
+      <nav className="bg-card border-b border-border sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
@@ -56,7 +63,7 @@ const Navbar: React.FC = () => {
                 <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-green-500 rounded-lg flex items-center justify-center">
                   <span className="text-white font-bold text-lg">F</span>
                 </div>
-                <span className="text-xl font-bold text-gray-900">FlexZora</span>
+                <span className="text-xl font-bold text-foreground">FlexZora</span>
               </Link>
               
               {user && (
@@ -70,8 +77,8 @@ const Navbar: React.FC = () => {
                         to={item.path}
                         className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                           isActive
-                            ? 'text-blue-600 bg-blue-50'
-                            : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                            ? 'text-primary bg-primary/10'
+                            : 'text-muted-foreground hover:text-foreground hover:bg-accent'
                         }`}
                       >
                         <Icon className="w-4 h-4" />
@@ -142,7 +149,7 @@ const Navbar: React.FC = () => {
                             {profile?.email}
                           </p>
                           <Badge variant="outline" className="w-fit mt-1">
-                            {profile?.role?.charAt(0).toUpperCase() + profile?.role?.slice(1)}
+                            {profile?.role ? profile.role.charAt(0).toUpperCase() + profile.role.slice(1) : 'User'}
                           </Badge>
                         </div>
                       </DropdownMenuLabel>

@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { DatabaseService, supabase } from '@/lib/supabase';
-import { Gig } from '@/lib/types';
+import { Gig, ExpenseCategory } from '@/lib/types';
 import { useExpenses } from '@/hooks/useSupabaseQuery';
 import {
   Plus,
@@ -43,10 +43,11 @@ interface ExpenseTrackerProps {
 
 const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ gigId }) => {
   const { profile } = useAuth();
-  const { data: expenses = [], loading: expensesLoading, refetch: refetchExpenses } = useExpenses({ 
+  const { data: expensesData, loading: expensesLoading, refetch: refetchExpenses } = useExpenses({ 
     workerId: profile?.id, 
     gigId 
   });
+  const expenses = expensesData ?? [];
   const [gigs, setGigs] = useState<Gig[]>([]);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -121,8 +122,8 @@ const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ gigId }) => {
       setShowAddDialog(false);
       form.reset();
       await refetchExpenses();
-    } catch (error: any) {
-      toast.error(`Failed to add expense: ${error.message || 'Unknown error'}`);
+    } catch (error) {
+      toast.error(`Failed to add expense: ${(error as Error).message || 'Unknown error'}`);
     } finally {
       setSubmitting(false);
     }
@@ -130,11 +131,11 @@ const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ gigId }) => {
 
   const getCategoryColor = (category: string) => {
     switch (category) {
-      case 'travel': return 'bg-blue-100 text-blue-800';
-      case 'equipment': return 'bg-purple-100 text-purple-800';
-      case 'meals': return 'bg-orange-100 text-orange-800';
-      case 'accommodation': return 'bg-indigo-100 text-indigo-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'travel': return 'bg-primary/15 text-primary';
+      case 'equipment': return 'bg-secondary/15 text-purple-800';
+      case 'meals': return 'bg-amber-500/15 text-orange-800';
+      case 'accommodation': return 'bg-primary/15 text-indigo-800';
+      default: return 'bg-muted text-foreground/90';
     }
   };
 
@@ -151,8 +152,8 @@ const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ gigId }) => {
       {/* Header */}
       <div className="flex justify-between items-start">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Expense Tracker</h2>
-          <p className="text-gray-600 mt-2">
+          <h2 className="text-2xl font-bold text-foreground">Expense Tracker</h2>
+          <p className="text-muted-foreground mt-2">
             Track your business expenses and manage deductions
           </p>
         </div>
@@ -215,15 +216,15 @@ const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ gigId }) => {
         <CardContent>
           {expensesLoading ? (
             <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             </div>
           ) : (expenses || []).length > 0 ? (
             <div className="space-y-4">
               {(expenses || []).map((expense) => (
                 <div key={expense.id} className="flex items-center justify-between p-4 border rounded-lg">
                   <div className="flex items-center space-x-4">
-                    <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
-                      <Receipt className="h-5 w-5 text-gray-600" />
+                    <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center">
+                      <Receipt className="h-5 w-5 text-muted-foreground" />
                     </div>
                     <div>
                       <h4 className="font-medium">{expense.description}</h4>
@@ -242,7 +243,7 @@ const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ gigId }) => {
                           </Badge>
                         )}
                       </div>
-                      <div className="flex items-center space-x-4 mt-2 text-sm text-gray-600">
+                      <div className="flex items-center space-x-4 mt-2 text-sm text-muted-foreground">
                         <span>{format(new Date(expense.expense_date), 'MMM d, yyyy')}</span>
                         {expense.gig && (
                           <span>• {expense.gig?.title || 'Unknown Gig'}</span>
@@ -252,16 +253,16 @@ const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ gigId }) => {
                   </div>
                   <div className="text-right">
                     <p className="font-medium text-lg">${expense.amount.toLocaleString()}</p>
-                    <p className="text-sm text-gray-500">{expense.currency}</p>
+                    <p className="text-sm text-muted-foreground">{expense.currency}</p>
                   </div>
                 </div>
               ))}
             </div>
           ) : (
             <div className="text-center py-8">
-              <Receipt className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No expenses recorded</h3>
-              <p className="text-gray-600">
+              <Receipt className="h-12 w-12 text-muted-foreground/70 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-foreground mb-2">No expenses recorded</h3>
+              <p className="text-muted-foreground">
                 Start tracking your business expenses to manage your finances better.
               </p>
             </div>
@@ -291,7 +292,7 @@ const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ gigId }) => {
                   placeholder="0.00"
                 />
                 {form.formState.errors.amount && (
-                  <p className="text-sm text-red-600 mt-1">
+                  <p className="text-sm text-destructive dark:text-red-400 mt-1">
                     {form.formState.errors.amount.message}
                   </p>
                 )}
@@ -299,7 +300,7 @@ const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ gigId }) => {
 
               <div>
                 <Label htmlFor="category">Category</Label>
-                <Select onValueChange={(value) => form.setValue('category', value as any)}>
+                <Select onValueChange={(value) => form.setValue('category', value as ExpenseCategory)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
@@ -322,7 +323,7 @@ const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ gigId }) => {
                 placeholder="What was this expense for?"
               />
               {form.formState.errors.description && (
-                <p className="text-sm text-red-600 mt-1">
+                <p className="text-sm text-destructive dark:text-red-400 mt-1">
                   {form.formState.errors.description.message}
                 </p>
               )}

@@ -67,15 +67,15 @@ export class DatabaseService {
       const { data, error } = await Promise.race([
         profileQuery,
         createTimeout(60000, 'getProfile')
-      ]) as any;
+      ]) as { data: Profile | null; error: { code?: string; message?: string } | null };
 
       if (error && error.code !== 'PGRST116') {
         throw new Error(`Failed to fetch profile: ${error.message}`);
       }
 
       return { data, error: null };
-    } catch (error: any) {
-      return { data: null, error: error.message };
+    } catch (error) {
+      return { data: null, error: (error as Error).message };
     }
   }
 
@@ -87,16 +87,16 @@ export class DatabaseService {
       const { data, error } = await Promise.race([
         profileRpc,
         createTimeout(15000, 'getOrCreateProfile')
-      ]) as any;
+      ]) as { data: Profile | null; error: { code?: string; message?: string } | null };
       
       if (error) {
         console.error('Error getting or creating profile:', error);
-        return { data: null, error: error.message };
+        return { data: null, error: error.message ?? 'Unknown error' };
       }
 
       return { data: data as Profile, error: null };
-    } catch (error: any) {
-      return { data: null, error: error.message };
+    } catch (error) {
+      return { data: null, error: (error as Error).message };
     }
   }
 
@@ -114,8 +114,8 @@ export class DatabaseService {
       }
 
       return { data, error: null };
-    } catch (error: any) {
-      return { data: null, error: error.message };
+    } catch (error) {
+      return { data: null, error: (error as Error).message };
     }
   }
 
@@ -132,8 +132,8 @@ export class DatabaseService {
       }
 
       return { data: data || [], error: null };
-    } catch (error: any) {
-      return { data: [], error: error.message };
+    } catch (error) {
+      return { data: [], error: (error as Error).message };
     }
   }
 
@@ -152,8 +152,8 @@ export class DatabaseService {
       }
 
       return { data: data || [], error: null };
-    } catch (error: any) {
-      return { data: [], error: error.message };
+    } catch (error) {
+      return { data: [], error: (error as Error).message };
     }
   }
 
@@ -173,8 +173,8 @@ export class DatabaseService {
       }
 
       return { data, error: null };
-    } catch (error: any) {
-      return { data: null, error: error.message };
+    } catch (error) {
+      return { data: null, error: (error as Error).message };
     }
   }
 
@@ -190,8 +190,8 @@ export class DatabaseService {
       }
 
       return { error: null };
-    } catch (error: any) {
-      return { error: error.message };
+    } catch (error) {
+      return { error: (error as Error).message };
     }
   }
 
@@ -209,8 +209,8 @@ export class DatabaseService {
       }
 
       return { data: data || [], error: null };
-    } catch (error: any) {
-      return { data: [], error: error.message };
+    } catch (error) {
+      return { data: [], error: (error as Error).message };
     }
   }
 
@@ -227,8 +227,8 @@ export class DatabaseService {
       }
 
       return { data, error: null };
-    } catch (error: any) {
-      return { data: null, error: error.message };
+    } catch (error) {
+      return { data: null, error: (error as Error).message };
     }
   }
 
@@ -246,8 +246,8 @@ export class DatabaseService {
       }
 
       return { data, error: null };
-    } catch (error: any) {
-      return { data: null, error: error.message };
+    } catch (error) {
+      return { data: null, error: (error as Error).message };
     }
   }
 
@@ -263,8 +263,8 @@ export class DatabaseService {
       }
 
       return { error: null };
-    } catch (error: any) {
-      return { error: error.message };
+    } catch (error) {
+      return { error: (error as Error).message };
     }
   }
 
@@ -299,8 +299,8 @@ export class DatabaseService {
       }
 
       return { data: data || [], error: null };
-    } catch (error: any) {
-      return { data: [], error: error.message };
+    } catch (error) {
+      return { data: [], error: (error as Error).message };
     }
   }
 
@@ -321,8 +321,8 @@ export class DatabaseService {
       }
 
       return { data, error: null };
-    } catch (error: any) {
-      return { data: null, error: error.message };
+    } catch (error) {
+      return { data: null, error: (error as Error).message };
     }
   }
 
@@ -343,8 +343,8 @@ export class DatabaseService {
       }
 
       return { data, error: null };
-    } catch (error: any) {
-      return { data: null, error: error.message };
+    } catch (error) {
+      return { data: null, error: (error as Error).message };
     }
   }
 
@@ -355,7 +355,7 @@ export class DatabaseService {
         .from('gig_applications')
         .select(`
           *,
-          gig:gigs(*),
+          gig:gigs(*, company:companies(id, name, logo_url)),
           worker:profiles(*)
         `)
         .order('application_date', { ascending: false });
@@ -379,8 +379,8 @@ export class DatabaseService {
       }
 
       return { data: data || [], error: null };
-    } catch (error: any) {
-      return { data: [], error: error.message };
+    } catch (error) {
+      return { data: [], error: (error as Error).message };
     }
   }
 
@@ -401,8 +401,8 @@ export class DatabaseService {
       }
 
       return { data, error: null };
-    } catch (error: any) {
-      return { data: null, error: error.message };
+    } catch (error) {
+      return { data: null, error: (error as Error).message };
     }
   }
 
@@ -424,8 +424,8 @@ export class DatabaseService {
       }
 
       return { data, error: null };
-    } catch (error: any) {
-      return { data: null, error: error.message };
+    } catch (error) {
+      return { data: null, error: (error as Error).message };
     }
   }
 
@@ -453,8 +453,8 @@ export class DatabaseService {
       }
 
       return { data: data || [], error: null };
-    } catch (error: any) {
-      return { data: [], error: error.message };
+    } catch (error) {
+      return { data: [], error: (error as Error).message };
     }
   }
 
@@ -471,8 +471,8 @@ export class DatabaseService {
       }
 
       return { data, error: null };
-    } catch (error: any) {
-      return { data: null, error: error.message };
+    } catch (error) {
+      return { data: null, error: (error as Error).message };
     }
   }
 
@@ -490,8 +490,8 @@ export class DatabaseService {
       }
 
       return { data, error: null };
-    } catch (error: any) {
-      return { data: null, error: error.message };
+    } catch (error) {
+      return { data: null, error: (error as Error).message };
     }
   }
 
@@ -508,8 +508,8 @@ export class DatabaseService {
 
       // Return success response
       return { error: null };
-    } catch (error: any) {
-      return { error: error.message };
+    } catch (error) {
+      return { error: (error as Error).message };
     }
   }
 
@@ -528,8 +528,8 @@ export class DatabaseService {
       }
 
       return { data: data || [], error: null };
-    } catch (error: any) {
-      return { data: [], error: error.message };
+    } catch (error) {
+      return { data: [], error: (error as Error).message };
     }
   }
 
@@ -547,8 +547,8 @@ export class DatabaseService {
       }
 
       return { data, error: null };
-    } catch (error: any) {
-      return { data: null, error: error.message };
+    } catch (error) {
+      return { data: null, error: (error as Error).message };
     }
   }
   
@@ -586,8 +586,8 @@ export class DatabaseService {
       }
 
       return { data: data || [], error: null };
-    } catch (error: any) {
-      return { data: [], error: error.message };
+    } catch (error) {
+      return { data: [], error: (error as Error).message };
     }
   }
 
@@ -604,8 +604,8 @@ export class DatabaseService {
       }
 
       return { data, error: null };
-    } catch (error: any) {
-      return { data: null, error: error.message };
+    } catch (error) {
+      return { data: null, error: (error as Error).message };
     }
   }
 
@@ -646,8 +646,8 @@ export class DatabaseService {
       }
 
       return { data: data || [], error: null };
-    } catch (error: any) {
-      return { data: [], error: error.message };
+    } catch (error) {
+      return { data: [], error: (error as Error).message };
     }
   }
 
@@ -670,14 +670,14 @@ export class DatabaseService {
       }
 
       return { data, error: null };
-    } catch (error: any) {
-      return { data: null, error: error.message };
+    } catch (error) {
+      return { data: null, error: (error as Error).message };
     }
   }
 
   static async updatePaymentStatus(paymentId: string, status: PaymentStatus, paidDate?: string) {
     try {
-      const updates: any = { status };
+      const updates: Record<string, unknown> = { status };
       if (status === 'paid' && paidDate) {
         updates.paid_date = paidDate;
       }
@@ -694,8 +694,8 @@ export class DatabaseService {
       }
 
       return { data, error: null };
-    } catch (error: any) {
-      return { data: null, error: error.message };
+    } catch (error) {
+      return { data: null, error: (error as Error).message };
     }
   }
 
@@ -715,8 +715,7 @@ export class DatabaseService {
             title
           )
         `)
-        .eq('worker_id', workerId)
-        .eq('is_public', true)
+        .eq('reviewee_id', workerId)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -724,8 +723,8 @@ export class DatabaseService {
       }
 
       return { data: data || [], error: null };
-    } catch (error: any) {
-      return { data: [], error: error.message };
+    } catch (error) {
+      return { data: [], error: (error as Error).message };
     }
   }
 
@@ -740,7 +739,7 @@ export class DatabaseService {
             avatar_url,
             role
           ),
-          worker:profiles!worker_id(
+          reviewee:profiles!reviewee_id(
             full_name,
             avatar_url
           ),
@@ -756,8 +755,8 @@ export class DatabaseService {
       }
 
       return { data, error: null };
-    } catch (error: any) {
-      return { data: null, error: error.message };
+    } catch (error) {
+      return { data: null, error: (error as Error).message };
     }
   }
 
@@ -774,8 +773,8 @@ export class DatabaseService {
       }
 
       return { data, error: null };
-    } catch (error: any) {
-      return { data: null, error: error.message };
+    } catch (error) {
+      return { data: null, error: (error as Error).message };
     }
   }
 
@@ -793,8 +792,8 @@ export class DatabaseService {
       }
 
       return { data, error: null };
-    } catch (error: any) {
-      return { data: null, error: error.message };
+    } catch (error) {
+      return { data: null, error: (error as Error).message };
     }
   }
 
@@ -810,8 +809,8 @@ export class DatabaseService {
       }
 
       return { error: null };
-    } catch (error: any) {
-      return { error: error.message };
+    } catch (error) {
+      return { error: (error as Error).message };
     }
   }
 
@@ -828,8 +827,8 @@ export class DatabaseService {
       }
 
       return { data: data || [], error: null };
-    } catch (error: any) {
-      return { data: [], error: error.message };
+    } catch (error) {
+      return { data: [], error: (error as Error).message };
     }
   }
 
@@ -846,8 +845,8 @@ export class DatabaseService {
       }
 
       return { data, error: null };
-    } catch (error: any) {
-      return { data: null, error: error.message };
+    } catch (error) {
+      return { data: null, error: (error as Error).message };
     }
   }
 
@@ -865,8 +864,8 @@ export class DatabaseService {
       }
 
       return { data: data || [], error: null };
-    } catch (error: any) {
-      return { data: [], error: error.message };
+    } catch (error) {
+      return { data: [], error: (error as Error).message };
     }
   }
 
@@ -883,8 +882,25 @@ export class DatabaseService {
       }
 
       return { data, error: null };
-    } catch (error: any) {
-      return { data: null, error: error.message };
+    } catch (error) {
+      return { data: null, error: (error as Error).message };
+    }
+  }
+
+  static async deleteAvailability(id: string) {
+    try {
+      const { error } = await supabase
+        .from('availability')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        throw new Error(`Failed to delete availability: ${error.message}`);
+      }
+
+      return { error: null };
+    } catch (error) {
+      return { error: (error as Error).message };
     }
   }
 
@@ -902,8 +918,8 @@ export class DatabaseService {
       }
 
       return { data: data || [], error: null };
-    } catch (error: any) {
-      return { data: [], error: error.message };
+    } catch (error) {
+      return { data: [], error: (error as Error).message };
     }
   }
 
@@ -920,8 +936,8 @@ export class DatabaseService {
       }
 
       return { data, error: null };
-    } catch (error: any) {
-      return { data: null, error: error.message };
+    } catch (error) {
+      return { data: null, error: (error as Error).message };
     }
   }
 
@@ -939,8 +955,8 @@ export class DatabaseService {
       }
 
       return { data, error: null };
-    } catch (error: any) {
-      return { data: null, error: error.message };
+    } catch (error) {
+      return { data: null, error: (error as Error).message };
     }
   }
 
@@ -956,13 +972,13 @@ export class DatabaseService {
       }
 
       return { error: null };
-    } catch (error: any) {
-      return { error: error.message };
+    } catch (error) {
+      return { error: (error as Error).message };
     }
   }
 
   // Real-time subscriptions
-  static subscribeToNotifications(userId: string, callback: (payload: any) => void) {
+  static subscribeToNotifications(userId: string, callback: (payload: Record<string, unknown>) => void) {
     return supabase
       .channel('notifications')
       .on(
@@ -978,7 +994,7 @@ export class DatabaseService {
       .subscribe();
   }
 
-  static subscribeToGigApplications(gigId: string, callback: (payload: any) => void) {
+  static subscribeToGigApplications(gigId: string, callback: (payload: Record<string, unknown>) => void) {
     return supabase
       .channel('gig_applications')
       .on(
@@ -996,7 +1012,7 @@ export class DatabaseService {
 }
 
 // Error handling utilities
-export const handleSupabaseError = (error: any): string => {
+export const handleSupabaseError = (error: { code?: string; message?: string } | null | undefined): string => {
   if (!error) return 'An unknown error occurred';
   
   // Handle specific Supabase error codes

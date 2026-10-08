@@ -1,8 +1,14 @@
-import { loadStripe, Stripe } from '@stripe/stripe-js';
+import { loadStripe } from '@stripe/stripe-js';
 import { supabase } from './supabase';
 
-// Initialize Stripe with publishable key
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '');
+// When no publishable key is configured (no Stripe account yet), the app runs
+// in demo mode: payment UIs render a sandbox flow and no network calls are made
+// to the Stripe edge functions.
+export const isStripeDemoMode = !import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+
+// Initialize Stripe with publishable key (skipped in demo mode — an empty key
+// makes loadStripe emit console warnings on every page load)
+const stripePromise = isStripeDemoMode ? null : loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
 export const getStripe = () => {
   return stripePromise;
@@ -88,7 +94,18 @@ export const createCheckoutSession = async (
 };
 
 // Function to retrieve a payment intent
-export const retrievePaymentIntent = async (paymentIntentId: string): Promise<any> => {
+export interface PaymentIntentDetails {
+  id?: string;
+  status?: string;
+  amount?: number;
+  currency?: string;
+  description?: string;
+  metadata?: { event_id?: string; [key: string]: unknown };
+  latest_charge?: string;
+  [key: string]: unknown;
+}
+
+export const retrievePaymentIntent = async (paymentIntentId: string): Promise<PaymentIntentDetails> => {
   try {
     // Call the Supabase Edge Function
     const { data, error } = await supabase.functions.invoke('retrieve-payment-intent', {

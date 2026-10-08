@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
-import { retrievePaymentIntent } from '@/lib/stripe';
+import { retrievePaymentIntent, PaymentIntentDetails } from '@/lib/stripe';
 import { CheckCircle, ArrowRight, Loader2 } from 'lucide-react';
 
 const PaymentSuccess: React.FC = () => {
@@ -12,7 +12,7 @@ const PaymentSuccess: React.FC = () => {
   const navigate = useNavigate();
   const { profile } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [paymentDetails, setPaymentDetails] = useState<any>(null);
+  const [paymentDetails, setPaymentDetails] = useState<PaymentIntentDetails | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -31,7 +31,7 @@ const PaymentSuccess: React.FC = () => {
         const paymentData = await retrievePaymentIntent(paymentIntentId);
         
         if (!paymentData || paymentData.error) {
-          throw new Error(paymentData?.error || 'Failed to retrieve payment details');
+          throw new Error(typeof paymentData?.error === 'string' ? paymentData.error : 'Failed to retrieve payment details');
         }
         
         setPaymentDetails(paymentData);
@@ -46,9 +46,9 @@ const PaymentSuccess: React.FC = () => {
             })
             .eq('id', paymentData.metadata.payment_id);
         }
-      } catch (err: any) {
+      } catch (err) {
         console.error('Error processing payment success:', err);
-        setError(err.message || 'An error occurred while processing your payment');
+        setError((err as Error).message || 'An error occurred while processing your payment');
       } finally {
         setLoading(false);
       }
@@ -69,7 +69,7 @@ const PaymentSuccess: React.FC = () => {
     return (
       <div className="max-w-md mx-auto px-4 py-16 flex flex-col items-center justify-center">
         <Loader2 className="h-12 w-12 text-primary animate-spin mb-4" />
-        <p className="text-center text-gray-600">Verifying your payment...</p>
+        <p className="text-center text-muted-foreground">Verifying your payment...</p>
       </div>
     );
   }
@@ -79,13 +79,13 @@ const PaymentSuccess: React.FC = () => {
       <div className="max-w-md mx-auto px-4 py-16">
         <Card>
           <CardHeader>
-            <CardTitle className="text-red-600">Payment Error</CardTitle>
+            <CardTitle className="text-destructive dark:text-red-400">Payment Error</CardTitle>
             <CardDescription>
               There was a problem processing your payment
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-gray-700">{error}</p>
+            <p className="text-foreground/80">{error}</p>
           </CardContent>
           <CardFooter>
             <Button onClick={() => navigate('/finances')} className="w-full">
@@ -101,8 +101,8 @@ const PaymentSuccess: React.FC = () => {
     <div className="max-w-md mx-auto px-4 py-16">
       <Card>
         <CardHeader className="text-center">
-          <div className="mx-auto bg-green-100 p-3 rounded-full w-16 h-16 flex items-center justify-center mb-4">
-            <CheckCircle className="h-8 w-8 text-green-600" />
+          <div className="mx-auto bg-green-500/15 p-3 rounded-full w-16 h-16 flex items-center justify-center mb-4">
+            <CheckCircle className="h-8 w-8 text-emerald-500 dark:text-green-400" />
           </div>
           <CardTitle className="text-2xl">Payment Successful!</CardTitle>
           <CardDescription>
@@ -110,39 +110,39 @@ const PaymentSuccess: React.FC = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="bg-gray-50 p-4 rounded-lg space-y-2">
+          <div className="bg-muted/50 p-4 rounded-lg space-y-2">
             <div className="flex justify-between">
-              <span className="text-gray-600">Amount:</span>
+              <span className="text-muted-foreground">Amount:</span>
               <span className="font-medium">
                 {new Intl.NumberFormat('en-US', {
                   style: 'currency',
                   currency: paymentDetails?.currency?.toUpperCase() || 'USD',
-                }).format(paymentDetails?.amount / 100 || 0)}
+                }).format((paymentDetails?.amount ?? 0) / 100)}
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">Date:</span>
+              <span className="text-muted-foreground">Date:</span>
               <span className="font-medium">
                 {new Date().toLocaleDateString()}
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">Payment ID:</span>
+              <span className="text-muted-foreground">Payment ID:</span>
               <span className="font-medium text-sm truncate max-w-[200px]">
                 {paymentDetails?.id}
               </span>
             </div>
-            {paymentDetails?.metadata?.description && (
+            {typeof paymentDetails?.metadata?.description === 'string' && (
               <div className="flex justify-between">
-                <span className="text-gray-600">Description:</span>
+                <span className="text-muted-foreground">Description:</span>
                 <span className="font-medium">
-                  {paymentDetails.metadata.description}
+                  {String(paymentDetails.metadata.description)}
                 </span>
               </div>
             )}
           </div>
           
-          <p className="text-center text-sm text-gray-600">
+          <p className="text-center text-sm text-muted-foreground">
             A receipt has been sent to your email address.
           </p>
         </CardContent>

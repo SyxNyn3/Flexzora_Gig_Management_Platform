@@ -5,14 +5,14 @@
     - Add `username` column to `profiles` table
     - Add unique constraint on username
     - Add index for performance
-    - Create function to lookup user by username or email
+    - CREATE OR REPLACE FUNCTION to lookup user by username or email
 
   2. Security
     - Add RLS policy for username lookups
     - Ensure username uniqueness is enforced
 
   3. Functions
-    - Create function to find user by username or email
+    - CREATE OR REPLACE FUNCTION to find user by username or email
     - Handle both email and username authentication
 */
 
@@ -23,7 +23,7 @@ BEGIN
     SELECT 1 FROM information_schema.columns
     WHERE table_name = 'profiles' AND column_name = 'username'
   ) THEN
-    ALTER TABLE profiles ADD COLUMN username text;
+    ALTER TABLE profiles ADD COLUMN IF NOT EXISTS username text;
   END IF;
 END $$;
 
@@ -45,7 +45,7 @@ BEGIN
     SELECT 1 FROM pg_indexes
     WHERE indexname = 'idx_profiles_username'
   ) THEN
-    CREATE INDEX idx_profiles_username ON profiles(username) WHERE username IS NOT NULL;
+    CREATE INDEX IF NOT EXISTS idx_profiles_username ON profiles(username) WHERE username IS NOT NULL;
   END IF;
 END $$;
 

@@ -24,10 +24,15 @@ serve(async (req) => {
   }
 
   try {
-    // Parse query parameters
+    // Accept token/email from the query string (email link) or a JSON body (client invoke)
     const url = new URL(req.url);
-    const token = url.searchParams.get('token');
-    const email = url.searchParams.get('email');
+    let token = url.searchParams.get('token');
+    let email = url.searchParams.get('email');
+    if ((!token || !email) && req.method === 'POST') {
+      const body = await req.json().catch(() => ({}));
+      token = token || body.token || null;
+      email = email || body.email || null;
+    }
     
     if (!token || !email) {
       return new Response(
@@ -72,12 +77,13 @@ serve(async (req) => {
       );
     }
 
-    // Update status to verified and clear the verification token
+    // Mark verified. The token stays on the row so reopening the same link
+    // returns the referral code again — only someone holding the unguessable
+    // token from the email can reach this path, so replay is safe.
     const { data: updatedEntry, error: updateError } = await supabase
       .from("waiting_list")
-      .update({ 
-        status: 'verified',
-        verification_token: null // Clear the token after use
+      .update({
+        status: 'verified'
       })
       .eq("id", waitlistEntry.id)
       .select()

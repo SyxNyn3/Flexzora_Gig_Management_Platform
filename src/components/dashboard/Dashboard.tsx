@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,7 +13,6 @@ import {
   MapPin,
   Clock,
   AlertCircle,
-  Plus,
   Briefcase
 } from 'lucide-react';
 import { Building } from 'lucide-react';
@@ -47,15 +46,13 @@ const Dashboard: React.FC = () => {
       const now = new Date();
       return app.status === 'accepted' && startDate && startDate > now;
     }).length,
-    totalEarnings: payments
-      ? payments.filter(payment => payment.status === 'paid')
-          .reduce((sum, payment) => sum + payment.amount, 0)
-      : 15420, // Fallback to mock data
-    pendingPayments: payments
-      ? payments.filter(payment => payment.status === 'pending')
-          .reduce((sum, payment) => sum + payment.amount, 0)
-      : 2800,
-    thisMonthExpenses: 450, // Placeholder
+    totalEarnings: (payments ?? [])
+      .filter(payment => payment.status === 'paid')
+      .reduce((sum, payment) => sum + payment.amount, 0),
+    pendingPayments: (payments ?? [])
+      .filter(payment => payment.status === 'pending')
+      .reduce((sum, payment) => sum + payment.amount, 0),
+    thisMonthExpenses: 0,
   };
   
   // Get recent gigs from real data
@@ -73,12 +70,12 @@ const Dashboard: React.FC = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'accepted': return 'bg-green-100 text-green-800';
-      case 'rejected': return 'bg-red-100 text-red-800';
-      case 'published': return 'bg-blue-100 text-blue-800';
-      case 'completed': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'pending': return 'bg-amber-500/15 text-amber-600 dark:text-amber-400';
+      case 'accepted': return 'bg-green-500/15 text-emerald-500 dark:text-green-400';
+      case 'rejected': return 'bg-red-500/15 text-destructive dark:text-red-400';
+      case 'published': return 'bg-primary/15 text-primary';
+      case 'completed': return 'bg-muted text-foreground/90';
+      default: return 'bg-muted text-foreground/90';
     }
   };
 
@@ -87,33 +84,33 @@ const Dashboard: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Skeleton loader for stats */}
         <div className="mb-8">
-          <div className="h-8 w-64 bg-gray-200 rounded animate-pulse mb-2"></div>
-          <div className="h-4 w-96 bg-gray-200 rounded animate-pulse"></div>
+          <div className="h-8 w-64 bg-muted rounded animate-pulse mb-2"></div>
+          <div className="h-4 w-96 bg-muted rounded animate-pulse"></div>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="bg-white p-6 rounded-lg shadow animate-pulse">
+            <div key={i} className="bg-card p-6 rounded-lg shadow animate-pulse">
               <div className="flex justify-between items-center mb-4">
-                <div className="h-4 w-24 bg-gray-200 rounded"></div>
-                <div className="h-4 w-4 bg-gray-200 rounded-full"></div>
+                <div className="h-4 w-24 bg-muted rounded"></div>
+                <div className="h-4 w-4 bg-muted rounded-full"></div>
               </div>
-              <div className="h-8 w-16 bg-gray-200 rounded mb-1"></div>
-              <div className="h-3 w-32 bg-gray-200 rounded"></div>
+              <div className="h-8 w-16 bg-muted rounded mb-1"></div>
+              <div className="h-3 w-32 bg-muted rounded"></div>
             </div>
           ))}
         </div>
         
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {[1, 2].map((i) => (
-            <div key={i} className="bg-white p-6 rounded-lg shadow animate-pulse">
+            <div key={i} className="bg-card p-6 rounded-lg shadow animate-pulse">
               <div className="flex justify-between items-center mb-6">
-                <div className="h-6 w-48 bg-gray-200 rounded"></div>
-                <div className="h-4 w-24 bg-gray-200 rounded"></div>
+                <div className="h-6 w-48 bg-muted rounded"></div>
+                <div className="h-4 w-24 bg-muted rounded"></div>
               </div>
               <div className="space-y-4">
                 {[1, 2, 3].map((j) => (
-                  <div key={j} className="h-20 bg-gray-200 rounded"></div>
+                  <div key={j} className="h-20 bg-muted rounded"></div>
                 ))}
               </div>
             </div>
@@ -127,10 +124,10 @@ const Dashboard: React.FC = () => {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Welcome Section */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">
+        <h1 className="text-3xl font-bold text-foreground">
           Welcome back, {profile?.full_name || 'User'}!
         </h1>
-        <p className="text-gray-600 mt-2">
+        <p className="text-muted-foreground mt-2">
           Here's what's happening with your gigs today.
         </p>
       </div>
@@ -206,12 +203,12 @@ const Dashboard: React.FC = () => {
                   <div key={application.id} className="flex items-center justify-between p-4 border rounded-lg">
                     <div className="flex-1">
                       <h4 className="font-medium">{application.gig?.title}</h4>
-                      <p className="text-sm text-gray-600 flex items-center">
+                      <p className="text-sm text-muted-foreground flex items-center">
                         <Calendar className="h-3 w-3 mr-1" />
                         Applied {format(new Date(application.application_date), 'MMM d, yyyy')}
                       </p>
                       {application.gig?.location && (
-                        <p className="text-sm text-gray-500 flex items-center mt-1">
+                        <p className="text-sm text-muted-foreground flex items-center mt-1">
                           <MapPin className="w-3 h-3 mr-1" />
                           {application.gig.location}
                         </p>
@@ -223,7 +220,7 @@ const Dashboard: React.FC = () => {
                   </div>
                 ))
               ) : (
-                <p className="text-gray-500 text-center py-4">No applications yet</p>
+                <p className="text-muted-foreground text-center py-4">No applications yet</p>
               )}
             </div>
             {recentApplications.length > 0 && (
@@ -246,7 +243,7 @@ const Dashboard: React.FC = () => {
             <div className="space-y-4">
               {recentGigs.length > 0 ? (
                 recentGigs.slice(0, 4).map((gig) => (
-                  <div key={gig.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 cursor-pointer"
+                  <div key={gig.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 cursor-pointer"
                        onClick={() => navigate(`/gigs/${gig.id}`)}>
                     <div className="flex items-center space-x-3">
                       <Avatar className="h-10 w-10">
@@ -257,8 +254,8 @@ const Dashboard: React.FC = () => {
                       </Avatar>
                       <div>
                         <h4 className="font-medium">{gig.title}</h4>
-                        <p className="text-sm text-gray-600">{gig.company?.name}</p>
-                        <p className="text-xs text-gray-500 flex items-center mt-1">
+                        <p className="text-sm text-muted-foreground">{gig.company?.name}</p>
+                        <p className="text-xs text-muted-foreground flex items-center mt-1">
                           <MapPin className="w-3 h-3 mr-1" />
                           {gig.location}
                         </p>
@@ -271,7 +268,7 @@ const Dashboard: React.FC = () => {
                           ${gig.hourly_rate}/hr
                         </p>
                       )}
-                      <p className="text-xs text-gray-500 flex items-center justify-end mt-1">
+                      <p className="text-xs text-muted-foreground flex items-center justify-end mt-1">
                         <Calendar className="h-3 w-3 mr-1" />
                         {format(new Date(gig.start_date), 'MMM d, yyyy')}
                       </p>
@@ -279,7 +276,7 @@ const Dashboard: React.FC = () => {
                   </div>
                 ))
               ) : (
-                <p className="text-gray-500 text-center py-4">No gigs available</p>
+                <p className="text-muted-foreground text-center py-4">No gigs available</p>
               )}
             </div>
             <Button className="w-full mt-4" onClick={() => navigate('/gigs')}>
@@ -317,15 +314,15 @@ const Dashboard: React.FC = () => {
 
       {/* Pending Payments Alert */}
       {stats.pendingPayments > 0 && (
-        <Card className="mt-8 border-yellow-200 bg-yellow-50">
+        <Card className="mt-8 border-amber-500/30 bg-amber-500/10">
           <CardContent className="pt-6">
             <div className="flex items-center space-x-3">
-              <AlertCircle className="h-5 w-5 text-yellow-600" />
+              <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
               <div>
-                <h4 className="font-medium text-yellow-800">
+                <h4 className="font-medium text-amber-600 dark:text-amber-400">
                   You have ${stats.pendingPayments.toLocaleString()} in pending payments
                 </h4>
-                <p className="text-sm text-yellow-700">
+                <p className="text-sm text-amber-600 dark:text-amber-400">
                   Some of your payments are still being processed.
                 </p>
               </div>

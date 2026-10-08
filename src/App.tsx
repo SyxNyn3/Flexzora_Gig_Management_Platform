@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
@@ -8,25 +8,35 @@ import WaitlistForm from '@/components/waitlist/WaitlistForm';
 import ScheduleDemoForm from '@/components/demo/ScheduleDemoForm';
 import Layout from '@/components/layout/Layout';
 import AuthForm from '@/components/auth/AuthForm';
-import WorkerDashboard from '@/components/dashboard/WorkerDashboard';
-import Dashboard from '@/components/dashboard/Dashboard';
-import WorkerGigList from '@/components/gigs/WorkerGigList';
-import GigList from '@/components/gigs/GigList';
-import GigDetails from '@/components/gigs/GigDetails';
-import GigManagement from '@/components/gigs/GigManagement';
-import CreateGigForm from '@/components/gigs/CreateGigForm';
-import WorkerApplications from '@/components/applications/WorkerApplications';
-import ApplicationsManager from '@/components/gigs/ApplicationsManager';
-import CalendarView from '@/components/calendar/CalendarView';
-import FinanceDashboard from '@/components/finances/FinanceDashboard';
-import ProfilePage from '@/components/profile/ProfilePage';
-import CompanyIntegrations from '@/components/integrations/CompanyIntegrations';
-import GmailIntegration from '@/components/integrations/GmailIntegration';
-import UnifiedSchedule from '@/components/integrations/UnifiedSchedule';
-import CompanyDashboard from '@/components/integrations/CompanyDashboard';
-import PaymentSuccess from '@/components/payments/PaymentSuccess';
-import SchedulingInterface from '@/components/scheduling/SchedulingInterface';
-import WaitlistVerification from '@/components/waitlist/WaitlistVerification';
+
+const WorkerDashboard = lazy(() => import('@/components/dashboard/WorkerDashboard'));
+const Dashboard = lazy(() => import('@/components/dashboard/Dashboard'));
+const WorkerGigList = lazy(() => import('@/components/gigs/WorkerGigList'));
+const GigList = lazy(() => import('@/components/gigs/GigList'));
+const GigDetails = lazy(() => import('@/components/gigs/GigDetails'));
+const GigManagement = lazy(() => import('@/components/gigs/GigManagement'));
+const CreateGigForm = lazy(() => import('@/components/gigs/CreateGigForm'));
+const WorkerApplications = lazy(() => import('@/components/applications/WorkerApplications'));
+const ApplicationsManager = lazy(() => import('@/components/gigs/ApplicationsManager'));
+const CalendarView = lazy(() => import('@/components/calendar/CalendarView'));
+const AvailabilityEditor = lazy(() => import('@/components/calendar/AvailabilityEditor'));
+const FinanceDashboard = lazy(() => import('@/components/finances/FinanceDashboard'));
+const ProfilePage = lazy(() => import('@/components/profile/ProfilePage'));
+const CompanyIntegrations = lazy(() => import('@/components/integrations/CompanyIntegrations'));
+const GmailIntegration = lazy(() => import('@/components/integrations/GmailIntegration'));
+const UnifiedSchedule = lazy(() => import('@/components/integrations/UnifiedSchedule'));
+const CompanyDashboard = lazy(() => import('@/components/integrations/CompanyDashboard'));
+const PaymentSuccess = lazy(() => import('@/components/payments/PaymentSuccess'));
+const SchedulingInterface = lazy(() => import('@/components/scheduling/SchedulingInterface'));
+const WaitlistVerification = lazy(() => import('@/components/waitlist/WaitlistVerification'));
+const EventsPage = lazy(() => import('@/pages/company/EventsPage'));
+const EventDetailPage = lazy(() => import('@/pages/company/EventDetailPage'));
+const TimesheetApprovalPage = lazy(() => import('@/pages/company/TimesheetApprovalPage'));
+const RosterPage = lazy(() => import('@/pages/company/RosterPage'));
+const ShiftMarketplacePage = lazy(() => import('@/pages/worker/ShiftMarketplacePage'));
+const PayoutsPage = lazy(() => import('@/pages/worker/PayoutsPage'));
+const PublicProfilePage = lazy(() => import('@/pages/PublicProfilePage'));
+const WaitlistAdminPage = lazy(() => import('@/pages/admin/WaitlistAdminPage'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -38,10 +48,10 @@ const queryClient = new QueryClient({
 });
 
 const LoadingSpinner: React.FC = () => (
-  <div className="flex items-center justify-center min-h-screen bg-gray-50">
+  <div className="flex items-center justify-center min-h-screen bg-muted/50">
     <div className="text-center">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-      <p className="mt-4 text-gray-600">Loading Flexora...</p>
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+      <p className="mt-4 text-muted-foreground">Loading Flexzora...</p>
     </div>
   </div>
 );
@@ -50,14 +60,14 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   const { user, loading } = useAuth();
   const [validating, setValidating] = useState(true);
   const navigate = useNavigate();
-  
+
   useEffect(() => {
     const checkSession = async () => {
       if (!user && !loading) {
         // Try to validate and refresh the session
         const isValid = await validateSession();
         setValidating(false);
-        
+
         if (!isValid) {
           // If session validation fails, redirect to auth
           navigate('/auth', { replace: true });
@@ -66,9 +76,9 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
         setValidating(false);
       }
     };
-    
+
     checkSession();
-  }, [user, loading]);
+  }, [user, loading, navigate]);
 
   if (loading || validating) {
     return <LoadingSpinner />;
@@ -85,14 +95,14 @@ const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
   const [validating, setValidating] = useState(true);
   const navigate = useNavigate();
-  
+
   useEffect(() => {
     const checkSession = async () => {
       if (!user && !loading) {
         // Try to validate the session
         const isValid = await validateSession();
         setValidating(false);
-        
+
         if (isValid) {
           // If session is valid, redirect to dashboard
           navigate('/dashboard', { replace: true });
@@ -101,7 +111,7 @@ const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         setValidating(false);
       }
     };
-    
+
     checkSession();
   }, [user, loading, navigate]);
 
@@ -116,6 +126,14 @@ const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return <>{children}</>;
 };
 
+const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user, profile, loading } = useAuth();
+  if (loading) return <LoadingSpinner />;
+  if (!user) return <Navigate to="/auth" replace />;
+  if (profile?.role !== 'admin') return <Navigate to="/dashboard" replace />;
+  return <>{children}</>;
+};
+
 const AppRoutes: React.FC = () => {
   const { profile } = useAuth();
 
@@ -126,23 +144,23 @@ const AppRoutes: React.FC = () => {
 
   return (
     <Router>
+      <Suspense fallback={<LoadingSpinner />}>
       <Routes>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/waitlist" element={<WaitlistForm />} />
+        <Route path="/waitlist/verify" element={<WaitlistVerification />} />
+        <Route path="/u/:username" element={<PublicProfilePage />} />
         <Route
-          path="/"
-          element={<LandingPage />}
+          path="/admin/waitlist"
+          element={
+            <AdminRoute>
+              <Layout>
+                <WaitlistAdminPage />
+              </Layout>
+            </AdminRoute>
+          }
         />
-        <Route
-          path="/waitlist"
-          element={<WaitlistForm />}
-        />
-        <Route
-          path="/waitlist/verify"
-          element={<WaitlistVerification />}
-        />
-        <Route
-          path="/schedule-demo"
-          element={<ScheduleDemoForm />}
-        />
+        <Route path="/schedule-demo" element={<ScheduleDemoForm />} />
         <Route
           path="/auth"
           element={
@@ -196,7 +214,7 @@ const AppRoutes: React.FC = () => {
           element={
             <ProtectedRoute>
               <Layout>
-                <GigManagement gigId="1" />
+                <GigManagement />
               </Layout>
             </ProtectedRoute>
           }
@@ -217,6 +235,16 @@ const AppRoutes: React.FC = () => {
             <ProtectedRoute>
               <Layout>
                 <CalendarView />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/availability"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <AvailabilityEditor />
               </Layout>
             </ProtectedRoute>
           }
@@ -301,8 +329,69 @@ const AppRoutes: React.FC = () => {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/events"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <EventsPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/events/:eventId"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <EventDetailPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/timesheets"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <TimesheetApprovalPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/roster"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <RosterPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/shifts"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <ShiftMarketplacePage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/payouts"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <PayoutsPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
+      </Suspense>
     </Router>
   );
 };

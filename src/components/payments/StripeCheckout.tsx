@@ -4,13 +4,14 @@ import { Elements } from '@stripe/react-stripe-js';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, CreditCard, Shield, AlertCircle } from 'lucide-react';
+import { Loader2, CreditCard, Shield, AlertCircle, Landmark } from 'lucide-react';
 import { toast } from 'sonner';
-import { createPaymentIntent } from '@/lib/stripe';
+import { createPaymentIntent, isStripeDemoMode } from '@/lib/stripe';
 import CheckoutForm from './CheckoutForm';
 
 // Initialize Stripe outside component to avoid recreating on each render
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '');
+// (skipped entirely in demo mode — no publishable key configured)
+const stripePromise = isStripeDemoMode ? null : loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
 interface StripeCheckoutProps {
   amount: number;
@@ -36,6 +37,10 @@ const StripeCheckout: React.FC<StripeCheckoutProps> = ({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (isStripeDemoMode) {
+      setLoading(false);
+      return;
+    }
     const initializePayment = async () => {
       try {
         setLoading(true);
@@ -53,10 +58,10 @@ const StripeCheckout: React.FC<StripeCheckoutProps> = ({
         }
         
         setClientSecret(clientSecret);
-      } catch (err: any) {
+      } catch (err) {
         console.error('Failed to initialize payment:', err);
-        setError(err.message || 'Failed to initialize payment');
-        onPaymentError?.(err);
+        setError((err as Error).message || 'Failed to initialize payment');
+        onPaymentError?.(err instanceof Error ? err : new Error(String(err)));
       } finally {
         setLoading(false);
       }
@@ -80,8 +85,47 @@ const StripeCheckout: React.FC<StripeCheckoutProps> = ({
       <Card>
         <CardContent className="pt-6 flex flex-col items-center justify-center py-10">
           <Loader2 className="h-10 w-10 text-primary animate-spin mb-4" />
-          <p className="text-center text-gray-600">Initializing payment...</p>
+          <p className="text-center text-muted-foreground">Initializing payment...</p>
         </CardContent>
+      </Card>
+    );
+  }
+
+  if (isStripeDemoMode) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <Landmark className="mr-2 h-5 w-5 text-amber-500" />
+            Flexzora Escrow (Sandbox)
+          </CardTitle>
+          <CardDescription>
+            {description} — {new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(amount)}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              No Stripe account is connected, so this deposit is simulated. Funds will appear as
+              <strong> Queueing via Flexzora Escrow (Sandbox)</strong> until real keys are configured.
+            </AlertDescription>
+          </Alert>
+          <Button
+            className="w-full"
+            onClick={() => onPaymentSuccess?.(`pi_demo_${Date.now()}`)}
+          >
+            <Shield className="mr-2 h-4 w-4" />
+            Queue transfer via Flexzora Escrow (Sandbox)
+          </Button>
+        </CardContent>
+        <CardFooter className="flex justify-between border-t pt-4 text-xs text-muted-foreground">
+          <div className="flex items-center">
+            <Shield className="h-3 w-3 mr-1" />
+            Sandbox — no real funds move
+          </div>
+          <div>Connect Stripe to go live</div>
+        </CardFooter>
       </Card>
     );
   }
@@ -145,7 +189,7 @@ const StripeCheckout: React.FC<StripeCheckoutProps> = ({
           </Elements>
         )}
       </CardContent>
-      <CardFooter className="flex justify-between border-t pt-4 text-xs text-gray-500">
+      <CardFooter className="flex justify-between border-t pt-4 text-xs text-muted-foreground">
         <div className="flex items-center">
           <Shield className="h-3 w-3 mr-1" />
           Secure payment powered by Stripe

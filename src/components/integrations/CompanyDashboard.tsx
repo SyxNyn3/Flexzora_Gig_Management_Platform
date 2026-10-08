@@ -1,31 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useAuth } from '@/contexts/AuthContext';
-import { DatabaseService } from '@/lib/supabase';
-import GigCommunication from '@/components/gigs/GigCommunication';
-import WorkerPayroll from '@/components/gigs/WorkerPayroll';
 import { 
   Users, 
   Send, 
   DollarSign,
   Calendar,
-  MessageSquare,
   Search,
-  Filter,
   Download,
-  Upload,
   CheckCircle,
   Clock,
-  AlertTriangle,
-  Building2
+  AlertTriangle
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/lib/supabase';
 
 interface WorkerProfile {
   id: string;
@@ -46,7 +37,6 @@ interface WorkerProfile {
 }
 
 const CompanyDashboard: React.FC = () => {
-  const { profile } = useAuth();
   const [workers, setWorkers] = useState<WorkerProfile[]>([]); 
   const [filteredWorkers, setFilteredWorkers] = useState<WorkerProfile[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -56,126 +46,49 @@ const CompanyDashboard: React.FC = () => {
   const [showBroadcastDialog, setShowBroadcastDialog] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // Fetch worker profiles from database
-    const fetchWorkers = async () => {
-      try {
-        setLoading(true);
-        
-        // In a real implementation, we would fetch from the database
-        // For now, we'll use the mock data but with a delay to simulate loading
-        setTimeout(() => {
-          loadWorkerPool();
-          setLoading(false);
-        }, 1500);
-      } catch (error) {
-        console.error('Error fetching workers:', error);
-        setLoading(false);
-      }
-    };
-    
-    fetchWorkers();
+  // PostgREST many-to-one embeds come back as objects, not arrays — normalize both shapes
+  const one = <T,>(v: T | T[] | null | undefined): T | undefined =>
+    Array.isArray(v) ? v[0] : (v ?? undefined);
+
+  const loadWorkerPool = useCallback(async () => {
+    setLoading(true);
+
+    const { data: profiles, error } = await supabase
+      .from('profiles')
+      .select('id, full_name, email, phone, avatar_url, location, hourly_rate, experience_years, is_available, average_rating, review_count, updated_at, worker_skills(skill:skills(name)), certifications(name), gig_applications!worker_id(status)')
+      .eq('role', 'worker')
+      .order('updated_at', { ascending: false });
+
+    if (error) {
+      toast.error('Could not load worker roster');
+      setWorkers([]);
+      setLoading(false);
+      return;
+    }
+
+    setWorkers((profiles ?? []).map(p => ({
+      id: p.id,
+      name: p.full_name ?? 'Worker',
+      email: p.email ?? '',
+      phone: p.phone,
+      avatar_url: p.avatar_url,
+      skills: (p.worker_skills ?? [])
+        .map(ws => one(ws.skill)?.name)
+        .filter((n): n is string => !!n),
+      hourly_rate: p.hourly_rate ?? 0,
+      experience_years: p.experience_years ?? 0,
+      location: p.location ?? '',
+      availability_status: p.is_available ? 'available' : 'unavailable',
+      last_active: p.updated_at,
+      total_gigs: (p.gig_applications ?? []).filter(a => a.status === 'accepted').length,
+      rating: p.average_rating ?? 0,
+      certifications: (p.certifications ?? []).map(c => Array.isArray(c) ? c[0]?.name : c.name).filter((n): n is string => !!n),
+      preferred_roles: [],
+    })));
+    setLoading(false);
   }, []);
 
-  useEffect(() => {
-    filterWorkers();
-  }, [workers, searchTerm, skillFilter, availabilityFilter]);
-
-  const loadWorkerPool = () => {
-    // Mock worker pool data
-    const mockWorkers: WorkerProfile[] = [
-      {
-        id: 'worker-1',
-        name: 'John Smith',
-        email: 'john@example.com',
-        phone: '+1 (555) 123-4567',
-        avatar_url: '',
-        skills: ['Camera Operation', 'Lighting Design', 'Video Editing'],
-        hourly_rate: 45,
-        experience_years: 5,
-        location: 'San Francisco, CA',
-        availability_status: 'available',
-        last_active: new Date().toISOString(),
-        total_gigs: 28,
-        rating: 4.8,
-        certifications: ['Certified Audio Engineer', 'Safety Training'],
-        preferred_roles: ['Camera Operator', 'Video Production']
-      },
-      {
-        id: 'worker-2',
-        name: 'Sarah Davis',
-        email: 'sarah@example.com',
-        phone: '+1 (555) 234-5678',
-        avatar_url: '',
-        skills: ['Sound Engineering', 'Live Streaming', 'Event Coordination'],
-        hourly_rate: 50,
-        experience_years: 7,
-        location: 'Oakland, CA',
-        availability_status: 'busy',
-        last_active: new Date(Date.now() - 3600000).toISOString(),
-        total_gigs: 42,
-        rating: 4.9,
-        certifications: ['Professional Sound Engineer', 'Event Management'],
-        preferred_roles: ['Sound Engineer', 'Technical Director']
-      },
-      {
-        id: 'worker-3',
-        name: 'Mike Johnson',
-        email: 'mike@example.com',
-        phone: '+1 (555) 345-6789',
-        avatar_url: '',
-        skills: ['Stage Management', 'Rigging', 'Safety Coordination'],
-        hourly_rate: 40,
-        experience_years: 3,
-        location: 'San Jose, CA',
-        availability_status: 'available',
-        last_active: new Date(Date.now() - 7200000).toISOString(),
-        total_gigs: 15,
-        rating: 4.6,
-        certifications: ['Rigging Certification', 'First Aid'],
-        preferred_roles: ['Stage Manager', 'Safety Coordinator']
-      },
-      {
-        id: 'worker-4',
-        name: 'Emily Chen',
-        email: 'emily@example.com',
-        phone: '+1 (555) 456-7890',
-        avatar_url: '',
-        skills: ['Photography', 'Drone Operation', 'Post Production'],
-        hourly_rate: 55,
-        experience_years: 6,
-        location: 'Berkeley, CA',
-        availability_status: 'available',
-        last_active: new Date(Date.now() - 1800000).toISOString(),
-        total_gigs: 35,
-        rating: 4.7,
-        certifications: ['FAA Drone License', 'Adobe Certified'],
-        preferred_roles: ['Photographer', 'Drone Pilot']
-      },
-      {
-        id: 'worker-5',
-        name: 'David Rodriguez',
-        email: 'david@example.com',
-        phone: '+1 (555) 567-8901',
-        avatar_url: '',
-        skills: ['Lighting Technician', 'Electrical', 'Equipment Setup'],
-        hourly_rate: 42,
-        experience_years: 4,
-        location: 'Fremont, CA',
-        availability_status: 'unavailable',
-        last_active: new Date(Date.now() - 86400000).toISOString(),
-        total_gigs: 22,
-        rating: 4.5,
-        certifications: ['Electrical Safety', 'Lighting Design'],
-        preferred_roles: ['Lighting Technician', 'Gaffer']
-      }
-    ];
-
-    setWorkers(mockWorkers);
-    setLoading(false);
-  };
-
-  const filterWorkers = () => {
+  const filterWorkers = useCallback(() => {
     let filtered = workers;
 
     // Search filter
@@ -201,7 +114,15 @@ const CompanyDashboard: React.FC = () => {
     }
 
     setFilteredWorkers(filtered);
-  };
+  }, [workers, searchTerm, skillFilter, availabilityFilter]);
+
+  useEffect(() => {
+    loadWorkerPool();
+  }, [loadWorkerPool]);
+
+  useEffect(() => {
+    filterWorkers();
+  }, [filterWorkers]);
 
   const toggleWorkerSelection = (workerId: string) => {
     setSelectedWorkers(prev => 
@@ -264,10 +185,10 @@ const CompanyDashboard: React.FC = () => {
 
   const getAvailabilityColor = (status: string) => {
     switch (status) {
-      case 'available': return 'bg-green-100 text-green-800';
-      case 'busy': return 'bg-yellow-100 text-yellow-800';
-      case 'unavailable': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'available': return 'bg-emerald-500/10 text-green-800';
+      case 'busy': return 'bg-amber-500/10 text-yellow-800';
+      case 'unavailable': return 'bg-destructive/10 text-red-800';
+      default: return 'bg-muted text-foreground';
     }
   };
 
@@ -287,19 +208,19 @@ const CompanyDashboard: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header skeleton */}
         <div className="mb-8">
-          <div className="h-8 w-64 bg-gray-200 rounded animate-pulse mb-2"></div>
-          <div className="h-4 w-96 bg-gray-200 rounded animate-pulse"></div>
+          <div className="h-8 w-64 bg-muted rounded animate-pulse mb-2"></div>
+          <div className="h-4 w-96 bg-muted rounded animate-pulse"></div>
         </div>
         
         {/* Stats skeleton */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="bg-white p-6 rounded-lg shadow animate-pulse">
+            <div key={i} className="bg-card p-6 rounded-lg shadow animate-pulse">
               <div className="flex items-center">
-                <div className="h-8 w-8 bg-gray-200 rounded-full mr-4"></div>
+                <div className="h-8 w-8 bg-muted rounded-full mr-4"></div>
                 <div>
-                  <div className="h-4 w-32 bg-gray-200 rounded mb-2"></div>
-                  <div className="h-6 w-16 bg-gray-200 rounded"></div>
+                  <div className="h-4 w-32 bg-muted rounded mb-2"></div>
+                  <div className="h-6 w-16 bg-muted rounded"></div>
                 </div>
               </div>
             </div>
@@ -307,29 +228,29 @@ const CompanyDashboard: React.FC = () => {
         </div>
         
         {/* Filters skeleton */}
-        <div className="bg-white p-6 rounded-lg shadow mb-6 animate-pulse">
+        <div className="bg-card p-6 rounded-lg shadow mb-6 animate-pulse">
           <div className="flex flex-wrap items-center gap-4">
-            <div className="h-10 w-64 bg-gray-200 rounded"></div>
-            <div className="h-10 w-32 bg-gray-200 rounded"></div>
-            <div className="h-10 w-32 bg-gray-200 rounded"></div>
-            <div className="h-10 w-32 bg-gray-200 rounded"></div>
+            <div className="h-10 w-64 bg-muted rounded"></div>
+            <div className="h-10 w-32 bg-muted rounded"></div>
+            <div className="h-10 w-32 bg-muted rounded"></div>
+            <div className="h-10 w-32 bg-muted rounded"></div>
           </div>
         </div>
         
         {/* Workers grid skeleton */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div key={i} className="bg-white p-6 rounded-lg shadow animate-pulse">
+            <div key={i} className="bg-card p-6 rounded-lg shadow animate-pulse">
               <div className="flex items-start space-x-4">
-                <div className="h-12 w-12 bg-gray-200 rounded-full"></div>
+                <div className="h-12 w-12 bg-muted rounded-full"></div>
                 <div className="flex-1">
-                  <div className="h-5 w-32 bg-gray-200 rounded mb-2"></div>
-                  <div className="h-4 w-24 bg-gray-200 rounded mb-2"></div>
-                  <div className="h-4 w-full bg-gray-200 rounded mb-2"></div>
-                  <div className="h-4 w-3/4 bg-gray-200 rounded mb-4"></div>
+                  <div className="h-5 w-32 bg-muted rounded mb-2"></div>
+                  <div className="h-4 w-24 bg-muted rounded mb-2"></div>
+                  <div className="h-4 w-full bg-muted rounded mb-2"></div>
+                  <div className="h-4 w-3/4 bg-muted rounded mb-4"></div>
                   <div className="flex flex-wrap gap-1">
                     {[1, 2, 3].map((j) => (
-                      <div key={j} className="h-6 w-16 bg-gray-200 rounded"></div>
+                      <div key={j} className="h-6 w-16 bg-muted rounded"></div>
                     ))}
                   </div>
                 </div>
@@ -347,8 +268,8 @@ const CompanyDashboard: React.FC = () => {
       <div className="mb-8">
         <div className="flex justify-between items-start">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Worker Management</h1>
-            <p className="text-gray-600 mt-2">
+            <h1 className="text-3xl font-bold text-foreground">Worker Management</h1>
+            <p className="text-muted-foreground mt-2">
               Manage your workforce, send messages, and track performance
             </p>
           </div>
@@ -370,9 +291,9 @@ const CompanyDashboard: React.FC = () => {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center">
-              <Users className="h-8 w-8 text-blue-600" />
+              <Users className="h-8 w-8 text-primary" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Workers</p>
+                <p className="text-sm font-medium text-muted-foreground">Total Workers</p>
                 <p className="text-2xl font-bold">{workers.length}</p>
               </div>
             </div>
@@ -382,10 +303,10 @@ const CompanyDashboard: React.FC = () => {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center">
-              <CheckCircle className="h-8 w-8 text-green-600" />
+              <CheckCircle className="h-8 w-8 text-emerald-500" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Available Now</p>
-                <p className="text-2xl font-bold text-green-600">
+                <p className="text-sm font-medium text-muted-foreground">Available Now</p>
+                <p className="text-2xl font-bold text-emerald-500">
                   {workers.filter(w => w.availability_status === 'available').length}
                 </p>
               </div>
@@ -398,7 +319,7 @@ const CompanyDashboard: React.FC = () => {
             <div className="flex items-center">
               <DollarSign className="h-8 w-8 text-yellow-600" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Avg. Hourly Rate</p>
+                <p className="text-sm font-medium text-muted-foreground">Avg. Hourly Rate</p>
                 <p className="text-2xl font-bold">
                   ${Math.round(workers.reduce((sum, w) => sum + w.hourly_rate, 0) / workers.length)}
                 </p>
@@ -412,7 +333,7 @@ const CompanyDashboard: React.FC = () => {
             <div className="flex items-center">
               <Calendar className="h-8 w-8 text-purple-600" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Gigs</p>
+                <p className="text-sm font-medium text-muted-foreground">Total Gigs</p>
                 <p className="text-2xl font-bold">
                   {workers.reduce((sum, w) => sum + w.total_gigs, 0)}
                 </p>
@@ -428,7 +349,7 @@ const CompanyDashboard: React.FC = () => {
           <div className="flex flex-wrap items-center gap-4">
             <div className="flex-1 min-w-64">
               <div className="relative">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Search workers by name, email, skills, or location..."
                   value={searchTerm}
@@ -478,7 +399,7 @@ const CompanyDashboard: React.FC = () => {
           <Card 
             key={worker.id} 
             className={`cursor-pointer transition-all hover:shadow-md ${
-              selectedWorkers.includes(worker.id) ? 'ring-2 ring-blue-500 bg-blue-50' : ''
+              selectedWorkers.includes(worker.id) ? 'ring-2 ring-blue-500 bg-primary/10' : ''
             }`}
             onClick={() => toggleWorkerSelection(worker.id)}
           >
@@ -502,11 +423,11 @@ const CompanyDashboard: React.FC = () => {
                     </Badge>
                   </div>
                   
-                  <div className="space-y-2 text-sm text-gray-600">
+                  <div className="space-y-2 text-sm text-muted-foreground">
                     <div>{worker.email}</div>
                     <div className="flex items-center justify-between">
                       <span>${worker.hourly_rate}/hr</span>
-                      <span className="text-gray-500">{worker.experience_years} years exp.</span>
+                      <span className="text-muted-foreground">{worker.experience_years} years exp.</span>
                     </div>
                     <div>{worker.location}</div>
                     <div className="flex items-center justify-between">
@@ -533,7 +454,7 @@ const CompanyDashboard: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="mt-3 text-xs text-gray-500 flex items-center">
+                  <div className="mt-3 text-xs text-muted-foreground flex items-center">
                     <Clock className="h-3 w-3 mr-1" />
                     Last active: {new Date(worker.last_active).toLocaleDateString()}
                   </div>
@@ -547,9 +468,9 @@ const CompanyDashboard: React.FC = () => {
       {filteredWorkers.length === 0 && (
         <Card>
           <CardContent className="text-center py-12">
-            <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No Workers Found</h3>
-            <p className="text-gray-600">
+            <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-foreground mb-2">No Workers Found</h3>
+            <p className="text-muted-foreground">
               Try adjusting your search criteria or filters.
             </p>
           </CardContent>
@@ -559,7 +480,7 @@ const CompanyDashboard: React.FC = () => {
       {/* Broadcast Message Dialog */}
       {showBroadcastDialog && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+          <div className="bg-card rounded-lg p-6 w-full max-w-md">
             <h3 className="text-lg font-semibold mb-4">
               Send Message to {selectedWorkers.length} Worker{selectedWorkers.length !== 1 ? 's' : ''}
             </h3>
