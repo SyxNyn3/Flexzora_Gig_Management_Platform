@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Agent Log
 
 Running ledger for the Flexzora overnight build. Newest entries first.
@@ -109,3 +110,21 @@ Each entry: lane, branch/PR, what shipped, verification status, notes.
 - Waitlist verify link no longer returned in responses.
 - `20261008000000`: `search_path` pinned on all SECURITY DEFINER functions.
 - `sw.js`: network-first navigation; `schedule-demo` persists demo_requests.
+=======
+# Agent Activity Log
+
+Shared journal — every session appends: date, lane, what shipped, what's next, blockers.
+Newest entries on top.
+
+---
+
+- **2026-10-10 — Challenger (overnight red-team, cycle 2)** — Regression pass on mainline flows + edge-function auth surface; **filed 16 more issues labeled `challenger`: #37-#51 + #54.** Highlights: **#45 CRITICAL** — `handle_new_user` honors `raw_user_meta_data->>'role'` AND profiles UPDATE has no WITH CHECK, so any user self-assigns `role='admin'/'company'`; 'company' un-scoped `companies` FOR-ALL policy lets them rewrite `created_by` → `owns_company()` → full takeover (escrow, timesheets, payouts). **#44** anon-callable `lookup_user_by_username_or_email` accepts emails → enumeration oracle bypassing the edge guard. **#47** `worker_sensitive` self-FOR-ALL lets workers set `stripe_connect_account_id`/`payouts_enabled` → payout redirection (release-payout trusts DB not Stripe). **#43** company can edit `hourly_rate`/headcount on live shifts — pay repriced post-booking. **#48** `crew_alerts.dedupe_key` globally unique + self-insertable → alert suppression on other workers. **#49** company can DELETE shifts/events — cascades wipe assignments+timesheets, bypass cancel-alerts + IOU voiding. **#50** `worker_distances`/`worker_conflicts` any-caller → worker location triangulation + availability oracle. **#51** debtor can void own committed IOU (incl. auto-minted) — debt erasure sans creditor consent. **#54** confirmed→withdrawn allowed right up to call time — no late-cancel flag or reliability hit. **#37** reviews: self-review/review-bomb (no gig-participant check). **#38** worker can flip own `gig_applications` status. Also verified-not-broken: cert gate on swap claims (`verified AND active AND unexpired`), escrow write-lock, timesheet guards, `send-push` secret gate, `connect-*` self-verification. **Regression note:** #34 verified FIXED on main post-PR #6 (origin-scoped redirectTo); #29 still live post-PR #7 merge. Supplements added as comments on #19/#22.
+
+- **2026-10-10 — Challenger (overnight red-team)** — Lane claimed in BACKLOG. Cycle 1: reviewed origin/main + stacked Crew OS branches (PRs #6-#16), migrations `20261010000000`-`20261017000000`, edge functions (`release-payout`, `connect-*`, `notify-assignment`), auth-ux. **Filed 17 issues labeled `challenger`: #19-#35.** Highlights: #19 CRITICAL CrewBoard resolve mints payout-deduction IOUs on any worker without consent; #20 company can repoint IOU beneficiary/amount; #21 negative `break_minutes` inflates approved gross; #22 swap `shift_id` repoint bypasses cert gate; #23 company can rewrite `offered_rate` post-confirm; #24 `release-payout` TOCTOU double Stripe transfer; #25 duplicate matched ride_requests → dup seats + dup IOUs. No local Supabase/Node on this machine — findings verified by static trace of triggers/RLS/policies; GitHub REST used for issues (no gh CLI; MCP GitHub server unreachable). Next: regression-hunt mainline flows (waitlist, checkout/payment intents, gig legacy paths), re-check issue fixes as PRs land.
+
+- **2026-10-10 — Builder (overnight)** — Lane claimed. Constraint: **no Node/npm on this machine** — `build`/`lint`/`test` can't run locally; verification is static review + CI. Local `main` pushed to origin (security + demo-request commits now published). Priority per charter: P0 → P1 → auth/signup UX → PRD gaps. `supabase db push`/edge-deploy + Stripe/Twilio/Resend keys are user-credential blockers — logged, not waiting.
+  - PR #5 (`chore/ops-docs-and-wip`): tracked ops docs + VISION specs, committed pending deploy fixes (Pages base path, .env.local ignore, migration quoting), deleted stray `00`/`01`, marked stale P0 merge item (PRs #2/#4 already landed).
+  - PR #6 (`feat/auth-ux`): check-email state post-signup w/ 60s resend cooldown, forgot-password flow + new `/reset-password` page, OAuth buttons behind `VITE_ENABLE_GOOGLE_AUTH`/`VITE_ENABLE_APPLE_AUTH` (both default off — providers not configured), friendly error copy incl. resend-verification on email-not-confirmed, fixed `type=email` bug blocking username sign-in, added `.env.example` + typed flags in `vite-env.d.ts`. Note: signup `?mode=signup` deep-link preserved; recovery page intentionally outside `PublicRoute`.
+
+- **2026-10-09 — Setup (user session)** — Created `OVERNIGHT_OPS.md` charter + this log. Local `main` is 2 commits ahead of origin (security pass) — needs a push. OneDrive intermittently locks `.git` files; retry on failure.
+>>>>>>> origin/main

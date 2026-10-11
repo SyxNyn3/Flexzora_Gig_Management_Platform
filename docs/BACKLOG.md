@@ -29,6 +29,7 @@ Two sessions work this repo in parallel. **Before starting any item, mark it**: 
   - Removed dead `stripe.ts` exports calling edge functions that were never deployed (`setup-payment-method`, `list-payment-methods`, `create-customer`, `create-payment-link`).
   - Still open: `.env` sits in git history with anon/publishable keys (low — public by design); stray scratch files `00`/`01` duplicate migration `20251006224047`; `send-waitlist-verification`/`resend` still only log the email — no real mail provider wired (needs e.g. Resend/SES key); sales-team notification for demo requests is a TODO in `schedule-demo`.
 - **Builder lane — claimed: Builder — working on it** (overnight self-drive, started 2026-10-10)
+- **Challenger lane — claimed: Devin-Challenger — working on it** (overnight red-team, started 2026-10-10; files issues labeled `challenger`)
 - Everything below is unclaimed.
 
 ## Company OS — overnight sprint (see `docs/VISION_COMPANY_OS.md` — spec + competitor findings)
@@ -49,7 +50,7 @@ Two sessions work this repo in parallel. **Before starting any item, mark it**: 
 - [x] GrubRun food pooling: `food_runs`/`food_run_orders` with cutoff times — **done: Builder** (`20261014000000_grubrun.sql`: runner posts restaurant + cutoff; workers place orders pre-cutoff (runner can add late); runner confirms with real price — THAT mints the food `crew_iou` (beneficiary=runner, group=order); cancel/run-cancel/shift-cancel void. One order per worker per run. Client `src/lib/crew/food.ts`.)
 - [x] SmartAlerts: per-shift briefing — **done: Builder** (`20261015000000_crew_alerts.sql`: `cert_gear_items`+`base_gear_items` data-driven packing lists; `crew_alerts` feed with dedupe keys; confirm-trigger generates gear/parking/departure briefing — departure = worker_sensitive geo -> venue @ 55km/h + 20min buffer; ride-cancel alerts matched riders. Briefing card + unread badges on the crew page. Client `src/lib/crew/alerts.ts`.)
 - [ ] ShiftSwap: `swap_requests`/`swap_claims`, cert-gated visibility, company approval via offer flow
-- [x] Auth UX completion: check-email state post-signup, forgot-password flow, Google button behind `VITE_ENABLE_GOOGLE_AUTH` flag, error states matching design — **in PR #6: Builder** (`feat/auth-ux`: check-email view + resend w/ cooldown, `/reset-password` page, Google+Apple gated behind flags, friendly error map incl. email-not-confirmed resend, fixed `type=email` blocking username sign-in)
+- [x] Auth UX completion: check-email state post-signup, forgot-password flow, Google button behind `VITE_ENABLE_GOOGLE_AUTH` flag, error states matching design — **done: Builder, merged PR #6** (check-email view + resend w/ cooldown, `/reset-password` page, Google+Apple gated behind flags, friendly error map incl. email-not-confirmed resend, fixed `type=email` blocking username sign-in)
 
 ## P0 — ship blockers
 - [x] Add `.github/workflows/ci.yml`: `npx eslint src`, `npx tsc --noEmit -p tsconfig.app.json`, `npx vitest run`, `npm run build` on every PR (free minutes). — **claimed: Mark — working on it**

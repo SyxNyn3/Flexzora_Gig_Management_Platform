@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import { createCheckoutSession, isStripeDemoMode } from '@/lib/stripe';
+import { notifyAssignment } from '@/lib/notify';
 import {
   AssignmentStatus,
   BroadcastStage,
@@ -371,6 +372,7 @@ export class MarketplaceService {
         .select()
         .single();
       if (error) throw error;
+      if (data) notifyAssignment(data.id, 'applied');
       return ok(data);
     } catch (e) {
       return fail(null, e);
@@ -400,6 +402,7 @@ export class MarketplaceService {
           .select()
           .single();
         if (error) throw error;
+        if (data) notifyAssignment(data.id, 'offered');
         return ok(data);
       }
       if (!REOFFERABLE.has(existing.status as AssignmentStatus)) {
@@ -407,6 +410,7 @@ export class MarketplaceService {
       }
       const { data, error } = await supabase.from('shift_assignments').update(terms).eq('id', existing.id).select().single();
       if (error) throw error;
+      if (data) notifyAssignment(data.id, 'offered');
       return ok(data);
     } catch (e) {
       return fail(null, e);
@@ -424,6 +428,9 @@ export class MarketplaceService {
         .select()
         .single();
       if (error) throw error;
+      if (data) {
+        notifyAssignment(data.id, response === 'confirmed' ? 'confirmed_by_worker' : response);
+      }
       return ok(data);
     } catch (e) {
       return fail(null, e);
@@ -441,6 +448,9 @@ export class MarketplaceService {
         .select()
         .single();
       if (error) throw error;
+      if (data) {
+        notifyAssignment(data.id, decision === 'confirmed' ? 'confirmed_by_company' : decision);
+      }
       return ok(data);
     } catch (e) {
       return fail(null, e);
