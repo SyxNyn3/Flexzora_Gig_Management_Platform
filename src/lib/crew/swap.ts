@@ -134,6 +134,52 @@ export async function listSwapBoard(shiftId: string): Promise<Result<{ requests:
   }
 }
 
+/** Company view: every swap across an event's shifts (RLS scopes to owns_shift). */
+export async function listEventSwaps(eventId: string): Promise<Result<{ requests: SwapRequest[]; claims: SwapClaim[] }>> {
+  const empty = { requests: [] as SwapRequest[], claims: [] as SwapClaim[] };
+  try {
+    const { data: shifts, error: sErr } = await supabase
+      .from('shifts')
+      .select('id')
+      .eq('event_id', eventId);
+    if (sErr) throw sErr;
+    const shiftIds = (shifts ?? []).map((s) => s.id);
+    if (shiftIds.length === 0) return ok(empty);
+    const { data: requests, error: rErr } = await supabase
+      .from('swap_requests')
+      .select('*, requester:profiles!swap_requests_requester_worker_id_fkey(id, full_name), shift:shifts!swap_requests_shift_id_fkey(id, title, role_name)')
+      .in('shift_id', shiftIds)
+      .order('created_at', { ascending: false });
+    if (rErr) throw rErr;
+    const ids = (requests ?? []).map((r) => r.id);
+    if (ids.length === 0) return ok(empty);
+    const { data: claims, error: cErr } = await supabase
+      .from('swap_claims')
+      .select(CLAIM_SELECT)
+      .in('swap_request_id', ids)
+      .order('created_at');
+    if (cErr) throw cErr;
+    return ok({ requests: requests as SwapRequest[], claims: (claims ?? []) as SwapClaim[] });
+  } catch (e) {
+    return fail(empty, e);
+  }
+}
+
+/** Company approves or rejects a swap (server enforces owns_shift). */
+export async function companyDecideSwap(swapId: string, approve: boolean, reason?: string): Promise<Result<SwapRequest | null>> {
+  try {
+    const { data, error } = await supabase.rpc('company_decide_swap', {
+      p_swap_id: swapId,
+      p_approve: approve,
+      p_reason: reason ?? null,
+    });
+    if (error) throw error;
+    return ok((data ?? null) as SwapRequest | null);
+  } catch (e) {
+    return fail(null, e);
+  }
+}
+
 /** My open swap on a shift, if I posted one. */
 export async function mySwapForShift(shiftId: string): Promise<Result<SwapRequest | null>> {
   try {

@@ -2,6 +2,8 @@
 
 Shared journal — every session appends: date, lane, what shipped, what's next, blockers.
 Newest entries on top.
+- **2026-10-11 — Lane B — Company swap-approval** — `feat/swap-approval`. `swap_requests` gains company_decision/decided_at/reason (system-managed — joins the #22 guard's immutable set); `company_decide_swap(owns_shift)` — approve stamps + crew_alerts the claimer to confirm (consent stays worker-side), reject cancels with a reason and the existing triggers cascade claims + pull the offer. `SwapQueue` card on EventDetailPage lists live swaps w/ per-swap claim state + reject-reason dialog. pgTAP `087` — 6 asserts.
+
 - **2026-10-11 — Lane B — SmartAlerts transports** — `feat/alert-transports` → PR #121. `alert_preferences` (per-kind push/sms toggles, self-RLS); push dispatch honors prefs; `send_alert_sms_digests()` on pg_cron (30min) batches unsent sms-enabled alerts (15min aging window so bursts roll up, phone required, 24h cap) → `alert-digest` edge fn (X-Push-Secret auth like send-push, phone resolved server-side, graceful no-op without TWILIO_*). Briefing-card gear popover toggles per kind. pgTAP `086` — 6 asserts.
 
 - **2026-10-11 — Lane B — Swap sweetener via payout deduction** — `feat/swap-sweetener-deduction` → PR #119. One-word-severity fix in `swap_on_offer_response`: sweeteners mint `payout_deduction` instead of `manual` — the #28 carry-over collects them from the requester's next approved timesheet once the swapped shift ends (so the claimer has worked the handoff before money moves), and `iou_transfer` pays them out. Manual IOUs untouched. pgTAP `085` — 5 asserts w/ a manual-IOU negative control.

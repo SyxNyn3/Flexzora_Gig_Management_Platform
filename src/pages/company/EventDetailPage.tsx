@@ -19,6 +19,7 @@ import ShiftForm from '@/components/marketplace/company/ShiftForm';
 import CandidatesPanel from '@/components/marketplace/company/CandidatesPanel';
 import BudgetSummary from '@/components/marketplace/company/BudgetSummary';
 import StaffPanel from '@/components/staff/StaffPanel';
+import SwapQueue from '@/components/crew/SwapQueue';
 import { ArrowLeft, MapPin, Plus, Rocket, Users, Timer, UserX, UserRound } from 'lucide-react';
 
 const EventDetailPage: React.FC = () => {
@@ -253,6 +254,8 @@ const EventDetailPage: React.FC = () => {
           </CardContent>
         </Card>
       )}
+
+      <SwapQueue eventId={ev.id} />
 
       <Dialog open={shiftDialog.open} onOpenChange={(o) => setShiftDialog({ open: o })}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">

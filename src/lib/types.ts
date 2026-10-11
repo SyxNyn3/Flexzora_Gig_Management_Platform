@@ -1501,6 +1501,9 @@ export interface SwapRequest {
   accepted_claim_id?: string;
   offered_assignment_id?: string;
   status: SwapRequestStatus;
+  company_decision?: 'approved' | 'rejected';
+  company_decided_at?: string;
+  company_decision_reason?: string;
   created_at: string;
   updated_at: string;
   requester?: Profile;
