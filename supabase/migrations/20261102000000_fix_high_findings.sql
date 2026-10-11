@@ -204,3 +204,24 @@ CREATE TRIGGER reviews_guard_update BEFORE UPDATE ON reviews
 -- ---------------------------------------------------------------------------
 REVOKE EXECUTE ON FUNCTION lookup_user_by_username_or_email(text) FROM anon;
 REVOKE EXECUTE ON FUNCTION lookup_user_by_username_or_email(text) FROM authenticated;
+
+-- ---------------------------------------------------------------------------
+-- #38 follow-up — the calendar-sync trigger family runs SECURITY INVOKER, so
+-- an accept/delete performed by the gig owner tried to write/delete rows in
+-- the WORKER's calendar as the company and died on RLS. They were dormant
+-- dead code until the owner-accept path existed. These are system writes:
+-- mark them SECURITY DEFINER with a pinned search_path so the owner context
+-- can't smuggle extra privileges in.
+-- ---------------------------------------------------------------------------
+ALTER FUNCTION public.create_calendar_event_from_application() SECURITY DEFINER;
+ALTER FUNCTION public.create_calendar_event_from_application() SET search_path = public;
+ALTER FUNCTION public.create_calendar_event_from_gig()          SECURITY DEFINER;
+ALTER FUNCTION public.create_calendar_event_from_gig()          SET search_path = public;
+ALTER FUNCTION public.update_calendar_event_from_gig()          SECURITY DEFINER;
+ALTER FUNCTION public.update_calendar_event_from_gig()          SET search_path = public;
+ALTER FUNCTION public.delete_calendar_event_from_gig()          SECURITY DEFINER;
+ALTER FUNCTION public.delete_calendar_event_from_gig()          SET search_path = public;
+
+-- #44 follow-up — Postgres grants EXECUTE on new functions to PUBLIC by
+-- default, so revoking the named roles left the oracle open to anyone.
+REVOKE EXECUTE ON FUNCTION lookup_user_by_username_or_email(text) FROM PUBLIC;
