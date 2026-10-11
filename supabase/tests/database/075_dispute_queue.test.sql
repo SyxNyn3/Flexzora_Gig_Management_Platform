@@ -28,7 +28,7 @@ INSERT INTO shifts (id, event_id, title, role_name, headcount, starts_at, ends_a
    now() - interval '2 days', now() - interval '2 days' + interval '8 hours', 40.00, 'completed');
 
 INSERT INTO shift_assignments (id, shift_id, worker_id, source, status, confirmed_at)
-SELECT '00000000-0000-0000-0000-00000000a501'::uuid, '00000000-0000-0000-0000-00000000f501'::uuid, id, 'direct_book', 'confirmed', now()
+SELECT '00000000-0000-0000-0000-00000000a501'::uuid, '00000000-0000-0000-0000-00000000f501'::uuid, id, 'direct_book'::assignment_source, 'confirmed'::assignment_status, now()
   FROM profiles WHERE user_id = '00000000-0000-0000-0000-00000000b072'::uuid;
 
 -- three submitted timesheets on the same booking's siblings
@@ -39,23 +39,23 @@ INSERT INTO shifts (id, event_id, title, role_name, headcount, starts_at, ends_a
    now() - interval '12 hours', now() - interval '4 hours', 40.00, 'completed');
 
 INSERT INTO shift_assignments (id, shift_id, worker_id, source, status, confirmed_at)
-SELECT '00000000-0000-0000-0000-00000000a502'::uuid, '00000000-0000-0000-0000-00000000f502'::uuid, id, 'direct_book', 'confirmed', now()
+SELECT '00000000-0000-0000-0000-00000000a502'::uuid, '00000000-0000-0000-0000-00000000f502'::uuid, id, 'direct_book'::assignment_source, 'confirmed'::assignment_status, now()
   FROM profiles WHERE user_id = '00000000-0000-0000-0000-00000000b072'::uuid
 UNION ALL
-SELECT '00000000-0000-0000-0000-00000000a503'::uuid, '00000000-0000-0000-0000-00000000f503'::uuid, id, 'direct_book', 'confirmed', now()
+SELECT '00000000-0000-0000-0000-00000000a503'::uuid, '00000000-0000-0000-0000-00000000f503'::uuid, id, 'direct_book'::assignment_source, 'confirmed'::assignment_status, now()
   FROM profiles WHERE user_id = '00000000-0000-0000-0000-00000000b072'::uuid;
 
 INSERT INTO timesheets (id, assignment_id, shift_id, worker_id, clock_in_at, clock_out_at, status)
 SELECT '00000000-0000-0000-0000-00000000d501'::uuid, '00000000-0000-0000-0000-00000000a501'::uuid, '00000000-0000-0000-0000-00000000f501'::uuid, id,
-       now() - interval '2 days', now() - interval '2 days' + interval '8 hours', 'submitted'
+       now() - interval '2 days', now() - interval '2 days' + interval '8 hours', 'submitted'::timesheet_status
   FROM profiles WHERE user_id = '00000000-0000-0000-0000-00000000b072'::uuid
 UNION ALL
 SELECT '00000000-0000-0000-0000-00000000d502'::uuid, '00000000-0000-0000-0000-00000000a502'::uuid, '00000000-0000-0000-0000-00000000f502'::uuid, id,
-       now() - interval '1 days', now() - interval '1 days' + interval '8 hours', 'submitted'
+       now() - interval '1 days', now() - interval '1 days' + interval '8 hours', 'submitted'::timesheet_status
   FROM profiles WHERE user_id = '00000000-0000-0000-0000-00000000b072'::uuid
 UNION ALL
 SELECT '00000000-0000-0000-0000-00000000d503'::uuid, '00000000-0000-0000-0000-00000000a503'::uuid, '00000000-0000-0000-0000-00000000f503'::uuid, id,
-       now() - interval '12 hours', now() - interval '4 hours', 'submitted'
+       now() - interval '12 hours', now() - interval '4 hours', 'submitted'::timesheet_status
   FROM profiles WHERE user_id = '00000000-0000-0000-0000-00000000b072'::uuid;
 
 -- 1: worker opens a dispute on d501
