@@ -300,6 +300,22 @@ begin
     ('aaaaaaaa-0000-4000-8000-000000000002', v_company, 'aaaaaaaa-0000-4000-8000-00000000beef',
      'staff', '88888888-0000-4000-8000-000000000001', 'Dana — PM calendar', p_company_user)
   on conflict (id) do nothing;
+
+  -- ------------------------------------------------------------------
+  -- Company OS demo: ops board — a manual task in flight, one done.
+  -- (Unfilled-call cards generate themselves on board load.)
+  -- ------------------------------------------------------------------
+  insert into ops_tasks (id, company_id, event_id, title, notes, column_key, priority,
+                         source, assigned_staff_id, due_at, created_by, done_at)
+  values
+    ('bbbbbbbb-0000-4000-8000-000000000001', v_company, v_event,
+     'Confirm dock access with venue', 'Ask Marcus for the Gate 4 marshal schedule.',
+     'in_progress', 'high', 'manual', '88888888-0000-4000-8000-000000000002',
+     current_date + 6 + interval '12 hours', p_company_user, null),
+    ('bbbbbbbb-0000-4000-8000-000000000002', v_company, v_event,
+     'Send load-in details to crew', null, 'done', 'normal', 'manual',
+     '88888888-0000-4000-8000-000000000001', null, p_company_user, now() - interval '6 hours')
+  on conflict (id) do nothing;
   -- Crew OS demo: Jordan posts a ride offer; Alex's matched request
   -- makes the sync trigger mint his gas-share IOU automatically.
   -- Jordan already settled a manual burrito-run debt to Alex.
