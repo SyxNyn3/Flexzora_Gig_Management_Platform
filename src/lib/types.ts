@@ -1378,7 +1378,7 @@ export interface PoolMember {
 // --- CrewBoard ---------------------------------------------------------------
 export type CrewPostCategory = 'ride' | 'lodging' | 'food' | 'borrow' | 'announce' | 'general';
 export type CrewPostDirection = 'want' | 'offer';
-export type CrewPostStatus = 'open' | 'resolved' | 'closed';
+export type CrewPostStatus = 'open' | 'awaiting_accept' | 'resolved' | 'closed';
 
 export interface CrewPost {
   id: string;

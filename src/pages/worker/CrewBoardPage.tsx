@@ -8,7 +8,7 @@ import { useWorkerAssignments } from '@/hooks/useMarketplace';
 import { joinRide, withdrawRideRequest, cancelRideOffer, postRideOffer, setRideFlags, listRideBuddies, fetchMyLastOfferParams } from '@/lib/crew/rides';
 import { joinPool, leavePool, cancelLodgingPool, postLodgingPool } from '@/lib/crew/lodging';
 import { placeOrder, cancelOrder, confirmOrder, postFoodRun, updateFoodRunStatus, isAcceptingOrders, offerRunHandoff, acceptRunHandoff, declineRunHandoff } from '@/lib/crew/food';
-import { postToBoard, resolvePost, closePost } from '@/lib/crew/board';
+import { postToBoard, resolvePost, closePost, acceptFulfilment, declineFulfilment } from '@/lib/crew/board';
 import { iouCapacity, bailKeptCents, DEFAULT_BAIL_POLICY } from '@/lib/crew/iouMath';
 import { fetchBailPolicy } from '@/lib/crew/iou';
 import { listCrewDistances } from '@/lib/crew/distance';
@@ -710,10 +710,35 @@ const CrewBoardPage: React.FC = () => {
                       {p.status === 'resolved' && p.fulfiller && (
                         <p className="text-xs text-muted-foreground mt-1">Fulfilled by {p.fulfiller.full_name}</p>
                       )}
+                      {p.status === 'awaiting_accept' && p.fulfilled_by_worker_id === profile?.id && (
+                        <div className="flex items-center gap-2 mt-2">
+                          <Button size="sm" className="h-7" disabled={busy !== null}
+                            onClick={() => act(p.id, () => acceptFulfilment(p.id), 'Accepted — the share is on your ledger')}>
+                            <Check className="w-3.5 h-3.5 mr-1" /> Accept {p.amount_cents ? money(p.amount_cents / 100) : ''}
+                          </Button>
+                          <Button size="sm" variant="ghost" className="h-7" disabled={busy !== null}
+                            onClick={() => act(p.id, () => declineFulfilment(p.id), 'Declined — post is open again')}>
+                            Decline
+                          </Button>
+                        </div>
+                      )}
+                      {p.status === 'awaiting_accept' && p.fulfilled_by_worker_id !== profile?.id && (
+                        <p className="text-xs text-muted-foreground mt-1">Waiting for {p.fulfiller?.full_name ?? 'the fulfiller'} to accept before anything is owed.</p>
+                      )}
                     </div>
                     {mine && p.status === 'open' && (
                       <div className="shrink-0 flex flex-col gap-1">
-                        <ResolvePostButton crew={crewRoster} busy={busy} onResolve={(workerId) => act(p.id, () => resolvePost(p.id, workerId), 'Resolved — ledger updated')} />
+                        <ResolvePostButton crew={crewRoster} busy={busy} onResolve={(workerId) => {
+                          setBusy(p.id);
+                          resolvePost(p.id, workerId).then(({ data, error }) => {
+                            setBusy(null);
+                            if (error) return toast.error(error);
+                            toast.success(data?.status === 'awaiting_accept'
+                              ? 'Sent — nothing is owed until they accept'
+                              : 'Resolved — ledger updated');
+                            board.refetch();
+                          });
+                        }} />
                         <Button size="sm" variant="ghost" className="h-7" disabled={busy !== null} onClick={() => act(p.id, () => closePost(p.id), 'Post closed')}>
                           <X className="w-3.5 h-3.5" />
                         </Button>
