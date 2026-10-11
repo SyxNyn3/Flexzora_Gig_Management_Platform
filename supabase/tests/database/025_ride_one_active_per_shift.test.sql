@@ -18,7 +18,7 @@ VALUES
 
 INSERT INTO companies (id, name, created_by)
 SELECT '00000000-0000-0000-0000-00000000c250', 'Ride Co', id FROM profiles WHERE user_id = '00000000-0000-0000-0000-00000000b251';
-INSERT INTO events (id, company_id, name, starts_on, ends_on)
+INSERT INTO events (id, company_id, name, starts_on, ends_on, status)
 VALUES ('00000000-0000-0000-0000-00000000e250', '00000000-0000-0000-0000-00000000c250', 'Ride show', '2027-03-01', '2027-03-02', 'published');
 INSERT INTO shifts (id, event_id, title, role_name, headcount, starts_at, ends_at, hourly_rate, status, broadcast_stage)
 VALUES ('00000000-0000-0000-0000-00000000d250', '00000000-0000-0000-0000-00000000e250',
