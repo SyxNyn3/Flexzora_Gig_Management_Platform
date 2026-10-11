@@ -73,6 +73,20 @@ export async function resolvePost(postId: string, fulfilledByWorkerId: string): 
   }
 }
 
+/** The debtor accepts a resolved post — the IOU only mints once they do (or resolved it themselves). */
+export async function acceptPostDebt(postId: string): Promise<Result<boolean>> {
+  try {
+    const { error } = await supabase
+      .from('crew_posts')
+      .update({ debtor_confirmed_at: new Date().toISOString() })
+      .eq('id', postId);
+    if (error) throw error;
+    return ok(true);
+  } catch (e) {
+    return fail(false, e);
+  }
+}
+
 export async function closePost(postId: string): Promise<Result<boolean>> {
   try {
     const { error } = await supabase.from('crew_posts').update({ status: 'closed' }).eq('id', postId);
