@@ -125,6 +125,45 @@ Newest entries on top.
 - **2026-10-09 — Setup (user session)** — Created `OVERNIGHT_OPS.md` charter + this log. Local `main` is 2 commits ahead of origin (security pass) — needs a push. OneDrive intermittently locks `.git` files; retry on failure.
 ## Builder — Crew OS sprint (overnight)
 
+### feat/push-alerts — Web Push transport for the alert feed
+
+- `push_subscriptions` (worker-self RLS, endpoint unique) +
+  `save-push-subscription` (JWT'd upsert/unsubscribe) +
+  `send-push` (internal shared-secret gate, `npm:web-push`, prunes
+  dead endpoints).
+- `crew_alert_push` trigger: pg_net POST to send-push — but only when
+  `app.push_fn_url` + `app.push_internal_secret` DB settings exist;
+  unset = silent skip, feed unaffected.
+- `sw.js`: push → showNotification w/ crew-page deep link;
+  notificationclick focuses/navigates the app.
+- `src/lib/push.ts`: subscribe/unsubscribe/status; "Alert this
+  device" toggle on the briefing card. Hidden without
+  `VITE_VAPID_PUBLIC_KEY`.
+- Live blockers: `VAPID_PUBLIC_KEY`/`VAPID_PRIVATE_KEY`/`VAPID_SUBJECT`,
+  `PUSH_INTERNAL_SECRET`, DB settings for dispatch URL. VAPID keys are
+  free (self-generated) — not a paid-service blocker.
+- Stacked on `feat/stripe-connect`.
+
+### feat/stripe-connect — Stripe Connect onboarding + payout release
+
+- `connect-onboard`: worker gets/reuses a Stripe Express account,
+  returns a hosted onboarding link (return/refresh URLs derive from
+  APP_BASE_URL or the caller's Origin — used only for their redirect).
+- `connect-status`: reports + syncs `worker_sensitive.payouts_enabled`
+  and `stripe_connect_details_submitted` from the live account object.
+- `release-payout`: company-side "send the money" — verifies the caller
+  owns the payout's invoice company (404 oracle-free), checks the
+  worker is onboarded + payouts-enabled, creates the transfer with
+  `transfer_group=invoice_id`, marks the payout paid with the
+  transfer id.
+- All three flag-gated: `{available:false}` when STRIPE_SECRET_KEY is
+  absent — the UI hides and no code path breaks.
+- UI: "Get paid to your bank" connect card on the worker Payouts page
+  (handles `?connect=return`), "Payouts to release" queue on the
+  company Timesheets page via `useCompanyPayouts`.
+- Live blocker: Stripe account + secrets at deploy time.
+- Stacked on `feat/shift-swap`.
+
 ### feat/shift-swap → PR #15 — ShiftSwap
 
 - `swap_requests`/`swap_claims`: confirmed booking -> open swap ->

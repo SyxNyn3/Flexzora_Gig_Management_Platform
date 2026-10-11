@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { MarketplaceService } from '@/lib/marketplace/service';
-import { Company, ProductionEvent } from '@/lib/types';
+import { Company, Payout, ProductionEvent } from '@/lib/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSupabaseQuery } from './useSupabaseQuery';
 
@@ -139,4 +139,18 @@ export function useInvoices(filter: { workerId?: string; companyId?: string; tax
 
 export function usePayouts(workerId: string | undefined | null) {
   return useListQuery(() => (workerId ? MarketplaceService.getPayouts(workerId) : Promise.resolve({ data: [], error: null })), [workerId]);
+}
+
+/** Company view of payouts issued on its invoices — feeds the release queue. */
+export function useCompanyPayouts(companyId: string | undefined | null) {
+  const q = useSupabaseQuery(async (): Promise<{ data: Payout[] | null; error: string | null }> => {
+    if (!companyId) return { data: [] as Payout[], error: null };
+    const { data, error } = await supabase
+      .from('payouts')
+      .select('*, invoice:invoices!inner(id, company_id, invoice_number, event:events(name), worker:profiles!invoices_worker_id_fkey(full_name))')
+      .eq('invoice.company_id', companyId)
+      .order('created_at', { ascending: false });
+    return { data: (data ?? null) as Payout[] | null, error: error?.message ?? null };
+  }, [companyId]);
+  return { ...q, data: q.data ?? ([] as Payout[]) };
 }

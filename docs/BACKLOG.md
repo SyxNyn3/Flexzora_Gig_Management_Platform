@@ -130,12 +130,12 @@ Roadmap "Next" items in `PRD.md §4` the sprints skipped. Rewritten as claimable
 
 ## P0 — ship blockers
 - [x] Add `.github/workflows/ci.yml`: `npx eslint src`, `npx tsc --noEmit -p tsconfig.app.json`, `npx vitest run`, `npm run build` on every PR (free minutes). — **claimed: Mark — working on it**
-- [ ] Merge #2 (waitlist funnel), retarget #4 to `main`, then land both.
+- [x] Merge #2 (waitlist funnel), retarget #4 to `main`, then land both. — **done** (both merged)
 - [ ] `supabase db push` to the live project; deploy edge functions (`submit-waitlist`, `verify-waitlist-email`, `resend-waitlist-verification`, `stripe-webhook` with `--no-verify-jwt`); set `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `VITE_STRIPE_PUBLISHABLE_KEY` when the Stripe account exists.
 
 ## P1 — Phase 1.2 marketplace completion
 - [x] Twilio SMS on offer/application/status changes (edge function `notify-assignment`, called from service methods; needs `TWILIO_*` secrets). — **in PR #7: Builder** (`feat/notify-assignment`: edge fn resolves assignment server-side, caller must be a party, recipient+copy keyed by kind, graceful no-op without TWILIO_*; wired into applyToShift/directBook/respondToOffer/decideApplication via fire-and-forget `notifyAssignment`)
-- [ ] Stripe Connect worker onboarding + real payout transfers (requires live Stripe account; `worker_sensitive.stripe_connect_account_id` is ready).
+- [~] Stripe Connect worker onboarding + payout transfers — **in progress: Builder** (`feat/stripe-connect`: `connect-onboard`/`connect-status`/`release-payout` edge fns — worker gets/reuses an Express account + hosted onboarding link; status syncs `worker_sensitive.payouts_enabled`; company "Pay out" creates the transfer server-side after invoice-ownership check. All flag-gated `{available:false}` without STRIPE_SECRET_KEY. UI: connect card on worker Payouts page + release queue on Timesheets. Live blocker: Stripe account + secrets at deploy.)
 - [x] Seed/demo script: sample companies, venues, workers w/ certs, events+shifts for a click-through demo. — **done: Tom** (`supabase/seed.sql` — demo-company/demo-worker/demo-worker2 @flexzora.dev, pw `Demo1234!`; roster+public shifts, verified certs, accepted gig. Also fixed a notification-trigger FK bug blocking application writes.)
 - [x] Worker availability calendar UI (blocked/available windows editor feeding `availability` rows). — **done: Tom** (`/availability` editor + worker-dashboard link; `deleteAvailability` service method)
 - [x] Roster broadcast flow: send offers to trusted-roster tier first, public after N hours. — **done: Tom** (`promoteStaleRosterShifts` 24h sweep on event-page load; manual promote already existed in CandidatesPanel)
@@ -150,7 +150,7 @@ Roadmap "Next" items in `PRD.md §4` the sprints skipped. Rewritten as claimable
 ## P3 — Phase 2 intelligence
 - [x] Smart-matching analytics: fill-rate, time-to-fill, no-show rate per event. — **done: Tom** (stat cards on EventDetailPage — fill % vs headcount, avg broadcast→fill time, no-show %)
 - [x] Drag-and-drop roster lanes in `RosterBuilder` (multi-lane schedule). — **done: Tom** (RosterBoard day lanes accept drop → `moveShift` keeps time-of-day, updates via `updateShift`)
-- [x] Push notifications — Web Push transport for `crew_alerts` shipped flag-gated (#18); FCM/APNs native push still tied to the deferred Expo app item.
+- [x] Push notifications — **done (flag-gated): Builder** (`feat/push-alerts`: `push_subscriptions` table (self-RLS) + `save-push-subscription`/`send-push` edge fns; Web Push via VAPID — free keys, no paid service; `crew_alert_push` trigger dispatches through pg_net when `app.push_fn_url`/`app.push_internal_secret` DB settings exist, skips silently otherwise; sw.js push+click handlers deep-link to the crew page; "Alert this device" toggle on the briefing card. Live blocker: VAPID_* + PUSH_INTERNAL_SECRET secrets + DB settings; native FCM/APNs remains a deeper-version item.)
 - [x] Geofence auto-clock-out on fence exit + manager alert. — **done: Tom** (ClockCard watches GPS while clocked in; 90s sustained outside-fence auto clocks out, flags the timesheet `worker_notes` for the manager)
 
 ## Debt
