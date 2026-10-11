@@ -63,7 +63,7 @@ SET LOCAL ROLE authenticated;
 SELECT set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000b0a1","role":"authenticated"}', true);
 
 -- 1: t1 (9h, no break) → meal penalty 1h, 8 reg + 1 OT, gross = 320+60+40 = 420
-SELECT ok(approve_timesheet('00000000-0000-0000-0000-00000000d701'::uuid) IS NOT NULL, 'first approval succeeds');
+SELECT lives_ok($$ SELECT approve_timesheet('00000000-0000-0000-0000-00000000d701'::uuid) $$, 'first approval succeeds');
 SELECT results_eq(
   $$ SELECT regular_hours, overtime_hours, meal_penalty_hours, gross_pay FROM timesheets WHERE id = '00000000-0000-0000-0000-00000000d701'::uuid $$,
   $$ VALUES (8::numeric, 1::numeric, 1::numeric, 420::numeric) $$,
@@ -72,14 +72,14 @@ SELECT results_eq(
 -- 2: t2 clocked in 6h after f703 ended (9h floor) → 3h shortfall → reg→dt.
 --    worked 8h − 30min break = 7.5h: reg 7.5 → 4.5 reg + 3 dt;
 --    the 30min break counts as a real meal → no penalty. gross = 180 + 240 = 420
-SELECT ok(approve_timesheet('00000000-0000-0000-0000-00000000d702'::uuid) IS NOT NULL, 'second approval succeeds');
+SELECT lives_ok($$ SELECT approve_timesheet('00000000-0000-0000-0000-00000000d702'::uuid) $$, 'second approval succeeds');
 SELECT results_eq(
   $$ SELECT regular_hours, doubletime_hours, turnaround_penalty_hours, gross_pay FROM timesheets WHERE id = '00000000-0000-0000-0000-00000000d702'::uuid $$,
   $$ VALUES (4.5::numeric, 3::numeric, 3::numeric, 420::numeric) $$,
   'hours inside the turnaround floor bill at double time');
 
 -- 3: t3 took a real 45min meal break → no penalty even at 9h
-SELECT ok(approve_timesheet('00000000-0000-0000-0000-00000000d703'::uuid) IS NOT NULL, 'third approval succeeds');
+SELECT lives_ok($$ SELECT approve_timesheet('00000000-0000-0000-0000-00000000d703'::uuid) $$, 'third approval succeeds');
 SELECT is(
   (SELECT meal_penalty_hours FROM timesheets WHERE id = '00000000-0000-0000-0000-00000000d703'::uuid),
   0::numeric, 'a real meal break clears the penalty');
