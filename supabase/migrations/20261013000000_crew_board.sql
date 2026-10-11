@@ -137,7 +137,7 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 DROP TRIGGER IF EXISTS shifts_close_crew_posts ON shifts;
 CREATE TRIGGER shifts_close_crew_posts AFTER UPDATE OF status ON shifts

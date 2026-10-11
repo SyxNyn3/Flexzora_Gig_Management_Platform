@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import { createCheckoutSession, isStripeDemoMode } from '@/lib/stripe';
+import { notifyAssignment } from '@/lib/notify';
 import {
   AssignmentStatus,
   BroadcastStage,
@@ -371,6 +372,7 @@ export class MarketplaceService {
         .select()
         .single();
       if (error) throw error;
+      if (data) notifyAssignment(data.id, 'applied');
       return ok(data);
     } catch (e) {
       return fail(null, e);
@@ -400,6 +402,7 @@ export class MarketplaceService {
           .select()
           .single();
         if (error) throw error;
+        if (data) notifyAssignment(data.id, 'offered');
         return ok(data);
       }
       if (!REOFFERABLE.has(existing.status as AssignmentStatus)) {
@@ -407,6 +410,7 @@ export class MarketplaceService {
       }
       const { data, error } = await supabase.from('shift_assignments').update(terms).eq('id', existing.id).select().single();
       if (error) throw error;
+      if (data) notifyAssignment(data.id, 'offered');
       return ok(data);
     } catch (e) {
       return fail(null, e);
@@ -424,6 +428,9 @@ export class MarketplaceService {
         .select()
         .single();
       if (error) throw error;
+      if (data) {
+        notifyAssignment(data.id, response === 'confirmed' ? 'confirmed_by_worker' : response);
+      }
       return ok(data);
     } catch (e) {
       return fail(null, e);
@@ -441,6 +448,9 @@ export class MarketplaceService {
         .select()
         .single();
       if (error) throw error;
+      if (data) {
+        notifyAssignment(data.id, decision === 'confirmed' ? 'confirmed_by_company' : decision);
+      }
       return ok(data);
     } catch (e) {
       return fail(null, e);
@@ -562,7 +572,8 @@ export class MarketplaceService {
         required_cert_codes: shift.required_cert_codes ?? [],
         skill_id: shift.skill_id,
         min_proficiency: shift.min_proficiency,
-        venueLocation: venue ? { lat: venue.latitude, lng: venue.longitude } : null,
+        venueLocation:
+          venue && venue.latitude != null && venue.longitude != null ? { lat: venue.latitude, lng: venue.longitude } : null,
       });
 
       const byId = new Map(workers.map((w) => [w.id, w]));
@@ -618,7 +629,8 @@ export class MarketplaceService {
           required_cert_codes: s.required_cert_codes ?? [],
           skill_id: s.skill_id,
           min_proficiency: s.min_proficiency,
-          venueLocation: venue ? { lat: venue.latitude, lng: venue.longitude } : null,
+          venueLocation:
+            venue && venue.latitude != null && venue.longitude != null ? { lat: venue.latitude, lng: venue.longitude } : null,
         });
         results.set(s.id, r);
       }

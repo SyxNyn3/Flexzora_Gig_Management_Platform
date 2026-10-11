@@ -11,9 +11,10 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
-import { Bell, Calendar, DollarSign, LogOut, User, Briefcase, Plus, MessageSquare, Building2, Users, Link as LinkIcon, CalendarDays, Mail } from 'lucide-react';
+import { Bell, Calendar, DollarSign, LogOut, User, Briefcase, Plus, MessageSquare, Building2, Users, Link as LinkIcon, CalendarDays, Mail, Upload, Sparkles, Megaphone, KanbanSquare, FileDown, AlertTriangle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import NotificationCenter from '@/components/notifications/NotificationCenter';
+import { COPILOT_ENABLED } from '@/lib/copilot/service';
 
 const Navbar: React.FC = () => {
   const { user, profile, signOut } = useAuth();
@@ -42,6 +43,13 @@ const Navbar: React.FC = () => {
     { path: '/events', label: 'Events', icon: CalendarDays },
     { path: '/timesheets', label: 'Timesheets', icon: Calendar },
     { path: '/roster', label: 'Roster', icon: Users },
+    { path: '/import', label: 'Import', icon: Upload },
+    { path: '/staff', label: 'Staff', icon: Users },
+    { path: '/broadcast', label: 'Broadcast', icon: Megaphone },
+    { path: '/ops', label: 'Ops', icon: KanbanSquare },
+    { path: '/exports', label: 'Exports', icon: FileDown },
+    { path: '/alerts', label: 'Alerts', icon: AlertTriangle },
+    ...(COPILOT_ENABLED ? [{ path: '/copilot', label: 'Copilot', icon: Sparkles }] : []),
     { path: '/gigs', label: 'Gigs', icon: Briefcase },
     { path: '/workforce', label: 'Workforce', icon: Users },
     { path: '/finances', label: 'Finances', icon: DollarSign },

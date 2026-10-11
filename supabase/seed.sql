@@ -193,6 +193,129 @@ begin
   on conflict do nothing;
 
   -- ------------------------------------------------------------------
+  -- Company OS demo: a finished roster-contacts import in the history —
+  -- Alex matched her account and imported; "Sam Rivera" (no Flexzora
+  -- account) came back as a fixable error row.
+  -- ------------------------------------------------------------------
+  insert into import_jobs (id, company_id, created_by, target, file_name, file_type,
+                         status, source_columns, mapping, mapping_source, stats, committed_at)
+  values ('66666666-0000-4000-8000-000000000001', v_company, p_company_user, 'roster_contacts',
+          'crew-roster-fall.csv', 'csv', 'committed',
+          '{Name,Email,Phone,Tier}'::text[],
+          '{"full_name":"Name","email":"Email","phone":"Phone","tier":"Tier"}'::jsonb,
+          'heuristic',
+          '{"total":2,"imported":1,"error":1}'::jsonb,
+          now() - interval '2 days')
+  on conflict (id) do nothing;
+
+  insert into import_rows (job_id, row_index, raw, mapped, status, message, entity_id)
+  values
+    ('66666666-0000-4000-8000-000000000001', 0,
+     '{"Name":"Alex Moreno","Email":"demo-worker@flexzora.dev","Phone":"+1 415 555 0101","Tier":"core"}'::jsonb,
+     '{"full_name":"Alex Moreno","email":"demo-worker@flexzora.dev","phone":"+1 415 555 0101","tier":"core"}'::jsonb,
+     'imported', 'imported', null),
+    ('66666666-0000-4000-8000-000000000001', 1,
+     '{"Name":"Sam Rivera","Email":"sam.rivera@example.com","Phone":"+1 415 555 0199","Tier":"preferred"}'::jsonb,
+     '{"full_name":"Sam Rivera","email":"sam.rivera@example.com","phone":"+1 415 555 0199","tier":"preferred"}'::jsonb,
+     'error', 'No Flexzora worker account for sam.rivera@example.com — invite them first (or import as staff)', null)
+  on conflict (job_id, row_index) do nothing;
+
+  -- ------------------------------------------------------------------
+  -- Company OS demo: copilot knowledge notes — the kind of operating
+  -- knowledge that lives in a manager's head or a shared drive.
+  -- ------------------------------------------------------------------
+  insert into company_docs (id, company_id, created_by, title, body, tags)
+  values
+    ('77777777-0000-4000-8000-000000000001', v_company, p_company_user,
+     'IATSE-style overtime rules',
+     'Crew on union-adjacent calls: OT at 1.5x after 8 hours, double-time after 12. 5-hour minimum call for stagehands; meal penalty kicks in if no break by hour 6.',
+     '{union,overtime,rates}'),
+    ('77777777-0000-4000-8000-000000000002', v_company, p_company_user,
+     'Warehouse 9 load-in notes',
+     'Dock is shared with the brewery next door — no trucks before 7am. Freight elevator maxes at 2,500 lbs; send the truss through the bay door instead. Ask for Marcus at the dock.',
+     '{venue,load-in,warehouse}'),
+    ('77777777-0000-4000-8000-000000000003', v_company, p_company_user,
+     'Rate card — core crew',
+     'A1 $65/hr, A2 $52/hr, master electrician $58/hr, general stagehand $38/hr. Core roster gets first refusal on weekend calls.',
+     '{rates,crew}')
+  on conflict (id) do nothing;
+
+
+  -- ------------------------------------------------------------------
+  -- Company OS demo: staff layer — internal team + event assignments.
+  -- ------------------------------------------------------------------
+  insert into staff_members (id, company_id, full_name, email, phone, title,
+                             department, employment_type, day_rate, notes)
+  values
+    ('88888888-0000-4000-8000-000000000001', v_company, 'Dana Whitfield',
+     'dana@demoproductions.example', '+1 415 555 0110', 'Production Manager',
+     'Production', 'salaried', null, 'Runs all arena shows; first call for anything that moves.'),
+    ('88888888-0000-4000-8000-000000000002', v_company, 'Priya Nair',
+     'priya@demoproductions.example', '+1 415 555 0111', 'Site Coordinator',
+     'Ops', 'day_rate', 450.00, 'Owns vendor access + credentials at the gate.'),
+    ('88888888-0000-4000-8000-000000000003', v_company, 'Marcus Bell',
+     'marcus@demoproductions.example', '+1 415 555 0112', 'Crew Lead',
+     'Production', 'day_rate', 400.00, null)
+  on conflict (id) do nothing;
+
+  insert into staff_assignments (id, company_id, staff_id, event_id, role_label, call_time, status)
+  values
+    ('88888888-0000-4000-8000-000000000011', v_company, '88888888-0000-4000-8000-000000000001',
+     v_event, 'PM', current_date + 7 + interval '7 hours', 'confirmed'),
+    ('88888888-0000-4000-8000-000000000012', v_company, '88888888-0000-4000-8000-000000000002',
+     v_event, 'Site lead', current_date + 7 + interval '7 hours', 'assigned')
+  on conflict (id) do nothing;
+
+  -- ------------------------------------------------------------------
+  -- Company OS demo: a sent broadcast with its delivery log — two roster
+  -- workers reached in-app, one accountless staff member queued for email.
+  -- ------------------------------------------------------------------
+  insert into broadcasts (id, company_id, created_by, subject, body, audience,
+                          event_id, include_staff, status, recipient_count, sent_at)
+  values ('99999999-0000-4000-8000-000000000001', v_company, p_company_user,
+          'Load-in call time moved',
+          'Load-in for Demo Festival moves to 7am tomorrow — dock door 3, see Marcus at the gate.',
+          'event', v_event, true, 'sent', 3, now() - interval '1 day')
+  on conflict (id) do nothing;
+
+  insert into broadcast_recipients (broadcast_id, company_id, worker_id, channel, status)
+  values
+    ('99999999-0000-4000-8000-000000000001', v_company, p_worker1, 'in_app', 'sent'),
+    ('99999999-0000-4000-8000-000000000001', v_company, p_worker2, 'in_app', 'sent')
+  on conflict do nothing;
+
+  insert into broadcast_recipients (broadcast_id, company_id, staff_id, channel, status, error)
+  values
+    ('99999999-0000-4000-8000-000000000001', v_company, '88888888-0000-4000-8000-000000000001',
+     'email', 'queued', 'email transport not wired yet')
+  on conflict do nothing;
+
+  -- ------------------------------------------------------------------
+  -- Company OS demo: calendar feeds — whole-company plus the PM's feed.
+  -- ------------------------------------------------------------------
+  insert into calendar_feeds (id, company_id, token, scope, staff_id, label, created_by)
+  values
+    ('aaaaaaaa-0000-4000-8000-000000000001', v_company, 'aaaaaaaa-0000-4000-8000-00000000feed',
+     'company', null, 'All shows', p_company_user),
+    ('aaaaaaaa-0000-4000-8000-000000000002', v_company, 'aaaaaaaa-0000-4000-8000-00000000beef',
+     'staff', '88888888-0000-4000-8000-000000000001', 'Dana — PM calendar', p_company_user)
+  on conflict (id) do nothing;
+
+  -- ------------------------------------------------------------------
+  -- Company OS demo: ops board — a manual task in flight, one done.
+  -- (Unfilled-call cards generate themselves on board load.)
+  -- ------------------------------------------------------------------
+  insert into ops_tasks (id, company_id, event_id, title, notes, column_key, priority,
+                         source, assigned_staff_id, due_at, created_by, done_at)
+  values
+    ('bbbbbbbb-0000-4000-8000-000000000001', v_company, v_event,
+     'Confirm dock access with venue', 'Ask Marcus for the Gate 4 marshal schedule.',
+     'in_progress', 'high', 'manual', '88888888-0000-4000-8000-000000000002',
+     current_date + 6 + interval '12 hours', p_company_user, null),
+    ('bbbbbbbb-0000-4000-8000-000000000002', v_company, v_event,
+     'Send load-in details to crew', null, 'done', 'normal', 'manual',
+     '88888888-0000-4000-8000-000000000001', null, p_company_user, now() - interval '6 hours')
+  on conflict (id) do nothing;
   -- Crew OS demo: Jordan posts a ride offer; Alex's matched request
   -- makes the sync trigger mint his gas-share IOU automatically.
   -- Jordan already settled a manual burrito-run debt to Alex.
@@ -295,6 +418,17 @@ begin
           '55555555-0000-4000-8000-000000000050', v_shift_public, p_worker1,
           'Got called for a stadium overnight — will pay to offload.',
           5000)
+  -- ------------------------------------------------------------------
+  -- Company OS demo: alerts inbox — one resolved alert shows the audit
+  -- trail; live ones generate themselves on inbox load via the sweep.
+  -- ------------------------------------------------------------------
+  insert into company_alerts (id, company_id, kind, severity, status, title, body,
+                              dedupe_key, event_id, due_at, resolved_at)
+  values
+    ('cccccccc-0000-4000-8000-000000000001', v_company, 'timesheet_pending', 'warning',
+     'resolved', 'Timesheet waiting — Jordan Lee',
+     'Metro Gala · Stagehands · submitted Mon 03 Nov 18:20 UTC',
+     'timesheet:demo-seeded-1', v_event, now() - interval '3 days', now() - interval '2 days')
   on conflict (id) do nothing;
 
 end $$;

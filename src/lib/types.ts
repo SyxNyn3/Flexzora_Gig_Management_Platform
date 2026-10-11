@@ -155,6 +155,64 @@ export interface Database {
         Insert: Omit<Payout, 'id' | 'created_at' | 'updated_at' | 'invoice'>;
         Update: Partial<Omit<Payout, 'id' | 'created_at' | 'updated_at' | 'invoice'>>;
       };
+      import_jobs: {
+        Row: ImportJob;
+        Insert: Omit<ImportJob, 'id' | 'created_at' | 'committed_at'>;
+        Update: Partial<Omit<ImportJob, 'id' | 'created_at' | 'company_id' | 'created_by'>>;
+      };
+      import_rows: {
+        Row: ImportRow;
+        Insert: Omit<ImportRow, 'id' | 'created_at' | 'updated_at' | 'entity_id'> & { id?: string; entity_id?: string | null };
+        Update: Partial<Omit<ImportRow, 'id' | 'created_at' | 'job_id'>>;
+      };
+      company_docs: {
+        Row: CompanyDoc;
+        Insert: Omit<CompanyDoc, 'id' | 'created_at' | 'updated_at'> & { created_by?: string | null };
+        Update: Partial<Omit<CompanyDoc, 'id' | 'created_at' | 'company_id'>>;
+      };
+      copilot_messages: {
+        Row: CopilotMessage;
+        Insert: Omit<CopilotMessage, 'id' | 'created_at'> & { profile_id?: string | null };
+        Update: Partial<Pick<CopilotMessage, 'action' | 'content'>>;
+      };
+
+      staff_members: {
+        Row: StaffMember;
+        Insert: Omit<StaffMember, 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Omit<StaffMember, 'id' | 'created_at' | 'company_id'>>;
+      };
+      staff_assignments: {
+        Row: StaffAssignment;
+        Insert: Omit<StaffAssignment, 'id' | 'created_at' | 'updated_at' | 'member'>;
+        Update: Partial<Omit<StaffAssignment, 'id' | 'created_at' | 'company_id' | 'staff_id' | 'event_id' | 'member'>>;
+      };
+      broadcasts: {
+        Row: Broadcast;
+        Insert: Omit<Broadcast, 'id' | 'created_at' | 'updated_at' | 'sent_at' | 'recipient_count' | 'status' | 'error'> & {
+          status?: BroadcastStatus;
+        };
+        Update: Partial<Omit<Broadcast, 'id' | 'created_at' | 'company_id'>>;
+      };
+      broadcast_recipients: {
+        Row: BroadcastRecipient;
+        Insert: Omit<BroadcastRecipient, 'id' | 'created_at'>;
+        Update: Partial<Omit<BroadcastRecipient, 'id' | 'created_at' | 'broadcast_id'>>;
+      };
+      calendar_feeds: {
+        Row: CalendarFeed;
+        Insert: Omit<CalendarFeed, 'id' | 'created_at' | 'token' | 'last_accessed_at'> & { token?: string };
+        Update: Partial<Pick<CalendarFeed, 'label' | 'is_active'>>;
+      };
+      ops_tasks: {
+        Row: OpsTask;
+        Insert: Omit<OpsTask, 'id' | 'created_at' | 'updated_at' | 'done_at' | 'event' | 'shift' | 'assignee'>;
+        Update: Partial<Omit<OpsTask, 'id' | 'created_at' | 'company_id' | 'event' | 'shift' | 'assignee'>>;
+      };
+      company_alerts: {
+        Row: CompanyAlert;
+        Insert: Omit<CompanyAlert, 'id' | 'created_at' | 'updated_at' | 'resolved_at' | 'event' | 'shift'>;
+        Update: Partial<Omit<CompanyAlert, 'id' | 'created_at' | 'company_id' | 'event' | 'shift'>>;
+      };
       crew_iou: {
         Row: CrewIOU;
         Insert: Omit<CrewIOU, 'id' | 'created_at' | 'updated_at'>;
@@ -607,8 +665,9 @@ export interface Venue {
   city?: string;
   region?: string;
   country?: string;
-  latitude: number;
-  longitude: number;
+  /** Optional — imported venues may lack coords; geo/clock-in degrade to unverified. */
+  latitude?: number | null;
+  longitude?: number | null;
   geofence_radius_m: number;
   load_in_notes?: string;
   overnight_parking: boolean;
@@ -647,6 +706,8 @@ export interface ProductionEvent {
   status: EventStatus;
   overtime_rule_code: string;
   color: string;
+  /** IANA wall-clock zone of the venue (America/Los_Angeles default). */
+  timezone?: string;
   /** From event_budgets; only present for the owning company. */
   budget_cap?: number;
   platform_fee_pct?: number;
@@ -833,6 +894,7 @@ export interface EventFormData {
   ends_on: string;
   budget_cap?: number;
   overtime_rule_code: string;
+  timezone?: string;
 }
 
 export interface ShiftFormData {
@@ -858,6 +920,223 @@ export interface VenueFormData {
   geofence_radius_m: number;
 }
 
+// ---------------------------------------------------------------------------
+// Company OS — AI Upload Wizard
+// ---------------------------------------------------------------------------
+export type ImportTarget = 'venues' | 'shifts' | 'roster_contacts' | 'staff';
+export type ImportJobStatus =
+  | 'uploaded'
+  | 'mapped'
+  | 'reviewing'
+  | 'committing'
+  | 'committed'
+  | 'failed'
+  | 'cancelled';
+export type ImportRowStatus = 'pending' | 'ready' | 'warning' | 'error' | 'skipped' | 'imported';
+
+export interface ImportJob {
+  id: string;
+  company_id: string;
+  created_by: string;
+  target: ImportTarget;
+  file_name: string;
+  file_type: string;
+  status: ImportJobStatus;
+  source_columns: string[];
+  mapping: Record<string, string>;
+  mapping_source?: string | null;
+  event_id?: string | null;
+  stats: {
+    total?: number;
+    imported?: number;
+    ready?: number;
+    warning?: number;
+    error?: number;
+    skipped?: number;
+  };
+  error?: string | null;
+  created_at: string;
+  committed_at?: string | null;
+}
+
+export interface ImportRow {
+  id: string;
+  job_id: string;
+  row_index: number;
+  raw: Record<string, string>;
+  mapped: Record<string, string>;
+  status: ImportRowStatus;
+  message?: string | null;
+  entity_id?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// ---------------------------------------------------------------------------
+// Company OS — Copilot
+// ---------------------------------------------------------------------------
+export interface CompanyDoc {
+  id: string;
+  company_id: string;
+  title: string;
+  body: string;
+  tags: string[];
+  created_by?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type CopilotActionStatus = 'pending' | 'done' | 'dismissed';
+
+export interface CopilotAction {
+  kind: 'save_doc' | 'broadcast_draft';
+  label: string;
+  payload: Record<string, unknown>;
+  status: CopilotActionStatus;
+  note?: string;
+}
+
+export interface CopilotMessage {
+  id: string;
+  company_id: string;
+  profile_id?: string | null;
+  role: 'user' | 'assistant';
+  content: string;
+  query_kind?: string | null;
+  result?: Record<string, unknown>[] | null;
+  action?: CopilotAction | null;
+  created_at: string;
+}
+
+
+// ---------------------------------------------------------------------------
+// Company OS — staff layer (internal team, distinct from marketplace crew)
+// ---------------------------------------------------------------------------
+export type StaffEmploymentType = 'salaried' | 'day_rate' | 'hourly';
+export type StaffAssignmentStatus = 'assigned' | 'confirmed' | 'declined';
+
+export interface StaffMember {
+  id: string;
+  company_id: string;
+  profile_id?: string | null;
+  full_name: string;
+  email?: string | null;
+  phone?: string | null;
+  title?: string | null;
+  department?: string | null;
+  employment_type: StaffEmploymentType;
+  day_rate?: number | null;
+  is_active: boolean;
+  notes?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface StaffAssignment {
+  id: string;
+  company_id: string;
+  staff_id: string;
+  event_id: string;
+  role_label?: string | null;
+  call_time?: string | null;
+  status: StaffAssignmentStatus;
+  notes?: string | null;
+  created_at: string;
+  updated_at: string;
+  member?: StaffMember;
+}
+
+// ---------------------------------------------------------------------------
+// Company OS — broadcast messaging
+// ---------------------------------------------------------------------------
+export type BroadcastAudience = 'all' | 'event' | 'shift';
+export type BroadcastStatus = 'draft' | 'sent' | 'failed';
+export type BroadcastChannel = 'in_app' | 'email' | 'sms';
+export type BroadcastRecipientStatus = 'queued' | 'sent' | 'delivered' | 'failed' | 'skipped';
+
+export interface Broadcast {
+  id: string;
+  company_id: string;
+  created_by?: string | null;
+  subject?: string | null;
+  body: string;
+  audience: BroadcastAudience;
+  event_id?: string | null;
+  shift_id?: string | null;
+  include_staff: boolean;
+  status: BroadcastStatus;
+  recipient_count: number;
+  error?: string | null;
+  sent_at?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BroadcastRecipient {
+  id: string;
+  broadcast_id: string;
+  company_id: string;
+  worker_id?: string | null;
+  staff_id?: string | null;
+  channel: BroadcastChannel;
+  status: BroadcastRecipientStatus;
+  error?: string | null;
+  notification_id?: string | null;
+  created_at: string;
+  delivered_at?: string | null;
+  worker_name?: string;
+  staff_name?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Company OS — calendar feeds (ICS)
+// ---------------------------------------------------------------------------
+export type CalendarFeedScope = 'company' | 'event' | 'staff' | 'worker';
+
+export interface CalendarFeed {
+  id: string;
+  company_id: string;
+  token: string;
+  scope: CalendarFeedScope;
+  event_id?: string | null;
+  staff_id?: string | null;
+  worker_id?: string | null;
+  label?: string | null;
+  created_by?: string | null;
+  is_active: boolean;
+  last_accessed_at?: string | null;
+  created_at: string;
+}
+
+// ---------------------------------------------------------------------------
+// Company OS — operations kanban
+// ---------------------------------------------------------------------------
+export type OpsColumn = 'todo' | 'in_progress' | 'done';
+export type OpsPriority = 'low' | 'normal' | 'high' | 'urgent';
+export type OpsTaskSource = 'manual' | 'auto_unfilled';
+
+export interface OpsTask {
+  id: string;
+  company_id: string;
+  event_id?: string | null;
+  shift_id?: string | null;
+  title: string;
+  notes?: string | null;
+  column_key: OpsColumn;
+  priority: OpsPriority;
+  source: OpsTaskSource;
+  assigned_staff_id?: string | null;
+  due_at?: string | null;
+  sort_order: number;
+  created_by?: string | null;
+  done_at?: string | null;
+  created_at: string;
+  updated_at: string;
+  event?: { id: string; name: string } | null;
+  shift?: { id: string; title: string } | null;
+  assignee?: StaffMember | null;
+}
+
 // --- Crew OS ---------------------------------------------------------------
 export type CrewIOUKind = 'ride' | 'lodging' | 'food' | 'gear' | 'other';
 export type CrewIOUStatus = 'committed' | 'settled' | 'void' | 'failed';
@@ -877,6 +1156,7 @@ export interface CrewIOU {
   notes?: string;
   settled_at?: string;
   settled_timesheet_id?: string;
+  settled_cents: number;
   created_at: string;
   updated_at: string;
   beneficiary_profile?: Pick<Profile, 'id' | 'full_name'>;
@@ -1062,5 +1342,30 @@ export interface SwapClaim {
   created_at: string;
   updated_at: string;
   claimer?: Profile;
+// ---------------------------------------------------------------------------
+// Company OS — automatic reminders (alerts inbox)
+// ---------------------------------------------------------------------------
+export type AlertKind = 'unfilled_call' | 'cert_expiring' | 'timesheet_pending' | 'shift_tomorrow';
+export type AlertSeverity = 'info' | 'warning' | 'urgent';
+export type AlertStatus = 'open' | 'resolved' | 'dismissed';
+
+export interface CompanyAlert {
+  id: string;
+  company_id: string;
+  kind: AlertKind;
+  severity: AlertSeverity;
+  status: AlertStatus;
+  title: string;
+  body?: string | null;
+  dedupe_key?: string | null;
+  event_id?: string | null;
+  shift_id?: string | null;
+  timesheet_id?: string | null;
+  due_at?: string | null;
+  resolved_at?: string | null;
+  created_at: string;
+  updated_at: string;
+  event?: { id: string; name: string } | null;
+  shift?: { id: string; title: string; starts_at: string } | null;
 }
 
