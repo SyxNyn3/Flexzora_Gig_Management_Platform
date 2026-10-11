@@ -101,6 +101,14 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- Consent is recorded on a resolved post only — a want-author cannot
+-- pre-stamp debtor_confirmed_at at INSERT to skip the mint (the trigger only
+-- fires on UPDATE transitions, so a preset stamp would dodge the debt).
+DROP POLICY IF EXISTS "workers post own" ON crew_posts;
+CREATE POLICY "workers post own" ON crew_posts FOR INSERT TO authenticated
+  WITH CHECK (author_worker_id = current_profile_id() AND status = 'open'
+              AND debtor_confirmed_at IS NULL);
+
 -- Fulfillers need to reach the row to accept a debt against them.
 DROP POLICY IF EXISTS "parties update posts" ON crew_posts;
 CREATE POLICY "parties update posts" ON crew_posts FOR UPDATE TO authenticated

@@ -2,7 +2,7 @@
 -- a worker who never agreed to it. Minting now requires the DEBTOR's own
 -- acceptance: the author for a 'want' post, the fulfiller for an 'offer' post.
 BEGIN;
-SELECT plan(15);
+SELECT plan(16);
 
 -- fixtures: a company owner, two crew workers, and an outsider
 INSERT INTO auth.users (id, instance_id, aud, role, email, encrypted_password, raw_user_meta_data, created_at, updated_at)
@@ -138,6 +138,16 @@ $$, 'P0001', NULL, 'self-fulfilled post is rejected');
 SELECT throws_ok($$
   UPDATE crew_posts SET status = 'resolved' WHERE id = '19000000-0000-0000-0000-0000000000d1'
 $$, 'P0001', NULL, 'paid post cannot resolve without naming who fulfilled it');
+
+-- reviewer follow-up: consent must not be pre-stamped at INSERT — a want
+-- author could skip the mint trigger (UPDATE-only) and dodge the debt.
+SELECT throws_ok($$
+  INSERT INTO crew_posts (id, shift_id, author_worker_id, category, direction, title, amount_cents, status, debtor_confirmed_at)
+  SELECT '19000000-0000-0000-0000-0000000000e1', '00000000-0000-0000-0000-00000000d190', p.id,
+         'borrow'::crew_post_category, 'want'::crew_post_direction, 'Stamped want', 900,
+         'open'::crew_post_status, now()
+  FROM profiles p WHERE p.user_id = '00000000-0000-0000-0000-00000000b902'
+$$, '42501', NULL, 'debtor_confirmed_at cannot be pre-stamped at INSERT');
 
 SELECT * FROM finish();
 ROLLBACK;
