@@ -342,3 +342,11 @@ Judgment calls / things a reviewer should check:
 
 Next in Lane A: ride-match MED batch (#25 unique rider/shift, #26 company
 can't force-match, #27 seats_needed frozen after match).
+
+- Addendum (CI found it): `void_ious_on_shift_cancel` / `_delete` were
+  SECURITY INVOKER (my own PR #8 code). They only worked because companies
+  were exempt from the IOU guard. The migration now makes them SECURITY DEFINER
+  with a pinned search_path, so companies can be fully read-only. Audit of all
+  other `crew_iou` writers: ride/lodging/food/swap cascades and approve_timesheet
+  are already definer. Also fixed enum literal casts in the new pgTAP fixtures
+  (INSERT ... SELECT needs explicit enum casts).

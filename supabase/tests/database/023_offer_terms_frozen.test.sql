@@ -27,10 +27,10 @@ VALUES ('00000000-0000-0000-0000-00000000d300', '00000000-0000-0000-0000-0000000
 
 -- X1: offered to A at 30; X2: previously declined by B at 30
 INSERT INTO shift_assignments (id, shift_id, worker_id, status, source, offered_rate)
-SELECT '00000000-0000-0000-0000-00000000a300', '00000000-0000-0000-0000-00000000d300', p.id, 'offered', 'direct_book', 30.00
+SELECT '00000000-0000-0000-0000-00000000a300', '00000000-0000-0000-0000-00000000d300', p.id, 'offered'::assignment_status, 'direct_book'::assignment_source, 30.00
 FROM profiles p WHERE p.user_id = '00000000-0000-0000-0000-00000000b302';
 INSERT INTO shift_assignments (id, shift_id, worker_id, status, source, offered_rate)
-SELECT '00000000-0000-0000-0000-00000000a301', '00000000-0000-0000-0000-00000000d300', p.id, 'declined', 'direct_book', 30.00
+SELECT '00000000-0000-0000-0000-00000000a301', '00000000-0000-0000-0000-00000000d300', p.id, 'declined'::assignment_status, 'direct_book'::assignment_source, 30.00
 FROM profiles p WHERE p.user_id = '00000000-0000-0000-0000-00000000b303';
 
 SET LOCAL ROLE authenticated;

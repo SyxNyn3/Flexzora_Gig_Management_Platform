@@ -27,8 +27,8 @@ VALUES ('00000000-0000-0000-0000-00000000d200', '00000000-0000-0000-0000-0000000
         'Call', 'Stagehand', 4, '2027-03-01 08:00+00', '2027-03-01 16:00+00', 30.00, 'open');
 
 INSERT INTO crew_iou (id, worker_id, shift_id, kind, amount_cents, beneficiary_worker_id, status, settle_via, iou_group_id, notes)
-SELECT '00000000-0000-0000-0000-00000000f200', d.id, '00000000-0000-0000-0000-00000000d200', 'ride', 1000, c.id,
-       'committed', 'payout_deduction', '00000000-0000-0000-0000-00000000f201', 'Gas share'
+SELECT '00000000-0000-0000-0000-00000000f200', d.id, '00000000-0000-0000-0000-00000000d200', 'ride'::crew_iou_kind, 1000, c.id,
+       'committed'::crew_iou_status, 'payout_deduction'::crew_iou_settle_via, '00000000-0000-0000-0000-00000000f201', 'Gas share'
 FROM profiles d, profiles c
 WHERE d.user_id = '00000000-0000-0000-0000-00000000b202' AND c.user_id = '00000000-0000-0000-0000-00000000b203';
 

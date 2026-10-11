@@ -253,3 +253,31 @@ BEGIN
   END IF;
   RETURN NEW;
 END $$ LANGUAGE plpgsql;
+
+-- ---------------------------------------------------------------------------
+-- System cascades must be SECURITY DEFINER now that companies are read-only on
+-- crew_iou (#20). The shift-cancel/delete voids were INVOKER and only worked
+-- because the company-owner branch exempted them; they run as the company
+-- user when a shift is cancelled, so they are made definer with a pinned
+-- search_path. Bodies are unchanged from 20261010000000_crew_iou.sql.
+-- ---------------------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION void_ious_on_shift_cancel() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, extensions, pg_temp AS $$
+BEGIN
+  IF NEW.status = 'cancelled' AND OLD.status IS DISTINCT FROM 'cancelled' THEN
+    UPDATE crew_iou SET status = 'void', updated_at = now()
+    WHERE shift_id = NEW.id AND status = 'committed';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION void_ious_on_shift_delete() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, extensions, pg_temp AS $$
+BEGIN
+  UPDATE crew_iou SET status = 'void', updated_at = now()
+  WHERE shift_id = OLD.id AND status = 'committed';
+  RETURN OLD;
+END;
+$$;

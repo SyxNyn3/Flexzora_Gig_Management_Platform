@@ -28,7 +28,7 @@ VALUES ('00000000-0000-0000-0000-00000000d190', '00000000-0000-0000-0000-0000000
 
 -- A: want (author owes)   B: offer (fulfiller owes)   C: offer   D: open, to be self-fulfilled
 INSERT INTO crew_posts (id, shift_id, author_worker_id, category, direction, title, amount_cents, status)
-SELECT v.id, '00000000-0000-0000-0000-00000000d190', p.id, 'borrow', v.dir, v.title, v.amount, 'open'
+SELECT v.id, '00000000-0000-0000-0000-00000000d190', p.id, 'borrow'::crew_post_category, v.dir::crew_post_direction, v.title, v.amount, 'open'::crew_post_status
 FROM profiles p
 CROSS JOIN (VALUES
   ('19000000-0000-0000-0000-0000000000a1'::uuid, 'want'::text,  'Gloves A',  1000),
