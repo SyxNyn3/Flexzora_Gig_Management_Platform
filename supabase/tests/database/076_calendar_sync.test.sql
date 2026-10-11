@@ -61,7 +61,7 @@ SELECT is(
 SELECT set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000b082","role":"authenticated"}', true);
 SELECT throws_ok(
   $$ SELECT sync_calendar_import('00000000-0000-0000-0000-00000000d601', '[]'::jsonb, NULL) $$,
-  'non-owner cannot sync another worker''s import');
+  'P0001', 'Calendar import not found', 'non-owner cannot sync another worker''s import');
 
 SELECT * FROM finish();
 ROLLBACK;
