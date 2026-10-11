@@ -54,7 +54,7 @@ DECLARE
   v_resolved int := 0;
   v_shift record;
 BEGIN
-  IF NOT owns_company(p_company_id) THEN
+  IF current_user IN ('authenticated','anon') AND NOT owns_company(p_company_id) THEN
     RAISE EXCEPTION 'Not authorized for this company';
   END IF;
 
