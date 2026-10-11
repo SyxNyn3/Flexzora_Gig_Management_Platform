@@ -94,7 +94,8 @@ SELECT is(
 
 -- 7: runner retracts a second offer → pending clears
 SELECT ok(offer_run_handoff('00000000-0000-0000-0000-000000009c02', (SELECT id FROM profiles WHERE user_id = '00000000-0000-0000-0000-00000000b0f3')), 're-offer works');
-SELECT ok(decline_run_handoff('00000000-0000-0000-0000-000000009c02') AND NOT EXISTS (
+SELECT decline_run_handoff('00000000-0000-0000-0000-000000009c02');
+SELECT ok(NOT EXISTS (
          SELECT 1 FROM food_runs WHERE id = '00000000-0000-0000-0000-000000009c02' AND pending_runner_worker_id IS NOT NULL),
   'runner can retract the handoff offer');
 
