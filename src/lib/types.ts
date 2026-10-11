@@ -165,6 +165,16 @@ export interface Database {
         Insert: Omit<ImportRow, 'id' | 'created_at' | 'updated_at' | 'entity_id'> & { id?: string; entity_id?: string | null };
         Update: Partial<Omit<ImportRow, 'id' | 'created_at' | 'job_id'>>;
       };
+      company_docs: {
+        Row: CompanyDoc;
+        Insert: Omit<CompanyDoc, 'id' | 'created_at' | 'updated_at'> & { created_by?: string | null };
+        Update: Partial<Omit<CompanyDoc, 'id' | 'created_at' | 'company_id'>>;
+      };
+      copilot_messages: {
+        Row: CopilotMessage;
+        Insert: Omit<CopilotMessage, 'id' | 'created_at'> & { profile_id?: string | null };
+        Update: Partial<Pick<CopilotMessage, 'action' | 'content'>>;
+      };
       crew_iou: {
         Row: CrewIOU;
         Insert: Omit<CrewIOU, 'id' | 'created_at' | 'updated_at'>;
@@ -909,6 +919,42 @@ export interface ImportRow {
   entity_id?: string | null;
   created_at: string;
   updated_at: string;
+}
+
+// ---------------------------------------------------------------------------
+// Company OS — Copilot
+// ---------------------------------------------------------------------------
+export interface CompanyDoc {
+  id: string;
+  company_id: string;
+  title: string;
+  body: string;
+  tags: string[];
+  created_by?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type CopilotActionStatus = 'pending' | 'done' | 'dismissed';
+
+export interface CopilotAction {
+  kind: 'save_doc' | 'broadcast_draft';
+  label: string;
+  payload: Record<string, unknown>;
+  status: CopilotActionStatus;
+  note?: string;
+}
+
+export interface CopilotMessage {
+  id: string;
+  company_id: string;
+  profile_id?: string | null;
+  role: 'user' | 'assistant';
+  content: string;
+  query_kind?: string | null;
+  result?: Record<string, unknown>[] | null;
+  action?: CopilotAction | null;
+  created_at: string;
 }
 
 // --- Crew OS ---------------------------------------------------------------

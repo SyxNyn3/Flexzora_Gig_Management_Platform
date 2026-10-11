@@ -8,6 +8,7 @@ import WaitlistForm from '@/components/waitlist/WaitlistForm';
 import ScheduleDemoForm from '@/components/demo/ScheduleDemoForm';
 import Layout from '@/components/layout/Layout';
 import AuthForm from '@/components/auth/AuthForm';
+import { COPILOT_ENABLED } from '@/lib/copilot/service';
 
 const WorkerDashboard = lazy(() => import('@/components/dashboard/WorkerDashboard'));
 const Dashboard = lazy(() => import('@/components/dashboard/Dashboard'));
@@ -34,6 +35,7 @@ const EventDetailPage = lazy(() => import('@/pages/company/EventDetailPage'));
 const TimesheetApprovalPage = lazy(() => import('@/pages/company/TimesheetApprovalPage'));
 const RosterPage = lazy(() => import('@/pages/company/RosterPage'));
 const ImportPage = lazy(() => import('@/pages/company/ImportPage'));
+const CopilotPage = lazy(() => import('@/pages/company/CopilotPage'));
 const ShiftMarketplacePage = lazy(() => import('@/pages/worker/ShiftMarketplacePage'));
 const CrewBoardPage = lazy(() => import('@/pages/worker/CrewBoardPage'));
 const PayoutsPage = lazy(() => import('@/pages/worker/PayoutsPage'));
@@ -382,6 +384,16 @@ const AppRoutes: React.FC = () => {
             <ProtectedRoute>
               <Layout>
                 <ImportPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/copilot"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                {COPILOT_ENABLED ? <CopilotPage /> : <Navigate to="/dashboard" replace />}
               </Layout>
             </ProtectedRoute>
           }
