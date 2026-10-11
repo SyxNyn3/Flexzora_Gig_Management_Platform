@@ -1402,7 +1402,7 @@ export interface CrewPost {
 
 // --- GrubRun ---------------------------------------------------------------
 export type FoodRunStatus = 'open' | 'ordered' | 'delivered' | 'cancelled';
-export type FoodOrderStatus = 'placed' | 'confirmed' | 'cancelled';
+export type FoodOrderStatus = 'placed' | 'confirmed' | 'cancelled' | 'price_review';
 
 export interface FoodRun {
   id: string;
@@ -1439,6 +1439,8 @@ export interface FoodRunOrder {
   run_id: string;
   worker_id: string;
   item: string;
+  /** orderer's committed menu price — the cap the runner's real price is checked against */
+  quoted_price_cents?: number;
   price_cents?: number;
   status: FoodOrderStatus;
   notes?: string;

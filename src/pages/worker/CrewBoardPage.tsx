@@ -7,7 +7,7 @@ import { useCrewBoard, useShift } from '@/hooks/useCrew';
 import { useWorkerAssignments } from '@/hooks/useMarketplace';
 import { joinRide, withdrawRideRequest, cancelRideOffer, postRideOffer, setRideFlags, listRideBuddies, fetchMyLastOfferParams } from '@/lib/crew/rides';
 import { joinPool, leavePool, cancelLodgingPool, postLodgingPool } from '@/lib/crew/lodging';
-import { placeOrder, cancelOrder, confirmOrder, postFoodRun, updateFoodRunStatus, isAcceptingOrders, offerRunHandoff, acceptRunHandoff, declineRunHandoff } from '@/lib/crew/food';
+import { placeOrder, cancelOrder, confirmOrder, acceptFoodPrice, rejectFoodPrice, postFoodRun, updateFoodRunStatus, isAcceptingOrders, offerRunHandoff, acceptRunHandoff, declineRunHandoff } from '@/lib/crew/food';
 import { postToBoard, resolvePost, closePost, acceptFulfilment, declineFulfilment } from '@/lib/crew/board';
 import { iouCapacity, bailKeptCents, DEFAULT_BAIL_POLICY } from '@/lib/crew/iouMath';
 import { fetchBailPolicy } from '@/lib/crew/iou';
@@ -149,12 +149,12 @@ const CrewBoardPage: React.FC = () => {
     return Array.from(m.entries());
   }, [board.data, profile?.id]);
 
-  const act = async (key: string, fn: () => Promise<{ error: string | null }>, okMsg: string) => {
+  const act = async (key: string, fn: () => Promise<{ error: string | null; data?: unknown }>, okMsg: string | ((data: unknown) => string)) => {
     setBusy(key);
-    const { error } = await fn();
+    const r = await fn();
     setBusy(null);
-    if (error) return toast.error(error);
-    toast.success(okMsg);
+    if (r.error) return toast.error(r.error);
+    toast.success(typeof okMsg === 'function' ? okMsg(r.data) : okMsg);
     board.refetch();
     assignments.refetch();
     setBuddyTick((t) => t + 1);
@@ -650,19 +650,34 @@ const CrewBoardPage: React.FC = () => {
                           <span className={o.status === 'confirmed' ? 'text-foreground' : 'text-muted-foreground'}>
                             {o.worker?.full_name ?? '—'}: {o.item}
                             {o.price_cents != null ? ` — ${money(o.price_cents / 100)}` : ''}
+                            {o.status === 'price_review' ? ' (over quote — awaiting orderer)' : ''}
                           </span>
                           {mine && o.status === 'placed' && (
-                            <ConfirmOrderButton busy={busy} onConfirm={(price) => act(o.id, () => confirmOrder(o.id, price), 'Order confirmed — IOU minted')} />
+                            <ConfirmOrderButton busy={busy} onConfirm={(price) => act(o.id, () => confirmOrder(o.id, price),
+                              (status) => status === 'price_review' ? 'Above the quoted price — sent to the orderer for review' : 'Order confirmed — IOU minted')} />
                           )}
                           {!mine && o.worker_id === profile?.id && o.status === 'placed' && (
                             <Button size="sm" variant="ghost" className="h-6 px-2" disabled={busy !== null} onClick={() => act(o.id, () => cancelOrder(o.id), 'Order cancelled')}><X className="w-3 h-3" /></Button>
+                          )}
+                          {!mine && o.worker_id === profile?.id && o.status === 'price_review' && (
+                            <span className="inline-flex gap-1">
+                              <Button size="sm" className="h-6 px-2 text-xs" disabled={busy !== null}
+                                onClick={() => act(o.id, () => acceptFoodPrice(o.id), 'Price accepted — IOU minted')}>
+                                Accept {money((o.price_cents ?? 0) / 100)}
+                              </Button>
+                              <Button size="sm" variant="ghost" className="h-6 px-2 text-xs" disabled={busy !== null}
+                                onClick={() => act(o.id, () => rejectFoodPrice(o.id), 'Bounced back to the runner')}>
+                                Bounce back
+                              </Button>
+                            </span>
                           )}
                         </div>
                       ))}
                     </div>
                   )}
-                  {!mine && accepting && !myOrder && <PlaceOrderBox busy={busy} onPlace={(item, note) => act(`order-${r.id}`, () => placeOrder(r.id, item, note), 'Order in')} />}
-                  {myOrder?.status === 'placed' && <p className="text-xs text-muted-foreground">Your order is in — runner sets the price.</p>}
+                  {!mine && accepting && !myOrder && <PlaceOrderBox busy={busy} onPlace={(item, quotedCents, note) => act(`order-${r.id}`, () => placeOrder(r.id, item, quotedCents, note), 'Order in')} />}
+                  {myOrder?.status === 'placed' && <p className="text-xs text-muted-foreground">Your order is in (quoted {money((myOrder.quoted_price_cents ?? 0) / 100)}) — runner confirms the real price.</p>}
+                  {myOrder?.status === 'price_review' && <p className="text-xs text-amber-600">Runner&apos;s price {money((myOrder.price_cents ?? 0) / 100)} is over your quote — accept or bounce it back above.</p>}
                   {myOrder?.status === 'confirmed' && <p className="text-xs"><Badge variant="secondary">Confirmed {money((myOrder.price_cents ?? 0) / 100)}</Badge> — settles from your payout.</p>}
                   {mine && r.status === 'open' && (
                     <div className="flex items-center gap-3">
@@ -891,12 +906,16 @@ const FoodRunForm: React.FC<{ shift: Shift; busy: string | null; onSubmit: (i: P
   );
 };
 
-const PlaceOrderBox: React.FC<{ busy: string | null; onPlace: (item: string, note?: string) => void }> = ({ busy, onPlace }) => {
+const PlaceOrderBox: React.FC<{ busy: string | null; onPlace: (item: string, quotedCents: number, note?: string) => void }> = ({ busy, onPlace }) => {
   const [item, setItem] = useState('');
+  const [price, setPrice] = useState('');
+  const p = cents(price);
   return (
     <div className="flex gap-2 pt-1">
       <Input placeholder="Your order — #4 no onions" value={item} onChange={(e) => setItem(e.target.value)} />
-      <Button size="sm" disabled={busy !== null || !item} onClick={() => { onPlace(item); setItem(''); }}>Add</Button>
+      <Input className="w-20" placeholder="$" inputMode="decimal" title="Menu price — the runner can't charge more than ~25% over this without your OK"
+        value={price} onChange={(e) => setPrice(e.target.value)} />
+      <Button size="sm" disabled={busy !== null || !item || !p || p <= 0} onClick={() => { onPlace(item, p!, undefined); setItem(''); setPrice(''); }}>Add</Button>
     </div>
   );
 };

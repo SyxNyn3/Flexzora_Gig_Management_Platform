@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import { FoodRun, FoodRunOrder } from '@/lib/types';
+import { FoodOrderStatus, FoodRun, FoodRunOrder } from '@/lib/types';
 
 /**
  * GrubRun — pooled food orders with a cutoff.
@@ -119,13 +119,13 @@ export async function declineRunHandoff(runId: string): Promise<Result<boolean>>
 
 // --- orders ---------------------------------------------------------------
 
-export async function placeOrder(runId: string, item: string, notes?: string): Promise<Result<FoodRunOrder | null>> {
+export async function placeOrder(runId: string, item: string, quotedPriceCents: number, notes?: string): Promise<Result<FoodRunOrder | null>> {
   try {
     const workerId = await myProfileId();
     if (!workerId) return fail(null, new Error('Not signed in'));
     const { data, error } = await supabase
       .from('food_run_orders')
-      .insert({ run_id: runId, worker_id: workerId, item, notes: notes ?? null })
+      .insert({ run_id: runId, worker_id: workerId, item, quoted_price_cents: quotedPriceCents, notes: notes ?? null })
       .select()
       .single();
     if (error) throw error;
@@ -145,13 +145,34 @@ export async function cancelOrder(orderId: string): Promise<Result<boolean>> {
   }
 }
 
-/** Runner confirms an order with the actual price — mints the food IOU. */
-export async function confirmOrder(orderId: string, priceCents: number): Promise<Result<boolean>> {
+/** Runner confirms an order with the actual price — mints the food IOU.
+ *  Above the quoted-price variance the server parks it in 'price_review'
+ *  for the orderer instead; the returned status drives the toast. */
+export async function confirmOrder(orderId: string, priceCents: number): Promise<Result<FoodOrderStatus | null>> {
   try {
-    const { error } = await supabase
-      .from('food_run_orders')
-      .update({ status: 'confirmed', price_cents: priceCents })
-      .eq('id', orderId);
+    const { data, error } = await supabase.rpc('confirm_food_order', { p_order: orderId, p_price_cents: priceCents });
+    if (error) throw error;
+    return ok(data as FoodOrderStatus);
+  } catch (e) {
+    return fail(null, e);
+  }
+}
+
+/** Orderer accepts an above-variance quote — the IOU mints now. */
+export async function acceptFoodPrice(orderId: string): Promise<Result<boolean>> {
+  try {
+    const { error } = await supabase.rpc('accept_food_price', { p_order: orderId });
+    if (error) throw error;
+    return ok(true);
+  } catch (e) {
+    return fail(false, e);
+  }
+}
+
+/** Orderer bounces an above-variance quote back to the runner for a re-quote. */
+export async function rejectFoodPrice(orderId: string): Promise<Result<boolean>> {
+  try {
+    const { error } = await supabase.rpc('reject_food_price', { p_order: orderId });
     if (error) throw error;
     return ok(true);
   } catch (e) {
