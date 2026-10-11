@@ -34,6 +34,33 @@ Multiple sessions work this repo in parallel. **Before starting any item, mark i
 - **Builder-2 lane (Company OS) — claimed: Builder-2 — working on it** (overnight self-drive, started 2026-10-10; works in `../flexzora-builder2` worktree, migrations from `20261018` — `20261017` is taken by the Connect-payouts WIP)
 - Everything below is unclaimed.
 
+## MORNING ITINERARY — lane assignments (2026-10-11)
+
+Overnight crew went quiet ~09:15 UTC after landing the full security core. Queue state: P0-RT has **4 HIGHs + 11 MEDs + 10 LOWs** left; 16 recovered-PRD features untouched; PR #81 (lockfile) awaits merge. Lane prompts below — each session claims its lane in Claims, then works top-down.
+
+### Lane A — Security Builder (strong model preferred)
+Work the remaining P0-RT items in this order — the top four are all the same class (company-side consent/mutability on money objects) and belong in ONE coherent migration:
+
+1. **Company-side HIGH batch** — #19 (board-resolve mints IOU without worker consent → fulfil-accept gate), #20 (`crew_iou` column immutability for company branch), #23 (`offered_rate` freeze post-confirmation), #51 (debtor void requires beneficiary consent). One migration + pgTAP per issue.
+2. **Ride-match MED batch** — #25 (`UNIQUE(rider, shift)`), #26 (company can't force-match), #27 (`seats_needed` frozen post-match) — same guard surface, one migration.
+3. Singles: #52 (GrubRun price lock at claim), #30 (booking check on crew-table inserts), #29 (SMS kind gated on status), #21 (`break_minutes >= 0`), #31 (alert dead-code — move alert into the BEFORE path), #50 (distance/conflict oracles → shared-party only), #48 (per-worker dedupe keyspace).
+4. LOWs in order: #54, #46, #42, #41, #40, #39, #35, #34, #33, #32.
+
+### Lane B — Feature Builder
+Recovered-PRD section, top-down: **Cert verification workflow** → **Shift templates** → **Auto-backfill cascade + no-show detection** → **Standby pools** → **Travel-time feasibility** → **W-9 vault** → **Rate guidance** → **Dispute queue** → **Earnings PDF** → rest as listed. Skip the two "design needed" items until the list is clear.
+
+### Reviewer lane
+- **Merge PR #81** (lockfile regen — fixes #67, restores `npm ci` deploys) once CI green.
+- Gate every incoming fix PR: regression test must prove the exploit dead, not just compile.
+- Sweep: verify each merged P0-RT fix against live `main` (re-run the exploit mentally/against code), file verification comments.
+
+### Challenger lane
+- **Regression pass on merged fixes**: on current `main`, re-attack #45, #28, #22, #24, #47, #49, #43, #38, #37, #44 — confirm each is actually dead, file issues if any fix is bypassable.
+- Then fresh red-team on the *newest* surface (untouched so far): Copilot whitelist RPC, Import Wizard `commit_import_job`, ICS capability tokens, broadcast audience resolver, `ops_tasks`/`company_alerts` sweeps.
+
+### Debt additions
+- **npm audit dep-review** — 44 vulns (3 critical, mostly transitive) surfaced by the lockfile regen; needs deliberate triage, not `audit fix --force`.
+
 ## Company OS — overnight sprint (see `docs/VISION_COMPANY_OS.md` — spec + competitor findings)
 - [x] AI Upload Wizard: `import_jobs`/`import_rows`, XLSX/CSV/PDF parse → LLM entity mapping (OmniRoute `localhost:20128/v1`, heuristic fallback) → review screen → bulk import — **in PR #53: Builder-2** (`feat/import-wizard` on `20261018000000_import_wizard.sql`: drop→map→ONE review screen→commit; `commit_import_job` RPC captures per-row errors, fix-and-retry CSV; targets venues/call-sheets→event/roster-contacts (staff reserved); LLM merged over heuristic mapper, user edits win; time-only calls inherit event date; imported shifts join the roster wave like `createShift`; venue lat/lng now optional + fixed a `validate_clock_event` NULL-geo hole that verified punches with no GPS check; `pdfjs-dist`+`read-excel-file` lazy in the `/import` chunk; vitest on parse/mapping)
 - [x] Company Copilot: `company_docs` + copilot panel — ask-your-data queries + action previews (broadcast drafts, schedule lookups). Flag `VITE_ENABLE_COPILOT` — **in PR #55: Builder-2** (`feat/company-copilot` on `20261019000000_company_copilot.sql`: `copilot_query` whitelisted SECURITY DEFINER catalog re-checking owns_company; heuristic router first, OmniRoute only disambiguates kind+ids and never sees the DB; actions render as preview cards — save-doc confirms to `company_docs`, broadcast draft copies out until the broadcast lane lands; results snapshot onto `copilot_messages`; flag gates nav + `/copilot`)
