@@ -16,7 +16,8 @@ import RosterBoard from '@/components/marketplace/company/RosterBoard';
 import ShiftForm from '@/components/marketplace/company/ShiftForm';
 import CandidatesPanel from '@/components/marketplace/company/CandidatesPanel';
 import BudgetSummary from '@/components/marketplace/company/BudgetSummary';
-import { ArrowLeft, MapPin, Plus, Rocket, Users, Timer, UserX } from 'lucide-react';
+import StaffPanel from '@/components/staff/StaffPanel';
+import { ArrowLeft, MapPin, Plus, Rocket, Users, Timer, UserX, UserRound } from 'lucide-react';
 
 const EventDetailPage: React.FC = () => {
   const { eventId } = useParams<{ eventId: string }>();
@@ -216,6 +217,20 @@ const EventDetailPage: React.FC = () => {
           </CardContent>
         </Card>
       </div>
+
+      {company && (
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="font-semibold flex items-center gap-2">
+                <UserRound className="w-4 h-4" /> Staff on this event
+              </h2>
+              <p className="text-xs text-muted-foreground">Internal team — PMs, site leads, coordinators</p>
+            </div>
+            <StaffPanel eventId={ev.id} companyId={company.id} />
+          </CardContent>
+        </Card>
+      )}
 
       <Dialog open={shiftDialog.open} onOpenChange={(o) => setShiftDialog({ open: o })}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">

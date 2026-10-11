@@ -44,6 +44,7 @@ const Navbar: React.FC = () => {
     { path: '/timesheets', label: 'Timesheets', icon: Calendar },
     { path: '/roster', label: 'Roster', icon: Users },
     { path: '/import', label: 'Import', icon: Upload },
+    { path: '/staff', label: 'Staff', icon: Users },
     ...(COPILOT_ENABLED ? [{ path: '/copilot', label: 'Copilot', icon: Sparkles }] : []),
     { path: '/gigs', label: 'Gigs', icon: Briefcase },
     { path: '/workforce', label: 'Workforce', icon: Users },
