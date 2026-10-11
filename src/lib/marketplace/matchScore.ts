@@ -38,7 +38,7 @@ export interface MatchWorkerInput {
   avgRating: number | null;        // 1..5
   reliabilityRate: number | null;  // 0..1
   completedShifts: number;
-  rosterTier: 'core' | 'preferred' | 'blocked' | null;
+  rosterTier: 'core' | 'preferred' | 'blocked' | 'standby' | null;
 }
 
 export interface MatchShiftInput
@@ -142,6 +142,8 @@ export function rosterScore(worker: MatchWorkerInput): number {
   switch (worker.rosterTier) {
     case 'core':
       return 100;
+    case 'standby':
+      return 90;
     case 'preferred':
       return 80;
     default:
