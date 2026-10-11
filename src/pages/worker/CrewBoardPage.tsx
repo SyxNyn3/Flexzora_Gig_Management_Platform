@@ -9,7 +9,8 @@ import { joinRide, withdrawRideRequest, cancelRideOffer, postRideOffer, setRideF
 import { joinPool, leavePool, cancelLodgingPool, postLodgingPool } from '@/lib/crew/lodging';
 import { placeOrder, cancelOrder, confirmOrder, postFoodRun, updateFoodRunStatus, isAcceptingOrders } from '@/lib/crew/food';
 import { postToBoard, resolvePost, closePost } from '@/lib/crew/board';
-import { iouCapacity } from '@/lib/crew/iouMath';
+import { iouCapacity, bailKeptCents, DEFAULT_BAIL_POLICY } from '@/lib/crew/iouMath';
+import { fetchBailPolicy } from '@/lib/crew/iou';
 import { markAllAlertsRead } from '@/lib/crew/alerts';
 import { postSwapRequest, cancelSwapRequest, claimSwap, withdrawClaim, acceptClaim, rejectClaim } from '@/lib/crew/swap';
 import { hasPushSubscription, pushSupported, subscribeToPush, unsubscribeFromPush } from '@/lib/push';
@@ -28,6 +29,7 @@ import {
   Repeat2,
 } from 'lucide-react';
 import { CrewPostCategory, CrewPostDirection, LastRideOfferParams, RideBuddy, Shift } from '@/lib/types';
+import type { BailPolicy } from '@/lib/crew/iouMath';
 
 const cents = (v: string): number | null => {
   const n = parseFloat(v);
@@ -60,9 +62,11 @@ const CrewBoardPage: React.FC = () => {
   const [buddies, setBuddies] = useState<RideBuddy[]>([]);
   const [lastOffer, setLastOffer] = useState<LastRideOfferParams | null>(null);
   const [buddyTick, setBuddyTick] = useState(0);
+  const [bailPolicy, setBailPolicy] = useState<BailPolicy>(DEFAULT_BAIL_POLICY);
 
   useEffect(() => {
     hasPushSubscription().then(setPushOn);
+    fetchBailPolicy().then(({ data }) => setBailPolicy(data));
   }, []);
 
   useEffect(() => {
@@ -360,6 +364,11 @@ const CrewBoardPage: React.FC = () => {
                         {o.departure_area ?? 'TBD'} {o.departure_at ? `· leaves ${fmt(o.departure_at)}` : ''}
                       </p>
                       {o.notes && <p className="text-xs text-muted-foreground mt-1 bg-muted rounded p-2">{o.notes}</p>}
+                      {matched && shift && o.gas_share_cents > 0 && bailKeptCents(shift.starts_at, o.gas_share_cents * (myRequest?.seats_needed ?? 1), bailPolicy) > 0 && (
+                        <p className="text-xs text-amber-600 mt-1">
+                          Inside the {bailPolicy.windowHours}h bail window — leaving keeps {money(bailKeptCents(shift.starts_at, o.gas_share_cents * (myRequest?.seats_needed ?? 1), bailPolicy) / 100)} of your share committed.
+                        </p>
+                      )}
                     </div>
                     <div className="shrink-0">
                       {mine ? (
@@ -369,7 +378,11 @@ const CrewBoardPage: React.FC = () => {
                           </Button>
                         )
                       ) : matched ? (
-                        <Button size="sm" variant="outline" disabled={busy !== null} onClick={() => act(o.id, () => withdrawRideRequest(myRequest!.id), 'Seat released')}>
+                        <Button size="sm" variant="outline" disabled={busy !== null}
+                          onClick={() => act(o.id, () => withdrawRideRequest(myRequest!.id),
+                            shift && bailKeptCents(shift.starts_at, o.gas_share_cents * (myRequest?.seats_needed ?? 1), bailPolicy) > 0
+                              ? 'Seat released — partial share stays committed'
+                              : 'Seat released')}>
                           Bail out
                         </Button>
                       ) : o.status === 'open' && !full && (
@@ -431,6 +444,11 @@ const CrewBoardPage: React.FC = () => {
                         <p className="text-xs text-muted-foreground mt-1">In: {roster.map((m) => m.worker?.full_name ?? '—').join(', ')}</p>
                       )}
                       {p.notes && <p className="text-xs text-muted-foreground mt-1 bg-muted rounded p-2">{p.notes}</p>}
+                      {myMembership && shift && p.share_cents > 0 && bailKeptCents(shift.starts_at, p.share_cents * myMembership.spots_needed, bailPolicy) > 0 && (
+                        <p className="text-xs text-amber-600 mt-1">
+                          Inside the {bailPolicy.windowHours}h bail window — leaving keeps {money(bailKeptCents(shift.starts_at, p.share_cents * myMembership.spots_needed, bailPolicy) / 100)} of your share committed.
+                        </p>
+                      )}
                     </div>
                     <div className="shrink-0">
                       {mine ? (
@@ -438,7 +456,11 @@ const CrewBoardPage: React.FC = () => {
                           <Button size="sm" variant="outline" disabled={busy !== null} onClick={() => act(p.id, () => cancelLodgingPool(p.id), 'Pool cancelled')}>Cancel</Button>
                         )
                       ) : myMembership ? (
-                        <Button size="sm" variant="outline" disabled={busy !== null} onClick={() => act(p.id, () => leavePool(myMembership.id), 'Left the bunk — share voided')}>Leave</Button>
+                        <Button size="sm" variant="outline" disabled={busy !== null}
+                          onClick={() => act(p.id, () => leavePool(myMembership.id),
+                            shift && bailKeptCents(shift.starts_at, p.share_cents * myMembership.spots_needed, bailPolicy) > 0
+                              ? 'Left the bunk — partial share stays committed'
+                              : 'Left the bunk — share voided')}>Leave</Button>
                       ) : p.status === 'open' && (
                         <Button size="sm" disabled={busy !== null}
                           onClick={() => act(p.id, () => joinPool(p.id), p.share_cents > 0 ? `Bunk taken — ${money(p.share_cents / 100)} share committed` : 'Bunk taken')}>

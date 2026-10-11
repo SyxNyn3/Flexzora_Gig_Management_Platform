@@ -7,6 +7,30 @@ import { CrewIOU } from '@/lib/types';
 
 export const IOU_CAP_PCT = 25;
 
+export interface BailPolicy {
+  /** hours before shift start during which a voluntary bail keeps share */
+  windowHours: number;
+  /** percent of the IOU that stays committed on a late bail */
+  keepPct: number;
+}
+
+export const DEFAULT_BAIL_POLICY: BailPolicy = { windowHours: 24, keepPct: 50 };
+
+/**
+ * Mirrors bail_kept_cents() in 20261114000000_bail_fairness.sql: a voluntary
+ * bail inside the window keeps keepPct of the share; outside it voids fully.
+ */
+export function bailKeptCents(
+  shiftStartsAt: string,
+  amountCents: number,
+  policy: BailPolicy = DEFAULT_BAIL_POLICY,
+  now: Date = new Date(),
+): number {
+  const ms = new Date(shiftStartsAt).getTime() - now.getTime();
+  if (ms > policy.windowHours * 3_600_000) return 0;
+  return Math.round((amountCents * policy.keepPct) / 100);
+}
+
 export interface IouCapacity {
   committedCents: number;
   capCents: number;

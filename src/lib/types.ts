@@ -275,6 +275,11 @@ export interface Database {
         Insert: Omit<CrewAlert, 'id' | 'created_at' | 'read_at'>;
         Update: Partial<Omit<CrewAlert, 'id' | 'created_at'>>;
       };
+      platform_policies: {
+        Row: PlatformPolicy;
+        Insert: PlatformPolicy;
+        Update: Partial<PlatformPolicy>;
+      };
       cert_gear_items: {
         Row: CertGearItem;
         Insert: CertGearItem;
@@ -1408,6 +1413,13 @@ export interface FoodRunOrder {
   created_at: string;
   updated_at: string;
   worker?: Profile;
+}
+
+// --- Platform policies --------------------------------------------------------
+export interface PlatformPolicy {
+  key: string;
+  value: Record<string, unknown>;
+  updated_at: string;
 }
 
 // --- SmartAlerts -------------------------------------------------------------

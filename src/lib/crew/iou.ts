@@ -1,8 +1,8 @@
 import { supabase } from '@/lib/supabase';
 import { CrewIOU, CrewIOUKind, CrewIOUSettleVia } from '@/lib/types';
 
-export { IOU_CAP_PCT, iouCapCents, selectSettleableIous, iouCapacity } from './iouMath';
-export type { IouCapacity } from './iouMath';
+export { IOU_CAP_PCT, iouCapCents, selectSettleableIous, iouCapacity, bailKeptCents, DEFAULT_BAIL_POLICY } from './iouMath';
+export type { IouCapacity, BailPolicy } from './iouMath';
 
 /**
  * Crew OS IOU ledger.
@@ -102,6 +102,25 @@ export async function voidIou(iouId: string): Promise<Result<boolean>> {
     return ok(true);
   } catch (e) {
     return fail(false, e);
+  }
+}
+
+/** The platform bail policy (window + keep %) — readable by any signed-in user. */
+export async function fetchBailPolicy(): Promise<Result<{ windowHours: number; keepPct: number }>> {
+  try {
+    const { data, error } = await supabase
+      .from('platform_policies')
+      .select('value')
+      .eq('key', 'bail')
+      .maybeSingle();
+    if (error) throw error;
+    const v = (data?.value ?? {}) as { window_hours?: number; keep_pct?: number };
+    return ok({
+      windowHours: v.window_hours ?? DEFAULT_BAIL_POLICY.windowHours,
+      keepPct: v.keep_pct ?? DEFAULT_BAIL_POLICY.keepPct,
+    });
+  } catch (e) {
+    return fail({ windowHours: DEFAULT_BAIL_POLICY.windowHours, keepPct: DEFAULT_BAIL_POLICY.keepPct }, e);
   }
 }
 
