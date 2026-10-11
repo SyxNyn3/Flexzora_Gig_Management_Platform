@@ -35,7 +35,7 @@ Two sessions work this repo in parallel. **Before starting any item, mark it**: 
 - Everything below is unclaimed.
 
 ## Company OS — overnight sprint (see `docs/VISION_COMPANY_OS.md` — spec + competitor findings)
-- [ ] AI Upload Wizard: `import_jobs`/`import_rows`, XLSX/CSV/PDF parse → LLM entity mapping (OmniRoute `localhost:20128/v1`, heuristic fallback) → review screen → bulk import — **claimed: Builder-2 — working on it**
+- [x] AI Upload Wizard: `import_jobs`/`import_rows`, XLSX/CSV/PDF parse → LLM entity mapping (OmniRoute `localhost:20128/v1`, heuristic fallback) → review screen → bulk import — **in PR #53: Builder-2** (`feat/import-wizard` on `20261018000000_import_wizard.sql`: drop→map→ONE review screen→commit; `commit_import_job` RPC captures per-row errors, fix-and-retry CSV; targets venues/call-sheets→event/roster-contacts (staff reserved); LLM merged over heuristic mapper, user edits win; time-only calls inherit event date; imported shifts join the roster wave like `createShift`; venue lat/lng now optional + fixed a `validate_clock_event` NULL-geo hole that verified punches with no GPS check; `pdfjs-dist`+`read-excel-file` lazy in the `/import` chunk; vitest on parse/mapping)
 - [ ] Company Copilot: `company_docs` + copilot panel — ask-your-data queries + action previews (broadcast drafts, schedule lookups). Flag `VITE_ENABLE_COPILOT`
 - [ ] Staff layer: `staff_members`/`staff_assignments` — PMs/coordinators on rosters, crew+staff unified show view
 - [ ] Broadcast messaging: compose to crew AND staff (per-event/shift/all) + delivery log

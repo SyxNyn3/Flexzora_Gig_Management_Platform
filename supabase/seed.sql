@@ -193,6 +193,32 @@ begin
   on conflict do nothing;
 
   -- ------------------------------------------------------------------
+  -- Company OS demo: a finished roster-contacts import in the history —
+  -- Alex matched her account and imported; "Sam Rivera" (no Flexzora
+  -- account) came back as a fixable error row.
+  -- ------------------------------------------------------------------
+  insert into import_jobs (id, company_id, created_by, target, file_name, file_type,
+                         status, source_columns, mapping, mapping_source, stats, committed_at)
+  values ('66666666-0000-4000-8000-000000000001', v_company, p_company_user, 'roster_contacts',
+          'crew-roster-fall.csv', 'csv', 'committed',
+          '{Name,Email,Phone,Tier}'::text[],
+          '{"full_name":"Name","email":"Email","phone":"Phone","tier":"Tier"}'::jsonb,
+          'heuristic',
+          '{"total":2,"imported":1,"error":1}'::jsonb,
+          now() - interval '2 days')
+  on conflict (id) do nothing;
+
+  insert into import_rows (job_id, row_index, raw, mapped, status, message, entity_id)
+  values
+    ('66666666-0000-4000-8000-000000000001', 0,
+     '{"Name":"Alex Moreno","Email":"demo-worker@flexzora.dev","Phone":"+1 415 555 0101","Tier":"core"}'::jsonb,
+     '{"full_name":"Alex Moreno","email":"demo-worker@flexzora.dev","phone":"+1 415 555 0101","tier":"core"}'::jsonb,
+     'imported', 'imported', null),
+    ('66666666-0000-4000-8000-000000000001', 1,
+     '{"Name":"Sam Rivera","Email":"sam.rivera@example.com","Phone":"+1 415 555 0199","Tier":"preferred"}'::jsonb,
+     '{"full_name":"Sam Rivera","email":"sam.rivera@example.com","phone":"+1 415 555 0199","tier":"preferred"}'::jsonb,
+     'error', 'No Flexzora worker account for sam.rivera@example.com — invite them first (or import as staff)', null)
+  on conflict (job_id, row_index) do nothing;
   -- Crew OS demo: Jordan posts a ride offer; Alex's matched request
   -- makes the sync trigger mint his gas-share IOU automatically.
   -- Jordan already settled a manual burrito-run debt to Alex.

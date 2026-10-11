@@ -33,6 +33,7 @@ const EventsPage = lazy(() => import('@/pages/company/EventsPage'));
 const EventDetailPage = lazy(() => import('@/pages/company/EventDetailPage'));
 const TimesheetApprovalPage = lazy(() => import('@/pages/company/TimesheetApprovalPage'));
 const RosterPage = lazy(() => import('@/pages/company/RosterPage'));
+const ImportPage = lazy(() => import('@/pages/company/ImportPage'));
 const ShiftMarketplacePage = lazy(() => import('@/pages/worker/ShiftMarketplacePage'));
 const CrewBoardPage = lazy(() => import('@/pages/worker/CrewBoardPage'));
 const PayoutsPage = lazy(() => import('@/pages/worker/PayoutsPage'));
@@ -371,6 +372,16 @@ const AppRoutes: React.FC = () => {
             <ProtectedRoute>
               <Layout>
                 <RosterPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/import"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <ImportPage />
               </Layout>
             </ProtectedRoute>
           }

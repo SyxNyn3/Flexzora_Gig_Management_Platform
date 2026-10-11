@@ -155,6 +155,16 @@ export interface Database {
         Insert: Omit<Payout, 'id' | 'created_at' | 'updated_at' | 'invoice'>;
         Update: Partial<Omit<Payout, 'id' | 'created_at' | 'updated_at' | 'invoice'>>;
       };
+      import_jobs: {
+        Row: ImportJob;
+        Insert: Omit<ImportJob, 'id' | 'created_at' | 'committed_at'>;
+        Update: Partial<Omit<ImportJob, 'id' | 'created_at' | 'company_id' | 'created_by'>>;
+      };
+      import_rows: {
+        Row: ImportRow;
+        Insert: Omit<ImportRow, 'id' | 'created_at' | 'updated_at' | 'entity_id'> & { id?: string; entity_id?: string | null };
+        Update: Partial<Omit<ImportRow, 'id' | 'created_at' | 'job_id'>>;
+      };
       crew_iou: {
         Row: CrewIOU;
         Insert: Omit<CrewIOU, 'id' | 'created_at' | 'updated_at'>;
@@ -597,8 +607,9 @@ export interface Venue {
   city?: string;
   region?: string;
   country?: string;
-  latitude: number;
-  longitude: number;
+  /** Optional — imported venues may lack coords; geo/clock-in degrade to unverified. */
+  latitude?: number | null;
+  longitude?: number | null;
   geofence_radius_m: number;
   load_in_notes?: string;
   overnight_parking: boolean;
@@ -846,6 +857,58 @@ export interface VenueFormData {
   latitude: number;
   longitude: number;
   geofence_radius_m: number;
+}
+
+// ---------------------------------------------------------------------------
+// Company OS — AI Upload Wizard
+// ---------------------------------------------------------------------------
+export type ImportTarget = 'venues' | 'shifts' | 'roster_contacts' | 'staff';
+export type ImportJobStatus =
+  | 'uploaded'
+  | 'mapped'
+  | 'reviewing'
+  | 'committing'
+  | 'committed'
+  | 'failed'
+  | 'cancelled';
+export type ImportRowStatus = 'pending' | 'ready' | 'warning' | 'error' | 'skipped' | 'imported';
+
+export interface ImportJob {
+  id: string;
+  company_id: string;
+  created_by: string;
+  target: ImportTarget;
+  file_name: string;
+  file_type: string;
+  status: ImportJobStatus;
+  source_columns: string[];
+  mapping: Record<string, string>;
+  mapping_source?: string | null;
+  event_id?: string | null;
+  stats: {
+    total?: number;
+    imported?: number;
+    ready?: number;
+    warning?: number;
+    error?: number;
+    skipped?: number;
+  };
+  error?: string | null;
+  created_at: string;
+  committed_at?: string | null;
+}
+
+export interface ImportRow {
+  id: string;
+  job_id: string;
+  row_index: number;
+  raw: Record<string, string>;
+  mapped: Record<string, string>;
+  status: ImportRowStatus;
+  message?: string | null;
+  entity_id?: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 // --- Crew OS ---------------------------------------------------------------
