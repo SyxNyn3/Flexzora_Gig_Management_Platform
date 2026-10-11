@@ -208,8 +208,13 @@ BEGIN
       'amount', -(v_take_cents / 100.0),
       'iou_id', v_iou.id);
 
-    v_transfers := v_transfers || jsonb_build_object(
-      'iou', v_iou.id, 'beneficiary', v_iou.beneficiary_worker_id, 'cents', v_take_cents);
+    -- only a worker beneficiary can receive a Connect transfer; legacy
+    -- free-text `beneficiary` IOUs still settle (their cents stay in escrow
+    -- as before this feature existed)
+    IF v_iou.beneficiary_worker_id IS NOT NULL THEN
+      v_transfers := v_transfers || jsonb_build_object(
+        'iou', v_iou.id, 'beneficiary', v_iou.beneficiary_worker_id, 'cents', v_take_cents);
+    END IF;
 
     v_iou_room := v_iou_room - v_take_cents;
     v_iou_cents := v_iou_cents + v_take_cents;
