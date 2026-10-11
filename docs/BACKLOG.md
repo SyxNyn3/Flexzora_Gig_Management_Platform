@@ -60,19 +60,19 @@ Multiple sessions work this repo in parallel. **Before starting any item, mark i
 
 Challenger-lane findings (issues labeled `challenger`, plus #67 reviewer). Each fix = migration + RLS/trigger + a regression test that proves the exploit is dead. **#45 is CRITICAL — do first.**
 
-- [ ] **#45 CRITICAL — role self-assignment → admin/company takeover.** `handle_new_user` accepts `raw_user_meta_data.role`; `profiles` UPDATE lets a user flip their own role. Fix: allowlist metadata keys, deny role changes via RLS/trigger, role set only server-side.
-- [ ] **#47 HIGH — `worker_sensitive` self-writable payout fields.** Worker can set `stripe_connect_account_id`/`payouts_enabled` → payout redirection on session compromise. Fix: revoke UPDATE on those columns; service-role writes only.
-- [ ] **#49 HIGH — company DELETE cascades wipe timesheets/assignments.** Deleting a shift/event erases pay history + skips the 'cancelled' notification path. Fix: revoke DELETE; `status='cancelled'` transition only.
-- [ ] **#43 HIGH — live-shift terms editable after confirmation.** Company can change `hourly_rate`/`headcount`/certs with confirmed crew attached → silent pay changes. Fix: lock terms once first assignment is confirmed (trigger) or version the shift.
-- [ ] **#38 HIGH — worker self-flips application to 'accepted'.** RLS allows own-row status updates. Fix: transition guard — worker moves limited to apply/withdraw.
-- [ ] **#37 HIGH — reviews allow self-reviews/review-bombing**; `gig_id NULL` bypasses the unique constraint. Fix: participation trigger + `gig_id NOT NULL`.
-- [ ] **#44 HIGH — `lookup_user_by_username_or_email` anon-callable** via PostgREST → account enumeration bypassing the edge-function email guard. Fix: revoke anon EXECUTE / auth-only.
+- [x] **#45 CRITICAL — role self-assignment → admin/company takeover.** `handle_new_user` accepts `raw_user_meta_data.role`; `profiles` UPDATE lets a user flip their own role. Fix: allowlist metadata keys, deny role changes via RLS/trigger, role set only server-side.
+- [x] **#47 HIGH — `worker_sensitive` self-writable payout fields.** Worker can set `stripe_connect_account_id`/`payouts_enabled` → payout redirection on session compromise. Fix: revoke UPDATE on those columns; service-role writes only.
+- [x] **#49 HIGH — company DELETE cascades wipe timesheets/assignments.** Deleting a shift/event erases pay history + skips the 'cancelled' notification path. Fix: revoke DELETE; `status='cancelled'` transition only.
+- [x] **#43 HIGH — live-shift terms editable after confirmation.** Company can change `hourly_rate`/`headcount`/certs with confirmed crew attached → silent pay changes. Fix: lock terms once first assignment is confirmed (trigger) or version the shift.
+- [x] **#38 HIGH — worker self-flips application to 'accepted'.** RLS allows own-row status updates. Fix: transition guard — worker moves limited to apply/withdraw.
+- [x] **#37 HIGH — reviews allow self-reviews/review-bombing**; `gig_id NULL` bypasses the unique constraint. Fix: participation trigger + `gig_id NOT NULL`.
+- [x] **#44 HIGH — `lookup_user_by_username_or_email` anon-callable** via PostgREST → account enumeration bypassing the edge-function email guard. Fix: revoke anon EXECUTE / auth-only.
 - [ ] **#51 HIGH — debtor can void own auto-minted IOU** (board resolve, ride match, swap sweetener). Fix: void requires beneficiary consent or the shift-cancel path only.
 - [ ] **#19 HIGH — board-resolve mints payout-deduction IOU without worker consent** (verified live; PR #11 merged without the fix — highest-severity live item). Fix: resolve requires fulfiller confirmation, or IOU only mints on explicit accept.
 - [ ] **#20 HIGH — `crew_iou` UPDATE has no column immutability.** Company (owns_event) can rewrite `beneficiary_worker_id`/`amount_cents`/`status` on shift-anchored IOUs incl. payout-deductions (verified). Fix: trigger restricting mutable cols, or company read-only + service-writes.
 - [ ] **#23 HIGH — company can rewrite `offered_rate` post-confirmation.** `guard_assignment_update()` protects offer terms on the worker branch only; `approve_timesheet` pays `COALESCE(offered_rate, hourly_rate)` (verified). Fix: immutable once accepted/offered.
-- [ ] **#22 HIGH — ShiftSwap mutable fields repoint confirmed bookings.** **In-flight: held on PR #15.**
-- [ ] **#24 HIGH — payout-release TOCTOU/double-transfer + post-transfer-update failure retries.** **In-flight: held on PR #16** (needs atomic claim + idempotency key).
+- [x] **#22 HIGH — ShiftSwap mutable fields repoint confirmed bookings.** — **fixed in PR #15, merged**
+- [x] **#24 HIGH — payout-release TOCTOU/double-transfer + post-transfer-update failure retries.** — **fixed in PR #16, merged**
 - [ ] #50 MED — `worker_distances`/`worker_conflicts` callable by any user on any worker → location triangulation + availability oracle. Restrict to parties sharing an assignment/event.
 - [ ] #52 MED — GrubRun runner confirms at arbitrary price → inflated payout-deduction IOU. Fix: price locked at claim time + orderer confirm above a variance threshold.
 - [ ] #48 MED — `crew_alerts.dedupe_key` globally unique + self-insertable → pre-squatting suppresses another worker's briefings. Fix: per-worker keyspace + service-insert only.
@@ -82,7 +82,7 @@ Challenger-lane findings (issues labeled `challenger`, plus #67 reviewer). Each 
 - [ ] #29 MED — `notify-assignment` `kind` not gated on assignment status → party can fire misleading SMS kinds (verified live since PR #7).
 - [ ] #21 MED — worker-editable `break_minutes` has no `>= 0` floor → negative breaks inflate payable hours (verified, pre-existing).
 - [ ] #30 MED — `ride_requests` INSERT only checks self-ownership → request squatting + phantom IOUs on shifts the worker isn't booked on (verified).
-- [ ] #28 MED — settle loop `EXIT WHEN` on first over-cap IOU **deadlocks the whole queue** (worse than filed: EXIT not skip; over-cap IOU is permanent) (verified).
+- [x] #28 MED — settle loop `EXIT WHEN` on first over-cap IOU **deadlocks the whole queue** (worse than filed: EXIT not skip; over-cap IOU is permanent) (verified).
 - [ ] #31 MED — "Ride cancelled" alert is dead code: BEFORE cascade flips requests to 'open' before the AFTER alert trigger reads them (verified).
 - [ ] #54 LOW — withdraw confirmed booking minutes before call, no consequence. Add late-cancel flag → reliability score.
 - [ ] #46 LOW — `resend-waitlist-verification` unthrottled → email bomb. Add rate limit.
