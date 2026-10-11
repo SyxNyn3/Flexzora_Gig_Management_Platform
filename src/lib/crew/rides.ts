@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import { RideOffer, RideRequest } from '@/lib/types';
+import { LastRideOfferParams, RideBuddy, RideOffer, RideRequest } from '@/lib/types';
 
 /**
  * CrewPool rides — carpools to a shift.
@@ -169,6 +169,28 @@ export async function listRideBoard(shiftId: string): Promise<Result<{ offers: R
     return ok({ offers: (offers.data ?? []) as RideOffer[], requests: (requests.data ?? []) as RideRequest[] });
   } catch (e) {
     return fail(empty, e);
+  }
+}
+
+/** Past co-riders annotated for this shift — the "same car as last time" list. */
+export async function listRideBuddies(shiftId: string): Promise<Result<RideBuddy[]>> {
+  try {
+    const { data, error } = await supabase.rpc('worker_ride_buddies', { p_shift_id: shiftId });
+    if (error) throw error;
+    return ok((data ?? []) as RideBuddy[]);
+  } catch (e) {
+    return fail([], e);
+  }
+}
+
+/** The caller's most recent live offer parameters — pre-fill for "offer again". */
+export async function fetchMyLastOfferParams(): Promise<Result<LastRideOfferParams | null>> {
+  try {
+    const { data, error } = await supabase.rpc('my_last_ride_offer');
+    if (error) throw error;
+    return ok((data?.[0] ?? null) as LastRideOfferParams | null);
+  } catch (e) {
+    return fail(null, e);
   }
 }
 

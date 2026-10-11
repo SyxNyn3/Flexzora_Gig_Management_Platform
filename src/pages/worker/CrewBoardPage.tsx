@@ -5,7 +5,7 @@ import { format } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCrewBoard, useShift } from '@/hooks/useCrew';
 import { useWorkerAssignments } from '@/hooks/useMarketplace';
-import { joinRide, withdrawRideRequest, cancelRideOffer, postRideOffer, setRideFlags } from '@/lib/crew/rides';
+import { joinRide, withdrawRideRequest, cancelRideOffer, postRideOffer, setRideFlags, listRideBuddies, fetchMyLastOfferParams } from '@/lib/crew/rides';
 import { joinPool, leavePool, cancelLodgingPool, postLodgingPool } from '@/lib/crew/lodging';
 import { placeOrder, cancelOrder, confirmOrder, acceptOrderPrice, postFoodRun, updateFoodRunStatus, isAcceptingOrders } from '@/lib/crew/food';
 import { postToBoard, resolvePost, closePost, acceptPostDebt } from '@/lib/crew/board';
@@ -27,7 +27,7 @@ import {
   MapPin, Clock, Users, Wallet, HandHelping, CircleAlert, BellRing, Backpack, Navigation, ParkingSquare,
   Repeat2,
 } from 'lucide-react';
-import { CrewPostCategory, CrewPostDirection, Shift } from '@/lib/types';
+import { CrewPostCategory, CrewPostDirection, LastRideOfferParams, RideBuddy, Shift } from '@/lib/types';
 
 const cents = (v: string): number | null => {
   const n = parseFloat(v);
@@ -57,10 +57,19 @@ const CrewBoardPage: React.FC = () => {
   const assignments = useWorkerAssignments(profile?.id);
   const [busy, setBusy] = useState<string | null>(null);
   const [pushOn, setPushOn] = useState<boolean | null>(null);
+  const [buddies, setBuddies] = useState<RideBuddy[]>([]);
+  const [lastOffer, setLastOffer] = useState<LastRideOfferParams | null>(null);
+  const [buddyTick, setBuddyTick] = useState(0);
 
   useEffect(() => {
     hasPushSubscription().then(setPushOn);
   }, []);
+
+  useEffect(() => {
+    if (!shiftId) return;
+    listRideBuddies(shiftId).then(({ data }) => setBuddies(data));
+    fetchMyLastOfferParams().then(({ data }) => setLastOffer(data));
+  }, [shiftId, buddyTick]);
 
   const shift = shiftQ.data ?? undefined;
   const myAssignment = useMemo(
@@ -101,6 +110,7 @@ const CrewBoardPage: React.FC = () => {
     toast.success(okMsg);
     board.refetch();
     assignments.refetch();
+    setBuddyTick((t) => t + 1);
   };
 
   const unreadAlerts = board.data.alerts.filter((a) => !a.read_at);
@@ -183,7 +193,8 @@ const CrewBoardPage: React.FC = () => {
                   {a.kind === 'gear' && <Backpack className="w-3.5 h-3.5" />}
                   {a.kind === 'parking' && <ParkingSquare className="w-3.5 h-3.5" />}
                   {a.kind === 'departure' && <Navigation className="w-3.5 h-3.5" />}
-                  {!['gear', 'parking', 'departure'].includes(a.kind) && <CircleAlert className="w-3.5 h-3.5" />}
+                  {a.kind === 'ride_buddy' && <Car className="w-3.5 h-3.5" />}
+                  {!['gear', 'parking', 'departure', 'ride_buddy'].includes(a.kind) && <CircleAlert className="w-3.5 h-3.5" />}
                   {a.title}
                 </p>
                 <p className="text-xs whitespace-pre-line mt-0.5">{a.body}</p>
@@ -300,6 +311,33 @@ const CrewBoardPage: React.FC = () => {
 
         {/* ----------------------------- RIDES ----------------------------- */}
         <TabsContent value="rides" className="space-y-3 mt-4">
+          {buddies.some((b) => b.buddy_confirmed) && (
+            <Card>
+              <CardContent className="p-4 space-y-2">
+                <p className="text-sm font-semibold flex items-center gap-1.5">
+                  <Car className="w-4 h-4" /> Same car as last time?
+                </p>
+                {buddies.filter((b) => b.buddy_confirmed).map((b) => (
+                  <div key={b.buddy_worker_id} className="flex items-center justify-between gap-3 text-sm">
+                    <p className="min-w-0 truncate">
+                      <span className="font-medium">{b.buddy_name}</span>
+                      <span className="text-muted-foreground">
+                        {' '}— {b.i_drove_last ? 'rode with you' : 'drove you'} {b.rides_together === 1 ? 'once' : `${b.rides_together}×`}
+                        {!b.buddy_offer_id && ' · on this call, no seats posted yet'}
+                      </span>
+                    </p>
+                    {b.buddy_offer_id && (
+                      <Button size="sm" disabled={busy !== null || !!myRequest}
+                        title={myRequest ? 'You already have a ride request' : undefined}
+                        onClick={() => act(b.buddy_worker_id, () => joinRide(b.buddy_offer_id!, { shiftId: shiftId! }), `Riding with ${b.buddy_name} again`)}>
+                        Ride with {b.buddy_name.split(' ')[0] ?? b.buddy_name}
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
           {board.data.offers.length === 0 && board.data.requests.length === 0 && (
             <p className="text-center text-muted-foreground py-8 text-sm">No rides yet — post the first one.</p>
           )}
@@ -362,7 +400,7 @@ const CrewBoardPage: React.FC = () => {
               </CardContent>
             </Card>
           )}
-          <RideOfferForm shift={shift} busy={busy} onSubmit={(input) => act('post-offer', () => postRideOffer(input), 'Ride posted')} />
+          <RideOfferForm shift={shift} busy={busy} initial={lastOffer} onSubmit={(input) => act('post-offer', () => postRideOffer(input), 'Ride posted')} />
         </TabsContent>
 
         {/* ---------------------------- LODGING ---------------------------- */}
@@ -564,12 +602,21 @@ const CrewBoardPage: React.FC = () => {
 
 /* ------------------------------------------------------------------ forms */
 
-const RideOfferForm: React.FC<{ shift: Shift; busy: string | null; onSubmit: (i: Parameters<typeof postRideOffer>[0]) => void }> = ({ shift, busy, onSubmit }) => {
+const RideOfferForm: React.FC<{ shift: Shift; busy: string | null; initial?: LastRideOfferParams | null; onSubmit: (i: Parameters<typeof postRideOffer>[0]) => void }> = ({ shift, busy, initial, onSubmit }) => {
   const [seats, setSeats] = useState('3');
   const [area, setArea] = useState('');
   const [at, setAt] = useState(toLocalInputValue(shift.starts_at));
   const [gas, setGas] = useState('');
   const [notes, setNotes] = useState('');
+
+  // "Offer again": hydrate from my most recent live offer once it loads.
+  useEffect(() => {
+    if (!initial) return;
+    setSeats(String(initial.seats));
+    setArea(initial.departure_area ?? '');
+    setGas(initial.gas_share_cents > 0 ? String(initial.gas_share_cents / 100) : '');
+    setNotes(initial.notes ?? '');
+  }, [initial]);
   return (
     <MiniForm label="Offer a ride">
       <div className="grid grid-cols-2 gap-2">
