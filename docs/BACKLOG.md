@@ -146,7 +146,7 @@ Roadmap "Next" items in `PRD.md §4` the sprints skipped. Rewritten as claimable
 - [ ] Expo/React Native app — PRD 1.4. **Deferred by design** — revisit after P0-RT + recovered items land.
 
 ### Crew OS — deeper versions (noted during the sprint, not yet built)
-- [ ] **Recurring ride buddies**: remember who drove/rode together across shifts; when a new shift confirms, suggest "same car as last time?" and pre-fill the offer/request.
+- [x] **Recurring ride buddies**: remember who drove/rode together across shifts; when a new shift confirms, suggest "same car as last time?" and pre-fill the offer/request. — **Lane B** (`feat/ride-buddies` on `20261113000000_ride_buddies.sql`: `ride_buddy` crew-alert kind + mirrored briefing — when the second of a matched-past pair confirms, BOTH get "Same car as last time?" with correct drove/rode direction; `worker_ride_buddies(shift)` RPC — rides-together, last direction, on-this-call flag, buddy's open offer for one-tap join; `my_last_ride_offer()` pre-fills the offer form; buddy card on the Rides tab; pgTAP `080`)
 - [ ] **Bail fairness**: late rider/member withdrawal (>X hours before call) keeps a % of the share committed instead of voiding fully — compensates the driver/host who can't refill the spot.
 - [ ] **Pool suggestions by distance**: rank ride offers / lodging pools / food runs by distance to the worker's home geo vs. venue; surface "closest bunk" / "ride passing your exit".
 - [ ] **GrubRun runner substitution + minimums**: runner can hand the run off; run-level minimum order count before the runner is committed; late-cancel fee shares the sunk cost.

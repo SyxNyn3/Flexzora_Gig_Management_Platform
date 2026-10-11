@@ -1300,6 +1300,23 @@ export interface RideRequest {
   rider?: Profile;
 }
 
+export interface RideBuddy {
+  buddy_worker_id: string;
+  buddy_name: string;
+  rides_together: number;
+  i_drove_last: boolean;
+  last_ride_at: string;
+  buddy_confirmed: boolean;
+  buddy_offer_id?: string;
+}
+
+export interface LastRideOfferParams {
+  seats: number;
+  departure_area?: string;
+  gas_share_cents: number;
+  notes?: string;
+}
+
 // --- BunkUp lodging --------------------------------------------------------
 export type LodgingPoolKind = 'hotel' | 'airbnb' | 'house' | 'camp' | 'rv' | 'other';
 export type LodgingPoolStatus = 'open' | 'full' | 'cancelled';
@@ -1394,7 +1411,7 @@ export interface FoodRunOrder {
 }
 
 // --- SmartAlerts -------------------------------------------------------------
-export type CrewAlertKind = 'gear' | 'parking' | 'departure' | 'pool' | 'iou' | 'custom';
+export type CrewAlertKind = 'gear' | 'parking' | 'departure' | 'pool' | 'iou' | 'ride_buddy' | 'custom';
 
 export interface CrewAlert {
   id: string;
