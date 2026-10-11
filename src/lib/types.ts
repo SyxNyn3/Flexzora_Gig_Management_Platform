@@ -1342,6 +1342,8 @@ export interface SwapClaim {
   created_at: string;
   updated_at: string;
   claimer?: Profile;
+}
+
 // ---------------------------------------------------------------------------
 // Company OS — automatic reminders (alerts inbox)
 // ---------------------------------------------------------------------------
