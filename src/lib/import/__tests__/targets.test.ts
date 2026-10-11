@@ -38,3 +38,18 @@ describe('staff target', () => {
     }
   });
 });
+
+describe('shift_templates target', () => {
+  it('suggests call packs for a rate-card sheet', () => {
+    expect(suggestTarget(['Pack Name', 'Role', 'Duration', 'Rate'])?.key).toBe('shift_templates');
+  });
+
+  it('requires role/headcount/rate — the pack essentials', () => {
+    const t = importTarget('shift_templates');
+    expect(t).toBeDefined();
+    for (const key of ['role_name', 'headcount', 'hourly_rate']) {
+      expect(t?.fields.find((f) => f.key === key)?.required).toBe(true);
+    }
+    expect(t?.needsEvent).toBeFalsy();
+  });
+});
