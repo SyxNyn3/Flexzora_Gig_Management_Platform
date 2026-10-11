@@ -14,6 +14,7 @@ import { Invoice, Payout } from '@/lib/types';
 import { money } from '@/components/marketplace/format';
 import { IS_PAYMENTS_SANDBOX, SANDBOX_PAYOUT_LABEL, SANDBOX_TRANSFER_LABEL } from '@/lib/payments';
 import { ConnectStatus, getConnectStatus, onboardToConnect } from '@/lib/connect';
+import ComplianceCard from '@/components/compliance/ComplianceCard';
 import { Download, FileText, Landmark, Zap, Clock, FlaskConical, Loader2, Wallet } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
@@ -179,6 +180,8 @@ const PayoutsPage: React.FC = () => {
           </CardContent>
         </Card>
       )}
+
+      <ComplianceCard />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground inline-flex items-center gap-1"><Clock className="w-3 h-3" /> Upcoming payouts</p><p className="text-xl font-semibold">{money(upcomingTotal)}</p><p className="text-xs text-muted-foreground">{upcoming.length} in flight</p></CardContent></Card>

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { format, startOfISOWeek } from 'date-fns';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Textarea } from '@/components/ui/textarea';
 import { useCompanyPayouts, useCompanyTimesheets, useInvoices, useMyCompany, useOvertimeRules } from '@/hooks/useMarketplace';
 import { MarketplaceService } from '@/lib/marketplace/service';
+import { ComplianceService } from '@/lib/compliance/service';
 import { releasePayout } from '@/lib/connect';
 import { calculateShiftPay, FLSA_DEFAULT } from '@/lib/marketplace/overtime';
 import { PayoutMethod, Timesheet } from '@/lib/types';
@@ -44,6 +45,12 @@ const TimesheetApprovalPage: React.FC = () => {
   const [breaks, setBreaks] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState<string | null>(null);
   const [dispute, setDispute] = useState<{ sheet: Timesheet; notes: string } | null>(null);
+  const [holds, setHolds] = useState<Map<string, boolean>>(new Map());
+
+  useEffect(() => {
+    const ids = [...new Set(payouts.data.map((p) => p.worker_id))];
+    ComplianceService.payoutHolds(ids).then(({ data }) => data && setHolds(data));
+  }, [payouts.data]);
 
   const ruleFor = (code?: string) => rules.data.find((r) => r.code === code) ?? FLSA_DEFAULT;
 
@@ -260,22 +267,36 @@ const TimesheetApprovalPage: React.FC = () => {
         <Card>
           <CardContent className="p-4 space-y-2">
             <p className="text-sm font-medium">Payouts to release ({payoutQueue.length})</p>
-            {payoutQueue.map((p) => (
-              <div key={p.id} className="flex items-center justify-between gap-3 text-sm border-t first:border-0 pt-2 first:pt-0">
-                <div className="min-w-0">
-                  <p className="font-medium truncate">{p.invoice?.worker?.full_name ?? 'Worker'} · {p.invoice?.invoice_number}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {p.invoice?.event?.name ?? 'Payout'}{p.status === 'failed' ? ` — failed: ${p.failure_reason ?? 'retry available'}` : ' — awaiting release'}
-                  </p>
+            {payoutQueue.map((p) => {
+              const held = holds.get(p.worker_id) === false;
+              return (
+                <div key={p.id} className="flex items-center justify-between gap-3 text-sm border-t first:border-0 pt-2 first:pt-0">
+                  <div className="min-w-0">
+                    <p className="font-medium truncate">{p.invoice?.worker?.full_name ?? 'Worker'} · {p.invoice?.invoice_number}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {p.invoice?.event?.name ?? 'Payout'}
+                      {held
+                        ? ' — compliance hold: no approved W-9'
+                        : p.status === 'failed'
+                          ? ` — failed: ${p.failure_reason ?? 'retry available'}`
+                          : ' — awaiting release'}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="font-semibold">{money(p.amount)}</span>
+                    {held ? (
+                      <Badge variant="outline" className="bg-red-500/15 text-destructive dark:text-red-400 border-red-500/30" title="Review tax documents under Credential review → Tax & eligibility">
+                        W-9 hold
+                      </Badge>
+                    ) : (
+                      <Button size="sm" disabled={busy !== null} onClick={() => sendPayout(p.id)} title="Send the transfer to the worker's connected account">
+                        <Send className="w-3.5 h-3.5 mr-1" /> {p.status === 'failed' ? 'Retry' : 'Pay out'}
+                      </Button>
+                    )}
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className="font-semibold">{money(p.amount)}</span>
-                  <Button size="sm" disabled={busy !== null} onClick={() => sendPayout(p.id)} title="Send the transfer to the worker's connected account">
-                    <Send className="w-3.5 h-3.5 mr-1" /> {p.status === 'failed' ? 'Retry' : 'Pay out'}
-                  </Button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </CardContent>
         </Card>
       )}
