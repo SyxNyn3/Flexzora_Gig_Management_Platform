@@ -13,7 +13,9 @@ VALUES
   ('00000000-0000-0000-0000-00000000b523', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
    'orderer52a@test.local', 'x', '{"full_name":"Orderer A"}'::jsonb, now(), now()),
   ('00000000-0000-0000-0000-00000000b524', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
-   'orderer52b@test.local', 'x', '{"full_name":"Orderer B"}'::jsonb, now(), now());
+   'orderer52b@test.local', 'x', '{"full_name":"Orderer B"}'::jsonb, now(), now()),
+  ('00000000-0000-0000-0000-00000000b525', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
+   'orderer52c@test.local', 'x', '{"full_name":"Orderer C"}'::jsonb, now(), now());
 
 INSERT INTO companies (id, name, created_by)
 SELECT '00000000-0000-0000-0000-00000000c520', 'Grub Co', id FROM profiles WHERE user_id = '00000000-0000-0000-0000-00000000b521';
@@ -81,11 +83,11 @@ SELECT is((SELECT count(*)::int FROM crew_iou WHERE iou_group_id = '52000000-000
 -- pre-stamp dodge: an orderer-supplied price_accepted_at on INSERT would sit in
 -- OLD on the confirm update, so the consent-mint would never fire — free food.
 SET LOCAL ROLE authenticated;
-SELECT set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000b523","role":"authenticated"}', true);
+SELECT set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000b525","role":"authenticated"}', true);
 SELECT lives_ok($$
   INSERT INTO food_run_orders (id, run_id, worker_id, item, status, price_accepted_at)
   SELECT '52000000-0000-0000-0000-0000000000b3', '52000000-0000-0000-0000-0000000000a1', id, 'Sneaky fries', 'placed'::food_order_status, now()
-  FROM profiles WHERE user_id = '00000000-0000-0000-0000-00000000b523'
+  FROM profiles WHERE user_id = '00000000-0000-0000-0000-00000000b525'
 $$, 'orderer can place an order (pre-stamped consent gets stripped)');
 
 RESET ROLE;
