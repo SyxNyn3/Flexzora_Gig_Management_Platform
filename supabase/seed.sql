@@ -419,6 +419,7 @@ begin
           'Got called for a stadium overnight — will pay to offload.',
           5000)
   on conflict (id) do nothing;
+
   -- ------------------------------------------------------------------
   -- Company OS demo: alerts inbox — one resolved alert shows the audit
   -- trail; live ones generate themselves on inbox load via the sweep.
