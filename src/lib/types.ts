@@ -175,6 +175,7 @@ export interface Database {
         Insert: Omit<CopilotMessage, 'id' | 'created_at'> & { profile_id?: string | null };
         Update: Partial<Pick<CopilotMessage, 'action' | 'content'>>;
       };
+
       staff_members: {
         Row: StaffMember;
         Insert: Omit<StaffMember, 'id' | 'created_at' | 'updated_at'>;
@@ -986,6 +987,7 @@ export interface CopilotMessage {
   action?: CopilotAction | null;
   created_at: string;
 }
+
 
 // ---------------------------------------------------------------------------
 // Company OS — staff layer (internal team, distinct from marketplace crew)
