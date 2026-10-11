@@ -7,6 +7,15 @@ Each entry: lane, branch/PR, what shipped, verification status, notes.
 
 ## Builder-2 — Company OS sprint (overnight)
 
+### feat/ops-kanban → PR #60 — ops board
+
+- ops_tasks + generate_unfilled_tasks: idempotent sweep on board load —
+  one urgent card per short-staffed call (14d window, due 12h pre-call),
+  auto-completes cards whose call filled. The board mirrors reality.
+- /ops: 3-column HTML5 drag-drop, priority/assignee/due/event links,
+  auto badge, overdue highlight, done strikethrough.
+- Seed: manual in-flight + done task; unfilled cards self-generate.
+
 ### feat/ics-timezone → PR #59 — calendar feeds + timezones
 
 - calendar_feeds: capability URLs (unguessable token, scoped
