@@ -52,7 +52,14 @@ CREATE INDEX IF NOT EXISTS idx_waiting_list_verification_token
 ON waiting_list(verification_token) 
 WHERE verification_token IS NOT NULL;
 
--- Update existing entries to have 'verified' status if they were 'whitelisted'
-UPDATE waiting_list 
-SET status = 'verified', verified_at = created_at 
-WHERE status = 'whitelisted';
+-- Update existing entries to have 'verified' status if they were 'whitelisted'.
+-- REPLAY FIX: Postgres refuses to USE an enum value added in the same
+-- transaction ("unsafe use of new value", 55P04). On a clean replay there are
+-- no legacy rows to backfill, so only run the UPDATE when some exist; the
+-- EXECUTE keeps the literal out of the plan cache when the branch is skipped.
+DO $backfill$
+BEGIN
+  IF EXISTS (SELECT 1 FROM waiting_list WHERE status = 'whitelisted') THEN
+    EXECUTE $q$ UPDATE waiting_list SET status = 'verified', verified_at = created_at WHERE status = 'whitelisted' $q$;
+  END IF;
+END $backfill$;
