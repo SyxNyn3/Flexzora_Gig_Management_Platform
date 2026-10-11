@@ -220,4 +220,24 @@ begin
      'error', 'No Flexzora worker account for sam.rivera@example.com — invite them first (or import as staff)', null)
   on conflict (job_id, row_index) do nothing;
 
+  -- ------------------------------------------------------------------
+  -- Company OS demo: copilot knowledge notes — the kind of operating
+  -- knowledge that lives in a manager's head or a shared drive.
+  -- ------------------------------------------------------------------
+  insert into company_docs (id, company_id, created_by, title, body, tags)
+  values
+    ('77777777-0000-4000-8000-000000000001', v_company, p_company_user,
+     'IATSE-style overtime rules',
+     'Crew on union-adjacent calls: OT at 1.5x after 8 hours, double-time after 12. 5-hour minimum call for stagehands; meal penalty kicks in if no break by hour 6.',
+     '{union,overtime,rates}'),
+    ('77777777-0000-4000-8000-000000000002', v_company, p_company_user,
+     'Warehouse 9 load-in notes',
+     'Dock is shared with the brewery next door — no trucks before 7am. Freight elevator maxes at 2,500 lbs; send the truss through the bay door instead. Ask for Marcus at the dock.',
+     '{venue,load-in,warehouse}'),
+    ('77777777-0000-4000-8000-000000000003', v_company, p_company_user,
+     'Rate card — core crew',
+     'A1 $65/hr, A2 $52/hr, master electrician $58/hr, general stagehand $38/hr. Core roster gets first refusal on weekend calls.',
+     '{rates,crew}')
+  on conflict (id) do nothing;
+
 end $$;
