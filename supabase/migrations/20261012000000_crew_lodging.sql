@@ -213,7 +213,7 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 DROP TRIGGER IF EXISTS lodging_pools_cascade_cancel ON lodging_pools;
 CREATE TRIGGER lodging_pools_cascade_cancel BEFORE UPDATE ON lodging_pools
@@ -231,7 +231,7 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 DROP TRIGGER IF EXISTS shifts_cancel_lodging ON shifts;
 CREATE TRIGGER shifts_cancel_lodging AFTER UPDATE OF status ON shifts

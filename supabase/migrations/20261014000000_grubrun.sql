@@ -195,7 +195,7 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 DROP TRIGGER IF EXISTS food_runs_cascade_cancel ON food_runs;
 CREATE TRIGGER food_runs_cascade_cancel AFTER UPDATE OF status ON food_runs
@@ -211,7 +211,7 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 DROP TRIGGER IF EXISTS shifts_cancel_food_runs ON shifts;
 CREATE TRIGGER shifts_cancel_food_runs AFTER UPDATE OF status ON shifts
