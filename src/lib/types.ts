@@ -1276,6 +1276,7 @@ export interface CrewIOU {
   settled_at?: string;
   settled_timesheet_id?: string;
   settled_cents: number;
+  void_requested_at?: string;
   created_at: string;
   updated_at: string;
   beneficiary_profile?: Pick<Profile, 'id' | 'full_name'>;

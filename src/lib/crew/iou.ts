@@ -105,6 +105,37 @@ export async function voidIou(iouId: string): Promise<Result<boolean>> {
   }
 }
 
+/** Grouped (system-minted) IOUs void only with the beneficiary's consent. */
+export async function requestIouVoid(iouId: string): Promise<Result<boolean>> {
+  try {
+    const { error } = await supabase.rpc('request_iou_void', { p_iou_id: iouId });
+    if (error) throw error;
+    return ok(true);
+  } catch (e) {
+    return fail(false, e);
+  }
+}
+
+export async function consentIouVoid(iouId: string): Promise<Result<boolean>> {
+  try {
+    const { error } = await supabase.rpc('consent_iou_void', { p_iou_id: iouId });
+    if (error) throw error;
+    return ok(true);
+  } catch (e) {
+    return fail(false, e);
+  }
+}
+
+export async function denyIouVoid(iouId: string): Promise<Result<boolean>> {
+  try {
+    const { error } = await supabase.rpc('deny_iou_void', { p_iou_id: iouId });
+    if (error) throw error;
+    return ok(true);
+  } catch (e) {
+    return fail(false, e);
+  }
+}
+
 /** The platform bail policy (window + keep %) — readable by any signed-in user. */
 export async function fetchBailPolicy(): Promise<Result<{ windowHours: number; keepPct: number }>> {
   try {
