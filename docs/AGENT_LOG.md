@@ -7,6 +7,17 @@ Each entry: lane, branch/PR, what shipped, verification status, notes.
 
 ## Builder-2 — Company OS sprint (overnight)
 
+### feat/ics-timezone → PR #59 — calendar feeds + timezones
+
+- calendar_feeds: capability URLs (unguessable token, scoped
+  company/event/staff/worker, revocable, last_accessed tracked).
+- ics-feed edge fn (verify_jwt=false — token is the auth): real
+  VCALENDAR — events all-day across dates, timed calls/assignments in
+  UTC with the event's IANA zone named in each DESCRIPTION.
+- events.timezone + create-form picker + header display.
+- FeedManager on /events: create scoped feeds, copy URL, revoke,
+  last-fetch marker. Seed: company + PM feeds.
+
 ### feat/broadcast → PR #58 — broadcast messaging
 
 - broadcasts + broadcast_recipients (per-person channel/status delivery
