@@ -116,6 +116,20 @@ export async function confirmOrder(orderId: string, priceCents: number): Promise
   }
 }
 
+/** Orderer accepts a confirmed price above the auto-accept cap — only then does the debt mint. */
+export async function acceptOrderPrice(orderId: string): Promise<Result<boolean>> {
+  try {
+    const { error } = await supabase
+      .from('food_run_orders')
+      .update({ price_accepted_at: new Date().toISOString() })
+      .eq('id', orderId);
+    if (error) throw error;
+    return ok(true);
+  } catch (e) {
+    return fail(false, e);
+  }
+}
+
 // --- queries --------------------------------------------------------------
 
 export async function listFoodBoard(shiftId: string): Promise<Result<{ runs: FoodRun[]; orders: FoodRunOrder[] }>> {

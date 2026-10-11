@@ -103,7 +103,7 @@ Challenger-lane findings (issues labeled `challenger`, plus #67 reviewer). Each 
 - [x] **#22 HIGH — ShiftSwap mutable fields repoint confirmed bookings.** — **fixed in PR #15, merged**
 - [x] **#24 HIGH — payout-release TOCTOU/double-transfer + post-transfer-update failure retries.** — **fixed in PR #16, merged**
 - [ ] #50 MED — `worker_distances`/`worker_conflicts` callable by any user on any worker → location triangulation + availability oracle. Restrict to parties sharing an assignment/event.
-- [ ] #52 MED — GrubRun runner confirms at arbitrary price → inflated payout-deduction IOU. Fix: price locked at claim time + orderer confirm above a variance threshold.
+- [x] #52 MED — GrubRun runner confirms at arbitrary price → inflated payout-deduction IOU. Fix: price locked at claim time + orderer confirm above a variance threshold. — **fixed: Security Builder** (`fix/lane-a-grub-price`: `20261106000000_p0rt_grub_price_lock.sql` price locked on confirm + orderer accept above $25 cap; pgTAP `052`)
 - [ ] #48 MED — `crew_alerts.dedupe_key` globally unique + self-insertable → pre-squatting suppresses another worker's briefings. Fix: per-worker keyspace + service-insert only.
 - [x] #26 MED — company can force-match any open `ride_requests` → `matched` (no transition limits on the company branch of the guard) → non-consensual gas-share IOU (verified). — **fixed: Security Builder** (`fix/lane-a-ride-match`: `20261104000000_p0rt_ride_match.sql` + pgTAP `025/026/027`)
 - [x] #25 MED — `ride_requests` lacks `UNIQUE(rider_worker_id, shift_id)` → rider matches N requests to N offers → duplicate seats + duplicate IOUs (verified). — **fixed: Security Builder** (`fix/lane-a-ride-match`: `20261104000000_p0rt_ride_match.sql` + pgTAP `025/026/027`)

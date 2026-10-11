@@ -1319,6 +1319,7 @@ export interface FoodRunOrder {
   worker_id: string;
   item: string;
   price_cents?: number;
+  price_accepted_at?: string;
   status: FoodOrderStatus;
   notes?: string;
   created_at: string;

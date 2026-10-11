@@ -7,7 +7,7 @@ import { useCrewBoard, useShift } from '@/hooks/useCrew';
 import { useWorkerAssignments } from '@/hooks/useMarketplace';
 import { joinRide, withdrawRideRequest, cancelRideOffer, postRideOffer, setRideFlags } from '@/lib/crew/rides';
 import { joinPool, leavePool, cancelLodgingPool, postLodgingPool } from '@/lib/crew/lodging';
-import { placeOrder, cancelOrder, confirmOrder, postFoodRun, updateFoodRunStatus, isAcceptingOrders } from '@/lib/crew/food';
+import { placeOrder, cancelOrder, confirmOrder, acceptOrderPrice, postFoodRun, updateFoodRunStatus, isAcceptingOrders } from '@/lib/crew/food';
 import { postToBoard, resolvePost, closePost, acceptPostDebt } from '@/lib/crew/board';
 import { iouCapacity } from '@/lib/crew/iouMath';
 import { markAllAlertsRead } from '@/lib/crew/alerts';
@@ -472,7 +472,16 @@ const CrewBoardPage: React.FC = () => {
                   )}
                   {!mine && accepting && !myOrder && <PlaceOrderBox busy={busy} onPlace={(item, note) => act(`order-${r.id}`, () => placeOrder(r.id, item, note), 'Order in')} />}
                   {myOrder?.status === 'placed' && <p className="text-xs text-muted-foreground">Your order is in — runner sets the price.</p>}
-                  {myOrder?.status === 'confirmed' && <p className="text-xs"><Badge variant="secondary">Confirmed {money((myOrder.price_cents ?? 0) / 100)}</Badge> — settles from your payout.</p>}
+                  {myOrder?.status === 'confirmed' && !myOrder.price_accepted_at && (
+                    <p className="text-xs flex items-center gap-2">
+                      <Badge variant="secondary">Runner says {money((myOrder.price_cents ?? 0) / 100)}</Badge>
+                      <Button size="sm" className="h-7" disabled={busy !== null}
+                        onClick={() => act(`accept-${myOrder.id}`, () => acceptOrderPrice(myOrder.id), 'Price accepted — it settles from your payout')}>
+                        <Check className="w-3 h-3 mr-1" /> Accept
+                      </Button>
+                    </p>
+                  )}
+                  {myOrder?.status === 'confirmed' && myOrder.price_accepted_at && <p className="text-xs"><Badge variant="secondary">Confirmed {money((myOrder.price_cents ?? 0) / 100)}</Badge> — settles from your payout.</p>}
                   {mine && r.status === 'open' && (
                     <Button size="sm" variant="ghost" className="h-6 px-0 text-xs text-muted-foreground" disabled={busy !== null}
                       onClick={() => act(`cancel-${r.id}`, () => updateFoodRunStatus(r.id, 'cancelled'), 'Run cancelled')}>
