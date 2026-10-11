@@ -15,6 +15,8 @@ export interface NewRideOffer {
   seats: number;
   departureArea?: string;
   departureAt?: string;
+  departureLat?: number;
+  departureLng?: number;
   gasShareCents?: number;
   notes?: string;
 }
@@ -64,6 +66,8 @@ export async function postRideOffer(input: NewRideOffer): Promise<Result<RideOff
         seats: input.seats,
         departure_area: input.departureArea ?? null,
         departure_at: input.departureAt ?? null,
+        departure_lat: input.departureLat ?? null,
+        departure_lng: input.departureLng ?? null,
         gas_share_cents: input.gasShareCents ?? 0,
         notes: input.notes ?? null,
       })

@@ -1283,6 +1283,8 @@ export interface RideOffer {
   seats_taken: number;
   departure_area?: string;
   departure_at?: string;
+  departure_lat?: number;
+  departure_lng?: number;
   gas_share_cents: number;
   notes?: string;
   status: RideOfferStatus;
@@ -1320,6 +1322,8 @@ export interface LastRideOfferParams {
   departure_area?: string;
   gas_share_cents: number;
   notes?: string;
+  departure_lat?: number;
+  departure_lng?: number;
 }
 
 // --- BunkUp lodging --------------------------------------------------------
@@ -1334,6 +1338,8 @@ export interface LodgingPool {
   kind: LodgingPoolKind;
   name: string;
   address_area?: string;
+  geo_lat?: number;
+  geo_lng?: number;
   check_in_at?: string;
   check_out_at?: string;
   spots: number;
@@ -1396,11 +1402,22 @@ export interface FoodRun {
   menu_link?: string;
   order_cutoff_at: string;
   delivery_area?: string;
+  pickup_lat?: number;
+  pickup_lng?: number;
   notes?: string;
   status: FoodRunStatus;
   created_at: string;
   updated_at: string;
   runner?: Profile;
+}
+
+export interface CrewDistance {
+  kind: 'ride' | 'lodging' | 'food';
+  ref_id: string;
+  /** headline distance for the card badge (km) */
+  km: number;
+  /** rides only: extra km vs. driving straight to the venue */
+  detour_km?: number;
 }
 
 export interface FoodRunOrder {
