@@ -185,6 +185,16 @@ export interface Database {
         Insert: Omit<CrewPost, 'id' | 'created_at' | 'updated_at' | 'resolved_at' | 'author' | 'fulfiller'>;
         Update: Partial<Omit<CrewPost, 'id' | 'created_at' | 'updated_at' | 'author' | 'fulfiller'>>;
       };
+      food_runs: {
+        Row: FoodRun;
+        Insert: Omit<FoodRun, 'id' | 'created_at' | 'updated_at' | 'runner'>;
+        Update: Partial<Omit<FoodRun, 'id' | 'created_at' | 'updated_at' | 'runner'>>;
+      };
+      food_run_orders: {
+        Row: FoodRunOrder;
+        Insert: Omit<FoodRunOrder, 'id' | 'created_at' | 'updated_at' | 'worker'>;
+        Update: Partial<Omit<FoodRunOrder, 'id' | 'created_at' | 'updated_at' | 'worker'>>;
+      };
     };
   };
 }
@@ -939,5 +949,37 @@ export interface CrewPost {
   updated_at: string;
   author?: Profile;
   fulfiller?: Profile;
+}
+
+// --- GrubRun ---------------------------------------------------------------
+export type FoodRunStatus = 'open' | 'ordered' | 'delivered' | 'cancelled';
+export type FoodOrderStatus = 'placed' | 'confirmed' | 'cancelled';
+
+export interface FoodRun {
+  id: string;
+  shift_id: string;
+  runner_worker_id: string;
+  restaurant: string;
+  menu_link?: string;
+  order_cutoff_at: string;
+  delivery_area?: string;
+  notes?: string;
+  status: FoodRunStatus;
+  created_at: string;
+  updated_at: string;
+  runner?: Profile;
+}
+
+export interface FoodRunOrder {
+  id: string;
+  run_id: string;
+  worker_id: string;
+  item: string;
+  price_cents?: number;
+  status: FoodOrderStatus;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+  worker?: Profile;
 }
 
