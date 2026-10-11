@@ -110,7 +110,7 @@ SET search_path = public, extensions, pg_temp AS $$
     SELECT 1 FROM gig_applications ga
     JOIN gigs g ON g.id = ga.gig_id
     WHERE g.company_id = p_company_id AND ga.worker_id = p_worker_id
-      AND ga.status IN ('accepted', 'completed')
+      AND ga.status IN ('accepted')
   );
 $$;
 
