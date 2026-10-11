@@ -147,7 +147,10 @@ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, extensions AS $$
 DECLARE
   v_run food_runs%ROWTYPE;
 BEGIN
-  IF TG_OP = 'UPDATE' AND OLD.status IS DISTINCT FROM 'confirmed' AND NEW.status = 'confirmed' THEN
+  -- Debt mints only after consent (grub price-lock, #52): auto-stamped at
+  -- confirm for at/below-cap prices, or by the orderer's accept for above-cap.
+  IF TG_OP = 'UPDATE' AND NEW.status = 'confirmed' AND NEW.price_accepted_at IS NOT NULL
+     AND OLD.price_accepted_at IS NULL THEN
     SELECT * INTO v_run FROM food_runs WHERE id = NEW.run_id;
     INSERT INTO crew_iou (worker_id, shift_id, kind, amount_cents,
                           beneficiary_worker_id, iou_group_id, notes)
