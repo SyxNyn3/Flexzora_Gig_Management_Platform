@@ -34,15 +34,15 @@ INSERT INTO shifts (id, event_id, title, role_name, headcount, starts_at, ends_a
 
 -- offers: near + far by host worker, plus a second near offer the host will cancel
 INSERT INTO ride_offers (id, shift_id, driver_worker_id, seats, gas_share_cents)
-SELECT '00000000-0000-0000-0000-000000009a01', '00000000-0000-0000-0000-00000000fa01', id, 3, 2000 FROM profiles WHERE user_id = '00000000-0000-0000-0000-00000000b0d2'
-UNION ALL SELECT '00000000-0000-0000-0000-000000009a02', '00000000-0000-0000-0000-00000000fa02', id, 3, 2000 FROM profiles WHERE user_id = '00000000-0000-0000-0000-00000000b0d2'
-UNION ALL SELECT '00000000-0000-0000-0000-000000009a03', '00000000-0000-0000-0000-00000000fa01', id, 2, 2000 FROM profiles WHERE user_id = '00000000-0000-0000-0000-00000000b0d2';
+SELECT '00000000-0000-0000-0000-000000009a01'::uuid, '00000000-0000-0000-0000-00000000fa01'::uuid, id, 3, 2000 FROM profiles WHERE user_id = '00000000-0000-0000-0000-00000000b0d2'::uuid
+UNION ALL SELECT '00000000-0000-0000-0000-000000009a02'::uuid, '00000000-0000-0000-0000-00000000fa02'::uuid, id, 3, 2000 FROM profiles WHERE user_id = '00000000-0000-0000-0000-00000000b0d2'::uuid
+UNION ALL SELECT '00000000-0000-0000-0000-000000009a03'::uuid, '00000000-0000-0000-0000-00000000fa01'::uuid, id, 2, 2000 FROM profiles WHERE user_id = '00000000-0000-0000-0000-00000000b0d2'::uuid;
 
 -- matched requests (IOUs mint at insert): bailer on near+far, kicked on the cancellable offer
 INSERT INTO ride_requests (id, shift_id, rider_worker_id, seats_needed, status, offer_id)
-SELECT '00000000-0000-0000-0000-000000009a11', '00000000-0000-0000-0000-00000000fa01', id, 1, 'matched', '00000000-0000-0000-0000-000000009a01' FROM profiles WHERE user_id = '00000000-0000-0000-0000-00000000b0d3'
-UNION ALL SELECT '00000000-0000-0000-0000-000000009a12', '00000000-0000-0000-0000-00000000fa02', id, 1, 'matched', '00000000-0000-0000-0000-000000009a02' FROM profiles WHERE user_id = '00000000-0000-0000-0000-00000000b0d3'
-UNION ALL SELECT '00000000-0000-0000-0000-000000009a13', '00000000-0000-0000-0000-00000000fa01', id, 1, 'matched', '00000000-0000-0000-0000-000000009a03' FROM profiles WHERE user_id = '00000000-0000-0000-0000-00000000b0d4';
+SELECT '00000000-0000-0000-0000-000000009a11'::uuid, '00000000-0000-0000-0000-00000000fa01'::uuid, id, 1, 'matched'::ride_request_status, '00000000-0000-0000-0000-000000009a01'::uuid FROM profiles WHERE user_id = '00000000-0000-0000-0000-00000000b0d3'::uuid
+UNION ALL SELECT '00000000-0000-0000-0000-000000009a12'::uuid, '00000000-0000-0000-0000-00000000fa02'::uuid, id, 1, 'matched'::ride_request_status, '00000000-0000-0000-0000-000000009a02'::uuid FROM profiles WHERE user_id = '00000000-0000-0000-0000-00000000b0d3'::uuid
+UNION ALL SELECT '00000000-0000-0000-0000-000000009a13'::uuid, '00000000-0000-0000-0000-00000000fa01'::uuid, id, 1, 'matched'::ride_request_status, '00000000-0000-0000-0000-000000009a03'::uuid FROM profiles WHERE user_id = '00000000-0000-0000-0000-00000000b0d4'::uuid;
 
 -- lodging: near-shift pool hosted by host, bailer + kicked as members
 INSERT INTO lodging_pools (id, shift_id, host_worker_id, name, kind, spots, share_cents, status)
@@ -50,8 +50,8 @@ SELECT '00000000-0000-0000-0000-000000009a21', '00000000-0000-0000-0000-00000000
   FROM profiles WHERE user_id = '00000000-0000-0000-0000-00000000b0d2';
 
 INSERT INTO pool_members (id, pool_id, worker_id, spots_needed, status)
-SELECT '00000000-0000-0000-0000-000000009a31', '00000000-0000-0000-0000-000000009a21', id, 1, 'joined' FROM profiles WHERE user_id = '00000000-0000-0000-0000-00000000b0d3'
-UNION ALL SELECT '00000000-0000-0000-0000-000000009a32', '00000000-0000-0000-0000-000000009a21', id, 1, 'joined' FROM profiles WHERE user_id = '00000000-0000-0000-0000-00000000b0d4';
+SELECT '00000000-0000-0000-0000-000000009a31'::uuid, '00000000-0000-0000-0000-000000009a21'::uuid, id, 1, 'joined'::pool_member_status FROM profiles WHERE user_id = '00000000-0000-0000-0000-00000000b0d3'::uuid
+UNION ALL SELECT '00000000-0000-0000-0000-000000009a32'::uuid, '00000000-0000-0000-0000-000000009a21'::uuid, id, 1, 'joined'::pool_member_status FROM profiles WHERE user_id = '00000000-0000-0000-0000-00000000b0d4'::uuid;
 
 -- bailer withdraws the near ride + leaves the pool + withdraws the far ride;
 -- kicked gets removed from the pool; host cancels the third offer.
