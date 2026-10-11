@@ -316,3 +316,11 @@ Newest entries on top.
   do it.
 - Left for later in Lane A: #30 (booking check on ride_requests inserts) is a
   separate single in the itinerary, not this batch.
+- Addendum (CI found it): `check_ride_match` is SECURITY INVOKER, so it reads
+  the offer through RLS. The 025/027 fixtures used a draft event and a
+  non-broadcast shift, so the rider could not see the offer and the check failed
+  with "Ride offer not found" before reaching the intended error. Fixed the
+  fixtures (`published` event, `broadcast_stage='public'`). The product behaviour
+  is intended: a rider can only touch an offer on a call they can see (fail
+  closed). Lesson recorded for future pgTAP fixtures: model visibility
+  (event status, broadcast stage) explicitly.
