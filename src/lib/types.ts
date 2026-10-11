@@ -1287,6 +1287,7 @@ export interface CrewPost {
   status: CrewPostStatus;
   fulfilled_by_worker_id?: string;
   resolved_at?: string;
+  debtor_confirmed_at?: string;
   created_at: string;
   updated_at: string;
   author?: Profile;

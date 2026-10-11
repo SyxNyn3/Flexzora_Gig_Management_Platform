@@ -33,6 +33,7 @@ Multiple sessions work this repo in parallel. **Before starting any item, mark i
 - **Reviewer lane — claimed: Devin-Reviewer — working on it** (overnight PR gate, started 2026-10-10; works in `../flexzora-reviewer-wt` worktree; merges only CI-green + clean)
 - **Builder-2 lane (Company OS) — claimed: Builder-2 — working on it** (overnight self-drive, started 2026-10-10; works in `../flexzora-builder2` worktree, migrations from `20261018` — `20261017` is taken by the Connect-payouts WIP)
 - **Lane B — Feature Builder — claimed: Lane B Builder — working on it** (started 2026-10-11; recovered-PRD top-down per MORNING ITINERARY: cert verification → shift templates → auto-backfill/no-show → standby pools → travel feasibility → W-9 vault → rate guidance → dispute queue → earnings PDF → rest; works in `../flexzora-laneb` worktree, migrations from `20261025`)
+- **Lane A — Security Builder — claimed: Security Builder — working on it** (P0-RT top-down per MORNING ITINERARY: company-side HIGH batch #19/#20/#23/#51 first; one migration + regression test per issue; each fix on its own `fix/*` branch → PR)
 - Everything below is unclaimed.
 
 ## MORNING ITINERARY — lane assignments (2026-10-11)
@@ -95,20 +96,20 @@ Challenger-lane findings (issues labeled `challenger`, plus #67 reviewer). Each 
 - [x] **#38 HIGH — worker self-flips application to 'accepted'.** RLS allows own-row status updates. Fix: transition guard — worker moves limited to apply/withdraw.
 - [x] **#37 HIGH — reviews allow self-reviews/review-bombing**; `gig_id NULL` bypasses the unique constraint. Fix: participation trigger + `gig_id NOT NULL`.
 - [x] **#44 HIGH — `lookup_user_by_username_or_email` anon-callable** via PostgREST → account enumeration bypassing the edge-function email guard. Fix: revoke anon EXECUTE / auth-only.
-- [ ] **#51 HIGH — debtor can void own auto-minted IOU** (board resolve, ride match, swap sweetener). Fix: void requires beneficiary consent or the shift-cancel path only.
-- [ ] **#19 HIGH — board-resolve mints payout-deduction IOU without worker consent** (verified live; PR #11 merged without the fix — highest-severity live item). Fix: resolve requires fulfiller confirmation, or IOU only mints on explicit accept.
-- [ ] **#20 HIGH — `crew_iou` UPDATE has no column immutability.** Company (owns_event) can rewrite `beneficiary_worker_id`/`amount_cents`/`status` on shift-anchored IOUs incl. payout-deductions (verified). Fix: trigger restricting mutable cols, or company read-only + service-writes.
-- [ ] **#23 HIGH — company can rewrite `offered_rate` post-confirmation.** `guard_assignment_update()` protects offer terms on the worker branch only; `approve_timesheet` pays `COALESCE(offered_rate, hourly_rate)` (verified). Fix: immutable once accepted/offered.
+- [x] **#51 HIGH — debtor can void own auto-minted IOU** (board resolve, ride match, swap sweetener). Fix: void requires beneficiary consent or the shift-cancel path only. — **fixed: Security Builder** (`fix/lane-a-company-consent`: `20261103000000_p0rt_company_consent.sql` + pgTAP `019/020/023/051`)
+- [x] **#19 HIGH — board-resolve mints payout-deduction IOU without worker consent** (verified live; PR #11 merged without the fix — highest-severity live item). Fix: resolve requires fulfiller confirmation, or IOU only mints on explicit accept. — **fixed: Security Builder** (`fix/lane-a-company-consent`: `20261103000000_p0rt_company_consent.sql` + pgTAP `019/020/023/051`)
+- [x] **#20 HIGH — `crew_iou` UPDATE has no column immutability.** Company (owns_event) can rewrite `beneficiary_worker_id`/`amount_cents`/`status` on shift-anchored IOUs incl. payout-deductions (verified). Fix: trigger restricting mutable cols, or company read-only + service-writes. — **fixed: Security Builder** (`fix/lane-a-company-consent`: `20261103000000_p0rt_company_consent.sql` + pgTAP `019/020/023/051`)
+- [x] **#23 HIGH — company can rewrite `offered_rate` post-confirmation.** `guard_assignment_update()` protects offer terms on the worker branch only; `approve_timesheet` pays `COALESCE(offered_rate, hourly_rate)` (verified). Fix: immutable once accepted/offered. — **fixed: Security Builder** (`fix/lane-a-company-consent`: `20261103000000_p0rt_company_consent.sql` + pgTAP `019/020/023/051`)
 - [x] **#22 HIGH — ShiftSwap mutable fields repoint confirmed bookings.** — **fixed in PR #15, merged**
 - [x] **#24 HIGH — payout-release TOCTOU/double-transfer + post-transfer-update failure retries.** — **fixed in PR #16, merged**
 - [ ] #50 MED — `worker_distances`/`worker_conflicts` callable by any user on any worker → location triangulation + availability oracle. Restrict to parties sharing an assignment/event.
 - [ ] #52 MED — GrubRun runner confirms at arbitrary price → inflated payout-deduction IOU. Fix: price locked at claim time + orderer confirm above a variance threshold.
 - [ ] #48 MED — `crew_alerts.dedupe_key` globally unique + self-insertable → pre-squatting suppresses another worker's briefings. Fix: per-worker keyspace + service-insert only.
-- [ ] #26 MED — company can force-match any open `ride_requests` → `matched` (no transition limits on the company branch of the guard) → non-consensual gas-share IOU (verified).
-- [ ] #25 MED — `ride_requests` lacks `UNIQUE(rider_worker_id, shift_id)` → rider matches N requests to N offers → duplicate seats + duplicate IOUs (verified).
-- [ ] #27 MED — `seats_needed` mutable after match → free seats, minted IOU keeps stale amount (verified).
+- [x] #26 MED — company can force-match any open `ride_requests` → `matched` (no transition limits on the company branch of the guard) → non-consensual gas-share IOU (verified). — **fixed: Security Builder** (`fix/lane-a-ride-match`: `20261104000000_p0rt_ride_match.sql` + pgTAP `025/026/027`)
+- [x] #25 MED — `ride_requests` lacks `UNIQUE(rider_worker_id, shift_id)` → rider matches N requests to N offers → duplicate seats + duplicate IOUs (verified). — **fixed: Security Builder** (`fix/lane-a-ride-match`: `20261104000000_p0rt_ride_match.sql` + pgTAP `025/026/027`)
+- [x] #27 MED — `seats_needed` mutable after match → free seats, minted IOU keeps stale amount (verified). — **fixed: Security Builder** (`fix/lane-a-ride-match`: `20261104000000_p0rt_ride_match.sql` + pgTAP `025/026/027`)
 - [ ] #29 MED — `notify-assignment` `kind` not gated on assignment status → party can fire misleading SMS kinds (verified live since PR #7).
-- [ ] #21 MED — worker-editable `break_minutes` has no `>= 0` floor → negative breaks inflate payable hours (verified, pre-existing).
+- [x] #21 MED — worker-editable `break_minutes` has no `>= 0` floor → negative breaks inflate payable hours (verified, pre-existing). — **fixed: Security Builder** (`fix/lane-a-break-minutes`: `20261105000000_p0rt_break_minutes_floor.sql` NOT VALID CHECK + pgTAP `021`)
 - [ ] #30 MED — `ride_requests` INSERT only checks self-ownership → request squatting + phantom IOUs on shifts the worker isn't booked on (verified).
 - [x] #28 MED — settle loop `EXIT WHEN` on first over-cap IOU **deadlocks the whole queue** (worse than filed: EXIT not skip; over-cap IOU is permanent) (verified).
 - [ ] #31 MED — "Ride cancelled" alert is dead code: BEFORE cascade flips requests to 'open' before the AFTER alert trigger reads them (verified).
