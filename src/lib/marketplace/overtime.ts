@@ -6,19 +6,30 @@ export interface HoursBreakdown {
   overtimeHours: number;
   doubletimeHours: number;
   minimumCallApplied: boolean;
+  /** Union packs: +1h straight pay when the stretch ran past the meal trigger without a real break. */
+  mealPenaltyHours: number;
+  /** Union packs: hours before the rest floor completes — billed at double time (folded into doubletimeHours). */
+  turnaroundPenaltyHours: number;
 }
 
 export interface PayBreakdown extends HoursBreakdown {
   regularPay: number;
   overtimePay: number;
   doubletimePay: number;
+  mealPenaltyPay: number;
   grossPay: number;
 }
 
 export type OvertimePolicy = Pick<
   OvertimeRule,
   'daily_ot_after_hours' | 'daily_dt_after_hours' | 'ot_multiplier' | 'dt_multiplier' | 'minimum_call_hours'
-> & { weekly_hours_before_shift?: number; weekly_ot_after_hours?: number | null };
+> & {
+  weekly_hours_before_shift?: number;
+  weekly_ot_after_hours?: number | null;
+  meal_penalty_after_hours?: number | null;
+  meal_break_min_minutes?: number | null;
+  turnaround_min_hours?: number | null;
+};
 
 export const FLSA_DEFAULT: OvertimePolicy = {
   daily_ot_after_hours: null,
@@ -42,6 +53,7 @@ export function splitHours(
   clockOut: Date | string,
   breakMinutes: number,
   rule: OvertimePolicy,
+  priorShiftEnd?: Date | string | null,
 ): HoursBreakdown {
   const start = new Date(clockIn).getTime();
   const end = new Date(clockOut).getTime();
@@ -65,18 +77,56 @@ export function splitHours(
     }
   }
 
+  // Meal penalty: stretch ran past the trigger without a real break → +1h
+  // straight pay (kept out of regular so it itemizes separately).
+  const mealPenaltyHours =
+    rule.meal_penalty_after_hours != null &&
+    rawHours > rule.meal_penalty_after_hours &&
+    breakMinutes < (rule.meal_break_min_minutes ?? 30)
+      ? 1
+      : 0;
+
+  // Turnaround: scheduled inside the rest floor after the prior call — the
+  // hours before the floor completes are early (regular) hours → reg→dt.
+  let turnaroundPenaltyHours = 0;
+  if (rule.turnaround_min_hours != null && priorShiftEnd) {
+    const gapHours = (start - new Date(priorShiftEnd).getTime()) / 3_600_000;
+    if (gapHours >= 0 && gapHours < rule.turnaround_min_hours) {
+      turnaroundPenaltyHours = Math.min(worked, rule.turnaround_min_hours - gapHours);
+      const move = Math.min(regular, turnaroundPenaltyHours);
+      regular -= move;
+      doubletime += move;
+    }
+  }
+
   doubletime = round2(doubletime);
   overtime = round2(overtime);
   regular = round2(regular);
 
-  return { workedHours: round2(worked), regularHours: regular, overtimeHours: overtime, doubletimeHours: doubletime, minimumCallApplied };
+  return {
+    workedHours: round2(worked),
+    regularHours: regular,
+    overtimeHours: overtime,
+    doubletimeHours: doubletime,
+    minimumCallApplied,
+    mealPenaltyHours,
+    turnaroundPenaltyHours: round2(turnaroundPenaltyHours),
+  };
 }
 
 export function calculatePay(hours: HoursBreakdown, hourlyRate: number, rule: OvertimePolicy): PayBreakdown {
   const regularPay = round2(hours.regularHours * hourlyRate);
   const overtimePay = round2(hours.overtimeHours * hourlyRate * rule.ot_multiplier);
   const doubletimePay = round2(hours.doubletimeHours * hourlyRate * rule.dt_multiplier);
-  return { ...hours, regularPay, overtimePay, doubletimePay, grossPay: round2(regularPay + overtimePay + doubletimePay) };
+  const mealPenaltyPay = round2(hours.mealPenaltyHours * hourlyRate);
+  return {
+    ...hours,
+    regularPay,
+    overtimePay,
+    doubletimePay,
+    mealPenaltyPay,
+    grossPay: round2(regularPay + overtimePay + doubletimePay + mealPenaltyPay),
+  };
 }
 
 /** Convenience wrapper: clock times -> full pay breakdown. */
@@ -86,8 +136,9 @@ export function calculateShiftPay(
   breakMinutes: number,
   hourlyRate: number,
   rule: OvertimePolicy = FLSA_DEFAULT,
+  priorShiftEnd?: Date | string | null,
 ): PayBreakdown {
-  return calculatePay(splitHours(clockIn, clockOut, breakMinutes, rule), hourlyRate, rule);
+  return calculatePay(splitHours(clockIn, clockOut, breakMinutes, rule, priorShiftEnd), hourlyRate, rule);
 }
 
 /** Projected cost of a shift as posted (scheduled window, no breaks) — used for budget forecasting. */

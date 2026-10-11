@@ -150,10 +150,10 @@ begin
   -- Event + shifts (roster-first waterfall demo)
   -- ------------------------------------------------------------------
   insert into events (id, company_id, venue_id, created_by, name, event_type, description,
-                      starts_on, ends_on, status)
+                      starts_on, ends_on, status, overtime_rule_code)
   values (v_event, v_company, v_venue, p_company_user, 'Demo Festival — Main Stage',
           'concert', 'Click-through demo: load-in, show call, load-out.',
-          current_date + 7, current_date + 9, 'published')
+          current_date + 7, current_date + 9, 'published', 'IATSE_LOCAL_16')
   on conflict (id) do nothing;
 
   -- Roster-stage: only roster members see it until the 24h window passes

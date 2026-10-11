@@ -84,11 +84,22 @@ const TimesheetApprovalPage: React.FC = () => {
       .reduce((sum, o) => sum + Number(o.regular_hours ?? 0), 0);
   };
 
+  /** Latest prior clock-out for this worker on the company's calls — approximates
+   * the server-side turnaround check (which uses scheduled shift ends). */
+  const priorShiftEnd = (t: Timesheet) => {
+    if (!t.clock_in_at) return null;
+    const prior = sheets.data
+      .filter((o) => o.id !== t.id && o.worker_id === t.worker_id && o.clock_out_at && new Date(o.clock_out_at).getTime() < new Date(t.clock_in_at!).getTime())
+      .map((o) => o.clock_out_at!)
+      .sort();
+    return prior.length ? prior[prior.length - 1] : null;
+  };
+
   const preview = (t: Timesheet) => {
     if (!t.clock_in_at || !t.clock_out_at) return null;
     const brk = breaks[t.id] != null ? Number(breaks[t.id]) : t.break_minutes;
     const rule = { ...ruleFor(t.shift?.event?.overtime_rule_code), weekly_hours_before_shift: weeklyHoursBefore(t) };
-    return calculateShiftPay(t.clock_in_at, t.clock_out_at, brk, rateFor(t), rule);
+    return calculateShiftPay(t.clock_in_at, t.clock_out_at, brk, rateFor(t), rule, priorShiftEnd(t));
   };
 
   const approve = async (t: Timesheet, method: PayoutMethod) => {
@@ -231,6 +242,8 @@ const TimesheetApprovalPage: React.FC = () => {
                   {p.overtimeHours > 0 && <><span>Overtime</span><span className="text-right">{p.overtimeHours.toFixed(2)} h</span></>}
                   {p.doubletimeHours > 0 && <><span>Double time</span><span className="text-right">{p.doubletimeHours.toFixed(2)} h</span></>}
                   {p.minimumCallApplied && <span className="col-span-2 text-amber-500">Minimum call applied</span>}
+                  {p.mealPenaltyHours > 0 && <><span className="text-amber-500">Meal penalty</span><span className="text-right text-amber-500">+{p.mealPenaltyHours} h</span></>}
+                  {p.turnaroundPenaltyHours > 0 && <><span className="text-amber-500">Turnaround premium</span><span className="text-right text-amber-500">{p.turnaroundPenaltyHours.toFixed(1)} h @2×</span></>}
                 </div>
                 <p className="font-semibold text-base mt-1">{money(t.status === 'approved' || t.status === 'paid' ? t.gross_pay : p.grossPay)}</p>
               </div>
