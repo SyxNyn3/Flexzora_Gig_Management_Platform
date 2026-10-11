@@ -202,6 +202,11 @@ export interface Database {
         Insert: Omit<CalendarFeed, 'id' | 'created_at' | 'token' | 'last_accessed_at'> & { token?: string };
         Update: Partial<Pick<CalendarFeed, 'label' | 'is_active'>>;
       };
+      ops_tasks: {
+        Row: OpsTask;
+        Insert: Omit<OpsTask, 'id' | 'created_at' | 'updated_at' | 'done_at' | 'event' | 'shift' | 'assignee'>;
+        Update: Partial<Omit<OpsTask, 'id' | 'created_at' | 'company_id' | 'event' | 'shift' | 'assignee'>>;
+      };
     };
   };
 }
@@ -1022,5 +1027,34 @@ export interface CalendarFeed {
   is_active: boolean;
   last_accessed_at?: string | null;
   created_at: string;
+}
+
+// ---------------------------------------------------------------------------
+// Company OS — operations kanban
+// ---------------------------------------------------------------------------
+export type OpsColumn = 'todo' | 'in_progress' | 'done';
+export type OpsPriority = 'low' | 'normal' | 'high' | 'urgent';
+export type OpsTaskSource = 'manual' | 'auto_unfilled';
+
+export interface OpsTask {
+  id: string;
+  company_id: string;
+  event_id?: string | null;
+  shift_id?: string | null;
+  title: string;
+  notes?: string | null;
+  column_key: OpsColumn;
+  priority: OpsPriority;
+  source: OpsTaskSource;
+  assigned_staff_id?: string | null;
+  due_at?: string | null;
+  sort_order: number;
+  created_by?: string | null;
+  done_at?: string | null;
+  created_at: string;
+  updated_at: string;
+  event?: { id: string; name: string } | null;
+  shift?: { id: string; title: string } | null;
+  assignee?: StaffMember | null;
 }
 
