@@ -84,10 +84,6 @@ const ActionCard: React.FC<Props> = ({ action, busy, onConfirm, onDismiss, onCop
                 </Link>
               </Button>
             </>
-            <Button size="sm" variant="secondary" onClick={copyDraft}>
-              {copied ? <CheckCheck className="w-3.5 h-3.5 mr-1" /> : <ClipboardCopy className="w-3.5 h-3.5 mr-1" />}
-              {copied ? 'Copied' : 'Copy draft'}
-            </Button>
           )}
           <Button size="sm" variant="ghost" onClick={onDismiss} disabled={busy}>
             <X className="w-3.5 h-3.5 mr-1" /> Dismiss
