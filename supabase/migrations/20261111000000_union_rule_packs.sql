@@ -66,7 +66,7 @@ CREATE OR REPLACE FUNCTION approve_timesheet(
   p_break_minutes integer DEFAULT NULL,
   p_payout_method text DEFAULT 'ach'
 ) RETURNS invoices
-LANGUAGE plpgsql SECURITY DEFINER AS $$
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, extensions AS $$
 DECLARE
   v_ts timesheets%ROWTYPE;
   v_assignment shift_assignments%ROWTYPE;
@@ -86,6 +86,13 @@ DECLARE
   v_prior_end timestamptz;
   v_gap_hours numeric;
   v_gross numeric; v_fee numeric;
+  v_iou record;
+  v_iou_room integer;
+  v_iou_cents integer := 0;
+  v_take_cents integer;
+  v_iou_lines jsonb := '[]'::jsonb;
+  v_iou_deduction numeric := 0;
+  v_net numeric;
   v_remaining numeric;
   v_take numeric;
   v_invoice invoices%ROWTYPE;
@@ -95,7 +102,7 @@ BEGIN
   SELECT * INTO v_ts FROM timesheets WHERE id = p_timesheet_id FOR UPDATE;
   IF v_ts.id IS NULL THEN RAISE EXCEPTION 'Timesheet not found'; END IF;
   IF v_ts.status NOT IN ('submitted','disputed') THEN RAISE EXCEPTION 'Timesheet is % and cannot be approved', v_ts.status; END IF;
-  IF v_ts.clock_in_at IS NULL OR v_ts.clock_out_at IS NULL THEN RAISE EXCEPTION 'Timesheet has no complete clock record'; END IF;
+  IF v_ts.clock_in_at IS NULL OR v_ts.clock_out_at IS NULL THEN RAISE EXCEPTION 'Timesheet has no clock record'; END IF;
 
   SELECT * INTO v_assignment FROM shift_assignments WHERE id = v_ts.assignment_id;
   SELECT * INTO v_shift FROM shifts WHERE id = v_ts.shift_id;
@@ -118,21 +125,27 @@ BEGIN
   v_ot := CASE WHEN v_rule.daily_ot_after_hours IS NOT NULL THEN GREATEST(v_worked - v_dt - v_rule.daily_ot_after_hours, 0) ELSE 0 END;
   v_reg := v_worked - v_ot - v_dt;
 
-  -- weekly threshold: regular hours already approved for this company in the same
-  -- ISO workweek consume the cap; the remainder of this shift is promoted to OT.
+  -- weekly threshold: hours worked EARLIER this ISO week consume the regular cap,
+  -- so approval order cannot shift which shift's hours get the OT rate.
   IF v_rule.weekly_ot_after_hours IS NOT NULL THEN
     -- serialise approvals per worker+company so concurrent calls cannot both read the
     -- same prior total and each pay straight time past the cap
     PERFORM pg_advisory_xact_lock(hashtext('weekly_ot:' || v_ts.worker_id::text || ':' || v_event.company_id::text));
-    SELECT COALESCE(sum(t.regular_hours), 0) INTO v_prior_weekly
+    -- worked hours of sheets clocked in earlier this week (approved ones have
+    -- computed hour columns; pending ones are measured off their clock record)
+    SELECT COALESCE(sum(COALESCE(
+             t.regular_hours + t.overtime_hours + t.doubletime_hours,
+             extract(epoch FROM (t.clock_out_at - t.clock_in_at)) / 3600.0 - COALESCE(t.break_minutes, 0) / 60.0
+           )), 0) INTO v_prior_weekly
     FROM timesheets t
     JOIN shifts s ON s.id = t.shift_id
     JOIN events e ON e.id = s.event_id
     WHERE t.worker_id = v_ts.worker_id
       AND t.id <> v_ts.id
-      AND t.status IN ('approved', 'paid')
+      AND t.status IN ('submitted', 'approved', 'paid')
       AND e.company_id = v_event.company_id
-      AND date_trunc('week', t.clock_in_at) = date_trunc('week', v_ts.clock_in_at);
+      AND date_trunc('week', t.clock_in_at) = date_trunc('week', v_ts.clock_in_at)
+      AND (t.clock_in_at, t.id) < (v_ts.clock_in_at, v_ts.id);
     v_room := GREATEST(v_rule.weekly_ot_after_hours - v_prior_weekly, 0);
     IF v_reg > v_room THEN
       v_ot := v_ot + (v_reg - v_room);
@@ -178,8 +191,60 @@ BEGIN
                    + v_meal_pen * v_rate, 2);
   v_fee := round(v_gross * v_fee_pct / 100.0, 2);
 
-  -- draw the gross from funded deposits (oldest first); refuse if under-funded
-  v_remaining := v_gross;
+  -- === IOU settlement (partial, #28) =======================================
+  -- Committed payout-deduction IOUs settle out of the payout, oldest first,
+  -- capped at 25% of gross. Order: this shift.s IOUs, then carry-overs.
+  v_iou_room := round(v_gross * 25);          -- gross dollars -> cap cents
+  FOR v_iou IN
+    SELECT i.*, (i.shift_id IS DISTINCT FROM v_shift.id) AS is_carry
+    FROM crew_iou i
+    LEFT JOIN shifts s ON s.id = i.shift_id
+    WHERE i.worker_id = v_ts.worker_id
+      AND i.status = 'committed' AND i.settle_via = 'payout_deduction'
+      AND i.settled_cents < i.amount_cents
+      AND (i.shift_id = v_shift.id
+           OR (i.shift_id IS NOT NULL AND s.ends_at < now() AND s.status <> 'cancelled'))
+    ORDER BY (i.shift_id IS DISTINCT FROM v_shift.id), i.created_at, i.id
+    FOR UPDATE OF i
+  LOOP
+    EXIT WHEN v_iou_room <= 0;
+    v_take_cents := LEAST(v_iou.amount_cents - v_iou.settled_cents, v_iou_room);
+    CONTINUE WHEN v_take_cents <= 0;
+
+    INSERT INTO crew_iou_settlements (iou_id, timesheet_id, amount_cents, carried_over)
+    VALUES (v_iou.id, v_ts.id, v_take_cents, v_iou.is_carry);
+
+    UPDATE crew_iou
+       SET settled_cents = settled_cents + v_take_cents,
+           status = CASE WHEN settled_cents + v_take_cents >= amount_cents THEN 'settled'::crew_iou_status ELSE status END,
+           settled_at = CASE WHEN settled_cents + v_take_cents >= amount_cents THEN now() ELSE settled_at END,
+           settled_timesheet_id = CASE WHEN settled_cents + v_take_cents >= amount_cents THEN v_ts.id ELSE settled_timesheet_id END,
+           updated_at = now()
+     WHERE id = v_iou.id;
+
+    v_iou_lines := v_iou_lines || jsonb_build_object(
+      'description',
+        'Crew share: ' || v_iou.kind::text
+        || COALESCE(' — ' || NULLIF(v_iou.notes, ''), '')
+        || CASE WHEN v_iou.settled_cents + v_take_cents < v_iou.amount_cents
+                THEN format(' (partial: %s of %s)', to_char(v_take_cents / 100.0, 'FM999999990.00'), to_char(v_iou.amount_cents / 100.0, 'FM999999990.00'))
+                WHEN v_iou.settled_cents > 0
+                THEN format(' (final %s of %s)', to_char(v_take_cents / 100.0, 'FM999999990.00'), to_char(v_iou.amount_cents / 100.0, 'FM999999990.00'))
+                ELSE '' END
+        || CASE WHEN v_iou.is_carry THEN ' (carried from earlier call)' ELSE '' END,
+      'hours', NULL, 'rate', NULL,
+      'amount', -(v_take_cents / 100.0),
+      'iou_id', v_iou.id);
+
+    v_iou_room := v_iou_room - v_take_cents;
+    v_iou_cents := v_iou_cents + v_take_cents;
+  END LOOP;
+  v_iou_deduction := v_iou_cents / 100.0;
+  v_net := v_gross - v_iou_deduction;
+  -- ==========================================================================
+
+  -- the worker nets net; deducted IOU cents stay pooled in the event escrow
+  v_remaining := v_net;
   FOR v_escrow IN
     SELECT * FROM escrow_deposits
     WHERE event_id = v_event.id AND status IN ('funded', 'partially_released')
@@ -226,17 +291,17 @@ BEGIN
          'hours', v_meal_pen, 'rate', v_rate, 'amount', round(v_meal_pen * v_rate, 2))) ELSE '[]'::jsonb END
     || CASE WHEN v_turnaround > 0 THEN jsonb_build_array(jsonb_build_object(
          'description', 'Turnaround premium — ' || v_turnaround || 'h before the ' || v_rule.turnaround_min_hours || 'h rest floor bills as double time',
-         'hours', v_turnaround, 'rate', NULL, 'amount', 0)) ELSE '[]'::jsonb END,
-    v_gross, v_fee, v_gross
+         'hours', v_turnaround, 'rate', NULL, 'amount', 0)) ELSE '[]'::jsonb END
+    || v_iou_lines,
+    v_gross, v_fee, v_net
   ) RETURNING * INTO v_invoice;
 
   INSERT INTO payouts (invoice_id, worker_id, amount, method, expected_arrival_at)
-  VALUES (v_invoice.id, v_ts.worker_id, v_gross, p_payout_method,
+  VALUES (v_invoice.id, v_ts.worker_id, v_net, p_payout_method,
     CASE WHEN p_payout_method = 'instant' THEN now() + interval '30 minutes' ELSE now() + interval '2 days' END);
 
   RETURN v_invoice;
 END $$;
-
 GRANT EXECUTE ON FUNCTION approve_timesheet(uuid, integer, text) TO authenticated;
 
 -- Seed the union packs. IATSE_STD gains the standard 8h turnaround floor;
