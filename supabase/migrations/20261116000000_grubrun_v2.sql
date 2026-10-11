@@ -97,7 +97,8 @@ BEGIN
   -- whoever collects the food now collects the IOUs already minted
   UPDATE crew_iou SET beneficiary_worker_id = v_me, updated_at = now()
    WHERE iou_group_id IN (SELECT id FROM food_run_orders WHERE run_id = p_run_id)
-     AND status = 'committed' AND beneficiary_worker_id = v_run.runner_worker_id;
+     AND status = 'committed' AND beneficiary_worker_id = v_run.runner_worker_id
+     AND worker_id IS DISTINCT FROM v_me;
 
   INSERT INTO notifications (user_id, title, message, type, action_url, metadata)
   VALUES (v_run.runner_worker_id, 'Handoff accepted',
