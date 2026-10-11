@@ -56,7 +56,7 @@ VALUES ('00000000-0000-0000-0000-00000000c0e1', '00000000-0000-0000-0000-0000000
 SET LOCAL ROLE authenticated;
 SELECT set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000c0a1","role":"authenticated"}', true);
 
-SELECT ok(approve_timesheet('00000000-0000-0000-0000-00000000c0d2') IS NOT NULL, 'approval succeeds');
+SELECT lives_ok($$ SELECT approve_timesheet('00000000-0000-0000-0000-00000000c0d2') $$, 'approval succeeds');
 
 -- worker nets gross − $80 (the capped $80 of $150 owed)
 SELECT is(
