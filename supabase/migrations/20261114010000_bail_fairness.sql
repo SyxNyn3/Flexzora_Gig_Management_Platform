@@ -159,6 +159,7 @@ BEGIN
        SET spots_taken = GREATEST(spots_taken - OLD.spots_needed, 0),
            status = CASE WHEN status = 'full' THEN 'open'::lodging_pool_status ELSE status END
      WHERE id = OLD.pool_id;
+    SELECT * INTO v_pool FROM lodging_pools WHERE id = OLD.pool_id;
 
     -- Bail fairness: member's OWN leave inside the window keeps a share.
     IF NEW.status = 'left' THEN
