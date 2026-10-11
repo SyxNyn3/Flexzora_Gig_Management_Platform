@@ -60,8 +60,8 @@ SELECT is(
   4, 'unscoped guidance includes the Vegas call');
 
 SELECT is(
-  (SELECT (rate_guidance('00000000-0000-0000-0000-00000000c0cc', 'Stagehand', NULL, 34.0430, -118.2673) ->> 'p50')::numeric),
-  30.00, 'role family filter keeps stagehands in their own lane');
+  (SELECT rate_guidance('00000000-0000-0000-0000-00000000c0cc', 'Stagehand', NULL, 34.0430, -118.2673) ->> 'p50'),
+  NULL, 'single cleared rate is suppressed (k-anonymity floor) — it would leak the worker\'s negotiated number');
 
 SELECT is(
   (SELECT (rate_guidance('00000000-0000-0000-0000-00000000c0cc', 'Followspot', NULL, NULL, NULL) ->> 'count')::int),
