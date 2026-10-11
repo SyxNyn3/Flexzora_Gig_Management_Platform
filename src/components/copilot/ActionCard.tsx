@@ -1,5 +1,6 @@
 // Action preview card — the copilot never acts without an explicit confirm.
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { CheckCheck, ClipboardCopy, FileText, Megaphone, X } from 'lucide-react';
@@ -68,10 +69,21 @@ const ActionCard: React.FC<Props> = ({ action, busy, onConfirm, onDismiss, onCop
             </Button>
           )}
           {action.kind === 'broadcast_draft' && (
-            <Button size="sm" variant="secondary" onClick={copyDraft}>
-              {copied ? <CheckCheck className="w-3.5 h-3.5 mr-1" /> : <ClipboardCopy className="w-3.5 h-3.5 mr-1" />}
-              {copied ? 'Copied' : 'Copy draft'}
-            </Button>
+            <>
+              <Button size="sm" variant="secondary" onClick={copyDraft}>
+                {copied ? <CheckCheck className="w-3.5 h-3.5 mr-1" /> : <ClipboardCopy className="w-3.5 h-3.5 mr-1" />}
+                {copied ? 'Copied' : 'Copy draft'}
+              </Button>
+              <Button size="sm" asChild>
+                <Link
+                  to={`/broadcast?audience=${encodeURIComponent(String(payload.audience ?? 'all'))}${
+                    payload.event_id ? `&event_id=${payload.event_id}` : ''
+                  }${payload.shift_id ? `&shift_id=${payload.shift_id}` : ''}&body=${encodeURIComponent(String(payload.draft ?? ''))}`}
+                >
+                  <Megaphone className="w-3.5 h-3.5 mr-1" /> Open in Broadcast
+                </Link>
+              </Button>
+            </>
           )}
           <Button size="sm" variant="ghost" onClick={onDismiss} disabled={busy}>
             <X className="w-3.5 h-3.5 mr-1" /> Dismiss

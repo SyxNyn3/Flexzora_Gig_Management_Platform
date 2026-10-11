@@ -265,4 +265,28 @@ begin
      v_event, 'Site lead', current_date + 7 + interval '7 hours', 'assigned')
   on conflict (id) do nothing;
 
+  -- ------------------------------------------------------------------
+  -- Company OS demo: a sent broadcast with its delivery log — two roster
+  -- workers reached in-app, one accountless staff member queued for email.
+  -- ------------------------------------------------------------------
+  insert into broadcasts (id, company_id, created_by, subject, body, audience,
+                          event_id, include_staff, status, recipient_count, sent_at)
+  values ('99999999-0000-4000-8000-000000000001', v_company, p_company_user,
+          'Load-in call time moved',
+          'Load-in for Demo Festival moves to 7am tomorrow — dock door 3, see Marcus at the gate.',
+          'event', v_event, true, 'sent', 3, now() - interval '1 day')
+  on conflict (id) do nothing;
+
+  insert into broadcast_recipients (broadcast_id, company_id, worker_id, channel, status)
+  values
+    ('99999999-0000-4000-8000-000000000001', v_company, p_worker1, 'in_app', 'sent'),
+    ('99999999-0000-4000-8000-000000000001', v_company, p_worker2, 'in_app', 'sent')
+  on conflict do nothing;
+
+  insert into broadcast_recipients (broadcast_id, company_id, staff_id, channel, status, error)
+  values
+    ('99999999-0000-4000-8000-000000000001', v_company, '88888888-0000-4000-8000-000000000001',
+     'email', 'queued', 'email transport not wired yet')
+  on conflict do nothing;
+
 end $$;

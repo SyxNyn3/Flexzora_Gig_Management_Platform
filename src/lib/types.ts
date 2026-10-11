@@ -185,6 +185,18 @@ export interface Database {
         Insert: Omit<StaffAssignment, 'id' | 'created_at' | 'updated_at' | 'member'>;
         Update: Partial<Omit<StaffAssignment, 'id' | 'created_at' | 'company_id' | 'staff_id' | 'event_id' | 'member'>>;
       };
+      broadcasts: {
+        Row: Broadcast;
+        Insert: Omit<Broadcast, 'id' | 'created_at' | 'updated_at' | 'sent_at' | 'recipient_count' | 'status' | 'error'> & {
+          status?: BroadcastStatus;
+        };
+        Update: Partial<Omit<Broadcast, 'id' | 'created_at' | 'company_id'>>;
+      };
+      broadcast_recipients: {
+        Row: BroadcastRecipient;
+        Insert: Omit<BroadcastRecipient, 'id' | 'created_at'>;
+        Update: Partial<Omit<BroadcastRecipient, 'id' | 'created_at' | 'broadcast_id'>>;
+      };
     };
   };
 }
@@ -940,5 +952,47 @@ export interface StaffAssignment {
   created_at: string;
   updated_at: string;
   member?: StaffMember;
+}
+
+// ---------------------------------------------------------------------------
+// Company OS — broadcast messaging
+// ---------------------------------------------------------------------------
+export type BroadcastAudience = 'all' | 'event' | 'shift';
+export type BroadcastStatus = 'draft' | 'sent' | 'failed';
+export type BroadcastChannel = 'in_app' | 'email' | 'sms';
+export type BroadcastRecipientStatus = 'queued' | 'sent' | 'delivered' | 'failed' | 'skipped';
+
+export interface Broadcast {
+  id: string;
+  company_id: string;
+  created_by?: string | null;
+  subject?: string | null;
+  body: string;
+  audience: BroadcastAudience;
+  event_id?: string | null;
+  shift_id?: string | null;
+  include_staff: boolean;
+  status: BroadcastStatus;
+  recipient_count: number;
+  error?: string | null;
+  sent_at?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BroadcastRecipient {
+  id: string;
+  broadcast_id: string;
+  company_id: string;
+  worker_id?: string | null;
+  staff_id?: string | null;
+  channel: BroadcastChannel;
+  status: BroadcastRecipientStatus;
+  error?: string | null;
+  notification_id?: string | null;
+  created_at: string;
+  delivered_at?: string | null;
+  worker_name?: string;
+  staff_name?: string;
 }
 
