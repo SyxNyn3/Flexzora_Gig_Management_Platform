@@ -7,6 +7,22 @@ Each entry: lane, branch/PR, what shipped, verification status, notes.
 
 ## Builder-2 — Company OS sprint (overnight)
 
+### feat/company-copilot → PR #55 — Company Copilot
+
+- `company_docs` + `copilot_messages` + `copilot_query`: whitelisted
+  SECURITY DEFINER read catalog (unfilled_calls, upcoming_events,
+  cert_expiring, timesheets_pending, budget_status, crew_for_shift) that
+  re-verifies owns_company and rejects unknown kinds.
+- Intent routing: pure regex router (vitest-covered) answers instantly;
+  OmniRoute LLM only disambiguates failures and only returns a catalog
+  kind + ids resolved from context — the model never sees the database.
+- Every action is a preview card: "remember that…" confirms into
+  company_docs; "text the crew…" renders a broadcast draft (copy-out
+  until the broadcast lane lands). Rows snapshot onto the message row.
+- Flag-gated (VITE_ENABLE_COPILOT): nav item + /copilot route redirect.
+- Shared OmniRoute client extracted to src/lib/llm.ts; import wizard
+  refactored onto it. Seed: 3 demo company docs.
+
 ### feat/import-wizard → PR #53 — AI Upload Wizard
 
 - `import_jobs`/`import_rows` + `commit_import_job` SECURITY DEFINER RPC:
