@@ -8,6 +8,7 @@ import WaitlistForm from '@/components/waitlist/WaitlistForm';
 import ScheduleDemoForm from '@/components/demo/ScheduleDemoForm';
 import Layout from '@/components/layout/Layout';
 import AuthForm from '@/components/auth/AuthForm';
+import { COPILOT_ENABLED } from '@/lib/copilot/service';
 
 const WorkerDashboard = lazy(() => import('@/components/dashboard/WorkerDashboard'));
 const Dashboard = lazy(() => import('@/components/dashboard/Dashboard'));
@@ -33,11 +34,19 @@ const EventsPage = lazy(() => import('@/pages/company/EventsPage'));
 const EventDetailPage = lazy(() => import('@/pages/company/EventDetailPage'));
 const TimesheetApprovalPage = lazy(() => import('@/pages/company/TimesheetApprovalPage'));
 const RosterPage = lazy(() => import('@/pages/company/RosterPage'));
+const ImportPage = lazy(() => import('@/pages/company/ImportPage'));
+const CopilotPage = lazy(() => import('@/pages/company/CopilotPage'));
+const StaffPage = lazy(() => import('@/pages/company/StaffPage'));
+const BroadcastPage = lazy(() => import('@/pages/company/BroadcastPage'));
+const OpsBoardPage = lazy(() => import('@/pages/company/OpsBoardPage'));
+const ExportsPage = lazy(() => import('@/pages/company/ExportsPage'));
+const AlertsPage = lazy(() => import('@/pages/company/AlertsPage'));
 const ShiftMarketplacePage = lazy(() => import('@/pages/worker/ShiftMarketplacePage'));
 const CrewBoardPage = lazy(() => import('@/pages/worker/CrewBoardPage'));
 const PayoutsPage = lazy(() => import('@/pages/worker/PayoutsPage'));
 const PublicProfilePage = lazy(() => import('@/pages/PublicProfilePage'));
 const WaitlistAdminPage = lazy(() => import('@/pages/admin/WaitlistAdminPage'));
+const ResetPasswordPage = lazy(() => import('@/components/auth/ResetPasswordPage'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -170,6 +179,10 @@ const AppRoutes: React.FC = () => {
             </PublicRoute>
           }
         />
+        {/* Recovery-link target — intentionally NOT wrapped in PublicRoute:
+            the link creates a session that would bounce users to /dashboard
+            before they could set a new password. */}
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route
           path="/dashboard"
           element={
@@ -366,6 +379,76 @@ const AppRoutes: React.FC = () => {
             <ProtectedRoute>
               <Layout>
                 <RosterPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/import"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <ImportPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/staff"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <StaffPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/ops"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <OpsBoardPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/broadcast"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <BroadcastPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/alerts"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <AlertsPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/exports"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <ExportsPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/copilot"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                {COPILOT_ENABLED ? <CopilotPage /> : <Navigate to="/dashboard" replace />}
               </Layout>
             </ProtectedRoute>
           }

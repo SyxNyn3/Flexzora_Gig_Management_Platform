@@ -7,6 +7,9 @@ export default defineConfig({
   // demo site (flexzora-live repo) lives at /flexzora-live/, local dev at /.
   base: process.env.VITE_BASE_PATH || '/',
   plugins: [react()],
+  server: {
+    allowedHosts: ['.trycloudflare.com'],
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),

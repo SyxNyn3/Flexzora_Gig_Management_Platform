@@ -257,7 +257,7 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 DROP TRIGGER IF EXISTS ride_offers_cascade_cancel ON ride_offers;
 CREATE TRIGGER ride_offers_cascade_cancel BEFORE UPDATE ON ride_offers
@@ -276,7 +276,7 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 DROP TRIGGER IF EXISTS shifts_cancel_rides ON shifts;
 CREATE TRIGGER shifts_cancel_rides AFTER UPDATE OF status ON shifts

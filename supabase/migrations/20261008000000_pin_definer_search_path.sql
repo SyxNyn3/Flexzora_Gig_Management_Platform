@@ -24,6 +24,11 @@ BEGIN
       JOIN pg_namespace n ON n.oid = p.pronamespace
      WHERE n.nspname = 'public'
        AND p.prosecdef
+       -- REPLAY FIX: never touch extension-owned functions (PostGIS lands in
+       -- public on a fresh local stack and is owned by supabase_admin), only
+       -- functions this role actually owns.
+       AND NOT EXISTS (SELECT 1 FROM pg_depend d WHERE d.objid = p.oid AND d.deptype = 'e')
+       AND pg_get_userbyid(p.proowner) = current_user
        AND (p.proconfig IS NULL
             OR NOT EXISTS (
                  SELECT 1 FROM unnest(p.proconfig) AS cfg

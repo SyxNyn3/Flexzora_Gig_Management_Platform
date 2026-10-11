@@ -13,8 +13,9 @@ import { useEvents, useMyCompany, useOvertimeRules, useVenues } from '@/hooks/us
 import { MarketplaceService } from '@/lib/marketplace/service';
 import { EventFormData, ProductionEvent, VenueFormData } from '@/lib/types';
 import EventForm from '@/components/marketplace/company/EventForm';
+import FeedManager from '@/components/calendar/FeedManager';
 import { confirmedCount } from '@/components/marketplace/format';
-import { CalendarDays, MapPin, Plus, Users } from 'lucide-react';
+import { CalendarDays, MapPin, Plus, Rss, Users } from 'lucide-react';
 
 const statusTone: Record<ProductionEvent['status'], string> = {
   draft: 'bg-muted text-foreground/80',
@@ -77,15 +78,29 @@ const EventsPage: React.FC = () => {
           <h1 className="text-2xl font-bold">Events</h1>
           <p className="text-sm text-muted-foreground">{company.name} · multi-day productions and their crew calls</p>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button><Plus className="w-4 h-4 mr-1" /> New event</Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-            <DialogHeader><DialogTitle>Create event</DialogTitle></DialogHeader>
-            <EventForm venues={venues.data} overtimeRules={rules.data} onCreateVenue={onCreateVenue} onSubmit={onCreate} submitting={submitting} />
-          </DialogContent>
-        </Dialog>
+        <div className="flex gap-2">
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="outline"><Rss className="w-4 h-4 mr-1" /> Calendar feeds</Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader><DialogTitle>Calendar feeds</DialogTitle></DialogHeader>
+              <p className="text-xs text-muted-foreground -mt-1 mb-3">
+                Subscribe from Google Calendar, Apple Calendar, or Outlook. The token URL is the key — revoke any feed instantly.
+              </p>
+              {profile && <FeedManager companyId={company.id} profileId={profile.id} events={events.data} />}
+            </DialogContent>
+          </Dialog>
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button><Plus className="w-4 h-4 mr-1" /> New event</Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+              <DialogHeader><DialogTitle>Create event</DialogTitle></DialogHeader>
+              <EventForm venues={venues.data} overtimeRules={rules.data} onCreateVenue={onCreateVenue} onSubmit={onCreate} submitting={submitting} />
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       {events.loading && <Skeleton className="h-40 w-full" />}

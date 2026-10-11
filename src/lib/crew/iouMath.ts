@@ -18,33 +18,54 @@ export function iouCapCents(grossCents: number): number {
   return Math.round(grossCents * (IOU_CAP_PCT / 100));
 }
 
-/**
- * Which committed IOUs (in created_at order) will settle against a payout of
- * `grossCents`? Mirrors the greedy whole-row selection in approve_timesheet:
- * settle oldest first, stop at the first row that doesn't fit — an older IOU
- * is never jumped by a newer one, it just rides the next payout.
- */
-export function selectSettleableIous(
-  ious: Pick<CrewIOU, 'id' | 'amount_cents'>[],
-  grossCents: number,
-): { settledIds: string[]; totalCents: number; skippedIds: string[] } {
-  let room = iouCapCents(grossCents);
-  const settledIds: string[] = [];
-  const skippedIds: string[] = [];
-  for (const iou of ious) {
-    if (iou.amount_cents > room) {
-      skippedIds.push(...ious.slice(ious.indexOf(iou)).map((i) => i.id));
-      break;
-    }
-    room -= iou.amount_cents;
-    settledIds.push(iou.id);
-  }
-  return { settledIds, totalCents: iouCapCents(grossCents) - room, skippedIds };
+export interface IouSettlement {
+  id: string;
+  /** cents collected from this IOU on this payout */
+  takeCents: number;
+  /** true when the IOU is fully paid off after this take */
+  settled: boolean;
+  /** cents still owed after this take */
+  remainingCents: number;
 }
 
-/** Sum of a worker's committed IOUs for a shift vs. the 25% cap. */
-export function iouCapacity(committedIous: Pick<CrewIOU, 'amount_cents'>[], expectedGrossCents: number): IouCapacity {
-  const committedCents = committedIous.reduce((sum, i) => sum + i.amount_cents, 0);
+type SettleableIou = Pick<CrewIOU, 'id' | 'amount_cents'> & { settled_cents?: number | null };
+
+/**
+ * How do committed IOUs (in created_at order) settle against a payout of
+ * `grossCents`? Mirrors the PARTIAL settlement loop in approve_timesheet
+ * (#28): each IOU gives up min(outstanding, remaining cap), oldest first,
+ * until the cap is exhausted. An over-cap IOU shrinks instead of freezing the
+ * queue; older debt is still never jumped by newer debt.
+ */
+export function selectSettleableIous(
+  ious: SettleableIou[],
+  grossCents: number,
+): { settlements: IouSettlement[]; settledIds: string[]; partialIds: string[]; untouchedIds: string[]; totalCents: number } {
+  const cap = iouCapCents(grossCents);
+  let room = cap;
+  const settlements: IouSettlement[] = [];
+  const settledIds: string[] = [];
+  const partialIds: string[] = [];
+  const untouchedIds: string[] = [];
+  for (const iou of ious) {
+    const outstanding = iou.amount_cents - (iou.settled_cents ?? 0);
+    if (outstanding <= 0) continue;
+    if (room <= 0) {
+      untouchedIds.push(iou.id);
+      continue;
+    }
+    const take = Math.min(outstanding, room);
+    room -= take;
+    const remaining = outstanding - take;
+    settlements.push({ id: iou.id, takeCents: take, settled: remaining === 0, remainingCents: remaining });
+    (remaining === 0 ? settledIds : partialIds).push(iou.id);
+  }
+  return { settlements, settledIds, partialIds, untouchedIds, totalCents: cap - room };
+}
+
+/** Sum of a worker's outstanding committed IOUs for a shift vs. the 25% cap. */
+export function iouCapacity(committedIous: SettleableIou[], expectedGrossCents: number): IouCapacity {
+  const committedCents = committedIous.reduce((sum, i) => sum + Math.max(i.amount_cents - (i.settled_cents ?? 0), 0), 0);
   const capCents = iouCapCents(expectedGrossCents);
   return { committedCents, capCents, remainingCents: Math.max(capCents - committedCents, 0) };
 }
