@@ -64,7 +64,7 @@ Two sessions work this repo in parallel. **Before starting any item, mark it**: 
 
 ## P0 — ship blockers
 - [x] Add `.github/workflows/ci.yml`: `npx eslint src`, `npx tsc --noEmit -p tsconfig.app.json`, `npx vitest run`, `npm run build` on every PR (free minutes). — **claimed: Mark — working on it**
-- [ ] Merge #2 (waitlist funnel), retarget #4 to `main`, then land both.
+- [x] Merge #2 (waitlist funnel), retarget #4 to `main`, then land both. — **done** (both merged)
 - [ ] `supabase db push` to the live project; deploy edge functions (`submit-waitlist`, `verify-waitlist-email`, `resend-waitlist-verification`, `stripe-webhook` with `--no-verify-jwt`); set `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `VITE_STRIPE_PUBLISHABLE_KEY` when the Stripe account exists.
 
 ## P1 — Phase 1.2 marketplace completion
