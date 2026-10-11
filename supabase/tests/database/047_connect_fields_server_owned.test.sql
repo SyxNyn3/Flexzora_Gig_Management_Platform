@@ -16,17 +16,24 @@ FROM profiles p WHERE p.user_id = '11111111-0000-4000-8000-000000000002';
 SELECT set_config('request.jwt.claims', '{"sub":"11111111-0000-4000-8000-000000000002","role":"authenticated"}', true);
 SET LOCAL ROLE authenticated;
 
--- worker can still save their private location
+-- worker can still save their private location (seed already planted the row)
 SELECT lives_ok($$
-  INSERT INTO worker_sensitive (worker_id, latitude, longitude)
-  SELECT p.id, 30.0, -87.0 FROM profiles p WHERE p.user_id = '11111111-0000-4000-8000-000000000002'
+  UPDATE worker_sensitive SET latitude = 30.0, longitude = -87.0
+  WHERE worker_id = (SELECT id FROM profiles WHERE user_id = '11111111-0000-4000-8000-000000000002')
 $$, 'worker can still save private location');
 
--- self-insert of a Connect account is rejected
+-- self-insert of a Connect account is rejected (fresh worker4 has no row yet)
+RESET ROLE;
+INSERT INTO auth.users (id, instance_id, aud, role, email, encrypted_password, raw_user_meta_data, created_at, updated_at)
+VALUES ('11111111-0000-4000-8000-000000000004', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
+        'worker4@test.local', 'x', '{"full_name":"Worker Four"}'::jsonb, now(), now());
+SET LOCAL ROLE authenticated;
+SELECT set_config('request.jwt.claims', '{"sub":"11111111-0000-4000-8000-000000000004","role":"authenticated"}', true);
 SELECT throws_ok($$
   INSERT INTO worker_sensitive (worker_id, stripe_connect_account_id, payouts_enabled)
-  SELECT p.id, 'acct_attacker', true FROM profiles p WHERE p.user_id = '11111111-0000-4000-8000-000000000003'
+  SELECT p.id, 'acct_attacker', true FROM profiles p WHERE p.user_id = '11111111-0000-4000-8000-000000000004'
 $$, '42501', NULL, '#47 self-insert of a Connect account is rejected');
+SELECT set_config('request.jwt.claims', '{"sub":"11111111-0000-4000-8000-000000000002","role":"authenticated"}', true);
 
 -- self-write of payouts_enabled / account on an existing row is rejected
 SELECT throws_ok($$
