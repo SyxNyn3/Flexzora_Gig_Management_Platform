@@ -29,22 +29,22 @@ INSERT INTO shifts (id, event_id, title, role_name, headcount, starts_at, ends_a
 
 -- both workers confirmed crew (handoff eligibility)
 INSERT INTO shift_assignments (id, shift_id, worker_id, source, status, confirmed_at)
-SELECT '00000000-0000-0000-0000-00000000ac01', '00000000-0000-0000-0000-00000000fc01', id, 'direct_book', 'confirmed', now() FROM profiles WHERE user_id = '00000000-0000-0000-0000-00000000b0f3'
+SELECT '00000000-0000-0000-0000-00000000ac01'::uuid, '00000000-0000-0000-0000-00000000fc01'::uuid, id, 'direct_book'::assignment_source, 'confirmed'::assignment_status, now() FROM profiles WHERE user_id = '00000000-0000-0000-0000-00000000b0f3'::uuid
 UNION ALL
-SELECT '00000000-0000-0000-0000-00000000ac02', '00000000-0000-0000-0000-00000000fc01', id, 'direct_book', 'confirmed', now() FROM profiles WHERE user_id = '00000000-0000-0000-0000-00000000b0f4';
+SELECT '00000000-0000-0000-0000-00000000ac02'::uuid, '00000000-0000-0000-0000-00000000fc01'::uuid, id, 'direct_book'::assignment_source, 'confirmed'::assignment_status, now() FROM profiles WHERE user_id = '00000000-0000-0000-0000-00000000b0f4'::uuid;
 
 -- R1: min_orders=2; R2: late_fee=500, cutoff moves past mid-test
 INSERT INTO food_runs (id, shift_id, runner_worker_id, restaurant, order_cutoff_at, min_orders, late_fee_cents)
-SELECT '00000000-0000-0000-0000-000000009c01', '00000000-0000-0000-0000-00000000fc01', id, 'Tacos', now() + interval '3 days', 2, 0 FROM profiles WHERE user_id = '00000000-0000-0000-0000-00000000b0f2'
+SELECT '00000000-0000-0000-0000-000000009c01'::uuid, '00000000-0000-0000-0000-00000000fc01'::uuid, id, 'Tacos', now() + interval '3 days', 2, 0 FROM profiles WHERE user_id = '00000000-0000-0000-0000-00000000b0f2'::uuid
 UNION ALL
-SELECT '00000000-0000-0000-0000-000000009c02', '00000000-0000-0000-0000-00000000fc01', id, 'Pizza', now() + interval '3 days', 0, 500 FROM profiles WHERE user_id = '00000000-0000-0000-0000-00000000b0f2';
+SELECT '00000000-0000-0000-0000-000000009c02'::uuid, '00000000-0000-0000-0000-00000000fc01'::uuid, id, 'Pizza', now() + interval '3 days', 0, 500 FROM profiles WHERE user_id = '00000000-0000-0000-0000-00000000b0f2'::uuid;
 
 INSERT INTO food_run_orders (id, run_id, worker_id, item, status)
-SELECT '00000000-0000-0000-0000-000000009c11', '00000000-0000-0000-0000-000000009c01', id, '2 carnitas', 'placed' FROM profiles WHERE user_id = '00000000-0000-0000-0000-00000000b0f3'
+SELECT '00000000-0000-0000-0000-000000009c11'::uuid, '00000000-0000-0000-0000-000000009c01'::uuid, id, '2 carnitas', 'placed'::food_order_status FROM profiles WHERE user_id = '00000000-0000-0000-0000-00000000b0f3'::uuid
 UNION ALL
-SELECT '00000000-0000-0000-0000-000000009c12', '00000000-0000-0000-0000-000000009c02', id, 'Slice', 'placed' FROM profiles WHERE user_id = '00000000-0000-0000-0000-00000000b0f3'
+SELECT '00000000-0000-0000-0000-000000009c12'::uuid, '00000000-0000-0000-0000-000000009c02'::uuid, id, 'Slice', 'placed'::food_order_status FROM profiles WHERE user_id = '00000000-0000-0000-0000-00000000b0f3'::uuid
 UNION ALL
-SELECT '00000000-0000-0000-0000-000000009c13', '00000000-0000-0000-0000-000000009c02', id, 'Pie', 'placed' FROM profiles WHERE user_id = '00000000-0000-0000-0000-00000000b0f4';
+SELECT '00000000-0000-0000-0000-000000009c13'::uuid, '00000000-0000-0000-0000-000000009c02'::uuid, id, 'Pie', 'placed'::food_order_status FROM profiles WHERE user_id = '00000000-0000-0000-0000-00000000b0f4'::uuid;
 
 SET LOCAL ROLE authenticated;
 SELECT set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000b0f2","role":"authenticated"}', true);
