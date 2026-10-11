@@ -19,6 +19,7 @@ const KIND_META: Record<AlertKind, { label: string; icon: React.ElementType }> =
   cert_expiring: { label: 'Cert expiring', icon: BadgeCheck },
   timesheet_pending: { label: 'Timesheet', icon: ClipboardList },
   shift_tomorrow: { label: 'Call soon', icon: CalendarClock },
+  cert_review: { label: 'Review queue', icon: BadgeCheck },
 };
 
 const SEVERITY_ORDER = { urgent: 0, warning: 1, info: 2 } as const;
@@ -149,11 +150,15 @@ const AlertsPage: React.FC = () => {
                     </div>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
-                    {a.event_id && (
+                    {a.kind === 'cert_review' ? (
+                      <Button variant="ghost" size="sm" asChild>
+                        <Link to="/cert-reviews">Open</Link>
+                      </Button>
+                    ) : a.event_id ? (
                       <Button variant="ghost" size="sm" asChild>
                         <Link to={`/events/${a.event_id}`}>Open</Link>
                       </Button>
-                    )}
+                    ) : null}
                     {a.status === 'open' ? (
                       <Button variant="ghost" size="sm" onClick={() => act(a, 'dismissed')} title="Dismiss">
                         <BellOff className="w-4 h-4" />

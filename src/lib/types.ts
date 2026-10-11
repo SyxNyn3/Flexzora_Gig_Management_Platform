@@ -32,7 +32,9 @@ export interface Database {
       };
       certifications: {
         Row: Certification;
-        Insert: Omit<Certification, 'id' | 'created_at' | 'updated_at'>;
+        Insert: Omit<Certification, 'id' | 'created_at' | 'updated_at' | 'verification_status'> & {
+          verification_status?: CertVerificationStatus;
+        };
         Update: Partial<Omit<Certification, 'id' | 'created_at' | 'updated_at'>>;
       };
       gigs: {
@@ -377,6 +379,8 @@ export interface WorkerSkill {
   skill?: Skill;
 }
 
+export type CertVerificationStatus = 'none' | 'pending' | 'verified' | 'rejected';
+
 export interface Certification {
   id: string;
   worker_id: string;
@@ -389,6 +393,14 @@ export interface Certification {
   cert_type_code?: string;
   verified?: boolean;
   verified_at?: string;
+  /** Storage path in the private cert-docs bucket. */
+  document_path?: string | null;
+  document_name?: string | null;
+  verification_status: CertVerificationStatus;
+  verification_requested_at?: string | null;
+  reviewed_by?: string | null;
+  reviewed_at?: string | null;
+  review_note?: string | null;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -1348,7 +1360,7 @@ export interface SwapClaim {
 // ---------------------------------------------------------------------------
 // Company OS — automatic reminders (alerts inbox)
 // ---------------------------------------------------------------------------
-export type AlertKind = 'unfilled_call' | 'cert_expiring' | 'timesheet_pending' | 'shift_tomorrow';
+export type AlertKind = 'unfilled_call' | 'cert_expiring' | 'timesheet_pending' | 'shift_tomorrow' | 'cert_review';
 export type AlertSeverity = 'info' | 'warning' | 'urgent';
 export type AlertStatus = 'open' | 'resolved' | 'dismissed';
 
