@@ -83,6 +83,7 @@ $$;
 GRANT EXECUTE ON FUNCTION crew_pool_distances(uuid) TO authenticated;
 
 -- Carry the departure pin too so "offer seats again" pre-fills fully.
+DROP FUNCTION IF EXISTS my_last_ride_offer();
 CREATE OR REPLACE FUNCTION my_last_ride_offer()
 RETURNS TABLE (seats integer, departure_area text, gas_share_cents integer, notes text,
                departure_lat double precision, departure_lng double precision)
@@ -93,3 +94,4 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
   ORDER BY o.created_at DESC
   LIMIT 1;
 $$;
+GRANT EXECUTE ON FUNCTION my_last_ride_offer() TO authenticated;
