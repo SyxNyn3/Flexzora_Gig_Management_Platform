@@ -391,6 +391,14 @@ export interface WorkerSkill {
 
 export type CertVerificationStatus = 'none' | 'pending' | 'verified' | 'rejected';
 
+/** Cleared-rate percentiles for a role family inside a market radius. */
+export interface RateGuidance {
+  count: number;
+  p25: number | null;
+  p50: number | null;
+  p75: number | null;
+}
+
 export type ComplianceDocType = 'w9' | 'i9' | 'other';
 export type ComplianceDocStatus = 'pending' | 'approved' | 'rejected';
 
