@@ -62,9 +62,9 @@ const FeedManager: React.FC<Props> = ({ companyId, profileId, events }) => {
         .eq('company_id', companyId)
         .then(({ data }) => {
           setWorkers(
-            ((data ?? []) as { worker_id: string; worker?: { full_name: string } | null }[]).map((r) => ({
+            ((data ?? []) as { worker_id: string; worker?: { full_name: string }[] }[]).map((r) => ({
               id: r.worker_id,
-              name: r.worker?.full_name ?? r.worker_id.slice(0, 8),
+              name: r.worker?.[0]?.full_name ?? r.worker_id.slice(0, 8),
             })),
           );
         });
