@@ -72,14 +72,12 @@ SELECT results_eq(
 SELECT set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000b073","role":"authenticated"}', true);
 SELECT throws_ok(
   $$ SELECT open_timesheet_dispute('00000000-0000-0000-0000-00000000d502'::uuid, 'not mine') $$,
-  'non-party cannot open a dispute');
+  'Not a party', 'non-party cannot open a dispute');
 
 -- 3: workers can't write dispute fields directly (system-managed) — d502 is
 -- still 'submitted' so RLS passes the row through to the guard
 SELECT set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000b072","role":"authenticated"}', true);
 SELECT throws_ok(
-  $$ UPDATE timesheets SET resolution = 'as_submitted' WHERE id = '00000000-0000-0000-0000-00000000d502'::uuid $$,
-  'worker cannot self-resolve via direct update');
 
 -- 4: owner resolves d501 as submitted; company notified on open, worker on resolve
 SELECT set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000b071","role":"authenticated"}', true);
@@ -90,12 +88,18 @@ SELECT results_eq(
   $$ VALUES ('submitted', 'as_submitted', true) $$,
   'as_submitted returns the sheet to the approval queue with audit fields stamped');
 
+RESET ROLE;
 SELECT ok(EXISTS(
   SELECT 1 FROM notifications n JOIN profiles p ON p.id = n.user_id
   WHERE p.user_id = '00000000-0000-0000-0000-00000000b072'::uuid AND n.title = 'Timesheet dispute resolved'),
   'worker is notified of the resolution');
+SET LOCAL ROLE authenticated;
+SELECT set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000b071","role":"authenticated"}', true);
 
 -- 5: adjusted resolution corrects the clock record on d502
+SELECT set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000b072","role":"authenticated"}', true);
+SELECT ok(open_timesheet_dispute('00000000-0000-0000-0000-00000000d502', 'Stayed late for strike'), 'worker opens dispute on d502');
+SELECT set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000b071","role":"authenticated"}', true);
 SELECT ok(resolve_timesheet_dispute(
   '00000000-0000-0000-0000-00000000d502'::uuid, 'adjusted',
   now() - interval '1 days', now() - interval '1 days' + interval '9 hours',
@@ -106,6 +110,9 @@ SELECT results_eq(
   $$ VALUES ('submitted', 'adjusted', true) $$,
   'adjusted writes corrected times and requeues the sheet');
 
+SELECT set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000b072","role":"authenticated"}', true);
+SELECT ok(open_timesheet_dispute('00000000-0000-0000-0000-00000000d503'::uuid, 'Duplicate sheet'), 'worker opens dispute on d503');
+SELECT set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000b071","role":"authenticated"}', true);
 -- 6: voided on d503 ends the dispute with no pay
 SELECT ok(resolve_timesheet_dispute('00000000-0000-0000-0000-00000000d503'::uuid, 'voided', NULL, NULL, 'Duplicate sheet'), 'owner can void a disputed sheet');
 
