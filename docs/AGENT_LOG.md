@@ -7,6 +7,35 @@ Each entry: lane, branch/PR, what shipped, verification status, notes.
 
 ## Builder — Crew OS sprint (overnight)
 
+### feat/shift-swap → PR #15 — ShiftSwap
+
+- `swap_requests`/`swap_claims`: confirmed booking -> open swap ->
+  claims -> accept -> offered assignment -> confirm -> handoff.
+- Cert gate: `worker_meets_shift_certs` (verified, active, covers call
+  date — mirrors matchScore) gates both claims AND RLS visibility.
+- Company approval rides the existing offer flow: claimer holds an
+  'offered' assignment, company gets a `notifications` row, keeps all
+  decline/cancel levers.
+- Sweetener mints a manual `crew_iou` on completion; crew_alerts tell
+  both parties. Unwinds on offer death, request cancel, shift delete.
+- Guards INVOKER w/ current_user exemption; sync DEFINER — codebase
+  pattern. Terminal assignment rows revive via ON CONFLICT.
+- UI: swap card on the crew page. Seed: Alex's $50 sweetener swap.
+
+### feat/smart-alerts → PR #14 — SmartAlerts briefing feed
+
+- `crew_alerts` feed (worker-self RLS, dedupe keys, read_at — no delete,
+  doubles as audit trail).
+- Confirm trigger writes gear/parking/departure briefing:
+  - gear = base_gear_items + cert_gear_items on required certs
+    (data-driven, editable without redeploys)
+  - parking = venue flags + notes + parking_json
+  - departure = worker_sensitive geo -> venue, 55 km/h + 20 min buffer
+- Ride-cancel trigger alerts matched riders.
+- Briefing card on crew page: unread badge, mark-all-read, per-kind
+  icons. `gearChecklist()` client helper for pre-booking use.
+- Seed: venue parking intel, worker home coords, confirmed bookings.
+
 ### feat/crew-ui → PR #13 — Crew board UI
 
 - `/shifts/:shiftId/crew` — phone-first crew page: commitments strip
