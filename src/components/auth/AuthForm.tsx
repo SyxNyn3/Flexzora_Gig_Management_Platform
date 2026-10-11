@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -12,10 +12,51 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
-import { Mail, Apple, Chrome, ArrowLeft, Shield, CircleCheck as CheckCircle, Eye, EyeOff, Zap, Lock } from 'lucide-react';
+import { Mail, Apple, Chrome, ArrowLeft, Shield, CircleCheck as CheckCircle, Eye, EyeOff, Zap, Lock, MailCheck } from 'lucide-react';
+
+// OAuth providers render only when the matching flag is set — a button that
+// errors because the provider was never configured is worse than no button.
+const GOOGLE_AUTH_ENABLED = import.meta.env.VITE_ENABLE_GOOGLE_AUTH === 'true';
+const APPLE_AUTH_ENABLED = import.meta.env.VITE_ENABLE_APPLE_AUTH === 'true';
+
+type AuthView = 'signin' | 'signup' | 'forgot' | 'check-email';
+
+const forgotSchema = z.object({
+  email: z.string().email('Invalid email address'),
+});
+type ForgotForm = z.infer<typeof forgotSchema>;
+
+// Map Supabase auth errors to copy that matches the rest of the app.
+const friendlyAuthError = (message: string): string => {
+  const m = message.toLowerCase();
+  if (m.includes('invalid login credentials')) {
+    return 'Incorrect email or password. Try again, or reset your password below.';
+  }
+  if (m.includes('email not confirmed')) {
+    return 'Your email is not verified yet — check your inbox for the confirmation link.';
+  }
+  if (m.includes('user already registered') || m.includes('already been registered')) {
+    return 'That email is already registered. Sign in instead, or reset your password.';
+  }
+  if (m.includes('rate limit') || m.includes('too many requests')) {
+    return 'Too many attempts — wait a minute and try again.';
+  }
+  if (m.includes('user not found')) {
+    return 'No account found for that username or email.';
+  }
+  if (m.includes('password should be')) {
+    return message;
+  }
+  return message;
+};
 
 const signInSchema = z.object({
-  email: z.string().email('Invalid email address'),
+  // Accepts a username or an email — emails must look like emails, anything
+  // else just needs to be non-trivial. Username lookup happens at sign-in.
+  email: z.string().min(3, 'Enter your email or username').refine(
+    (v) => !v.includes('@') || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v),
+    'Invalid email address'
+  ),
   password: z.string().min(6, 'Password must be at least 6 characters'),
 });
 
@@ -39,14 +80,24 @@ type SignUpForm = z.infer<typeof signUpSchema>;
 
 const AuthForm: React.FC = () => {
   const [searchParams] = useSearchParams();
-  const [isSignUp, setIsSignUp] = useState(searchParams.get('mode') === 'signup');
+  const [view, setView] = useState<AuthView>(searchParams.get('mode') === 'signup' ? 'signup' : 'signin');
+  const isSignUp = view === 'signup';
   const [loading, setLoading] = useState(false);
   const [socialLoading, setSocialLoading] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState('');
+  const [checkEmail, setCheckEmail] = useState<{ email: string; kind: 'signup' | 'reset' } | null>(null);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [emailNotConfirmed, setEmailNotConfirmed] = useState<string | null>(null);
   const { signIn, signUp } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const t = setTimeout(() => setResendCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendCooldown]);
 
   const signInForm = useForm<SignInForm>({
     resolver: zodResolver(signInSchema),
@@ -68,16 +119,27 @@ const AuthForm: React.FC = () => {
     },
   });
 
+  const forgotForm = useForm<ForgotForm>({
+    resolver: zodResolver(forgotSchema),
+    defaultValues: { email: '' },
+  });
+
   const onSignIn = async (data: SignInForm) => {
     setLoading(true);
     setError('');
+    setEmailNotConfirmed(null);
 
     try {
       const { error } = await signIn(data.email, data.password);
 
       if (error) {
         console.error('Sign in error:', error);
-        setError(error.message);
+        if (error.message.toLowerCase().includes('email not confirmed')) {
+          // Only offer resend when we can resend to — signup resend needs an
+          // email address, not a username.
+          setEmailNotConfirmed(data.email.includes('@') ? data.email : null);
+        }
+        setError(friendlyAuthError(error.message));
       } else {
         toast.success('Welcome back!', {
           description: 'You have been signed in successfully.',
@@ -86,7 +148,7 @@ const AuthForm: React.FC = () => {
         navigate('/dashboard', { replace: true });
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred during sign in');
+      setError(friendlyAuthError(err instanceof Error ? err.message : 'An error occurred during sign in'));
       console.error('Sign in exception:', err);
     } finally {
       setLoading(false);
@@ -110,7 +172,7 @@ const AuthForm: React.FC = () => {
         return;
       }
 
-      const { error } = await signUp(data.email, data.password, {
+      const { data: signUpData, error } = await signUp(data.email, data.password, {
         full_name: data.fullName,
         username: data.username,
         role: data.role,
@@ -118,20 +180,63 @@ const AuthForm: React.FC = () => {
 
       if (error) {
         console.error('Sign up error:', error);
-        setError(error.message);
-      } else {
+        setError(friendlyAuthError(error.message));
+      } else if (signUpData?.session) {
+        // Email confirmation disabled on the project — session exists, go in.
         toast.success('Account created successfully!', {
           description: 'Welcome to FlexZora! Your account has been created.',
         });
-        // Navigate immediately to prevent blank screen
         navigate('/dashboard', { replace: true });
+      } else {
+        // Email verification is ON: no session until the link in their inbox
+        // is clicked. Show the check-email state instead of dumping them on a
+        // dashboard they can't reach.
+        setCheckEmail({ email: data.email, kind: 'signup' });
+        setView('check-email');
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred during sign up');
+      setError(friendlyAuthError(err instanceof Error ? err.message : 'An error occurred during sign up'));
       console.error('Sign up exception:', err);
     } finally {
       setLoading(false);
     }
+  };
+
+  const onForgot = async (data: ForgotForm) => {
+    setLoading(true);
+    setError('');
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(data.email, {
+        redirectTo: `${window.location.origin}${import.meta.env.BASE_URL}reset-password`,
+      });
+
+      if (error) {
+        console.error('Password reset error:', error);
+        setError(friendlyAuthError(error.message));
+      } else {
+        // Always show the sent state — never confirm whether the email exists.
+        setCheckEmail({ email: data.email, kind: 'reset' });
+        setView('check-email');
+      }
+    } catch (err) {
+      setError(friendlyAuthError(err instanceof Error ? err.message : 'An error occurred'));
+      console.error('Password reset exception:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resendVerification = async (email: string) => {
+    if (resendCooldown > 0) return;
+    const { error } = await supabase.auth.resend({ type: 'signup', email });
+    if (error) {
+      console.error('Resend verification error:', error);
+      toast.error(friendlyAuthError(error.message));
+      return;
+    }
+    setResendCooldown(60);
+    toast.success('Verification email sent', { description: `Sent to ${email}` });
   };
 
   const handleSocialLogin = async (provider: 'google' | 'apple') => {
@@ -185,70 +290,166 @@ const AuthForm: React.FC = () => {
               </div>
             </div>
             <CardTitle className="text-3xl font-bold text-foreground mb-2">
-              {isSignUp ? 'Join Flexzora' : 'Welcome Back'}
+              {view === 'signup' && 'Join Flexzora'}
+              {view === 'signin' && 'Welcome Back'}
+              {view === 'forgot' && 'Reset Password'}
+              {view === 'check-email' && 'Check Your Email'}
             </CardTitle>
             <CardDescription className="text-base text-muted-foreground max-w-sm mx-auto leading-relaxed">
-              {isSignUp 
-                ? 'Claim your spot on the call sheet — built for live-event crews' 
-                : 'Sign in to your Flexzora account and get back on the call sheet'
-              }
+              {view === 'signup' && 'Claim your spot on the call sheet — built for live-event crews'}
+              {view === 'signin' && 'Sign in to your Flexzora account and get back on the call sheet'}
+              {view === 'forgot' && 'Enter your account email and we will send you a reset link'}
+              {view === 'check-email' && checkEmail?.kind === 'signup' &&
+                `We sent a verification link to ${checkEmail.email}. Click it to activate your account.`}
+              {view === 'check-email' && checkEmail?.kind === 'reset' &&
+                `If an account exists for ${checkEmail.email}, a password reset link is on its way.`}
             </CardDescription>
           </CardHeader>
 
           <CardContent className="space-y-6 px-8">
-            {/* Social Login Buttons */}
-            <div className="space-y-3">
-              <Button
-                variant="outline"
-                onClick={() => handleSocialLogin('google')}
-                disabled={socialLoading !== null || loading}
-                className="w-full h-12 text-foreground border-border hover:bg-muted hover:border-border transition-all duration-200 font-medium"
-              >
-                {socialLoading === 'google' ? (
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-foreground"></div>
-                ) : (
-                  <>
-                    <Chrome className="w-5 h-5 mr-3" />
-                    Continue with Google
-                  </>
+            {/* Social Login Buttons — only providers that are actually configured */}
+            {(GOOGLE_AUTH_ENABLED || APPLE_AUTH_ENABLED) && view !== 'check-email' && (
+              <div className="space-y-3">
+                {GOOGLE_AUTH_ENABLED && (
+                  <Button
+                    variant="outline"
+                    onClick={() => handleSocialLogin('google')}
+                    disabled={socialLoading !== null || loading}
+                    className="w-full h-12 text-foreground border-border hover:bg-muted hover:border-border transition-all duration-200 font-medium"
+                  >
+                    {socialLoading === 'google' ? (
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-foreground"></div>
+                    ) : (
+                      <>
+                        <Chrome className="w-5 h-5 mr-3" />
+                        Continue with Google
+                      </>
+                    )}
+                  </Button>
                 )}
-              </Button>
 
-              <Button
-                variant="outline"
-                onClick={() => handleSocialLogin('apple')}
-                disabled={socialLoading !== null || loading}
-                className="w-full h-12 text-foreground border-border hover:bg-muted hover:border-border transition-all duration-200 font-medium"
-              >
-                {socialLoading === 'apple' ? (
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-foreground"></div>
-                ) : (
-                  <>
-                    <Apple className="w-5 h-5 mr-3" />
-                    Continue with Apple
-                  </>
+                {APPLE_AUTH_ENABLED && (
+                  <Button
+                    variant="outline"
+                    onClick={() => handleSocialLogin('apple')}
+                    disabled={socialLoading !== null || loading}
+                    className="w-full h-12 text-foreground border-border hover:bg-muted hover:border-border transition-all duration-200 font-medium"
+                  >
+                    {socialLoading === 'apple' ? (
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-foreground"></div>
+                    ) : (
+                      <>
+                        <Apple className="w-5 h-5 mr-3" />
+                        Continue with Apple
+                      </>
+                    )}
+                  </Button>
                 )}
-              </Button>
 
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t border-border" />
-                </div>
-                <div className="relative flex justify-center text-sm uppercase">
-                  <span className="bg-card px-4 text-muted-foreground font-medium tracking-wide">Or continue with email</span>
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t border-border" />
+                  </div>
+                  <div className="relative flex justify-center text-sm uppercase">
+                    <span className="bg-card px-4 text-muted-foreground font-medium tracking-wide">Or continue with email</span>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* Error Display */}
             {error && (
               <Alert variant="destructive" className="bg-destructive/10 border-destructive/30">
-                <AlertDescription className="text-destructive text-sm">{error}</AlertDescription>
+                <AlertDescription className="text-destructive text-sm">
+                  {error}
+                  {emailNotConfirmed && (
+                    <Button
+                      variant="link"
+                      className="text-sm text-destructive underline font-medium p-0 h-auto ml-1"
+                      disabled={resendCooldown > 0}
+                      onClick={() => resendVerification(emailNotConfirmed)}
+                    >
+                      {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend verification email'}
+                    </Button>
+                  )}
+                </AlertDescription>
               </Alert>
             )}
 
+            {/* Check-email state (post-signup verification / reset link sent) */}
+            {view === 'check-email' && checkEmail && (
+              <div className="space-y-5 text-center">
+                <div className="flex justify-center">
+                  <div className="w-14 h-14 bg-secondary/15 rounded-full flex items-center justify-center">
+                    <MailCheck className="w-7 h-7 text-secondary" />
+                  </div>
+                </div>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {checkEmail.kind === 'signup'
+                    ? 'Open the email and click the verification link. It may take a minute — check spam if you do not see it.'
+                    : 'Open the email and click the reset link. It may take a minute — check spam if you do not see it.'}
+                </p>
+                {checkEmail.kind === 'signup' && (
+                  <Button
+                    variant="outline"
+                    className="w-full h-11"
+                    disabled={resendCooldown > 0}
+                    onClick={() => resendVerification(checkEmail.email)}
+                  >
+                    {resendCooldown > 0 ? `Resend available in ${resendCooldown}s` : 'Resend verification email'}
+                  </Button>
+                )}
+                <Button
+                  variant="link"
+                  className="text-sm text-primary hover:text-primary/80 font-medium"
+                  onClick={() => { setView('signin'); setError(''); }}
+                >
+                  Back to sign in
+                </Button>
+              </div>
+            )}
+
+            {/* Forgot password form */}
+            {view === 'forgot' && (
+              <form onSubmit={forgotForm.handleSubmit(onForgot)} className="space-y-5">
+                <div>
+                  <Label htmlFor="forgot-email" className="text-sm font-medium text-foreground">Email</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                    <Input
+                      id="forgot-email"
+                      type="email"
+                      {...forgotForm.register('email')}
+                      className="mt-1.5 h-11 pl-10 transition-all duration-200 focus:ring-2 focus:ring-primary focus:border-transparent"
+                      placeholder="Enter your account email"
+                    />
+                  </div>
+                  {forgotForm.formState.errors.email && (
+                    <p className="text-sm text-destructive mt-1">
+                      {forgotForm.formState.errors.email.message}
+                    </p>
+                  )}
+                </div>
+
+                <Button
+                  type="submit"
+                  className="w-full h-12 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold text-base shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all duration-200"
+                  disabled={loading || socialLoading !== null}
+                >
+                  {loading ? (
+                    <div className="flex items-center">
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary-foreground mr-3"></div>
+                      Sending Link...
+                    </div>
+                  ) : (
+                    'Send Reset Link'
+                  )}
+                </Button>
+              </form>
+            )}
+
             {/* Email/Password Forms */}
-            {isSignUp ? (
+            {isSignUp && (
               <form onSubmit={signUpForm.handleSubmit(onSignUp)} className="space-y-5">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
@@ -418,7 +619,8 @@ const AuthForm: React.FC = () => {
                   )}
                 </Button>
               </form>
-            ) : (
+            )}
+            {view === 'signin' && (
               <form onSubmit={signInForm.handleSubmit(onSignIn)} className="space-y-5">
                 <div>
                   <Label htmlFor="email" className="text-sm font-medium text-foreground">Email or Username</Label>
@@ -426,7 +628,8 @@ const AuthForm: React.FC = () => {
                     <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                     <Input
                       id="email"
-                      type="email"
+                      type="text"
+                      autoComplete="username"
                       {...signInForm.register('email')}
                       className="mt-1.5 h-11 pl-10 transition-all duration-200 focus:ring-2 focus:ring-primary focus:border-transparent"
                       placeholder="Enter your email or username"
@@ -483,7 +686,12 @@ const AuthForm: React.FC = () => {
                 </Button>
 
                 <div className="text-center">
-                  <Button variant="link" className="text-sm text-primary hover:text-primary/80 font-medium">
+                  <Button
+                    type="button"
+                    variant="link"
+                    className="text-sm text-primary hover:text-primary/80 font-medium"
+                    onClick={() => { setView('forgot'); setError(''); }}
+                  >
                     Forgot your password?
                   </Button>
                 </div>
@@ -510,25 +718,39 @@ const AuthForm: React.FC = () => {
           </CardContent>
 
           <CardFooter className="text-center pb-8 px-8">
-            <Button
-              variant="link"
-              className="w-full text-base"
-              onClick={() => setIsSignUp(!isSignUp)}
-              disabled={loading || socialLoading !== null}
-            >
-              {isSignUp 
-                ? (
-                  <span className="text-muted-foreground">
-                    Already have an account? <span className="text-primary font-medium hover:text-primary/80">Sign in</span>
-                  </span>
-                )
-                : (
-                  <span className="text-muted-foreground">
-                    Don't have an account? <span className="text-primary font-medium hover:text-primary/80">Sign up</span>
-                  </span>
-                )
-              }
-            </Button>
+            {(view === 'signin' || view === 'signup') && (
+              <Button
+                variant="link"
+                className="w-full text-base"
+                onClick={() => { setView(isSignUp ? 'signin' : 'signup'); setError(''); }}
+                disabled={loading || socialLoading !== null}
+              >
+                {isSignUp
+                  ? (
+                    <span className="text-muted-foreground">
+                      Already have an account? <span className="text-primary font-medium hover:text-primary/80">Sign in</span>
+                    </span>
+                  )
+                  : (
+                    <span className="text-muted-foreground">
+                      Don't have an account? <span className="text-primary font-medium hover:text-primary/80">Sign up</span>
+                    </span>
+                  )
+                }
+              </Button>
+            )}
+            {view === 'forgot' && (
+              <Button
+                variant="link"
+                className="w-full text-base"
+                onClick={() => { setView('signin'); setError(''); }}
+                disabled={loading || socialLoading !== null}
+              >
+                <span className="text-muted-foreground">
+                  Remembered it? <span className="text-primary font-medium hover:text-primary/80">Back to sign in</span>
+                </span>
+              </Button>
+            )}
           </CardFooter>
         </Card>
 
