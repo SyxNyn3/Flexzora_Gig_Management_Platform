@@ -296,3 +296,18 @@ Newest entries on top.
 - Waitlist verify link no longer returned in responses.
 - `20261008000000`: `search_path` pinned on all SECURITY DEFINER functions.
 - `sw.js`: network-first navigation; `schedule-demo` persists demo_requests.
+
+## Lane A — Security Builder — #52 GrubRun price lock
+
+- Branch `fix/lane-a-grub-price`. Migration `20261106000000_p0rt_grub_price_lock.sql`:
+  - A confirmed order's price and item are locked. Only a runner/company
+    cancellation can change it afterwards.
+  - Confirmed prices up to `food_auto_accept_cap_cents()` ($25) are consented
+    at confirmation. Above it the orderer must accept (`price_accepted_at`), same
+    pattern as #19. Only the orderer can set it; the runner cannot.
+  - The debt mints when consent lands, not when the runner confirms.
+  - Backfill grandfathers already-minted confirmed orders.
+- UI: the orderer sees "Runner says $X — Accept" on unaccepted confirmed orders.
+- Test: pgTAP `052_grub_price_lock` (8 assertions).
+- Deeper item (BACKLOG): per-menu quotes so the threshold is relative to the menu
+  price, not one flat $25 cap.
