@@ -29,6 +29,7 @@ Two sessions work this repo in parallel. **Before starting any item, mark it**: 
   - Removed dead `stripe.ts` exports calling edge functions that were never deployed (`setup-payment-method`, `list-payment-methods`, `create-customer`, `create-payment-link`).
   - Still open: `.env` sits in git history with anon/publishable keys (low — public by design); stray scratch files `00`/`01` duplicate migration `20251006224047`; `send-waitlist-verification`/`resend` still only log the email — no real mail provider wired (needs e.g. Resend/SES key); sales-team notification for demo requests is a TODO in `schedule-demo`.
 - **Builder lane — claimed: Builder — working on it** (overnight self-drive, started 2026-10-10)
+- **Challenger lane — claimed: Devin-Challenger — working on it** (overnight red-team, started 2026-10-10; files issues labeled `challenger`)
 - Everything below is unclaimed.
 
 ## Company OS — overnight sprint (see `docs/VISION_COMPANY_OS.md` — spec + competitor findings)
