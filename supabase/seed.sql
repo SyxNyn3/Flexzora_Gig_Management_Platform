@@ -192,4 +192,22 @@ begin
           'high')
   on conflict do nothing;
 
+  -- ------------------------------------------------------------------
+  -- Crew OS demo: Alex owes Jordan gas for the ride; Jordan already
+  -- settled a manual burrito-run debt to Alex.
+  -- ------------------------------------------------------------------
+  insert into crew_iou (id, worker_id, shift_id, kind, amount_cents,
+                        beneficiary_worker_id, status, settle_via, iou_group_id, notes)
+  values ('55555555-0000-4000-8000-000000000001', p_worker1, v_shift_public, 'ride', 2000,
+          p_worker2, 'committed', 'payout_deduction', '55555555-0000-4000-8000-000000000010',
+          'Gas share — Jordan driving to show call.')
+  on conflict (id) do nothing;
+
+  insert into crew_iou (id, worker_id, shift_id, kind, amount_cents,
+                        beneficiary_worker_id, status, settle_via, settled_at, notes)
+  values ('55555555-0000-4000-8000-000000000002', p_worker2, v_shift_public, 'food', 1200,
+          p_worker1, 'settled', 'manual', now() - interval '1 day',
+          'Burrito run — paid cash after load-in.')
+  on conflict (id) do nothing;
+
 end $$;
