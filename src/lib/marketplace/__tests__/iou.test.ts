@@ -19,11 +19,17 @@ describe('selectSettleableIous', () => {
     expect(r.totalCents).toBe(2000);
   });
 
-  it('keeps rows whole — an IOU that overflows the cap stays committed', () => {
-    const r = selectSettleableIous([iou('a', 2000), iou('b', 400)], 10000); // cap 2500
+  it('keeps rows whole — an IOU that overflows the remaining cap stays committed', () => {
+    const r = selectSettleableIous([iou('a', 2000), iou('b', 1000)], 10000); // cap 2500
     expect(r.settledIds).toEqual(['a']);
     expect(r.skippedIds).toEqual(['b']);
     expect(r.totalCents).toBe(2000);
+  });
+
+  it('settles every IOU when the total fits inside the cap', () => {
+    const r = selectSettleableIous([iou('a', 2000), iou('b', 400)], 10000); // 2400 <= 2500
+    expect(r.settledIds).toEqual(['a', 'b']);
+    expect(r.totalCents).toBe(2400);
   });
 
   it('stops at the first IOU that overflows — older debt is never jumped', () => {
