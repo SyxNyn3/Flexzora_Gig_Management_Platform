@@ -46,11 +46,11 @@ const Navbar: React.FC = () => {
     { path: '/import', label: 'Import', icon: Upload },
     { path: '/staff', label: 'Staff', icon: Users },
     { path: '/broadcast', label: 'Broadcast', icon: Megaphone },
+<<<<<<< HEAD
     { path: '/ops', label: 'Ops', icon: KanbanSquare },
-    ...(COPILOT_ENABLED ? [{ path: '/copilot', label: 'Copilot', icon: Sparkles }] : []),
+=======
+>>>>>>> origin/main
     { path: '/gigs', label: 'Gigs', icon: Briefcase },
-    { path: '/workforce', label: 'Workforce', icon: Users },
-    { path: '/finances', label: 'Finances', icon: DollarSign },
   ];
 
   const navItems = profile?.role === 'company'
