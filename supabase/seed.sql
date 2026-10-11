@@ -290,6 +290,16 @@ begin
      'email', 'queued', 'email transport not wired yet')
   on conflict do nothing;
 
+  -- ------------------------------------------------------------------
+  -- Company OS demo: calendar feeds — whole-company plus the PM's feed.
+  -- ------------------------------------------------------------------
+  insert into calendar_feeds (id, company_id, token, scope, staff_id, label, created_by)
+  values
+    ('aaaaaaaa-0000-4000-8000-000000000001', v_company, 'aaaaaaaa-0000-4000-8000-00000000feed',
+     'company', null, 'All shows', p_company_user),
+    ('aaaaaaaa-0000-4000-8000-000000000002', v_company, 'aaaaaaaa-0000-4000-8000-00000000beef',
+     'staff', '88888888-0000-4000-8000-000000000001', 'Dana — PM calendar', p_company_user)
+  on conflict (id) do nothing;
   -- Crew OS demo: Jordan posts a ride offer; Alex's matched request
   -- makes the sync trigger mint his gas-share IOU automatically.
   -- Jordan already settled a manual burrito-run debt to Alex.

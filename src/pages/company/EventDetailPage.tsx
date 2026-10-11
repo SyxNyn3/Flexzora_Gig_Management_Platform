@@ -142,6 +142,7 @@ const EventDetailPage: React.FC = () => {
               </span>
             )}
             <span className="ml-3">OT rule: {ev.overtime_rule_code}</span>
+            {ev.timezone && <span className="ml-3">· {ev.timezone.split('/').pop()?.replace('_', ' ')} time</span>}
           </p>
         </div>
         <div className="flex gap-2">

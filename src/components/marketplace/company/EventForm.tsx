@@ -25,6 +25,19 @@ interface Props {
   submitting?: boolean;
 }
 
+const TIMEZONES = [
+  'America/Los_Angeles',
+  'America/Denver',
+  'America/Chicago',
+  'America/New_York',
+  'America/Anchorage',
+  'Pacific/Honolulu',
+  'Europe/London',
+  'Europe/Berlin',
+  'Australia/Sydney',
+  'UTC',
+];
+
 const EventForm: React.FC<Props> = ({ venues, overtimeRules, onCreateVenue, onSubmit, submitting }) => {
   const today = new Date().toISOString().slice(0, 10);
   const [form, setForm] = useState<EventFormData>({
@@ -36,6 +49,7 @@ const EventForm: React.FC<Props> = ({ venues, overtimeRules, onCreateVenue, onSu
     ends_on: today,
     budget_cap: undefined,
     overtime_rule_code: overtimeRules[0]?.code ?? 'US_FLSA',
+    timezone: 'America/Los_Angeles',
   });
   const [showVenue, setShowVenue] = useState(false);
   const [venue, setVenue] = useState<VenueFormData>({ name: '', address: '', city: '', region: '', latitude: 0, longitude: 0, geofence_radius_m: 250 });
@@ -98,6 +112,18 @@ const EventForm: React.FC<Props> = ({ venues, overtimeRules, onCreateVenue, onSu
           <Label htmlFor="ev-end">Load-out date</Label>
           <Input id="ev-end" type="date" required min={form.starts_on} value={form.ends_on} onChange={(e) => set('ends_on', e.target.value)} />
         </div>
+      </div>
+      <div>
+        <Label>Show timezone</Label>
+        <Select value={form.timezone} onValueChange={(v) => set('timezone', v)}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            {TIMEZONES.map((tz) => (
+              <SelectItem key={tz} value={tz}>{tz}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <p className="text-xs text-muted-foreground mt-1">The wall-clock zone call times, feeds and exports speak in.</p>
       </div>
       <div>
         <div className="flex items-center justify-between">
