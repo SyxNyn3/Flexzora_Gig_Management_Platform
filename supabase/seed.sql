@@ -233,4 +233,33 @@ begin
           '55555555-0000-4000-8000-000000000020', p_worker2, 1, 'joined')
   on conflict (id) do nothing;
 
+  -- CrewBoard demo: open borrow ask + an announce post
+  insert into crew_posts (id, shift_id, author_worker_id, category, direction,
+                          title, body, amount_cents)
+  values ('55555555-0000-4000-8000-000000000030', v_shift_public, p_worker2, 'borrow', 'want',
+          'Spare black work gloves?', 'Mine walked off at load-in. Will pay $5 for the weekend.',
+          500)
+  on conflict (id) do nothing;
+
+  insert into crew_posts (id, shift_id, author_worker_id, category, direction,
+                          title, body)
+  values ('55555555-0000-4000-8000-000000000031', v_shift_public, p_worker1, 'announce', 'offer',
+          'Extra harness available', 'Brought a spare Petzl — free to borrow for the weekend.')
+  on conflict (id) do nothing;
+
+  -- GrubRun demo: Alex runs a burrito order before show call; Jordan's
+  -- order is still 'placed' so the board shows the pre-confirm state.
+  insert into food_runs (id, shift_id, runner_worker_id, restaurant,
+                         order_cutoff_at, delivery_area, notes)
+  values ('55555555-0000-4000-8000-000000000040', v_shift_public, p_worker1,
+          'El Burrito Grande', current_date + 8 + interval '15 hours',
+          'Dock B at 18:30', 'Cash or IOU — list your order by 15:00.')
+  on conflict (id) do nothing;
+
+  insert into food_run_orders (id, run_id, worker_id, item, notes)
+  values ('55555555-0000-4000-8000-000000000041',
+          '55555555-0000-4000-8000-000000000040', p_worker2,
+          'Carnitas burrito, no onions', 'Extra napkins please')
+  on conflict (id) do nothing;
+
 end $$;
