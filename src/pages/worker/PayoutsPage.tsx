@@ -245,9 +245,9 @@ const PayoutsPage: React.FC = () => {
                   {p.method === 'instant' ? <Zap className="w-4 h-4" /> : <Landmark className="w-4 h-4" />}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate">{p.invoice?.event?.name ?? 'Shift payout'} · {p.invoice?.company?.name}</p>
+                  <p className="font-medium truncate">{p.kind === 'iou_transfer' ? 'Crew share settled' : p.invoice?.event?.name ?? 'Shift payout'} · {p.invoice?.company?.name}</p>
                   <p className="text-xs text-muted-foreground dark:text-muted-foreground">
-                    {IS_PAYMENTS_SANDBOX && p.status === 'paid' ? SANDBOX_TRANSFER_LABEL : p.method === 'instant' ? 'Instant transfer' : 'ACH'} · {p.paid_at ? `Paid ${format(new Date(p.paid_at), 'MMM d')}` : p.expected_arrival_at ? `Expected ${format(new Date(p.expected_arrival_at), 'MMM d')}` : 'Processing'}
+                    {p.kind === 'iou_transfer' ? `${p.invoice?.event?.name ?? 'Call'} — a crew IOU paid to you · ` : ''}{IS_PAYMENTS_SANDBOX && p.status === 'paid' ? SANDBOX_TRANSFER_LABEL : p.method === 'instant' ? 'Instant transfer' : 'ACH'} · {p.paid_at ? `Paid ${format(new Date(p.paid_at), 'MMM d')}` : p.expected_arrival_at ? `Expected ${format(new Date(p.expected_arrival_at), 'MMM d')}` : 'Processing'}
                     {p.failure_reason && <span className="text-destructive dark:text-red-400"> · {p.failure_reason}</span>}
                   </p>
                 </div>

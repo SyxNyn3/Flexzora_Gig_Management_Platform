@@ -164,7 +164,7 @@ export interface Database {
       };
       payouts: {
         Row: Payout;
-        Insert: Omit<Payout, 'id' | 'created_at' | 'updated_at' | 'invoice'>;
+        Insert: Omit<Payout, 'id' | 'created_at' | 'updated_at' | 'invoice' | 'kind'> & { kind?: Payout['kind'] };
         Update: Partial<Omit<Payout, 'id' | 'created_at' | 'updated_at' | 'invoice'>>;
       };
       import_jobs: {
@@ -961,6 +961,8 @@ export interface Payout {
   currency: string;
   method: PayoutMethod;
   status: PayoutStatus;
+  kind: 'timesheet' | 'iou_transfer';
+  crew_iou_id?: string;
   stripe_transfer_id?: string;
   failure_reason?: string;
   expected_arrival_at?: string;
