@@ -56,8 +56,8 @@ SELECT '00000000-0000-0000-0000-00000000d703'::uuid, '00000000-0000-0000-0000-00
   FROM profiles WHERE user_id = '00000000-0000-0000-0000-00000000b0a2'::uuid;
 
 -- funded escrow covers all three approvals
-INSERT INTO escrow_deposits (event_id, amount, status)
-VALUES ('00000000-0000-0000-0000-00000000e0f1'::uuid, 3000, 'funded');
+INSERT INTO escrow_deposits (event_id, company_id, amount, status)
+VALUES ('00000000-0000-0000-0000-00000000e0f1'::uuid, '00000000-0000-0000-0000-00000000c0fc'::uuid, 3000, 'funded');
 
 SET LOCAL ROLE authenticated;
 SELECT set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000b0a1","role":"authenticated"}', true);
