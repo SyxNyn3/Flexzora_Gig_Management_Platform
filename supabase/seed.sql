@@ -193,14 +193,21 @@ begin
   on conflict do nothing;
 
   -- ------------------------------------------------------------------
-  -- Crew OS demo: Alex owes Jordan gas for the ride; Jordan already
-  -- settled a manual burrito-run debt to Alex.
+  -- Crew OS demo: Jordan posts a ride offer; Alex's matched request
+  -- makes the sync trigger mint his gas-share IOU automatically.
+  -- Jordan already settled a manual burrito-run debt to Alex.
   -- ------------------------------------------------------------------
-  insert into crew_iou (id, worker_id, shift_id, kind, amount_cents,
-                        beneficiary_worker_id, status, settle_via, iou_group_id, notes)
-  values ('55555555-0000-4000-8000-000000000001', p_worker1, v_shift_public, 'ride', 2000,
-          p_worker2, 'committed', 'payout_deduction', '55555555-0000-4000-8000-000000000010',
-          'Gas share — Jordan driving to show call.')
+  insert into ride_offers (id, shift_id, driver_worker_id, seats,
+                           departure_area, departure_at, gas_share_cents, notes)
+  values ('55555555-0000-4000-8000-000000000010', v_shift_public, p_worker2, 3,
+          'Pensacola hotel lot', current_date + 8 + interval '14 hours', 2000,
+          'Room for 3 + small gear. Leaving before soundcheck.')
+  on conflict (id) do nothing;
+
+  insert into ride_requests (id, shift_id, rider_worker_id, seats_needed,
+                             pickup_area, status, offer_id)
+  values ('55555555-0000-4000-8000-000000000011', v_shift_public, p_worker1, 1,
+          'Hotel lobby', 'matched', '55555555-0000-4000-8000-000000000010')
   on conflict (id) do nothing;
 
   insert into crew_iou (id, worker_id, shift_id, kind, amount_cents,
