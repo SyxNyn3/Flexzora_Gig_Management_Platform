@@ -854,6 +854,7 @@ export interface CrewIOU {
   settled_timesheet_id?: string;
   created_at: string;
   updated_at: string;
+  beneficiary_profile?: Pick<Profile, 'id' | 'full_name'>;
 }
 
 // --- CrewPool rides --------------------------------------------------------
