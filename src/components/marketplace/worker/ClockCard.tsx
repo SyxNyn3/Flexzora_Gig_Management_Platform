@@ -23,6 +23,7 @@ const ClockCard: React.FC<Props> = ({ assignment, onChanged }) => {
   const [locating, setLocating] = useState<string | null>(null);
   const shift = assignment.shift;
   const venue = shift?.event?.venue;
+  const hasFence = venue != null && venue.latitude != null && venue.longitude != null;
   const ts = assignment.timesheet;
   const clockedIn = !!ts?.clock_in_at;
   const clockedOut = !!ts?.clock_out_at;
@@ -37,7 +38,7 @@ const ClockCard: React.FC<Props> = ({ assignment, onChanged }) => {
     try {
       const pos = await getCurrentPosition();
       const here = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-      if (venue) {
+      if (hasFence) {
         const fence = checkGeofence(here, { lat: venue.latitude, lng: venue.longitude }, venue.geofence_radius_m, pos.coords.accuracy);
         setLocating(fence.inside ? `Inside geofence (${Math.round(fence.distanceM)} m)` : `${Math.round(fence.distanceM)} m from venue`);
         if (!fence.inside && kind === 'in') {
@@ -64,7 +65,7 @@ const ClockCard: React.FC<Props> = ({ assignment, onChanged }) => {
   // position fixes outside the fence clock the worker out and flag it for
   // the manager (timesheet keeps the GPS distance/verification fields).
   useEffect(() => {
-    if (!clockedIn || clockedOut || !venue || typeof navigator === 'undefined' || !navigator.geolocation) return;
+    if (!clockedIn || clockedOut || !hasFence || typeof navigator === 'undefined' || !navigator.geolocation) return;
     const watchId = navigator.geolocation.watchPosition(
       (pos) => {
         const fence = checkGeofence(
