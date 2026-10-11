@@ -66,9 +66,22 @@ Challenger-lane findings (issues labeled `challenger`, plus #67 reviewer). Each 
 - [ ] **#37 HIGH — reviews allow self-reviews/review-bombing**; `gig_id NULL` bypasses the unique constraint. Fix: participation trigger + `gig_id NOT NULL`.
 - [ ] **#44 HIGH — `lookup_user_by_username_or_email` anon-callable** via PostgREST → account enumeration bypassing the edge-function email guard. Fix: revoke anon EXECUTE / auth-only.
 - [ ] **#51 HIGH — debtor can void own auto-minted IOU** (board resolve, ride match, swap sweetener). Fix: void requires beneficiary consent or the shift-cancel path only.
+- [ ] **#19 HIGH — board-resolve mints payout-deduction IOU without worker consent** (verified live; PR #11 merged without the fix — highest-severity live item). Fix: resolve requires fulfiller confirmation, or IOU only mints on explicit accept.
+- [ ] **#20 HIGH — `crew_iou` UPDATE has no column immutability.** Company (owns_event) can rewrite `beneficiary_worker_id`/`amount_cents`/`status` on shift-anchored IOUs incl. payout-deductions (verified). Fix: trigger restricting mutable cols, or company read-only + service-writes.
+- [ ] **#23 HIGH — company can rewrite `offered_rate` post-confirmation.** `guard_assignment_update()` protects offer terms on the worker branch only; `approve_timesheet` pays `COALESCE(offered_rate, hourly_rate)` (verified). Fix: immutable once accepted/offered.
+- [ ] **#22 HIGH — ShiftSwap mutable fields repoint confirmed bookings.** **In-flight: held on PR #15.**
+- [ ] **#24 HIGH — payout-release TOCTOU/double-transfer + post-transfer-update failure retries.** **In-flight: held on PR #16** (needs atomic claim + idempotency key).
 - [ ] #50 MED — `worker_distances`/`worker_conflicts` callable by any user on any worker → location triangulation + availability oracle. Restrict to parties sharing an assignment/event.
 - [ ] #52 MED — GrubRun runner confirms at arbitrary price → inflated payout-deduction IOU. Fix: price locked at claim time + orderer confirm above a variance threshold.
 - [ ] #48 MED — `crew_alerts.dedupe_key` globally unique + self-insertable → pre-squatting suppresses another worker's briefings. Fix: per-worker keyspace + service-insert only.
+- [ ] #26 MED — company can force-match any open `ride_requests` → `matched` (no transition limits on the company branch of the guard) → non-consensual gas-share IOU (verified).
+- [ ] #25 MED — `ride_requests` lacks `UNIQUE(rider_worker_id, shift_id)` → rider matches N requests to N offers → duplicate seats + duplicate IOUs (verified).
+- [ ] #27 MED — `seats_needed` mutable after match → free seats, minted IOU keeps stale amount (verified).
+- [ ] #29 MED — `notify-assignment` `kind` not gated on assignment status → party can fire misleading SMS kinds (verified live since PR #7).
+- [ ] #21 MED — worker-editable `break_minutes` has no `>= 0` floor → negative breaks inflate payable hours (verified, pre-existing).
+- [ ] #30 MED — `ride_requests` INSERT only checks self-ownership → request squatting + phantom IOUs on shifts the worker isn't booked on (verified).
+- [ ] #28 MED — settle loop `EXIT WHEN` on first over-cap IOU **deadlocks the whole queue** (worse than filed: EXIT not skip; over-cap IOU is permanent) (verified).
+- [ ] #31 MED — "Ride cancelled" alert is dead code: BEFORE cascade flips requests to 'open' before the AFTER alert trigger reads them (verified).
 - [ ] #54 LOW — withdraw confirmed booking minutes before call, no consequence. Add late-cancel flag → reliability score.
 - [ ] #46 LOW — `resend-waitlist-verification` unthrottled → email bomb. Add rate limit.
 - [ ] #42 LOW — `gig_messages` read policy ignores `recipients` → targeted messages visible to all accepted workers.
@@ -77,6 +90,8 @@ Challenger-lane findings (issues labeled `challenger`, plus #67 reviewer). Each 
 - [ ] #39 LOW — clock-in opens 60min early and pay runs from clock-in → +1h unapproved paid time. Cap paid start at call time unless company approves early.
 - [ ] #35 LOW — no temporal validation on crew tables (past cutoff, checkout<checkin, past departure).
 - [ ] #34 LOW — OAuth `redirectTo` misses `BASE_URL` → dead-end on GitHub Pages deploy.
+- [ ] #33 LOW — departure alert baked as `to_char(leave_by AT TIME ZONE 'UTC') || ' UTC'` — workers read raw UTC (verified). Fix via `events.timezone` (#59).
+- [ ] #32 LOW — swap claimer can't re-claim after withdrawing — `UNIQUE(swap_request_id, claimer)` blocks re-entry. Lives on held feat/shift-swap.
 - [ ] #67 — `package-lock.json` desynced (reviewer) — regenerate with `npm install`.
 
 ## Recovered from the original PRD — ideas not yet delegated
