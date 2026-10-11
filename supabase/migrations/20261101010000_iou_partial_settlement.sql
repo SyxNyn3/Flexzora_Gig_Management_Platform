@@ -292,7 +292,6 @@ BEGIN
     AND NOT EXISTS (SELECT 1 FROM shift_assignments a WHERE a.shift_id = v_shift.id AND a.status = 'confirmed');
 
   INSERT INTO invoices (timesheet_id, worker_id, company_id, event_id, line_items, subtotal, platform_fee, total)
-  INSERT INTO invoices (timesheet_id, worker_id, company_id, event_id, line_items, subtotal, platform_fee, total)
   VALUES (
     v_ts.id, v_ts.worker_id, v_event.company_id, v_event.id,
     jsonb_build_array(
