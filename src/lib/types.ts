@@ -208,6 +208,11 @@ export interface Database {
         Insert: Omit<OpsTask, 'id' | 'created_at' | 'updated_at' | 'done_at' | 'event' | 'shift' | 'assignee'>;
         Update: Partial<Omit<OpsTask, 'id' | 'created_at' | 'company_id' | 'event' | 'shift' | 'assignee'>>;
       };
+      company_alerts: {
+        Row: CompanyAlert;
+        Insert: Omit<CompanyAlert, 'id' | 'created_at' | 'updated_at' | 'resolved_at' | 'event' | 'shift'>;
+        Update: Partial<Omit<CompanyAlert, 'id' | 'created_at' | 'company_id' | 'event' | 'shift'>>;
+      };
       crew_iou: {
         Row: CrewIOU;
         Insert: Omit<CrewIOU, 'id' | 'created_at' | 'updated_at'>;
@@ -1296,5 +1301,32 @@ export interface CertGearItem {
 
 export interface BaseGearItem {
   item: string;
+}
+
+// ---------------------------------------------------------------------------
+// Company OS — automatic reminders (alerts inbox)
+// ---------------------------------------------------------------------------
+export type AlertKind = 'unfilled_call' | 'cert_expiring' | 'timesheet_pending' | 'shift_tomorrow';
+export type AlertSeverity = 'info' | 'warning' | 'urgent';
+export type AlertStatus = 'open' | 'resolved' | 'dismissed';
+
+export interface CompanyAlert {
+  id: string;
+  company_id: string;
+  kind: AlertKind;
+  severity: AlertSeverity;
+  status: AlertStatus;
+  title: string;
+  body?: string | null;
+  dedupe_key?: string | null;
+  event_id?: string | null;
+  shift_id?: string | null;
+  timesheet_id?: string | null;
+  due_at?: string | null;
+  resolved_at?: string | null;
+  created_at: string;
+  updated_at: string;
+  event?: { id: string; name: string } | null;
+  shift?: { id: string; title: string; starts_at: string } | null;
 }
 

@@ -8,6 +8,22 @@ Newest entries on top.
 
 - **2026-10-10 — Reviewer (overnight PR gate, cycle 1)** — Lane claimed (PR #36). Setup: portable gh 2.102.0 in `$TEMP` authed via git credential manager; `../flexzora-reviewer-wt` worktree keeps the Builder's checkout untouched. **Merged #5** (ops docs + Pages base + migration replay fixes), **#6** auth-ux, **#7** notify-assignment, **#8** crew_iou, **#9** CrewPool rides, **#10** BunkUp lodging, **#12** GrubRun, **#13** crew board UI, **#14** SmartAlerts. Retargeted the whole stack to main after #8's base-branch deletion cascade; resolved 3 doc-conflict merges preserving both lanes' claims/marks. **HELD #11** (Challenger #19 verified: offer-direction resolve mints payout-deduction IOU on non-consenting worker — countersign or manual-settle fix needed), **HELD #15** (#22 verified + worse: `swap_requests` non-status columns mutable → repoint `assignment_id` withdraws a VICTIM's confirmed booking; lock columns + freeze sweetener post-accept), **HELD #16** (#24 verified: no atomic claim/idempotency on `transfers.create` → double-pay; fix = processing-status claim + `idempotencyKey: payout.id`; also #47 `worker_sensitive` self-write on the columns it trusts). Filed **#52** (reviewer-labeled): GrubRun runner sets price unilaterally at confirm — inflation vector on orderer's payout. Verified #48 in #14's merge comment. Awaiting Builder fix commits; then re-review.
 
+### feat/company-alerts → PR #62 — automatic reminders inbox
+
+- company_alerts + generate_company_alerts: idempotent sweep that opens
+  alerts for live conditions, escalates severity as deadlines near, and
+  auto-resolves conditions that cleared — the inbox mirrors reality like
+  the ops board.
+- Signal kinds: unfilled_call (warning → urgent inside 48h), cert_expiring
+  (booked crew's cert lapses ≤30d; ≤7d urgent, deduped per cert×shift),
+  timesheet_pending (submitted >48h), shift_tomorrow (locked call <24h).
+- Dedupe via (company_id, dedupe_key) — re-sweeps never double-open, and
+  dismissed alerts stay dismissed.
+- /alerts inbox: severity-ordered cards, kind + severity badges, event
+  links, open/resolved/dismissed tabs, "rescan" runs the sweep on demand.
+- Seed: one resolved timesheet alert for the audit trail; live alerts
+  self-generate. Verification: CI.
+
 ### feat/tour-exports → PR #61 — tour exports
 
 - /exports: date range + section checkboxes (crew list / schedule / staff
