@@ -23,6 +23,12 @@ Claim your lane in `docs/BACKLOG.md` before anything else: `(claimed: <name> —
 6. **Log everything.** Append to `docs/AGENT_LOG.md` — date, lane, what you did, what's next. This is how the next session picks up where you left off.
 7. **Blocked? Don't wait.** Note the blocker in BACKLOG/AGENT_LOG, move to the next unclaimed item. Things that legitimately need the user: paid API keys (Stripe live, Twilio, Resend), OAuth app credentials, production DNS.
 8. **Homepage feel is sacred.** Extend the design language; don't redesign it.
+9. **No silent deletes or moves.** Other sessions read this repo — a file you delete or relocate may be something another lane just went looking for. Rules:
+   - Before deleting/moving anything tracked, `grep` for references to it (imports, paths, doc links) and check `git log` for who touched it last.
+   - Prefer `git mv` over delete; prefer an `attic/` folder (committed, one commit) over either when something might still be wanted.
+   - **Announce it**: same-commit note in `docs/AGENT_LOG.md` — `moved/deleted <path> → <destination | attic | gone> because <reason>`. If another session's worktree contains a file you're tempted to delete (scratch output, WIP), leave it alone — it's not yours.
+   - Shared coordination files (`AGENT_LOG.md`, `BACKLOG.md`) are append/tick-only — never rewrite another lane's entries; correct by appending.
+   - Worktrees are personal space: never operate in `../flexzora-*-wt` you didn't create; never `git restore`/`clean` a tree that isn't yours.
 
 ## The self-drive loop (what "stay busy" means)
 

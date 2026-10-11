@@ -4,7 +4,7 @@ Ordered queue for build sessions and scheduled automations. One item ≈ one ses
 
 ## Claims (lane coordination)
 
-Two sessions work this repo in parallel. **Before starting any item, mark it**: append `(claimed: <name> — working on it)`. Check claims before picking up work; clear your claim when done (`done: <name>`) or released. Lane names: **Mark** = cloud/manager session (d713fbae), **Tom** = desktop session (89ab957d), **Devin** = desktop session (security pass, 2026-10-08).
+Multiple sessions work this repo in parallel. **Before starting any item, mark it**: append `(claimed: <name> — working on it)`. Check claims before picking up work; clear your claim when done (`done: <name>`) or released. Lane names: **Mark** = cloud/manager session (d713fbae), **Tom** = desktop session (89ab957d), **Devin** = desktop session (security pass, 2026-10-08).
 
 - Repo privacy toggle (make repo private again) — **claimed: Tom — working on it** (gh token lacks permission; asked user to flip in Settings)
 - Migration duplicate-DDL cleanup (blocks clean `supabase start` from repo files) — **done: Tom** (all migrations idempotent; verified via double clean replay)
@@ -51,8 +51,55 @@ Two sessions work this repo in parallel. **Before starting any item, mark it**: 
 - [x] CrewBoard: structured post categories — **done: Builder** (`20261013000000_crew_board.sql`: `crew_posts` on shift_id (gig_messages is creator-broadcast on legacy gigs — wrong anchor); category ride/lodging/food/borrow/announce/general + want/offer direction + optional amount_cents; resolve with fulfilled_by mints the `crew_iou` in the correct debt direction; zero-amount resolves as a favor. Client `src/lib/crew/board.ts`.)
 - [x] GrubRun food pooling: `food_runs`/`food_run_orders` with cutoff times — **done: Builder** (`20261014000000_grubrun.sql`: runner posts restaurant + cutoff; workers place orders pre-cutoff (runner can add late); runner confirms with real price — THAT mints the food `crew_iou` (beneficiary=runner, group=order); cancel/run-cancel/shift-cancel void. One order per worker per run. Client `src/lib/crew/food.ts`.)
 - [x] SmartAlerts: per-shift briefing — **done: Builder** (`20261015000000_crew_alerts.sql`: `cert_gear_items`+`base_gear_items` data-driven packing lists; `crew_alerts` feed with dedupe keys; confirm-trigger generates gear/parking/departure briefing — departure = worker_sensitive geo -> venue @ 55km/h + 20min buffer; ride-cancel alerts matched riders. Briefing card + unread badges on the crew page. Client `src/lib/crew/alerts.ts`.)
-- [ ] ShiftSwap: `swap_requests`/`swap_claims`, cert-gated visibility, company approval via offer flow
+- [ ] ShiftSwap: `swap_requests`/`swap_claims`, cert-gated visibility, company approval via offer flow — **PR #15 open, needs review**
 - [x] Auth UX completion: check-email state post-signup, forgot-password flow, Google button behind `VITE_ENABLE_GOOGLE_AUTH` flag, error states matching design — **done: Builder, merged PR #6** (check-email view + resend w/ cooldown, `/reset-password` page, Google+Apple gated behind flags, friendly error map incl. email-not-confirmed resend, fixed `type=email` blocking username sign-in)
+
+## P0-RT — RED-TEAM SWEEP (ship-blockers — work these before new features)
+
+Challenger-lane findings (issues labeled `challenger`, plus #67 reviewer). Each fix = migration + RLS/trigger + a regression test that proves the exploit is dead. **#45 is CRITICAL — do first.**
+
+- [ ] **#45 CRITICAL — role self-assignment → admin/company takeover.** `handle_new_user` accepts `raw_user_meta_data.role`; `profiles` UPDATE lets a user flip their own role. Fix: allowlist metadata keys, deny role changes via RLS/trigger, role set only server-side.
+- [ ] **#47 HIGH — `worker_sensitive` self-writable payout fields.** Worker can set `stripe_connect_account_id`/`payouts_enabled` → payout redirection on session compromise. Fix: revoke UPDATE on those columns; service-role writes only.
+- [ ] **#49 HIGH — company DELETE cascades wipe timesheets/assignments.** Deleting a shift/event erases pay history + skips the 'cancelled' notification path. Fix: revoke DELETE; `status='cancelled'` transition only.
+- [ ] **#43 HIGH — live-shift terms editable after confirmation.** Company can change `hourly_rate`/`headcount`/certs with confirmed crew attached → silent pay changes. Fix: lock terms once first assignment is confirmed (trigger) or version the shift.
+- [ ] **#38 HIGH — worker self-flips application to 'accepted'.** RLS allows own-row status updates. Fix: transition guard — worker moves limited to apply/withdraw.
+- [ ] **#37 HIGH — reviews allow self-reviews/review-bombing**; `gig_id NULL` bypasses the unique constraint. Fix: participation trigger + `gig_id NOT NULL`.
+- [ ] **#44 HIGH — `lookup_user_by_username_or_email` anon-callable** via PostgREST → account enumeration bypassing the edge-function email guard. Fix: revoke anon EXECUTE / auth-only.
+- [ ] **#51 HIGH — debtor can void own auto-minted IOU** (board resolve, ride match, swap sweetener). Fix: void requires beneficiary consent or the shift-cancel path only.
+- [ ] #50 MED — `worker_distances`/`worker_conflicts` callable by any user on any worker → location triangulation + availability oracle. Restrict to parties sharing an assignment/event.
+- [ ] #52 MED — GrubRun runner confirms at arbitrary price → inflated payout-deduction IOU. Fix: price locked at claim time + orderer confirm above a variance threshold.
+- [ ] #48 MED — `crew_alerts.dedupe_key` globally unique + self-insertable → pre-squatting suppresses another worker's briefings. Fix: per-worker keyspace + service-insert only.
+- [ ] #54 LOW — withdraw confirmed booking minutes before call, no consequence. Add late-cancel flag → reliability score.
+- [ ] #46 LOW — `resend-waitlist-verification` unthrottled → email bomb. Add rate limit.
+- [ ] #42 LOW — `gig_messages` read policy ignores `recipients` → targeted messages visible to all accepted workers.
+- [ ] #41 LOW — new SECURITY DEFINER functions re-add `pg_temp` to search_path — inconsistent with the 20261008 hardening sweep.
+- [ ] #40 LOW — `worker_reliability()` INVOKER-security → RLS filters counted rows, understated cross-company reliability.
+- [ ] #39 LOW — clock-in opens 60min early and pay runs from clock-in → +1h unapproved paid time. Cap paid start at call time unless company approves early.
+- [ ] #35 LOW — no temporal validation on crew tables (past cutoff, checkout<checkin, past departure).
+- [ ] #34 LOW — OAuth `redirectTo` misses `BASE_URL` → dead-end on GitHub Pages deploy.
+- [ ] #67 — `package-lock.json` desynced (reviewer) — regenerate with `npm install`.
+
+## Recovered from the original PRD — ideas not yet delegated
+
+Roadmap "Next" items in `PRD.md §4` the sprints skipped. Rewritten as claimable work; each chains onto infrastructure that now exists.
+
+- [ ] **Cert verification workflow** — `certifications.document_url` upload → company/admin review queue → `verified_at` stamp. Without this, "verified credential" is a checkbox anyone can tick. Wire expiries into the alerts inbox (60/30/7-day reminders already exist).
+- [ ] **Shift templates ("call packs")** — save a bundle: role + headcount + cert gates + rate + typical hours → "Arena load-in pack". One-tap multi-shift creation on new events. Natural partner: feed Import Wizard output into templates.
+- [ ] **Auto-backfill cascade + no-show detection** — pg_cron: on decline, or no clock-in by call+15min → auto-offer to next-ranked eligible candidate → if pool exhausted, spawn urgent `ops_tasks` card + staff broadcast. All three pieces already exist (matchScore, offers flow, kanban) — this is the connective tissue.
+- [ ] **Standby/on-call pools** — `preferred_rosters.tier` gains `standby`; standby crew gets first ping on backfill events + optional standby-rate field. Industry-real feature incumbents lack.
+- [ ] **Travel-time feasibility** — replace the flat 8h-turnaround heuristic in `matchScore` availability with distance-aware feasibility (Haversine + buffer; Mapbox Matrix optional upgrade when a key exists).
+- [ ] **Two-way calendar sync** — ICS subscribe ships (#59); add *inbound*: worker pastes personal iCal feed URL → busy blocks factor into availability scoring.
+- [ ] **"What unlocks more calls" hints** — per-worker: aggregate `required_cert_codes` frequency across visible shifts vs. their certs → surface top credential gaps on their dashboard. Retention gold; data already exists.
+- [ ] **Union/local rule packs** — meal penalties + turnaround pay as `overtime_rules` extensions (schema already supports per-event rule selection; add `meal_penalty_*`/`turnaround_min_hours` columns).
+- [ ] **W-9/I-9 compliance vault** — doc upload + review gate before first payout release (also a real-world Stripe requirement).
+- [ ] **Annual earnings statement PDF** — CSV exists; polish to a formatted year-end PDF statement (reuse the invoice PDF generator).
+- [ ] **Rate guidance** — cleared-rate percentiles per role × market shown in `ShiftForm` from invoice history already collected. Anti-lowball signal for workers too.
+- [ ] **Dispute mediation queue** — `timesheets.status='disputed'` exists; build the company/admin review UI + resolution flow.
+- [ ] **Crew-chief "bring my team" bundles** — apply as a group under one chief's booking (matching v2; design needed).
+- [ ] **Matching v2 learning** — per-company weight adjustments learned from confirm/decline history (design needed — start by logging outcomes).
+- [ ] **pg_cron for roster→public auto-release** — currently client-triggered on page load (works only when someone visits); move to a scheduled job.
+- [ ] Expo/React Native app — PRD 1.4. **Deferred by design** — revisit after P0-RT + recovered items land.
+
 ## P0 — ship blockers
 - [x] Add `.github/workflows/ci.yml`: `npx eslint src`, `npx tsc --noEmit -p tsconfig.app.json`, `npx vitest run`, `npm run build` on every PR (free minutes). — **claimed: Mark — working on it**
 - [ ] Merge #2 (waitlist funnel), retarget #4 to `main`, then land both.
@@ -75,7 +122,7 @@ Two sessions work this repo in parallel. **Before starting any item, mark it**: 
 ## P3 — Phase 2 intelligence
 - [x] Smart-matching analytics: fill-rate, time-to-fill, no-show rate per event. — **done: Tom** (stat cards on EventDetailPage — fill % vs headcount, avg broadcast→fill time, no-show %)
 - [x] Drag-and-drop roster lanes in `RosterBuilder` (multi-lane schedule). — **done: Tom** (RosterBoard day lanes accept drop → `moveShift` keeps time-of-day, updates via `updateShift`)
-- [ ] Push notifications (FCM/APNs) for clock-in reminders near call time.
+- [x] Push notifications — Web Push transport for `crew_alerts` shipped flag-gated (#18); FCM/APNs native push still tied to the deferred Expo app item.
 - [x] Geofence auto-clock-out on fence exit + manager alert. — **done: Tom** (ClockCard watches GPS while clocked in; 90s sustained outside-fence auto clocks out, flags the timesheet `worker_notes` for the manager)
 
 ## Debt
