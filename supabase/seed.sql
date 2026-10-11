@@ -233,4 +233,18 @@ begin
           '55555555-0000-4000-8000-000000000020', p_worker2, 1, 'joined')
   on conflict (id) do nothing;
 
+  -- CrewBoard demo: open borrow ask + an announce post
+  insert into crew_posts (id, shift_id, author_worker_id, category, direction,
+                          title, body, amount_cents)
+  values ('55555555-0000-4000-8000-000000000030', v_shift_public, p_worker2, 'borrow', 'want',
+          'Spare black work gloves?', 'Mine walked off at load-in. Will pay $5 for the weekend.',
+          500)
+  on conflict (id) do nothing;
+
+  insert into crew_posts (id, shift_id, author_worker_id, category, direction,
+                          title, body)
+  values ('55555555-0000-4000-8000-000000000031', v_shift_public, p_worker1, 'announce', 'offer',
+          'Extra harness available', 'Brought a spare Petzl — free to borrow for the weekend.')
+  on conflict (id) do nothing;
+
 end $$;

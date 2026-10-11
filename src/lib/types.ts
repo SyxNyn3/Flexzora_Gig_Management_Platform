@@ -180,6 +180,11 @@ export interface Database {
         Insert: Omit<PoolMember, 'id' | 'created_at' | 'updated_at' | 'worker'>;
         Update: Partial<Omit<PoolMember, 'id' | 'created_at' | 'updated_at' | 'worker'>>;
       };
+      crew_posts: {
+        Row: CrewPost;
+        Insert: Omit<CrewPost, 'id' | 'created_at' | 'updated_at' | 'resolved_at' | 'author' | 'fulfiller'>;
+        Update: Partial<Omit<CrewPost, 'id' | 'created_at' | 'updated_at' | 'author' | 'fulfiller'>>;
+      };
     };
   };
 }
@@ -910,5 +915,29 @@ export interface PoolMember {
   created_at: string;
   updated_at: string;
   worker?: Profile;
+}
+
+// --- CrewBoard ---------------------------------------------------------------
+export type CrewPostCategory = 'ride' | 'lodging' | 'food' | 'borrow' | 'announce' | 'general';
+export type CrewPostDirection = 'want' | 'offer';
+export type CrewPostStatus = 'open' | 'resolved' | 'closed';
+
+export interface CrewPost {
+  id: string;
+  shift_id: string;
+  author_worker_id: string;
+  category: CrewPostCategory;
+  direction: CrewPostDirection;
+  title: string;
+  body?: string;
+  amount_cents?: number;
+  ref_id?: string;
+  status: CrewPostStatus;
+  fulfilled_by_worker_id?: string;
+  resolved_at?: string;
+  created_at: string;
+  updated_at: string;
+  author?: Profile;
+  fulfiller?: Profile;
 }
 
