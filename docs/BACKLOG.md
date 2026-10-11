@@ -33,6 +33,7 @@ Multiple sessions work this repo in parallel. **Before starting any item, mark i
 - **Reviewer lane — claimed: Devin-Reviewer — working on it** (overnight PR gate, started 2026-10-10; works in `../flexzora-reviewer-wt` worktree; merges only CI-green + clean)
 - **Builder-2 lane (Company OS) — claimed: Builder-2 — working on it** (overnight self-drive, started 2026-10-10; works in `../flexzora-builder2` worktree, migrations from `20261018` — `20261017` is taken by the Connect-payouts WIP)
 - **Lane B — Feature Builder — claimed: Lane B Builder — working on it** (started 2026-10-11; recovered-PRD top-down per MORNING ITINERARY: cert verification → shift templates → auto-backfill/no-show → standby pools → travel feasibility → W-9 vault → rate guidance → dispute queue → earnings PDF → rest; works in `../flexzora-laneb` worktree, migrations from `20261025`)
+- **Lane A — Security Builder — claimed: Security Builder — working on it** (P0-RT top-down per MORNING ITINERARY: company-side HIGH batch #19/#20/#23/#51 first; one migration + regression test per issue; each fix on its own `fix/*` branch → PR)
 - Everything below is unclaimed.
 
 ## MORNING ITINERARY — lane assignments (2026-10-11)
