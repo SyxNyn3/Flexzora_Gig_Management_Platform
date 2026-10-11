@@ -2,7 +2,7 @@
 // Worker uploads a document to the private cert-docs bucket and submits for
 // review; companies review the queue of pending certs on related workers.
 import { supabase } from '@/lib/supabase';
-import type { Certification } from '@/lib/types';
+import type { CertGap, Certification } from '@/lib/types';
 
 type Result<T> = { data: T | null; error: string | null };
 const ok = <T,>(data: T): Result<T> => ({ data, error: null });
@@ -87,5 +87,16 @@ export class CertService {
   static async documentUrl(path: string): Promise<string | null> {
     const { data } = await supabase.storage.from(BUCKET).createSignedUrl(path, 60);
     return data?.signedUrl ?? null;
+  }
+
+  /** "Unlock more calls" — which credentials gate the most shifts in this worker's pool. */
+  static async certGaps(): Promise<Result<CertGap[]>> {
+    try {
+      const { data, error } = await supabase.rpc('worker_cert_gaps_for_current_user');
+      if (error) throw error;
+      return ok((data ?? []) as CertGap[]);
+    } catch (e) {
+      return fail(e);
+    }
   }
 }
