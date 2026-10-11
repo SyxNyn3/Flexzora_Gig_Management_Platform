@@ -72,9 +72,11 @@ SELECT lives_ok(
 -- only fires once price_accepted_at is set, per the #52 price lock)
 UPDATE food_run_orders SET status = 'confirmed', price_cents = 1200 WHERE id = '00000000-0000-0000-0000-000000009c13';
 UPDATE food_run_orders SET status = 'confirmed', price_cents = 900 WHERE id = '00000000-0000-0000-0000-000000009c12';
+RESET ROLE;
 SELECT ok(
   offer_run_handoff('00000000-0000-0000-0000-000000009c02', (SELECT id FROM profiles WHERE user_id = '00000000-0000-0000-0000-00000000b0f4')),
   'handoff offered to a confirmed crew member');
+RESET ROLE;
 SELECT ok(
   EXISTS (SELECT 1 FROM notifications n JOIN profiles p ON p.id = n.user_id
           WHERE p.user_id = '00000000-0000-0000-0000-00000000b0f4' AND n.title = 'Food run handoff'),
@@ -105,6 +107,7 @@ SELECT results_eq(
       WHERE iou_group_id = '00000000-0000-0000-0000-000000009c15' AND notes LIKE 'Late cancel%' $$,
   $$ SELECT 500, (SELECT id FROM profiles WHERE user_id = '00000000-0000-0000-0000-00000000b0f4') $$,
   'late cancel mints the fee to the current runner');
+RESET ROLE;
 SELECT ok(
   EXISTS (SELECT 1 FROM crew_alerts WHERE dedupe_key = 'latecancel:food:00000000-0000-0000-0000-000000009c15'),
   'runner gets the late-cancel alert');
