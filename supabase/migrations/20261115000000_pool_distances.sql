@@ -94,5 +94,4 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
   ORDER BY o.created_at DESC
   LIMIT 1;
 $$;
-
 GRANT EXECUTE ON FUNCTION my_last_ride_offer() TO authenticated;

@@ -18,6 +18,8 @@ export interface NewFoodRun {
   deliveryArea?: string;
   pickupLat?: number;
   pickupLng?: number;
+  minOrders?: number;
+  lateFeeCents?: number;
   notes?: string;
 }
 
@@ -57,6 +59,8 @@ export async function postFoodRun(input: NewFoodRun): Promise<Result<FoodRun | n
         delivery_area: input.deliveryArea ?? null,
         pickup_lat: input.pickupLat ?? null,
         pickup_lng: input.pickupLng ?? null,
+        min_orders: input.minOrders ?? 0,
+        late_fee_cents: input.lateFeeCents ?? 0,
         notes: input.notes ?? null,
       })
       .select()
@@ -71,6 +75,41 @@ export async function postFoodRun(input: NewFoodRun): Promise<Result<FoodRun | n
 export async function updateFoodRunStatus(runId: string, status: 'ordered' | 'delivered' | 'cancelled'): Promise<Result<boolean>> {
   try {
     const { error } = await supabase.from('food_runs').update({ status }).eq('id', runId);
+    if (error) throw error;
+    return ok(true);
+  } catch (e) {
+    return fail(false, e);
+  }
+}
+
+// --- runner handoff ---------------------------------------------------------
+
+/** Runner/company offers the run to another confirmed crew member. */
+export async function offerRunHandoff(runId: string, newRunnerId: string): Promise<Result<boolean>> {
+  try {
+    const { error } = await supabase.rpc('offer_run_handoff', { p_run_id: runId, p_new_runner: newRunnerId });
+    if (error) throw error;
+    return ok(true);
+  } catch (e) {
+    return fail(false, e);
+  }
+}
+
+/** The pending runner takes the run — committed IOUs re-point to them. */
+export async function acceptRunHandoff(runId: string): Promise<Result<boolean>> {
+  try {
+    const { error } = await supabase.rpc('accept_run_handoff', { p_run_id: runId });
+    if (error) throw error;
+    return ok(true);
+  } catch (e) {
+    return fail(false, e);
+  }
+}
+
+/** Pending runner declines, or the runner/company retracts the offer. */
+export async function declineRunHandoff(runId: string): Promise<Result<boolean>> {
+  try {
+    const { error } = await supabase.rpc('decline_run_handoff', { p_run_id: runId });
     if (error) throw error;
     return ok(true);
   } catch (e) {
@@ -141,7 +180,7 @@ export async function listFoodBoard(shiftId: string): Promise<Result<{ runs: Foo
   try {
     const { data: runs, error: runsError } = await supabase
       .from('food_runs')
-      .select('*, runner:profiles!food_runs_runner_worker_id_fkey(id, full_name)')
+      .select('*, runner:profiles!food_runs_runner_worker_id_fkey(id, full_name), pending_runner:profiles!food_runs_pending_runner_worker_id_fkey(id, full_name)')
       .eq('shift_id', shiftId)
       .order('order_cutoff_at');
     if (runsError) throw runsError;

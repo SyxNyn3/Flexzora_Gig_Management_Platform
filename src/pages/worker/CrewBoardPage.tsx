@@ -7,7 +7,7 @@ import { useCrewBoard, useShift } from '@/hooks/useCrew';
 import { useWorkerAssignments } from '@/hooks/useMarketplace';
 import { joinRide, withdrawRideRequest, cancelRideOffer, postRideOffer, setRideFlags, listRideBuddies, fetchMyLastOfferParams } from '@/lib/crew/rides';
 import { joinPool, leavePool, cancelLodgingPool, postLodgingPool } from '@/lib/crew/lodging';
-import { placeOrder, cancelOrder, confirmOrder, acceptOrderPrice, postFoodRun, updateFoodRunStatus, isAcceptingOrders } from '@/lib/crew/food';
+import { placeOrder, cancelOrder, confirmOrder, acceptOrderPrice, postFoodRun, updateFoodRunStatus, isAcceptingOrders, offerRunHandoff, acceptRunHandoff, declineRunHandoff } from '@/lib/crew/food';
 import { postToBoard, resolvePost, closePost, acceptPostDebt } from '@/lib/crew/board';
 import { iouCapacity, bailKeptCents, DEFAULT_BAIL_POLICY } from '@/lib/crew/iouMath';
 import { fetchBailPolicy } from '@/lib/crew/iou';
@@ -542,6 +542,15 @@ const CrewBoardPage: React.FC = () => {
                         <p className="font-semibold">{r.restaurant}</p>
                         <Badge variant={r.status === 'open' ? 'default' : 'secondary'}>{r.status}</Badge>
                         {distById.get(r.id) && <Badge variant="outline">Pickup {distById.get(r.id)!.km} km from venue</Badge>}
+                        {r.min_orders > 0 && (
+                          <Badge variant={runOrders.length >= r.min_orders ? 'outline' : 'secondary'}>
+                            {runOrders.length}/{r.min_orders} orders{runOrders.length < r.min_orders ? ' needed' : ''}
+                          </Badge>
+                        )}
+                        {r.late_fee_cents > 0 && <Badge variant="outline">{money(r.late_fee_cents / 100)} late-cancel fee</Badge>}
+                        {r.pending_runner_worker_id && (
+                          <Badge variant="secondary">handoff → {r.pending_runner?.full_name ?? 'pending'}</Badge>
+                        )}
                       </div>
                       <p className="text-sm text-muted-foreground mt-1">
                         Runner: {r.runner?.full_name ?? '—'} · cutoff {fmt(r.order_cutoff_at)}
@@ -550,10 +559,23 @@ const CrewBoardPage: React.FC = () => {
                       {r.notes && <p className="text-xs text-muted-foreground mt-1 bg-muted rounded p-2">{r.notes}</p>}
                     </div>
                     {mine && r.status === 'open' && (
-                      <Button size="sm" variant="outline" disabled={busy !== null}
+                      <Button size="sm" variant="outline" disabled={busy !== null || (r.min_orders > 0 && runOrders.length < r.min_orders)}
+                        title={r.min_orders > 0 && runOrders.length < r.min_orders ? `Needs ${r.min_orders - runOrders.length} more order(s) before committing` : undefined}
                         onClick={() => act(r.id, () => updateFoodRunStatus(r.id, 'ordered'), 'Run marked ordered')}>
                         Ordered
                       </Button>
+                    )}
+                    {r.pending_runner_worker_id === profile?.id && r.status === 'open' && (
+                      <div className="shrink-0 flex flex-col gap-1">
+                        <Button size="sm" disabled={busy !== null}
+                          onClick={() => act(r.id, () => acceptRunHandoff(r.id), 'Run taken over — order IOUs now collect to you')}>
+                          Take the run
+                        </Button>
+                        <Button size="sm" variant="ghost" disabled={busy !== null}
+                          onClick={() => act(r.id, () => declineRunHandoff(r.id), 'Handoff declined')}>
+                          Decline
+                        </Button>
+                      </div>
                     )}
                     {mine && r.status === 'ordered' && (
                       <Button size="sm" variant="outline" disabled={busy !== null}
@@ -593,10 +615,21 @@ const CrewBoardPage: React.FC = () => {
                   )}
                   {myOrder?.status === 'confirmed' && myOrder.price_accepted_at && <p className="text-xs"><Badge variant="secondary">Confirmed {money((myOrder.price_cents ?? 0) / 100)}</Badge> — settles from your payout.</p>}
                   {mine && r.status === 'open' && (
-                    <Button size="sm" variant="ghost" className="h-6 px-0 text-xs text-muted-foreground" disabled={busy !== null}
-                      onClick={() => act(`cancel-${r.id}`, () => updateFoodRunStatus(r.id, 'cancelled'), 'Run cancelled')}>
-                      Cancel run
-                    </Button>
+                    <div className="flex items-center gap-3">
+                      <Button size="sm" variant="ghost" className="h-6 px-0 text-xs text-muted-foreground" disabled={busy !== null}
+                        onClick={() => act(`cancel-${r.id}`, () => updateFoodRunStatus(r.id, 'cancelled'), 'Run cancelled')}>
+                        Cancel run
+                      </Button>
+                      {r.pending_runner_worker_id ? (
+                        <Button size="sm" variant="ghost" className="h-6 px-0 text-xs text-muted-foreground" disabled={busy !== null}
+                          onClick={() => act(`handoff-${r.id}`, () => declineRunHandoff(r.id), 'Handoff offer retracted')}>
+                          Retract handoff
+                        </Button>
+                      ) : crewRoster.length > 0 ? (
+                        <HandoffPicker busy={busy} roster={crewRoster}
+                          onOffer={(targetId) => act(`handoff-${r.id}`, () => offerRunHandoff(r.id, targetId), 'Handoff offered')} />
+                      ) : null}
+                    </div>
                   )}
                 </CardContent>
               </Card>
@@ -748,12 +781,31 @@ const LodgingForm: React.FC<{ shift: Shift; busy: string | null; onSubmit: (i: P
   );
 };
 
+const HandoffPicker: React.FC<{ busy: string | null; roster: [string, string][]; onOffer: (targetId: string) => void }> = ({ busy, roster, onOffer }) => {
+  const [target, setTarget] = useState('');
+  return (
+    <span className="flex items-center gap-1">
+      <Select value={target} onValueChange={setTarget}>
+        <SelectTrigger className="h-6 w-32 text-xs"><SelectValue placeholder="Hand off to…" /></SelectTrigger>
+        <SelectContent>
+          {roster.map(([id, name]) => <SelectItem key={id} value={id}>{name}</SelectItem>)}
+        </SelectContent>
+      </Select>
+      <Button size="sm" variant="ghost" className="h-6 px-1 text-xs" disabled={busy !== null || !target} onClick={() => onOffer(target)}>
+        Offer
+      </Button>
+    </span>
+  );
+};
+
 const FoodRunForm: React.FC<{ shift: Shift; busy: string | null; onSubmit: (i: Parameters<typeof postFoodRun>[0]) => void }> = ({ shift, busy, onSubmit }) => {
   const [restaurant, setRestaurant] = useState('');
   const [cutoff, setCutoff] = useState(toLocalInputValue(shift.starts_at));
   const [area, setArea] = useState('');
   const [menu, setMenu] = useState('');
   const [notes, setNotes] = useState('');
+  const [minOrders, setMinOrders] = useState('');
+  const [lateFee, setLateFee] = useState('');
   const geo = useGeoPin();
   return (
     <MiniForm label="Start a food run">
@@ -764,9 +816,13 @@ const FoodRunForm: React.FC<{ shift: Shift; busy: string | null; onSubmit: (i: P
       </div>
       <Input placeholder="Meet where — Dock B 18:30" value={area} onChange={(e) => setArea(e.target.value)} />
       <GeoPinButton pin={geo.pin} onPin={geo.grab} onClear={() => geo.setPin(null)} />
+      <div className="grid grid-cols-2 gap-2">
+        <Input placeholder="Min orders to commit (optional)" inputMode="numeric" value={minOrders} onChange={(e) => setMinOrders(e.target.value)} />
+        <Input placeholder="Late-cancel fee ($, optional)" inputMode="decimal" value={lateFee} onChange={(e) => setLateFee(e.target.value)} />
+      </div>
       <Input placeholder="Notes — cash or IOU, etc." value={notes} onChange={(e) => setNotes(e.target.value)} />
       <Button size="sm" className="w-full" disabled={busy !== null || !restaurant}
-        onClick={() => onSubmit({ shiftId: shift.id, restaurant, orderCutoffAt: new Date(cutoff).toISOString(), deliveryArea: area || undefined, pickupLat: geo.pin?.lat, pickupLng: geo.pin?.lng, menuLink: menu || undefined, notes: notes || undefined })}>
+        onClick={() => onSubmit({ shiftId: shift.id, restaurant, orderCutoffAt: new Date(cutoff).toISOString(), deliveryArea: area || undefined, pickupLat: geo.pin?.lat, pickupLng: geo.pin?.lng, minOrders: parseInt(minOrders) > 0 ? parseInt(minOrders) : 0, lateFeeCents: cents(lateFee) ?? 0, menuLink: menu || undefined, notes: notes || undefined })}>
         Post run
       </Button>
     </MiniForm>
