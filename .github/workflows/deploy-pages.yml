@@ -1,13 +1,14 @@
-name: Deploy to GitHub Pages
+name: Deploy to GitHub Pages (public demo repo)
 
 on:
   push:
     branches: [main]
   workflow_dispatch:
 
-permissions:
-  pages: write
-  id-token: write
+# The source repo is private — GitHub Pages on the free tier can't serve it.
+# Instead, this workflow builds the app and force-pushes the static output to
+# the PUBLIC `flexzora-live` repo (build artifacts only — no source, no docs).
+# Requires secret PAGES_DEPLOY_TOKEN (a PAT with repo scope on flexzora-live).
 
 concurrency:
   group: pages
@@ -23,24 +24,20 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - name: Build (GitHub Pages base path)
+      - name: Build (public demo base path)
         run: npm run build
         env:
-          GITHUB_PAGES: "1"
+          VITE_BASE_PATH: "/flexzora-live/"
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
       - name: SPA fallback + disable Jekyll
         run: cp dist/index.html dist/404.html && touch dist/.nojekyll
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: dist
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Publish to SyxNyn3/flexzora-live (gh-pages)
+        run: |
+          cd dist
+          git init -q -b gh-pages .
+          git config user.email "actions@github.com"
+          git config user.name "github-actions"
+          git add -A
+          git commit -qm "deploy ${{ github.sha }}" || exit 0
+          git push -f "https://x-access-token:${{ secrets.PAGES_DEPLOY_TOKEN }}@github.com/SyxNyn3/flexzora-live.git" gh-pages
