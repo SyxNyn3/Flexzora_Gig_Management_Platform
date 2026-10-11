@@ -150,7 +150,6 @@ export function applyMapping(
         normalized = `${defaults.datePrefix} ${normalized}`;
       }
       if (normalized || (rawValue ?? '').trim()) mapped[field.key] = normalized;
-      else if ((rawValue ?? '').trim()) mapped[field.key] = '';
     }
     const { status, message } = validateRow(mapped, target, raw);
     return { row_index, raw, mapped, status, message };

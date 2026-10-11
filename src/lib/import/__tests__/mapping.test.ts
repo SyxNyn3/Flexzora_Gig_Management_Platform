@@ -112,7 +112,7 @@ describe('failedRowsCsv', () => {
     const rows = applyMapping(
       [
         { V: 'Arena, North', A: '1 Main St' },
-        { V: 'B' },
+        { V: 'B, South Lot' },
       ],
       { name: 'V', address: 'A' },
       venues,
@@ -121,7 +121,7 @@ describe('failedRowsCsv', () => {
     const lines = csv.split('\n');
     expect(lines[0]).toBe('V,A');
     expect(lines).toHaveLength(2); // only the error row
-    expect(lines[1]).toBe('"B",');
+    expect(lines[1]).toBe('"B, South Lot",');
   });
 });
 
