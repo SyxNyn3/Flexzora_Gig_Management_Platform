@@ -1,4 +1,9 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+
+// Row builders are pure — stub the client so the module import doesn't
+// require env vars in CI.
+vi.mock('@/lib/supabase', () => ({ supabase: {} }));
+
 import { buildCrewListRows, buildScheduleRows, buildStaffRows } from '@/lib/export/service';
 import type { ExportData } from '@/lib/export/service';
 import { toCsv } from '@/lib/export/csv';
