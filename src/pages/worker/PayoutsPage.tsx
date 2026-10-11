@@ -86,7 +86,7 @@ const downloadInvoicePdf = (inv: Invoice) => {
 /** Year-end earnings statement — payer summary (1099-ready) + invoice detail. */
 const downloadStatementPdf = (invoices: Invoice[], year: number, workerName: string, workerEmail?: string) => {
   const doc = new jsPDF();
-  const at = doc as unknown as { autoTable: (o: object) => { lastAutoTable: { finalY: number } } };
+  const at = doc as unknown as { autoTable: (o: object) => { lastAutoTable: { finalY: number } }; lastAutoTable?: { finalY: number } };
   const t = statementTotals(invoices);
   doc.setFontSize(18);
   doc.text('FlexZora Annual Earnings Statement', 14, 18);
