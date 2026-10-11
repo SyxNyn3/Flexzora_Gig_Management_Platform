@@ -73,3 +73,12 @@ verify_jwt = true
 
 [functions.release-payout]
 verify_jwt = true
+
+# Push subscriptions belong to the signed-in worker.
+[functions.save-push-subscription]
+verify_jwt = true
+
+# Internal dispatcher called by the crew_alert_push DB trigger via pg_net —
+# carries X-Push-Secret (PUSH_INTERNAL_SECRET), not a user JWT.
+[functions.send-push]
+verify_jwt = false

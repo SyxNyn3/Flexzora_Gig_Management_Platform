@@ -84,7 +84,7 @@ Two sessions work this repo in parallel. **Before starting any item, mark it**: 
 ## P3 — Phase 2 intelligence
 - [x] Smart-matching analytics: fill-rate, time-to-fill, no-show rate per event. — **done: Tom** (stat cards on EventDetailPage — fill % vs headcount, avg broadcast→fill time, no-show %)
 - [x] Drag-and-drop roster lanes in `RosterBuilder` (multi-lane schedule). — **done: Tom** (RosterBoard day lanes accept drop → `moveShift` keeps time-of-day, updates via `updateShift`)
-- [ ] Push notifications (FCM/APNs) for clock-in reminders near call time.
+- [x] Push notifications — **done (flag-gated): Builder** (`feat/push-alerts`: `push_subscriptions` table (self-RLS) + `save-push-subscription`/`send-push` edge fns; Web Push via VAPID — free keys, no paid service; `crew_alert_push` trigger dispatches through pg_net when `app.push_fn_url`/`app.push_internal_secret` DB settings exist, skips silently otherwise; sw.js push+click handlers deep-link to the crew page; "Alert this device" toggle on the briefing card. Live blocker: VAPID_* + PUSH_INTERNAL_SECRET secrets + DB settings; native FCM/APNs remains a deeper-version item.)
 - [x] Geofence auto-clock-out on fence exit + manager alert. — **done: Tom** (ClockCard watches GPS while clocked in; 90s sustained outside-fence auto clocks out, flags the timesheet `worker_notes` for the manager)
 
 ## Debt
