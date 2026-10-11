@@ -2,7 +2,7 @@
 
 Shared journal — every session appends: date, lane, what shipped, what's next, blockers.
 Newest entries on top.
-- **2026-10-11 — Lane B — Red-team #25/#26/#27 (ride-match batch)** — `feat/ride-match-guards`. #25: partial unique `ride_requests_live_rider_uq` pins one live request per rider×shift (verified dup-match hole). #26: company branch was unlimited — now moderation-only (cancel open), can never drive a rider's state machine into a non-consensual gas IOU. #27: `seats_needed` locks at match + `offer_id` always system-managed — seat ledger can't desync. pgTAP `093` — 7 asserts.→ PR #TBD
+- **2026-10-11 — Lane B — Red-team #25/#26/#27 (ride-match batch)** — `feat/ride-match-guards`. #25: partial unique `ride_requests_live_rider_uq` pins one live request per rider×shift (verified dup-match hole). #26: company branch was unlimited — now moderation-only (cancel open), can never drive a rider's state machine into a non-consensual gas IOU. #27: `seats_needed` locks at match + `offer_id` always system-managed — seat ledger can't desync. pgTAP `093` — 7 asserts. → PR #127
 
 - **2026-10-11 — Lane B — Red-team #20+#23+#51 (company-side batch)** — `feat/rate-freeze-void-consent`. #20: IOU company branch froze unconditionally — now money terms + settled_* immutable, committed→void only; worker branch frozen too (settled_cents fake-settle dead); definer early-return keeps internals working. #23: offered_rate/match_* lock for both parties once confirmed+ (approve_timesheet pays COALESCE(offered_rate,…)). #51: `void_requested_at` + request/consent/deny RPCs — grouped (system-minted) IOUs need beneficiary consent to void, self-created stay direct. pgTAP `090/091/092` — 17 asserts. #20 → PR #125 (separate branch).
 
