@@ -138,7 +138,7 @@ Roadmap "Next" items in `PRD.md §4` the sprints skipped. Rewritten as claimable
 - [ ] **Union/local rule packs** — meal penalties + turnaround pay as `overtime_rules` extensions (schema already supports per-event rule selection; add `meal_penalty_*`/`turnaround_min_hours` columns).
 - [ ] **W-9/I-9 compliance vault** — doc upload + review gate before first payout release (also a real-world Stripe requirement).
 - [ ] **Annual earnings statement PDF** — CSV exists; polish to a formatted year-end PDF statement (reuse the invoice PDF generator).
-- [ ] **Rate guidance** — cleared-rate percentiles per role × market shown in `ShiftForm` from invoice history already collected. Anti-lowball signal for workers too.
+- [x] **Rate guidance** — cleared-rate percentiles per role × market shown in `ShiftForm` from invoice history already collected. Anti-lowball signal for workers too. — **in PR #94: Lane B** (`feat/rate-guidance` on `20261107000000_rate_guidance.sql`: `rate_guidance` RPC — p25/p50/p75+count over cleared rates (offered_rate ?? hourly_rate) on confirmed/completed assignments, role-family or skill match, 150km venue-radius market, aggregate-only; `geo_km` helper; ShiftForm debounces a fetch on role/skill change and renders "Clears $p25–$p75 · median $p50 (n nearby)" + below-market flag under P25; pgTAP `074`)
 - [ ] **Dispute mediation queue** — `timesheets.status='disputed'` exists; build the company/admin review UI + resolution flow.
 - [ ] **Crew-chief "bring my team" bundles** — apply as a group under one chief's booking (matching v2; design needed).
 - [ ] **Matching v2 learning** — per-company weight adjustments learned from confirm/decline history (design needed — start by logging outcomes).
