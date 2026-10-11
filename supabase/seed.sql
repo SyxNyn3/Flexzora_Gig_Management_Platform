@@ -477,4 +477,15 @@ begin
      'Stagehand', null, 1, '{}', 12, 38.00, 360, 'Overnight strike — meal provided.')
   on conflict (company_id, name) do nothing;
 
+  -- Lane B demo: compliance vault — worker1's W-9 is approved (payouts clear),
+  -- worker2's is in the review queue (payout queue shows the hold badge).
+  insert into compliance_docs (worker_id, doc_type, document_path, status,
+                               reviewed_by, reviewed_at)
+  values
+    (p_worker1, 'w9', p_worker1::text || '/w9/seed-w9.pdf', 'approved',
+     p_company_user, now() - interval '5 days'),
+    (p_worker2, 'w9', p_worker2::text || '/w9/seed-w9.pdf', 'pending',
+     null, null)
+  on conflict (worker_id, doc_type) do nothing;
+
 end $$;

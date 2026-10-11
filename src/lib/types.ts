@@ -30,6 +30,11 @@ export interface Database {
         Insert: Omit<WorkerSkill, 'id' | 'created_at'>;
         Update: Partial<Omit<WorkerSkill, 'id' | 'created_at'>>;
       };
+      compliance_docs: {
+        Row: ComplianceDoc;
+        Insert: Omit<ComplianceDoc, 'id' | 'uploaded_at' | 'updated_at' | 'status' | 'reviewed_by' | 'reviewed_at' | 'review_note' | 'worker'>;
+        Update: Partial<Pick<ComplianceDoc, 'document_path' | 'status'>>;
+      };
       certifications: {
         Row: Certification;
         Insert: Omit<Certification, 'id' | 'created_at' | 'updated_at' | 'verification_status'> & {
@@ -385,6 +390,24 @@ export interface WorkerSkill {
 }
 
 export type CertVerificationStatus = 'none' | 'pending' | 'verified' | 'rejected';
+
+export type ComplianceDocType = 'w9' | 'i9' | 'other';
+export type ComplianceDocStatus = 'pending' | 'approved' | 'rejected';
+
+export interface ComplianceDoc {
+  id: string;
+  worker_id: string;
+  doc_type: ComplianceDocType;
+  /** Storage path in the private compliance-docs bucket. */
+  document_path: string;
+  status: ComplianceDocStatus;
+  review_note?: string | null;
+  reviewed_by?: string | null;
+  reviewed_at?: string | null;
+  uploaded_at: string;
+  updated_at: string;
+  worker?: Profile;
+}
 
 export interface Certification {
   id: string;
