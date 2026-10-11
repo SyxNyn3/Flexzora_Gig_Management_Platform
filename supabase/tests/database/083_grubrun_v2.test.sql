@@ -44,7 +44,9 @@ SELECT '00000000-0000-0000-0000-000000009c11'::uuid, '00000000-0000-0000-0000-00
 UNION ALL
 SELECT '00000000-0000-0000-0000-000000009c12'::uuid, '00000000-0000-0000-0000-000000009c02'::uuid, id, 'Slice', 'placed'::food_order_status FROM profiles WHERE user_id = '00000000-0000-0000-0000-00000000b0f3'::uuid
 UNION ALL
-SELECT '00000000-0000-0000-0000-000000009c13'::uuid, '00000000-0000-0000-0000-000000009c02'::uuid, id, 'Pie', 'placed'::food_order_status FROM profiles WHERE user_id = '00000000-0000-0000-0000-00000000b0f4'::uuid;
+SELECT '00000000-0000-0000-0000-000000009c13'::uuid, '00000000-0000-0000-0000-000000009c02'::uuid, id, 'Pie', 'placed'::food_order_status FROM profiles WHERE user_id = '00000000-0000-0000-0000-00000000b0f4'::uuid
+UNION ALL
+SELECT '00000000-0000-0000-0000-000000009c15'::uuid, '00000000-0000-0000-0000-000000009c02'::uuid, id, 'Nachos', 'placed'::food_order_status FROM profiles WHERE user_id = '00000000-0000-0000-0000-00000000b0f3'::uuid;
 
 SET LOCAL ROLE authenticated;
 SELECT set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000b0f2","role":"authenticated"}', true);
@@ -97,14 +99,14 @@ RESET ROLE;
 UPDATE food_runs SET order_cutoff_at = now() - interval '1 hour' WHERE id = '00000000-0000-0000-0000-000000009c02';
 SET LOCAL ROLE authenticated;
 SELECT set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000b0f3","role":"authenticated"}', true);
-UPDATE food_run_orders SET status = 'cancelled' WHERE id = '00000000-0000-0000-0000-000000009c12';
+UPDATE food_run_orders SET status = 'cancelled' WHERE id = '00000000-0000-0000-0000-000000009c15';
 SELECT results_eq(
   $$ SELECT amount_cents, beneficiary_worker_id FROM crew_iou
-      WHERE iou_group_id = '00000000-0000-0000-0000-000000009c12' AND notes LIKE 'Late cancel%' $$,
+      WHERE iou_group_id = '00000000-0000-0000-0000-000000009c15' AND notes LIKE 'Late cancel%' $$,
   $$ SELECT 500, (SELECT id FROM profiles WHERE user_id = '00000000-0000-0000-0000-00000000b0f4') $$,
   'late cancel mints the fee to the current runner');
 SELECT ok(
-  EXISTS (SELECT 1 FROM crew_alerts WHERE dedupe_key = 'latecancel:food:00000000-0000-0000-0000-000000009c12'),
+  EXISTS (SELECT 1 FROM crew_alerts WHERE dedupe_key = 'latecancel:food:00000000-0000-0000-0000-000000009c15'),
   'runner gets the late-cancel alert');
 
 -- 10: offer to someone not confirmed on the shift → rejected
