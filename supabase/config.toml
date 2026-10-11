@@ -93,3 +93,8 @@ verify_jwt = true
 # carries X-Push-Secret (PUSH_INTERNAL_SECRET), not a user JWT.
 [functions.send-push]
 verify_jwt = false
+
+# Internal SMS-digest sender called by send_alert_sms_digests() via pg_net —
+# carries X-Push-Secret (PUSH_INTERNAL_SECRET), not a user JWT.
+[functions.alert-digest]
+verify_jwt = false

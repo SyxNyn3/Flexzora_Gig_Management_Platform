@@ -275,8 +275,13 @@ export interface Database {
       };
       crew_alerts: {
         Row: CrewAlert;
-        Insert: Omit<CrewAlert, 'id' | 'created_at' | 'read_at'>;
+        Insert: Omit<CrewAlert, 'id' | 'created_at' | 'read_at' | 'sms_sent_at'>;
         Update: Partial<Omit<CrewAlert, 'id' | 'created_at'>>;
+      };
+      alert_preferences: {
+        Row: AlertPreference;
+        Insert: Omit<AlertPreference, 'updated_at'> & { updated_at?: string };
+        Update: Partial<Omit<AlertPreference, 'worker_id' | 'kind'>>;
       };
       platform_policies: {
         Row: PlatformPolicy;
@@ -1461,7 +1466,16 @@ export interface CrewAlert {
   ref_id?: string;
   dedupe_key?: string;
   read_at?: string;
+  sms_sent_at?: string;
   created_at: string;
+}
+
+export interface AlertPreference {
+  worker_id: string;
+  kind: CrewAlertKind;
+  push: boolean;
+  sms: boolean;
+  updated_at: string;
 }
 
 export interface CertGearItem {

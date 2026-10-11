@@ -12,7 +12,7 @@ import { postToBoard, resolvePost, closePost } from '@/lib/crew/board';
 import { iouCapacity, bailKeptCents, DEFAULT_BAIL_POLICY } from '@/lib/crew/iouMath';
 import { fetchBailPolicy } from '@/lib/crew/iou';
 import { listCrewDistances } from '@/lib/crew/distance';
-import { markAllAlertsRead } from '@/lib/crew/alerts';
+import { markAllAlertsRead, myAlertPreferences, setAlertPreference } from '@/lib/crew/alerts';
 import { postSwapRequest, cancelSwapRequest, claimSwap, withdrawClaim, acceptClaim, rejectClaim } from '@/lib/crew/swap';
 import { hasPushSubscription, pushSupported, subscribeToPush, unsubscribeFromPush } from '@/lib/push';
 import { hoursBetween, money, shiftWindow, toLocalInputValue } from '@/components/marketplace/format';
@@ -24,12 +24,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Car, BedDouble, UtensilsCrossed, MessageSquare, ArrowLeft, Plus, X, Check,
   MapPin, Clock, Users, Wallet, HandHelping, CircleAlert, BellRing, Backpack, Navigation, ParkingSquare,
-  Repeat2,
+  Repeat2, Settings2,
 } from 'lucide-react';
-import { CrewDistance, CrewPostCategory, CrewPostDirection, LastRideOfferParams, RideBuddy, Shift } from '@/lib/types';
+import { AlertPreference, CrewAlertKind, CrewDistance, CrewPostCategory, CrewPostDirection, LastRideOfferParams, RideBuddy, Shift } from '@/lib/types';
 import type { BailPolicy } from '@/lib/crew/iouMath';
 
 const cents = (v: string): number | null => {
@@ -89,10 +90,12 @@ const CrewBoardPage: React.FC = () => {
   const [buddyTick, setBuddyTick] = useState(0);
   const [bailPolicy, setBailPolicy] = useState<BailPolicy>(DEFAULT_BAIL_POLICY);
   const [distances, setDistances] = useState<CrewDistance[]>([]);
+  const [alertPrefs, setAlertPrefs] = useState<AlertPreference[]>([]);
 
   useEffect(() => {
     hasPushSubscription().then(setPushOn);
     fetchBailPolicy().then(({ data }) => setBailPolicy(data));
+    myAlertPreferences().then(({ data }) => setAlertPrefs(data));
   }, []);
 
   useEffect(() => {
@@ -210,6 +213,42 @@ const CrewBoardPage: React.FC = () => {
                 {unreadAlerts.length > 0 && <Badge variant="destructive">{unreadAlerts.length} new</Badge>}
               </p>
               <div className="flex items-center gap-2">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-7 text-xs" title="Per-kind push and SMS preferences">
+                      <Settings2 className="w-3.5 h-3.5" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-72" align="end">
+                    <p className="text-sm font-medium mb-1">Alert settings</p>
+                    <p className="text-xs text-muted-foreground mb-3">Push pings this device instantly; SMS digest texts a rollup (needs a phone on your profile).</p>
+                    <div className="space-y-2">
+                      {(['gear', 'parking', 'departure', 'pool', 'iou', 'ride_buddy', 'custom'] as CrewAlertKind[]).map((kind) => {
+                        const pref = alertPrefs.find((p) => p.kind === kind);
+                        const push = pref?.push ?? true;
+                        const sms = pref?.sms ?? false;
+                        const update = async (patch: { push?: boolean; sms?: boolean }) => {
+                          const r = await setAlertPreference(kind, patch);
+                          if (r.error) return toast.error(r.error);
+                          setAlertPrefs((prev) => {
+                            const next = prev.filter((p) => p.kind !== kind);
+                            next.push({ worker_id: pref?.worker_id ?? '', kind, push: patch.push ?? push, sms: patch.sms ?? sms, updated_at: '' });
+                            return next;
+                          });
+                        };
+                        return (
+                          <div key={kind} className="flex items-center justify-between gap-2 text-sm">
+                            <span className="capitalize">{kind === 'iou' ? 'IOUs' : kind === 'ride_buddy' ? 'Ride buddies' : kind}</span>
+                            <span className="flex items-center gap-3 text-xs text-muted-foreground">
+                              <label className="flex items-center gap-1">Push<Switch className="scale-75" checked={push} onCheckedChange={(v) => update({ push: v })} /></label>
+                              <label className="flex items-center gap-1">SMS<Switch className="scale-75" checked={sms} onCheckedChange={(v) => update({ sms: v })} /></label>
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </PopoverContent>
+                </Popover>
                 {pushSupported() && pushOn !== null && (
                   <Button variant="ghost" size="sm" className="h-7 text-xs" disabled={busy !== null}
                     onClick={async () => {
