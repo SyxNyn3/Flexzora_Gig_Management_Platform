@@ -19,6 +19,7 @@ declare
   v_event uuid := '22222222-0000-4000-8000-000000000003';
   v_shift_roster uuid := '33333333-0000-4000-8000-000000000001';
   v_shift_public uuid := '33333333-0000-4000-8000-000000000002';
+  v_shift_today uuid := '33333333-0000-4000-8000-000000000003';
   v_gig uuid := '44444444-0000-4000-8000-000000000001';
   p_company_user uuid;
   p_worker1 uuid;
@@ -176,6 +177,21 @@ begin
     (v_company, p_worker1, 'core', 'First call for rigging work.', p_company_user),
     (v_company, p_worker2, 'preferred', null, p_company_user)
   on conflict (company_id, worker_id) do nothing;
+
+  -- In-progress call with a confirmed worker who never clocked in: the first
+  -- ops/event load flags the no-show and the backfill cascade offers the seat
+  -- to p_worker2 (stagehand 3 ≥ min 1, no cert gate, roster member).
+  insert into shifts (id, event_id, title, role_name, skill_id, headcount,
+                      starts_at, ends_at, hourly_rate, status, broadcast_stage, public_broadcast_at)
+  values (v_shift_today, v_event, 'Today — show call / deck', 'Stagehand', v_skill_stagehand, 1,
+          now() - interval '3 hours', now() + interval '5 hours',
+          44.00, 'in_progress', 'public', now() - interval '1 day')
+  on conflict (id) do nothing;
+
+  insert into shift_assignments (id, shift_id, worker_id, source, status, confirmed_at)
+  values ('55555555-0000-4000-8000-0000000000b1', v_shift_today, p_worker1,
+          'roster_broadcast', 'confirmed', now() - interval '1 day')
+  on conflict (id) do nothing;
 
   -- ------------------------------------------------------------------
   -- Legacy gig + accepted application (worker dashboards/schedule)
