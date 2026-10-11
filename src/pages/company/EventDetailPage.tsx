@@ -11,6 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useSkills } from '@/hooks/useSupabaseQuery';
 import { useCertificationTypes, useEvent, useMyCompany } from '@/hooks/useMarketplace';
 import { MarketplaceService } from '@/lib/marketplace/service';
+import { OpsService } from '@/lib/ops/service';
 import { TemplateService } from '@/lib/templates/service';
 import { Shift, ShiftFormData, ShiftTemplate, Skill } from '@/lib/types';
 import RosterBoard from '@/components/marketplace/company/RosterBoard';
@@ -78,6 +79,19 @@ const EventDetailPage: React.FC = () => {
     // Runs once per event on mount — event.refetch is intentionally excluded.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eventId]);
+
+  // No-show sweep: confirmed crew past call+15min with no clock-in flip to
+  // no_show and the backfill cascade re-offers the freed seats.
+  useEffect(() => {
+    if (!company?.id) return;
+    OpsService.sweepUnfilled(company.id).then(({ data }) => {
+      if (data.noShows > 0) {
+        toast.warning(`${data.noShows} no-show${data.noShows === 1 ? '' : 's'} flagged — backfill offers sent`);
+        event.refetch();
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [company?.id, eventId]);
 
   const refresh = () => {
     event.refetch();

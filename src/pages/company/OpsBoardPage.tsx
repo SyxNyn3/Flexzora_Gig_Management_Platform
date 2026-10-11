@@ -50,6 +50,7 @@ const OpsBoardPage: React.FC = () => {
     // The board mirrors reality: sweep creates/resolves unfilled-call cards.
     const sweep = await OpsService.sweepUnfilled(company.id);
     if (sweep.data.created > 0) toast.info(`${sweep.data.created} unfilled-call card${sweep.data.created === 1 ? '' : 's'} added`);
+    if (sweep.data.noShows > 0) toast.warning(`${sweep.data.noShows} no-show${sweep.data.noShows === 1 ? '' : 's'} flagged — backfill offers sent`);
     const { data, error } = await OpsService.listTasks(company.id);
     if (error) toast.error(error);
     setTasks(data);

@@ -29,14 +29,16 @@ export class OpsService {
   }
 
   /** Idempotent — creates urgent cards for short-staffed calls, resolves filled ones. */
-  static async sweepUnfilled(companyId: string): Promise<Result<{ created: number; resolved: number }>> {
+  static async sweepUnfilled(companyId: string): Promise<Result<{ created: number; resolved: number; noShows: number }>> {
     try {
       const { data, error } = await supabase.rpc('generate_unfilled_tasks', { p_company_id: companyId });
       if (error) throw error;
       const res = data as { created?: number; resolved?: number } | null;
-      return ok({ created: res?.created ?? 0, resolved: res?.resolved ?? 0 });
+      const { data: noShows, error: noShowError } = await supabase.rpc('detect_no_shows', { p_company_id: companyId });
+      if (noShowError) throw noShowError;
+      return ok({ created: res?.created ?? 0, resolved: res?.resolved ?? 0, noShows: (noShows as number | null) ?? 0 });
     } catch (e) {
-      return fail({ created: 0, resolved: 0 }, e);
+      return fail({ created: 0, resolved: 0, noShows: 0 }, e);
     }
   }
 
