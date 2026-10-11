@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
@@ -7,7 +8,7 @@ import { ShiftAssignment } from '@/lib/types';
 import { MarketplaceService } from '@/lib/marketplace/service';
 import { checkGeofence, getCurrentPosition } from '@/lib/marketplace/geo';
 import { shiftWindow } from '../format';
-import { LogIn, LogOut, MapPin, Loader2, Navigation } from 'lucide-react';
+import { LogIn, LogOut, MapPin, Loader2, Navigation, Users } from 'lucide-react';
 
 interface Props {
   assignment: ShiftAssignment;
@@ -22,6 +23,8 @@ const ClockCard: React.FC<Props> = ({ assignment, onChanged }) => {
   const [locating, setLocating] = useState<string | null>(null);
   const shift = assignment.shift;
   const venue = shift?.event?.venue;
+  const fenceCenter =
+    venue && venue.latitude != null && venue.longitude != null ? { lat: venue.latitude, lng: venue.longitude } : null;
   const ts = assignment.timesheet;
   const clockedIn = !!ts?.clock_in_at;
   const clockedOut = !!ts?.clock_out_at;
@@ -36,8 +39,8 @@ const ClockCard: React.FC<Props> = ({ assignment, onChanged }) => {
     try {
       const pos = await getCurrentPosition();
       const here = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-      if (venue) {
-        const fence = checkGeofence(here, { lat: venue.latitude, lng: venue.longitude }, venue.geofence_radius_m, pos.coords.accuracy);
+      if (fenceCenter && venue) {
+        const fence = checkGeofence(here, fenceCenter, venue.geofence_radius_m, pos.coords.accuracy);
         setLocating(fence.inside ? `Inside geofence (${Math.round(fence.distanceM)} m)` : `${Math.round(fence.distanceM)} m from venue`);
         if (!fence.inside && kind === 'in') {
           toast.error(`You're ${Math.round(fence.distanceM)} m from ${venue.name}. Clock-in requires being within ${venue.geofence_radius_m} m.`);
@@ -63,12 +66,12 @@ const ClockCard: React.FC<Props> = ({ assignment, onChanged }) => {
   // position fixes outside the fence clock the worker out and flag it for
   // the manager (timesheet keeps the GPS distance/verification fields).
   useEffect(() => {
-    if (!clockedIn || clockedOut || !venue || typeof navigator === 'undefined' || !navigator.geolocation) return;
+    if (!clockedIn || clockedOut || !fenceCenter || !venue || typeof navigator === 'undefined' || !navigator.geolocation) return;
     const watchId = navigator.geolocation.watchPosition(
       (pos) => {
         const fence = checkGeofence(
           { lat: pos.coords.latitude, lng: pos.coords.longitude },
-          { lat: venue.latitude, lng: venue.longitude },
+          fenceCenter,
           venue.geofence_radius_m,
           pos.coords.accuracy,
         );
@@ -146,6 +149,12 @@ const ClockCard: React.FC<Props> = ({ assignment, onChanged }) => {
             {busy ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <LogOut className="w-4 h-4 mr-1" />} Clock out
           </Button>
         )}
+      </div>
+
+      <div className="mt-2 flex justify-end">
+        <Button asChild variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground">
+          <Link to={`/shifts/${shift.id}/crew`}><Users className="w-3.5 h-3.5 mr-1" /> Crew — rides, bunks, grub, board</Link>
+        </Button>
       </div>
     </div>
   );

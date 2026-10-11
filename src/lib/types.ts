@@ -107,7 +107,7 @@ export interface Database {
       };
       venues: {
         Row: Venue;
-        Insert: Omit<Venue, 'id' | 'created_at' | 'updated_at'>;
+        Insert: Omit<Venue, 'id' | 'created_at' | 'updated_at' | 'overnight_parking' | 'camping_allowed'>;
         Update: Partial<Omit<Venue, 'id' | 'created_at' | 'updated_at'>>;
       };
       overtime_rules: {
@@ -127,7 +127,7 @@ export interface Database {
       };
       shift_assignments: {
         Row: ShiftAssignment;
-        Insert: Omit<ShiftAssignment, 'id' | 'created_at' | 'updated_at' | 'shift' | 'worker' | 'timesheet'>;
+        Insert: Omit<ShiftAssignment, 'id' | 'created_at' | 'updated_at' | 'shift' | 'worker' | 'timesheet' | 'needs_ride' | 'can_drive'>;
         Update: Partial<Omit<ShiftAssignment, 'id' | 'created_at' | 'updated_at' | 'shift' | 'worker' | 'timesheet'>>;
       };
       preferred_rosters: {
@@ -175,6 +175,7 @@ export interface Database {
         Insert: Omit<CopilotMessage, 'id' | 'created_at'> & { profile_id?: string | null };
         Update: Partial<Pick<CopilotMessage, 'action' | 'content'>>;
       };
+
       staff_members: {
         Row: StaffMember;
         Insert: Omit<StaffMember, 'id' | 'created_at' | 'updated_at'>;
@@ -206,6 +207,60 @@ export interface Database {
         Row: OpsTask;
         Insert: Omit<OpsTask, 'id' | 'created_at' | 'updated_at' | 'done_at' | 'event' | 'shift' | 'assignee'>;
         Update: Partial<Omit<OpsTask, 'id' | 'created_at' | 'company_id' | 'event' | 'shift' | 'assignee'>>;
+      crew_iou: {
+        Row: CrewIOU;
+        Insert: Omit<CrewIOU, 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Omit<CrewIOU, 'id' | 'created_at' | 'updated_at'>>;
+      };
+      ride_offers: {
+        Row: RideOffer;
+        Insert: Omit<RideOffer, 'id' | 'created_at' | 'updated_at' | 'seats_taken' | 'driver'>;
+        Update: Partial<Omit<RideOffer, 'id' | 'created_at' | 'updated_at' | 'seats_taken' | 'driver'>>;
+      };
+      ride_requests: {
+        Row: RideRequest;
+        Insert: Omit<RideRequest, 'id' | 'created_at' | 'updated_at' | 'rider'>;
+        Update: Partial<Omit<RideRequest, 'id' | 'created_at' | 'updated_at' | 'rider'>>;
+      };
+      lodging_pools: {
+        Row: LodgingPool;
+        Insert: Omit<LodgingPool, 'id' | 'created_at' | 'updated_at' | 'spots_taken' | 'host'>;
+        Update: Partial<Omit<LodgingPool, 'id' | 'created_at' | 'updated_at' | 'spots_taken' | 'host'>>;
+      };
+      pool_members: {
+        Row: PoolMember;
+        Insert: Omit<PoolMember, 'id' | 'created_at' | 'updated_at' | 'worker'>;
+        Update: Partial<Omit<PoolMember, 'id' | 'created_at' | 'updated_at' | 'worker'>>;
+      };
+      crew_posts: {
+        Row: CrewPost;
+        Insert: Omit<CrewPost, 'id' | 'created_at' | 'updated_at' | 'resolved_at' | 'author' | 'fulfiller'>;
+        Update: Partial<Omit<CrewPost, 'id' | 'created_at' | 'updated_at' | 'author' | 'fulfiller'>>;
+      };
+      food_runs: {
+        Row: FoodRun;
+        Insert: Omit<FoodRun, 'id' | 'created_at' | 'updated_at' | 'runner'>;
+        Update: Partial<Omit<FoodRun, 'id' | 'created_at' | 'updated_at' | 'runner'>>;
+      };
+      food_run_orders: {
+        Row: FoodRunOrder;
+        Insert: Omit<FoodRunOrder, 'id' | 'created_at' | 'updated_at' | 'worker'>;
+        Update: Partial<Omit<FoodRunOrder, 'id' | 'created_at' | 'updated_at' | 'worker'>>;
+      };
+      crew_alerts: {
+        Row: CrewAlert;
+        Insert: Omit<CrewAlert, 'id' | 'created_at' | 'read_at'>;
+        Update: Partial<Omit<CrewAlert, 'id' | 'created_at'>>;
+      };
+      cert_gear_items: {
+        Row: CertGearItem;
+        Insert: CertGearItem;
+        Update: Partial<CertGearItem>;
+      };
+      base_gear_items: {
+        Row: BaseGearItem;
+        Insert: BaseGearItem;
+        Update: Partial<BaseGearItem>;
       };
     };
   };
@@ -599,6 +654,10 @@ export interface Venue {
   longitude?: number | null;
   geofence_radius_m: number;
   load_in_notes?: string;
+  overnight_parking: boolean;
+  camping_allowed: boolean;
+  parking_notes?: string;
+  parking_json?: Record<string, unknown>;
   created_at: string;
   updated_at: string;
 }
@@ -686,6 +745,8 @@ export interface ShiftAssignment {
   match_score?: number;
   match_breakdown?: MatchBreakdown;
   offered_rate?: number;
+  needs_ride: boolean;
+  can_drive: boolean;
   responded_at?: string;
   confirmed_at?: string;
   created_at: string;
@@ -754,8 +815,9 @@ export interface EscrowDeposit {
 
 export interface InvoiceLineItem {
   description: string;
-  hours: number;
-  rate: number;
+  // null for non-hourly items (e.g. IOU deduction lines)
+  hours: number | null;
+  rate: number | null;
   amount: number;
 }
 
@@ -930,6 +992,7 @@ export interface CopilotMessage {
   created_at: string;
 }
 
+
 // ---------------------------------------------------------------------------
 // Company OS — staff layer (internal team, distinct from marketplace crew)
 // ---------------------------------------------------------------------------
@@ -1056,5 +1119,179 @@ export interface OpsTask {
   event?: { id: string; name: string } | null;
   shift?: { id: string; title: string } | null;
   assignee?: StaffMember | null;
+// --- Crew OS ---------------------------------------------------------------
+export type CrewIOUKind = 'ride' | 'lodging' | 'food' | 'gear' | 'other';
+export type CrewIOUStatus = 'committed' | 'settled' | 'void' | 'failed';
+export type CrewIOUSettleVia = 'payout_deduction' | 'instant_pay' | 'manual';
+
+export interface CrewIOU {
+  id: string;
+  worker_id: string;
+  shift_id?: string;
+  kind: CrewIOUKind;
+  amount_cents: number;
+  beneficiary_worker_id?: string;
+  beneficiary?: string;
+  status: CrewIOUStatus;
+  settle_via: CrewIOUSettleVia;
+  iou_group_id?: string;
+  notes?: string;
+  settled_at?: string;
+  settled_timesheet_id?: string;
+  created_at: string;
+  updated_at: string;
+  beneficiary_profile?: Pick<Profile, 'id' | 'full_name'>;
+}
+
+// --- CrewPool rides --------------------------------------------------------
+export type RideOfferStatus = 'open' | 'full' | 'cancelled';
+export type RideRequestStatus = 'open' | 'matched' | 'withdrawn' | 'cancelled';
+
+export interface RideOffer {
+  id: string;
+  shift_id: string;
+  driver_worker_id: string;
+  seats: number;
+  seats_taken: number;
+  departure_area?: string;
+  departure_at?: string;
+  gas_share_cents: number;
+  notes?: string;
+  status: RideOfferStatus;
+  created_at: string;
+  updated_at: string;
+  driver?: Profile;
+}
+
+export interface RideRequest {
+  id: string;
+  shift_id: string;
+  rider_worker_id: string;
+  seats_needed: number;
+  pickup_area?: string;
+  notes?: string;
+  status: RideRequestStatus;
+  offer_id?: string;
+  created_at: string;
+  updated_at: string;
+  rider?: Profile;
+}
+
+// --- BunkUp lodging --------------------------------------------------------
+export type LodgingPoolKind = 'hotel' | 'airbnb' | 'house' | 'camp' | 'rv' | 'other';
+export type LodgingPoolStatus = 'open' | 'full' | 'cancelled';
+export type PoolMemberStatus = 'joined' | 'left' | 'removed' | 'cancelled';
+
+export interface LodgingPool {
+  id: string;
+  shift_id: string;
+  host_worker_id: string;
+  kind: LodgingPoolKind;
+  name: string;
+  address_area?: string;
+  check_in_at?: string;
+  check_out_at?: string;
+  spots: number;
+  spots_taken: number;
+  total_cost_cents?: number;
+  share_cents: number;
+  notes?: string;
+  status: LodgingPoolStatus;
+  created_at: string;
+  updated_at: string;
+  host?: Profile;
+}
+
+export interface PoolMember {
+  id: string;
+  pool_id: string;
+  worker_id: string;
+  spots_needed: number;
+  status: PoolMemberStatus;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+  worker?: Profile;
+}
+
+// --- CrewBoard ---------------------------------------------------------------
+export type CrewPostCategory = 'ride' | 'lodging' | 'food' | 'borrow' | 'announce' | 'general';
+export type CrewPostDirection = 'want' | 'offer';
+export type CrewPostStatus = 'open' | 'resolved' | 'closed';
+
+export interface CrewPost {
+  id: string;
+  shift_id: string;
+  author_worker_id: string;
+  category: CrewPostCategory;
+  direction: CrewPostDirection;
+  title: string;
+  body?: string;
+  amount_cents?: number;
+  ref_id?: string;
+  status: CrewPostStatus;
+  fulfilled_by_worker_id?: string;
+  resolved_at?: string;
+  created_at: string;
+  updated_at: string;
+  author?: Profile;
+  fulfiller?: Profile;
+}
+
+// --- GrubRun ---------------------------------------------------------------
+export type FoodRunStatus = 'open' | 'ordered' | 'delivered' | 'cancelled';
+export type FoodOrderStatus = 'placed' | 'confirmed' | 'cancelled';
+
+export interface FoodRun {
+  id: string;
+  shift_id: string;
+  runner_worker_id: string;
+  restaurant: string;
+  menu_link?: string;
+  order_cutoff_at: string;
+  delivery_area?: string;
+  notes?: string;
+  status: FoodRunStatus;
+  created_at: string;
+  updated_at: string;
+  runner?: Profile;
+}
+
+export interface FoodRunOrder {
+  id: string;
+  run_id: string;
+  worker_id: string;
+  item: string;
+  price_cents?: number;
+  status: FoodOrderStatus;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+  worker?: Profile;
+}
+
+// --- SmartAlerts -------------------------------------------------------------
+export type CrewAlertKind = 'gear' | 'parking' | 'departure' | 'pool' | 'iou' | 'custom';
+
+export interface CrewAlert {
+  id: string;
+  worker_id: string;
+  shift_id?: string;
+  kind: CrewAlertKind;
+  title: string;
+  body: string;
+  ref_id?: string;
+  dedupe_key?: string;
+  read_at?: string;
+  created_at: string;
+}
+
+export interface CertGearItem {
+  cert_code: string;
+  item: string;
+}
+
+export interface BaseGearItem {
+  item: string;
 }
 

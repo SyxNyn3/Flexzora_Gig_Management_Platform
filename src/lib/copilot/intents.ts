@@ -101,13 +101,13 @@ export function routeIntent(text: string, ctx: IntentContext): CopilotIntent {
   }
 
   // ---- Queries --------------------------------------------------------------
-  if (/\b(unfilled|open call|holes?|short[\s-]?staff|need(ing)? crew|still need|fill(ed|ing)?)\b/.test(t)) {
+  if (/\b(unfilled|open calls?|holes?|short[\s-]?staff(ed|ing)?|need(ing)? crew|still need|fill(ed|ing|s)?)\b/.test(t)) {
     return { type: 'query', kind: 'unfilled_calls', args: { days_ahead: extractDays(t, 7) }, label: 'Unfilled calls' };
   }
-  if (/\b(timesheet|approve|approvals?|payroll|hours? (to )?approve|submitted)\b/.test(t)) {
+  if (/\b(timesheets?|approve|approvals?|payroll|hours? (to )?approve|submitted)\b/.test(t)) {
     return { type: 'query', kind: 'timesheets_pending', args: {}, label: 'Timesheets awaiting approval' };
   }
-  if (/\b(cert|certs|certification|credential|expir|osha|etcp|license)\b/.test(t)) {
+  if (/\b(certs?|certifications?|credentials?|expir\w*|osha|etcp|licenses?)\b/.test(t)) {
     return { type: 'query', kind: 'cert_expiring', args: { days: extractDays(t, 30) }, label: 'Expiring certifications' };
   }
   if (/\b(budget|cost|spend|money|cap|over|financial)\b/.test(t)) {
