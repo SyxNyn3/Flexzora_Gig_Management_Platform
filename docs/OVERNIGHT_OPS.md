@@ -49,3 +49,32 @@ while time remains:
 - **Stray files `00`/`01`** duplicate a migration — safe to remove (was in backlog).
 - **Edge functions aren't deployed** — Stripe/auth flows requiring them degrade gracefully; don't pretend they work.
 - **Email verification is ON** — unconfirmed accounts can't log in; test flows must handle the check-email state.
+
+---
+
+
+## Conventions worth knowing
+
+- **Migrations are idempotent**: `CREATE TABLE IF NOT EXISTS`,
+  `DROP POLICY IF EXISTS` before `CREATE POLICY`, `CREATE OR REPLACE FUNCTION`,
+  `DROP TRIGGER IF EXISTS` before `CREATE TRIGGER`, enum creation guarded by
+  `pg_type` lookup. Verified by replaying `supabase db reset` twice.
+- **RLS helpers** (from `20260928220000_marketplace_core.sql`):
+  `current_profile_id()`, `owns_company(id)`, `owns_event(id)`,
+  `owns_shift(id)`, `worker_can_see_shift(id)`, `is_party_to_shift(id)`.
+  `profiles.id` ≠ `auth.uid()` — join via `profiles.user_id`.
+- **Seed** lives in one `do $$` block, fixed UUID prefixes
+  (`1111` users, `2222` company/venue/event, `3333` shifts, `4444` gigs,
+  `5555` crew objects, `6666` company-OS objects), every insert
+  `on conflict do nothing`.
+- **Feature flags** via `import.meta.env.VITE_*` — new surface area that's
+  incomplete or provider-dependent ships behind a flag
+  (`VITE_ENABLE_COPILOT`, `VITE_ENABLE_GOOGLE_AUTH`, …).
+- **Sweep-on-read** instead of cron: time-based promotions run as RPCs the
+  page calls on load (`promoteStaleRosterShifts` pattern), so a quiet company
+  never pays for a scheduler.
+- **Dedupe keys** on generated rows (alerts, auto-tasks): generation is
+  idempotent and re-running a sweep never double-creates.
+- **Don't add deps lightly**. The wizard needs XLSX/PDF parsing
+  (`xlsx`, `pdfjs-dist`) — lazy-load them inside the wizard chunk so the main
+  bundle doesn't pay.

@@ -31,10 +31,11 @@ Two sessions work this repo in parallel. **Before starting any item, mark it**: 
 - **Builder lane — claimed: Builder — working on it** (overnight self-drive, started 2026-10-10)
 - **Challenger lane — claimed: Devin-Challenger — working on it** (overnight red-team, started 2026-10-10; files issues labeled `challenger`)
 - **Reviewer lane — claimed: Devin-Reviewer — working on it** (overnight PR gate, started 2026-10-10; works in `../flexzora-reviewer-wt` worktree; merges only CI-green + clean)
+- **Builder-2 lane (Company OS) — claimed: Builder-2 — working on it** (overnight self-drive, started 2026-10-10; works in `../flexzora-builder2` worktree, migrations from `20261018` — `20261017` is taken by the Connect-payouts WIP)
 - Everything below is unclaimed.
 
 ## Company OS — overnight sprint (see `docs/VISION_COMPANY_OS.md` — spec + competitor findings)
-- [ ] AI Upload Wizard: `import_jobs`/`import_rows`, XLSX/CSV/PDF parse → LLM entity mapping (OmniRoute `localhost:20128/v1`, heuristic fallback) → review screen → bulk import
+- [ ] AI Upload Wizard: `import_jobs`/`import_rows`, XLSX/CSV/PDF parse → LLM entity mapping (OmniRoute `localhost:20128/v1`, heuristic fallback) → review screen → bulk import — **claimed: Builder-2 — working on it**
 - [ ] Company Copilot: `company_docs` + copilot panel — ask-your-data queries + action previews (broadcast drafts, schedule lookups). Flag `VITE_ENABLE_COPILOT`
 - [ ] Staff layer: `staff_members`/`staff_assignments` — PMs/coordinators on rosters, crew+staff unified show view
 - [ ] Broadcast messaging: compose to crew AND staff (per-event/shift/all) + delivery log
@@ -52,7 +53,6 @@ Two sessions work this repo in parallel. **Before starting any item, mark it**: 
 - [x] SmartAlerts: per-shift briefing — **done: Builder** (`20261015000000_crew_alerts.sql`: `cert_gear_items`+`base_gear_items` data-driven packing lists; `crew_alerts` feed with dedupe keys; confirm-trigger generates gear/parking/departure briefing — departure = worker_sensitive geo -> venue @ 55km/h + 20min buffer; ride-cancel alerts matched riders. Briefing card + unread badges on the crew page. Client `src/lib/crew/alerts.ts`.)
 - [ ] ShiftSwap: `swap_requests`/`swap_claims`, cert-gated visibility, company approval via offer flow
 - [x] Auth UX completion: check-email state post-signup, forgot-password flow, Google button behind `VITE_ENABLE_GOOGLE_AUTH` flag, error states matching design — **done: Builder, merged PR #6** (check-email view + resend w/ cooldown, `/reset-password` page, Google+Apple gated behind flags, friendly error map incl. email-not-confirmed resend, fixed `type=email` blocking username sign-in)
-
 ## P0 — ship blockers
 - [x] Add `.github/workflows/ci.yml`: `npx eslint src`, `npx tsc --noEmit -p tsconfig.app.json`, `npx vitest run`, `npm run build` on every PR (free minutes). — **claimed: Mark — working on it**
 - [ ] Merge #2 (waitlist funnel), retarget #4 to `main`, then land both.
