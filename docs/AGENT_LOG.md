@@ -296,3 +296,49 @@ Newest entries on top.
 - Waitlist verify link no longer returned in responses.
 - `20261008000000`: `search_path` pinned on all SECURITY DEFINER functions.
 - `sw.js`: network-first navigation; `schedule-demo` persists demo_requests.
+
+## Lane A — Security Builder — P0-RT company-side consent batch (#19, #20, #23, #51)
+
+- Branch `fix/lane-a-company-consent` (claim: PR #83 `chore/lane-a-claim`).
+- Migration `20261103000000_p0rt_company_consent.sql` — one idempotent file:
+  - **#19** `crew_posts.debtor_confirmed_at`. Minting moved out of the
+    resolve trigger into an AFTER-UPDATE mint that fires only once the
+    *debtor* has consented: the author when resolving a `want` (author owes),
+    the fulfiller accepting an `offer`. Resolved posts can no longer change
+    fulfiller or amount; a post cannot be fulfilled by its own author; a paid
+    post must name a fulfiller before it resolves.
+  - **#20** `guard_crew_iou_update`: companies are read-only on shift-anchored
+    IOUs. Every legitimate write is definer (shift-cancel void, approve_timesheet
+    settlement) and is exempt via `current_user`.
+  - **#51** the debtor cannot change an IOU at all. The beneficiary can forgive
+    (void) only while `settled_cents = 0`.
+  - **#23** `guard_assignment_update`: `offered_rate`, `match_score`,
+    `match_breakdown` are frozen from offered/confirmed/completed/no_show.
+    Re-offering a declined/withdrawn row may set a new rate.
+- Tests (pgTAP, run by the `db-tests` CI job): `019_board_consent`,
+  `020_crew_iou_company_readonly`, `023_offer_terms_frozen`,
+  `051_debtor_cannot_void`. 15 + 6 + 6 + 7 assertions; plans verified.
+- Local verification (Node 24, same commands as CI): `tsc` clean except
+  `pdfjs-dist` / `read-excel-file`, which are declared in package.json but
+  absent from this machine's stale node_modules (installed `--no-save`, no
+  manifest/lockfile change). `eslint src`: 0 errors / 17 pre-existing warnings.
+  `vitest run`: 97/97. `vite build`: green. **pgTAP not run locally** — no
+  Postgres/Supabase CLI on this machine; it is the verification gate in CI.
+
+Judgment calls / things a reviewer should check:
+
+- Grandfathered rows: offer-direction posts already resolved before this fix
+  keep their minted IOUs (backfill stamps consent on any resolved post that
+  already has one). These were minted without consent; they need a human review,
+  not an automatic unwind.
+- Bail/cancel voids (ride withdraw, lodging leave, food cancel, shift cancel)
+  still void through definer cascades. That is the explicit seat/booking release,
+  not a debtor bypass. The debtor's direct table write is what is now closed.
+- `voidIou()` in `src/lib/crew/iou.ts` is exported but unused in the UI; it now
+  fails for debtors as intended. Left in place; a beneficiary-only forgive
+  helper can replace it when the UI needs one.
+- New UI: the fulfiller sees "You owe $X — Accept" on unaccepted offer posts;
+  the author sees "Waiting for <fulfiller> to accept".
+
+Next in Lane A: ride-match MED batch (#25 unique rider/shift, #26 company
+can't force-match, #27 seats_needed frozen after match).

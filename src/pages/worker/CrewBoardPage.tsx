@@ -8,7 +8,7 @@ import { useWorkerAssignments } from '@/hooks/useMarketplace';
 import { joinRide, withdrawRideRequest, cancelRideOffer, postRideOffer, setRideFlags } from '@/lib/crew/rides';
 import { joinPool, leavePool, cancelLodgingPool, postLodgingPool } from '@/lib/crew/lodging';
 import { placeOrder, cancelOrder, confirmOrder, postFoodRun, updateFoodRunStatus, isAcceptingOrders } from '@/lib/crew/food';
-import { postToBoard, resolvePost, closePost } from '@/lib/crew/board';
+import { postToBoard, resolvePost, closePost, acceptPostDebt } from '@/lib/crew/board';
 import { iouCapacity } from '@/lib/crew/iouMath';
 import { markAllAlertsRead } from '@/lib/crew/alerts';
 import { postSwapRequest, cancelSwapRequest, claimSwap, withdrawClaim, acceptClaim, rejectClaim } from '@/lib/crew/swap';
@@ -507,6 +507,19 @@ const CrewBoardPage: React.FC = () => {
                       {p.body && <p className="text-sm text-muted-foreground mt-1">{p.body}</p>}
                       {p.status === 'resolved' && p.fulfiller && (
                         <p className="text-xs text-muted-foreground mt-1">Fulfilled by {p.fulfiller.full_name}</p>
+                      )}
+                      {p.status === 'resolved' && (p.amount_cents ?? 0) > 0 && p.fulfilled_by_worker_id && !p.debtor_confirmed_at && (
+                        p.fulfilled_by_worker_id === profile?.id && p.direction === 'offer' ? (
+                          <div className="mt-2 flex items-center gap-2 text-xs">
+                            <span>You owe {money((p.amount_cents ?? 0) / 100)} for this.</span>
+                            <Button size="sm" className="h-7" disabled={busy !== null}
+                              onClick={() => act(`accept-${p.id}`, () => acceptPostDebt(p.id), 'Accepted — the share is on your ledger')}>
+                              <Check className="w-3 h-3 mr-1" /> Accept
+                            </Button>
+                          </div>
+                        ) : (
+                          <p className="text-xs text-muted-foreground mt-2">Waiting for {p.fulfiller?.full_name ?? 'the fulfiller'} to accept the {money((p.amount_cents ?? 0) / 100)} share.</p>
+                        )
                       )}
                     </div>
                     {mine && p.status === 'open' && (
