@@ -7,6 +7,18 @@ Each entry: lane, branch/PR, what shipped, verification status, notes.
 
 ## Builder-2 — Company OS sprint (overnight)
 
+### feat/staff-layer → PR #56 — staff_members / staff_assignments
+
+- Internal team (PMs, coordinators, crew leads) distinct from marketplace
+  crew — no Flexzora worker account required; profile_id link reserved.
+- staff_assignments: staff × event with role label, call time,
+  assigned/confirmed/declined. Unique per (staff, event, role).
+- /staff roster page (add/edit/active toggle); event detail gains a
+  "Staff on this event" panel — one screen shows everybody working.
+- Import 'staff' target live: commit_import_job upserts by email, so
+  re-imported staff sheets update instead of duplicating.
+- Seed: 3 staff members, 2 assigned to the demo event.
+
 ### feat/company-copilot → PR #55 — Company Copilot
 
 - `company_docs` + `copilot_messages` + `copilot_query`: whitelisted
