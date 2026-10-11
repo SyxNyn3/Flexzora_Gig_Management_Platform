@@ -1,45 +1,57 @@
-# Overnight ops — how the build lanes run
+# OVERNIGHT OPS — Multi-Session Autonomous Charter
 
-Two+ autonomous lanes work this repo in parallel overnight. This doc is the
-shared operating agreement so nobody has to guess what the other lane did.
+Standing orders for the unsupervised overnight build cycle (until ~10:30 AM).
+Every session in this repo MUST read this file + `docs/BACKLOG.md` + `docs/PRD.md` + `docs/VISION_CREW_OS.md` + `docs/VISION_COMPANY_OS.md` first.
 
-## Lanes
+## The three lanes
 
-| Lane | Scope | Worktree |
-|---|---|---|
-| **Builder** | Crew OS sprint (`docs/VISION_CREW_OS.md`) + carry-over items | main checkout |
-| **Builder-2** | Company OS sprint (`docs/VISION_COMPANY_OS.md`) — own lane only | `../flexzora-builder2` worktree |
-| **Mark** | Cloud/manager: CI, review sweeps, automations | remote |
-| **Tom** | Desktop: misc done | desktop |
+| Lane | Role | Writes | Job |
+|---|---|---|---|
+| **Builder** | implements | code, tests, migrations | Claim → build → verify → PR → next item. Never idle. |
+| **Reviewer** | reviews | PR comments, approvals, merge | Poll open PRs; review every diff for correctness/security/tests; merge only when CI is green + clean. |
+| **Challenger** | red-teams | GitHub issues only | Pull latest `main`, try to break it: edge cases, RLS gaps, bad inputs, UX dead-ends. Files issues labeled `challenger` with repro steps. Never writes app code. |
 
-Builder-2 owns the Company OS queue end to end: AI Upload Wizard → Company
-Copilot → staff layer → broadcast → ICS feed + timezone → ops kanban → tour
-exports → auto-reminders. Never touch items claimed by another lane; never
-commit to `main`.
+Claim your lane in `docs/BACKLOG.md` before anything else: `(claimed: <name> — working on it)`.
 
-## The loop (per item)
+## Non-negotiable rules
 
-1. **Claim** — mark the item `(claimed: <lane> — working on it)` in
-   `docs/BACKLOG.md` before starting. Claims merge with the feature PR, so
-   check open branches for the freshest backlog, not just `main`.
-2. **Branch** — `feat/<name>` stacked on the previous Company OS branch so PR
-   diffs stay reviewable. Migration timestamps `20261018`+ (Crew OS used
-   `20261010`–`20261016`; `20261017` is Connect-payouts WIP).
-3. **Implement** — migration (idempotent DDL, RLS policies, SECURITY DEFINER
-   RPCs with pinned `search_path`, triggers) + types in `src/lib/types.ts` +
-   service module (`src/lib/<area>/*.ts`, `Result<T>`/`ok`/`fail` convention) +
-   UI matching the existing design language + demo rows in `supabase/seed.sql`.
-4. **Verify** — no local Node/Deno on this machine; CI runs
-   `eslint src` + `tsc --noEmit -p tsconfig.app.json` + `vitest run` +
-   `vite build` per PR. Write code that passes on the first run: pure logic in
-   testable units (see `iouMath.ts`/`matchScore.ts` pattern), Supabase calls
-   behind the service layer.
-5. **PR** — target the parent branch; describe what shipped, what's flag-gated,
-   and the merge order.
-6. **Log** — `docs/AGENT_LOG.md` entry (newest first), `docs/BACKLOG.md` item
-   marked done with the migration/PR reference.
-7. **Next** — pull the next unclaimed item in your lane. Blocked? Log the
-   blocker in AGENT_LOG and move to the next item; never stop the lane.
+1. **Never commit to `main` directly.** Every change rides a `feat/*` or `fix/*` branch → PR → CI.
+2. **Every push to `main` deploys publicly** (GitHub Pages). A merge is a release — treat it that way.
+3. **Verify before every PR**: `npm run build && npm run lint && npm run test` all green, or the PR says exactly why not.
+4. **Supabase**: additive migrations only. Never drop/rename columns or tables that hold data. Every destructive-looking change needs a guard comment explaining why it's safe.
+5. **No secrets in git.** `.env.local` is machine-local; if a feature needs a new env var, document it in `.env.example` and `docs/`, never paste a key.
+6. **Log everything.** Append to `docs/AGENT_LOG.md` — date, lane, what you did, what's next. This is how the next session picks up where you left off.
+7. **Blocked? Don't wait.** Note the blocker in BACKLOG/AGENT_LOG, move to the next unclaimed item. Things that legitimately need the user: paid API keys (Stripe live, Twilio, Resend), OAuth app credentials, production DNS.
+8. **Homepage feel is sacred.** Extend the design language; don't redesign it.
+
+## The self-drive loop (what "stay busy" means)
+
+```
+while time remains:
+  pick highest-priority UNCLAIMED backlog/PRD-gap item
+  claim it → branch → build → verify (build/lint/test) → PR → log
+  if nothing unclaimed:
+    - review open PRs for correctness (even if not your lane)
+    - hunt test-coverage gaps → write tests
+    - reconcile PRD.md "Implemented in" claims vs reality → fix or update docs
+    - improve docs/JSDoc on non-obvious domain logic (escrow, geofence, matchScore)
+```
+
+## Stop conditions (only reasons to halt)
+
+- Everything on BACKLOG done AND PRD fully reconciled
+- Hard blocker requiring user secrets/accounts (log it, keep going on other items)
+- 10:30 AM
+
+## Known hazards
+
+- **OneDrive file locks** on `.git/objects` — if a fetch/push fails with permission denied, retry; if it persists, note it in AGENT_LOG.
+- **Stray files `00`/`01`** duplicate a migration — safe to remove (was in backlog).
+- **Edge functions aren't deployed** — Stripe/auth flows requiring them degrade gracefully; don't pretend they work.
+- **Email verification is ON** — unconfirmed accounts can't log in; test flows must handle the check-email state.
+
+---
+
 
 ## Conventions worth knowing
 
