@@ -34,6 +34,7 @@ const EventDetailPage = lazy(() => import('@/pages/company/EventDetailPage'));
 const TimesheetApprovalPage = lazy(() => import('@/pages/company/TimesheetApprovalPage'));
 const RosterPage = lazy(() => import('@/pages/company/RosterPage'));
 const ShiftMarketplacePage = lazy(() => import('@/pages/worker/ShiftMarketplacePage'));
+const CrewBoardPage = lazy(() => import('@/pages/worker/CrewBoardPage'));
 const PayoutsPage = lazy(() => import('@/pages/worker/PayoutsPage'));
 const PublicProfilePage = lazy(() => import('@/pages/PublicProfilePage'));
 const WaitlistAdminPage = lazy(() => import('@/pages/admin/WaitlistAdminPage'));
@@ -380,6 +381,16 @@ const AppRoutes: React.FC = () => {
             <ProtectedRoute>
               <Layout>
                 <ShiftMarketplacePage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/shifts/:shiftId/crew"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <CrewBoardPage />
               </Layout>
             </ProtectedRoute>
           }
