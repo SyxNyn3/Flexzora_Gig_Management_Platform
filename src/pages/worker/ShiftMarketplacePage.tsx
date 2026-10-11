@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -11,11 +12,20 @@ import { useMarketplaceShifts, useWorkerAssignments } from '@/hooks/useMarketpla
 import { MarketplaceService } from '@/lib/marketplace/service';
 import { MatchResult } from '@/lib/marketplace/matchScore';
 import { projectedShiftCost } from '@/lib/marketplace/overtime';
-import { Shift, ShiftAssignment } from '@/lib/types';
+import { CertGap, Shift, ShiftAssignment } from '@/lib/types';
+import { CertService } from '@/lib/certs/service';
 import MatchScoreBadge from '@/components/marketplace/MatchScoreBadge';
 import ClockCard from '@/components/marketplace/worker/ClockCard';
 import { hoursBetween, money, shiftWindow } from '@/components/marketplace/format';
-import { Building2, MapPin, Search, Star, Check, X, Zap } from 'lucide-react';
+import { Building2, MapPin, Search, Star, Check, X, Zap, Sparkles } from 'lucide-react';
+
+const gapCta: Record<string, { text: string; cta: string }> = {
+  missing: { text: 'Get', cta: 'Add credential' },
+  pending: { text: 'Finish review for', cta: 'View status' },
+  rejected: { text: 'Resubmit', cta: 'Resubmit' },
+  expired: { text: 'Renew', cta: 'Renew' },
+  unsubmitted: { text: 'Submit proof for', cta: 'Submit doc' },
+};
 
 const ShiftMarketplacePage: React.FC = () => {
   const { profile } = useAuth();
@@ -25,6 +35,11 @@ const ShiftMarketplacePage: React.FC = () => {
   const [scoringFailed, setScoringFailed] = useState(false);
   const [search, setSearch] = useState('');
   const [busy, setBusy] = useState<string | null>(null);
+  const [gaps, setGaps] = useState<CertGap[]>([]);
+
+  useEffect(() => {
+    if (profile?.id) CertService.certGaps().then(({ data }) => setGaps(data ?? []));
+  }, [profile?.id]);
 
   useEffect(() => {
     if (!profile?.id || shifts.data.length === 0) return;
@@ -119,6 +134,30 @@ const ShiftMarketplacePage: React.FC = () => {
         <h1 className="text-2xl font-bold">Shifts</h1>
         <p className="text-sm text-muted-foreground">Calls ranked by your match score. Only shifts you're credentialed for are shown.</p>
       </div>
+
+      {gaps.length > 0 && (
+        <Card className="border-amber-300/50 bg-amber-500/5">
+          <CardContent className="p-4">
+            <p className="text-sm font-medium inline-flex items-center gap-1.5">
+              <Sparkles className="w-4 h-4 text-amber-500" /> Unlock more calls
+            </p>
+            <div className="mt-2 space-y-1.5">
+              {gaps.map((g) => {
+                const c = gapCta[g.state] ?? gapCta.missing;
+                return (
+                  <div key={g.cert_type_code} className="flex items-center justify-between gap-3 text-sm">
+                    <span className="min-w-0">
+                      {c.text} <span className="font-medium">{g.cert_name}</span>
+                      <span className="text-muted-foreground"> — unlocks {g.demand_count} upcoming call{g.demand_count === 1 ? '' : 's'}</span>
+                    </span>
+                    <Link to="/profile" className="text-xs text-primary hover:underline shrink-0">{c.cta} →</Link>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Tabs defaultValue={offers.length ? 'offers' : 'market'}>
         <TabsList>

@@ -422,6 +422,14 @@ export interface ComplianceDoc {
   worker?: Profile;
 }
 
+export interface CertGap {
+  cert_type_code: string;
+  cert_name: string;
+  demand_count: number;
+  /** missing | pending | rejected | expired | unsubmitted */
+  state: string;
+}
+
 export interface Certification {
   id: string;
   worker_id: string;
