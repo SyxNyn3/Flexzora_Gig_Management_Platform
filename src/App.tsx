@@ -42,9 +42,11 @@ const OpsBoardPage = lazy(() => import('@/pages/company/OpsBoardPage'));
 const ExportsPage = lazy(() => import('@/pages/company/ExportsPage'));
 const AlertsPage = lazy(() => import('@/pages/company/AlertsPage'));
 const ShiftMarketplacePage = lazy(() => import('@/pages/worker/ShiftMarketplacePage'));
+const CrewBoardPage = lazy(() => import('@/pages/worker/CrewBoardPage'));
 const PayoutsPage = lazy(() => import('@/pages/worker/PayoutsPage'));
 const PublicProfilePage = lazy(() => import('@/pages/PublicProfilePage'));
 const WaitlistAdminPage = lazy(() => import('@/pages/admin/WaitlistAdminPage'));
+const ResetPasswordPage = lazy(() => import('@/components/auth/ResetPasswordPage'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -151,7 +153,7 @@ const AppRoutes: React.FC = () => {
   const ApplicationsComponent = profile?.role === 'worker' ? WorkerApplications : ApplicationsManager;
 
   return (
-    <Router>
+    <Router basename={import.meta.env.BASE_URL}>
       <Suspense fallback={<LoadingSpinner />}>
       <Routes>
         <Route path="/" element={<LandingPage />} />
@@ -177,6 +179,10 @@ const AppRoutes: React.FC = () => {
             </PublicRoute>
           }
         />
+        {/* Recovery-link target — intentionally NOT wrapped in PublicRoute:
+            the link creates a session that would bounce users to /dashboard
+            before they could set a new password. */}
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route
           path="/dashboard"
           element={
@@ -453,6 +459,16 @@ const AppRoutes: React.FC = () => {
             <ProtectedRoute>
               <Layout>
                 <ShiftMarketplacePage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/shifts/:shiftId/crew"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <CrewBoardPage />
               </Layout>
             </ProtectedRoute>
           }

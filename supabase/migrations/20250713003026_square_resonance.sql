@@ -33,7 +33,7 @@ BEGIN
       type TEXT DEFAULT 'info',
       action_url TEXT DEFAULT NULL,
       metadata JSONB DEFAULT NULL
-    ) RETURNS UUID AS $$
+    ) RETURNS UUID AS $func$
     DECLARE
       notification_id UUID;
     BEGIN
@@ -45,7 +45,7 @@ BEGIN
       
       RETURN notification_id;
     END;
-    $$ LANGUAGE plpgsql SECURITY DEFINER;
+    $func$ LANGUAGE plpgsql SECURITY DEFINER;
   END IF;
 END
 $$;
@@ -59,7 +59,7 @@ BEGIN
     AND pronamespace = (SELECT oid FROM pg_namespace WHERE nspname = 'public')
   ) THEN
     CREATE OR REPLACE FUNCTION notify_on_application_status_change()
-    RETURNS TRIGGER AS $$
+    RETURNS TRIGGER AS $func$
     DECLARE
       worker_user_id UUID;
       company_user_id UUID;
@@ -121,7 +121,7 @@ BEGIN
       
       RETURN NEW;
     END;
-    $$ LANGUAGE plpgsql SECURITY DEFINER;
+    $func$ LANGUAGE plpgsql SECURITY DEFINER;
   END IF;
 END
 $$;
@@ -135,7 +135,7 @@ BEGIN
     AND pronamespace = (SELECT oid FROM pg_namespace WHERE nspname = 'public')
   ) THEN
     CREATE OR REPLACE FUNCTION notify_on_payment_status_change()
-    RETURNS TRIGGER AS $$
+    RETURNS TRIGGER AS $func$
     DECLARE
       worker_user_id UUID;
       company_user_id UUID;
@@ -192,7 +192,7 @@ BEGIN
       
       RETURN NEW;
     END;
-    $$ LANGUAGE plpgsql SECURITY DEFINER;
+    $func$ LANGUAGE plpgsql SECURITY DEFINER;
   END IF;
 END
 $$;
@@ -206,7 +206,7 @@ BEGIN
     AND pronamespace = (SELECT oid FROM pg_namespace WHERE nspname = 'public')
   ) THEN
     CREATE OR REPLACE FUNCTION notify_on_gig_creation()
-    RETURNS TRIGGER AS $$
+    RETURNS TRIGGER AS $func$
     DECLARE
       company_name TEXT;
       worker_record RECORD;
@@ -243,7 +243,7 @@ BEGIN
       
       RETURN NEW;
     END;
-    $$ LANGUAGE plpgsql SECURITY DEFINER;
+    $func$ LANGUAGE plpgsql SECURITY DEFINER;
   END IF;
 END
 $$;
