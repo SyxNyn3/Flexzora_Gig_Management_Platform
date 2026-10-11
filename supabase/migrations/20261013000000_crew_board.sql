@@ -81,7 +81,7 @@ BEGIN
   END IF;
   RAISE EXCEPTION 'Not a party to this post';
 END;
-$$;
+$$ LANGUAGE plpgsql;
 
 DROP TRIGGER IF EXISTS crew_posts_guard ON crew_posts;
 CREATE TRIGGER crew_posts_guard BEFORE UPDATE ON crew_posts
