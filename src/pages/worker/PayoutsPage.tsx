@@ -67,7 +67,7 @@ const downloadInvoicePdf = (inv: Invoice) => {
   (doc as unknown as { autoTable: (o: object) => { lastAutoTable: { finalY: number } } }).autoTable({
     startY: 64,
     head: [['Description', 'Hours', 'Rate', 'Amount']],
-    body: inv.line_items.map((li) => [li.description, li.hours.toFixed(2), `$${Number(li.rate).toFixed(2)}`, `$${Number(li.amount).toFixed(2)}`]),
+    body: inv.line_items.map((li) => [li.description, li.hours != null ? li.hours.toFixed(2) : '—', li.rate != null ? `$${Number(li.rate).toFixed(2)}` : '—', `$${Number(li.amount).toFixed(2)}`]),
     foot: [
       ['Subtotal', '', '', `$${Number(inv.subtotal).toFixed(2)}`],
       ['Platform fee', '', '', `-$${Number(inv.platform_fee).toFixed(2)}`],
@@ -181,7 +181,7 @@ const PayoutsPage: React.FC = () => {
                 <div className="mt-2 pl-7 text-xs text-muted-foreground grid grid-cols-[1fr_auto_auto_auto] gap-x-4">
                   {inv.line_items.map((li, i) => (
                     <React.Fragment key={i}>
-                      <span>{li.description}</span><span>{li.hours.toFixed(2)} h</span><span>@ {money(li.rate)}</span><span className="text-right">{money(li.amount)}</span>
+                      <span>{li.description}</span><span>{li.hours != null ? `${li.hours.toFixed(2)} h` : ''}</span><span>{li.rate != null ? `@ ${money(li.rate)}` : ''}</span><span className="text-right">{money(li.amount)}</span>
                     </React.Fragment>
                   ))}
                 </div>
