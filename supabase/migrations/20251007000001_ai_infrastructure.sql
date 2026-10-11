@@ -380,7 +380,7 @@ DROP POLICY IF EXISTS "System can manage route optimizations" ON route_optimizat
 CREATE POLICY "System can manage route optimizations" ON route_optimizations
   FOR INSERT
   TO authenticated
-  USING (worker_id = auth.uid());
+  WITH CHECK (worker_id = auth.uid());
 
 -- RLS Policies for embedding_cache (read for authenticated)
 DROP POLICY IF EXISTS "Authenticated users can read embeddings" ON embedding_cache;
