@@ -4,11 +4,12 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
 import { ShiftAssignment } from '@/lib/types';
 import { MarketplaceService } from '@/lib/marketplace/service';
 import { checkGeofence, getCurrentPosition } from '@/lib/marketplace/geo';
 import { shiftWindow } from '../format';
-import { LogIn, LogOut, MapPin, Loader2, Navigation, Users } from 'lucide-react';
+import { LogIn, LogOut, MapPin, Loader2, Navigation, Users, Flag } from 'lucide-react';
 
 interface Props {
   assignment: ShiftAssignment;
@@ -21,6 +22,8 @@ const AUTO_OUT_GRACE_MS = 90_000;
 const ClockCard: React.FC<Props> = ({ assignment, onChanged }) => {
   const [busy, setBusy] = useState(false);
   const [locating, setLocating] = useState<string | null>(null);
+  const [flagging, setFlagging] = useState(false);
+  const [flagReason, setFlagReason] = useState('');
   const shift = assignment.shift;
   const venue = shift?.event?.venue;
   const fenceCenter =
@@ -151,11 +154,47 @@ const ClockCard: React.FC<Props> = ({ assignment, onChanged }) => {
         )}
       </div>
 
-      <div className="mt-2 flex justify-end">
+      <div className="mt-2 flex justify-between items-center">
+        {ts && (ts.status === 'submitted' || ts.status === 'approved') ? (
+          <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground" onClick={() => setFlagging(!flagging)}>
+            <Flag className="w-3.5 h-3.5 mr-1" /> Flag a problem with this timesheet
+          </Button>
+        ) : <span />}
+        {ts?.status === 'disputed' && (
+          <Badge variant="outline" className="bg-red-500/15 text-destructive dark:text-red-400">Under dispute review</Badge>
+        )}
         <Button asChild variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground">
           <Link to={`/shifts/${shift.id}/crew`}><Users className="w-3.5 h-3.5 mr-1" /> Crew — rides, bunks, grub, board</Link>
         </Button>
       </div>
+      {flagging && ts && (
+        <div className="mt-2 space-y-2 border-t pt-2">
+          <Textarea
+            rows={2}
+            className="text-sm"
+            placeholder="What's wrong? e.g. clock-out recorded early — I stayed until 01:30 strike wrap"
+            value={flagReason}
+            onChange={(e) => setFlagReason(e.target.value)}
+          />
+          <Button
+            size="sm"
+            variant="destructive"
+            disabled={busy || !flagReason.trim()}
+            onClick={async () => {
+              setBusy(true);
+              const { error } = await MarketplaceService.flagTimesheet(ts.id, flagReason.trim());
+              setBusy(false);
+              if (error) return toast.error(error);
+              toast.success('Flagged — the company will review and respond');
+              setFlagging(false);
+              setFlagReason('');
+              onChanged();
+            }}
+          >
+            Submit dispute
+          </Button>
+        </div>
+      )}
     </div>
   );
 };

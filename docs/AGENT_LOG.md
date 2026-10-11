@@ -3,6 +3,8 @@
 Shared journal — every session appends: date, lane, what shipped, what's next, blockers.
 Newest entries on top.
 
+- **2026-10-11 — Lane B #8 — dispute mediation queue** — `feat/dispute-queue`. `status='disputed'` existed with no way out — either side could flag a sheet into a dead end. Now: `voided` status + dispute/resolution fields join the system-managed guard (no self-resolve via PostgREST), `open_timesheet_dispute` for both parties (worker's "Flag a problem" inline on ClockCard, company dispute button — each notifies the other), `resolve_timesheet_dispute` mediates: accept as submitted, adjust the clock record (server rewrites times, sheet requeues for approval), or void. Timesheets page gains a dedicated Disputes tab with evidence row + radio resolution dialog; settled tab shows the resolution audit line. pgTAP `075` (10 asserts). Seed: worker-flagged sheet on the public shift.
+
 - **2026-10-11 — Lane B #7 — rate guidance** — `feat/rate-guidance` → PR #94. `rate_guidance` RPC percentiles cleared rates per role family × 150km market — the ShiftForm rate field now shows \"Clears $45–$60 · median $52\" with a below-market flag under P25. Aggregate-only RPC keeps cross-company rate intel anonymous. pgTAP `074` (5 asserts).
 
 - **2026-10-11 — Lane B #2 — shift templates ("call packs")** — `feat/shift-templates` → PR #87. `shift_templates` (role + headcount + cert gates + rate + typical length, upsert by company+name). ShiftForm: pack picker prefills the whole form (typical length re-times the wrap), "save as call pack" on create. Wizard `shift_templates` target: a rate-card sheet imports as packs — the backlog's "natural partner" note made real. Seed: Arena load-in / FOH audio / Strike crew packs.

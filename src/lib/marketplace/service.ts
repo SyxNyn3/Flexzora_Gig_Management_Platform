@@ -731,9 +731,36 @@ export class MarketplaceService {
     }
   }
 
+  /** Company flags a submitted timesheet — worker gets notified. */
   static async disputeTimesheet(timesheetId: string, managerNotes: string): Promise<Result<boolean>> {
     try {
-      const { error } = await supabase.from('timesheets').update({ status: 'disputed', manager_notes: managerNotes }).eq('id', timesheetId);
+      const { error } = await supabase.rpc('open_timesheet_dispute', { p_timesheet_id: timesheetId, p_reason: managerNotes });
+      if (error) throw error;
+      return ok(true);
+    } catch (e) {
+      return fail(false, e);
+    }
+  }
+
+  /** Worker-side dispute opener — same RPC, notifies the company owner. */
+  static async flagTimesheet(timesheetId: string, reason: string): Promise<Result<boolean>> {
+    return this.disputeTimesheet(timesheetId, reason);
+  }
+
+  /** Company mediates a disputed sheet: accept as submitted, adjust times, or void. */
+  static async resolveDispute(
+    timesheetId: string,
+    resolution: 'as_submitted' | 'adjusted' | 'voided',
+    opts: { clockIn?: string; clockOut?: string; note?: string } = {},
+  ): Promise<Result<boolean>> {
+    try {
+      const { error } = await supabase.rpc('resolve_timesheet_dispute', {
+        p_timesheet_id: timesheetId,
+        p_resolution: resolution,
+        p_clock_in: opts.clockIn ?? null,
+        p_clock_out: opts.clockOut ?? null,
+        p_note: opts.note ?? null,
+      });
       if (error) throw error;
       return ok(true);
     } catch (e) {

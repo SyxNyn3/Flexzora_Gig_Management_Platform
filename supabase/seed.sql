@@ -488,4 +488,20 @@ begin
      null, null)
   on conflict (worker_id, doc_type) do nothing;
 
+  -- Lane B demo: open timesheet dispute — Alex's phone died at clock-out and
+  -- he flagged it; the row lands in the company Disputes tab for mediation.
+  insert into timesheets (id, assignment_id, shift_id, worker_id,
+                          clock_in_at, clock_in_verified,
+                          clock_out_at, clock_out_verified,
+                          break_minutes, status, worker_notes,
+                          dispute_opened_by, dispute_reason)
+  values ('66666666-0000-4000-8000-000000000001',
+          '55555555-0000-4000-8000-000000000050', v_shift_public, p_worker1,
+          now() - interval '2 days' + interval '7 hours', true,
+          now() - interval '2 days' + interval '11 hours' + interval '30 minutes', true,
+          30, 'disputed',
+          'Clock-out captured early when my phone died — I stayed through strike wrap.',
+          p_worker1, 'Clock-out shows early but I worked until strike wrap — check with the deck lead.')
+  on conflict (id) do nothing;
+
 end $$;
