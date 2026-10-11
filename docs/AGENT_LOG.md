@@ -7,6 +7,18 @@ Each entry: lane, branch/PR, what shipped, verification status, notes.
 
 ## Builder-2 — Company OS sprint (overnight)
 
+### feat/broadcast → PR #58 — broadcast messaging
+
+- broadcasts + broadcast_recipients (per-person channel/status delivery
+  log, deduped per broadcast+channel+person).
+- resolve_broadcast_audience is the single resolver: compose previews
+  with the same definer function send_broadcast executes.
+- Delivery today: workers + account-linked staff → in-app notification;
+  accountless staff → 'email' recipient rows queued for transports.
+- /broadcast composer (audience/event/call pickers, staff toggle, live
+  preview with names) + expandable history. Copilot draft → composer
+  deep-link.
+
 ### feat/staff-layer → PR #56 — staff_members / staff_assignments
 
 - Internal team (PMs, coordinators, crew leads) distinct from marketplace
