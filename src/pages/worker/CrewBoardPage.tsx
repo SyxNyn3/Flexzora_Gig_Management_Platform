@@ -11,6 +11,7 @@ import { placeOrder, cancelOrder, confirmOrder, postFoodRun, updateFoodRunStatus
 import { postToBoard, resolvePost, closePost } from '@/lib/crew/board';
 import { iouCapacity } from '@/lib/crew/iouMath';
 import { markAllAlertsRead } from '@/lib/crew/alerts';
+import { postSwapRequest, cancelSwapRequest, claimSwap, withdrawClaim, acceptClaim, rejectClaim } from '@/lib/crew/swap';
 import { hoursBetween, money, shiftWindow, toLocalInputValue } from '@/components/marketplace/format';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -23,6 +24,7 @@ import { Switch } from '@/components/ui/switch';
 import {
   Car, BedDouble, UtensilsCrossed, MessageSquare, ArrowLeft, Plus, X, Check,
   MapPin, Clock, Users, Wallet, HandHelping, CircleAlert, BellRing, Backpack, Navigation, ParkingSquare,
+  Repeat2,
 } from 'lucide-react';
 import { CrewPostCategory, CrewPostDirection, Shift } from '@/lib/types';
 
@@ -192,6 +194,79 @@ const CrewBoardPage: React.FC = () => {
                 />
               </label>
             </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Shift swaps — hand the whole call to a credentialed crewmate */}
+      {(myAssignment?.status === 'confirmed' || board.data.swaps.length > 0) && (
+        <Card>
+          <CardContent className="p-4 space-y-3">
+            <p className="text-sm font-medium inline-flex items-center gap-2"><Repeat2 className="w-4 h-4" /> Shift swap</p>
+            {board.data.swaps.filter((s) => s.status !== 'cancelled').map((s) => {
+              const mine = s.requester_worker_id === profile?.id;
+              const myClaim = board.data.swapClaims.find((c) => c.swap_request_id === s.id && c.claimer_worker_id === profile?.id);
+              const pendingClaims = board.data.swapClaims.filter((c) => c.swap_request_id === s.id && c.status === 'pending');
+              return (
+                <div key={s.id} className="text-sm border-t first:border-0 pt-2 first:pt-0 space-y-2">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-medium">
+                        {s.requester?.full_name ?? 'A crew member'} can't make it
+                        {s.sweetener_cents > 0 && <Badge variant="secondary" className="ml-2">+{money(s.sweetener_cents / 100)}</Badge>}
+                        <Badge variant="outline" className="ml-2">{s.status}</Badge>
+                      </p>
+                      {s.reason && <p className="text-xs text-muted-foreground mt-0.5">{s.reason}</p>}
+                    </div>
+                    <div className="shrink-0">
+                      {mine && s.status === 'open' && (
+                        <Button size="sm" variant="outline" disabled={busy !== null}
+                          onClick={() => act(s.id, () => cancelSwapRequest(s.id), 'Swap request cancelled')}>
+                          Cancel
+                        </Button>
+                      )}
+                      {!mine && s.status === 'open' && !myClaim && (
+                        <ClaimSwapButton busy={busy} onClaim={(msg) => act(s.id, () => claimSwap(s.id, msg), 'Claim in — requester decides')} />
+                      )}
+                      {myClaim?.status === 'pending' && (
+                        <Button size="sm" variant="outline" disabled={busy !== null}
+                          onClick={() => act(myClaim.id, () => withdrawClaim(myClaim.id), 'Claim withdrawn')}>
+                          Withdraw
+                        </Button>
+                      )}
+                      {myClaim?.status === 'accepted' && <Badge>Offer sent — check your offers</Badge>}
+                    </div>
+                  </div>
+                  {mine && pendingClaims.length > 0 && (
+                    <div className="text-xs space-y-1.5">
+                      <p className="text-muted-foreground font-medium">Claims</p>
+                      {pendingClaims.map((c) => (
+                        <div key={c.id} className="flex items-center justify-between gap-2">
+                          <span>{c.claimer?.full_name ?? '—'}{c.message ? ` — “${c.message}”` : ''}</span>
+                          <span className="flex gap-1">
+                            <Button size="sm" className="h-7" disabled={busy !== null}
+                              onClick={() => act(c.id, () => acceptClaim(c.id), 'Claim accepted — offer sent for approval')}>
+                              <Check className="w-3 h-3" />
+                            </Button>
+                            <Button size="sm" variant="outline" className="h-7" disabled={busy !== null}
+                              onClick={() => act(c.id, () => rejectClaim(c.id), 'Claim rejected')}>
+                              <X className="w-3 h-3" />
+                            </Button>
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {mine && s.status === 'offered' && (
+                    <p className="text-xs text-muted-foreground">Replacement is holding an offer — once they accept and the booking confirms, you're released.</p>
+                  )}
+                </div>
+              );
+            })}
+            {myAssignment?.status === 'confirmed' && !board.data.swaps.some((s) => s.requester_worker_id === profile?.id && s.status !== 'cancelled') && (
+              <SwapForm busy={busy} onSubmit={(reason, sweetener) =>
+                act('swap', () => postSwapRequest({ assignmentId: myAssignment.id, shiftId: shift.id, reason, sweetenerCents: sweetener }), 'Swap posted — cert-eligible crew can claim')} />
+            )}
           </CardContent>
         </Card>
       )}
@@ -564,6 +639,33 @@ const ResolvePostButton: React.FC<{ crew: [string, string][]; busy: string | nul
       <Button size="sm" className="h-7" disabled={busy !== null || !who} title="Resolve — credits the fulfiller" onClick={() => onResolve(who)}>
         <HandHelping className="w-3.5 h-3.5" />
       </Button>
+    </span>
+  );
+};
+
+const SwapForm: React.FC<{ busy: string | null; onSubmit: (reason: string | undefined, sweetenerCents: number | undefined) => void }> = ({ busy, onSubmit }) => {
+  const [reason, setReason] = useState('');
+  const [sweetener, setSweetener] = useState('');
+  return (
+    <div className="space-y-2">
+      <Input placeholder="Why? (optional — 'double-booked', 'sick')" value={reason} onChange={(e) => setReason(e.target.value)} />
+      <Input placeholder="Sweetener $ (optional — pay whoever takes it)" inputMode="decimal" value={sweetener} onChange={(e) => setSweetener(e.target.value)} />
+      <Button size="sm" variant="outline" className="w-full" disabled={busy !== null}
+        onClick={() => onSubmit(reason || undefined, cents(sweetener) ?? undefined)}>
+        <Repeat2 className="w-3.5 h-3.5 mr-1" /> Post swap request
+      </Button>
+    </div>
+  );
+};
+
+const ClaimSwapButton: React.FC<{ busy: string | null; onClaim: (message?: string) => void }> = ({ busy, onClaim }) => {
+  const [msg, setMsg] = useState('');
+  const [open, setOpen] = useState(false);
+  if (!open) return <Button size="sm" disabled={busy !== null} onClick={() => setOpen(true)}>Take it</Button>;
+  return (
+    <span className="inline-flex gap-1">
+      <Input className="h-8 w-32" placeholder="Pitch (optional)" value={msg} onChange={(e) => setMsg(e.target.value)} />
+      <Button size="sm" className="h-8" disabled={busy !== null} onClick={() => onClaim(msg || undefined)}>Claim</Button>
     </span>
   );
 };
