@@ -3,7 +3,7 @@
 -- (never appends, keeps last-known state on failure); synced blocks count as
 -- hard conflicts in worker_travel_conflicts like any declared busy window.
 BEGIN;
-SELECT plan(7);
+SELECT plan(8);
 
 INSERT INTO auth.users (id, instance_id, aud, role, email, encrypted_password, raw_user_meta_data, created_at, updated_at)
 VALUES
@@ -61,7 +61,7 @@ SELECT is(
 SELECT set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000b082","role":"authenticated"}', true);
 SELECT throws_ok(
   $$ SELECT sync_calendar_import('00000000-0000-0000-0000-00000000d601', '[]'::jsonb, NULL) $$,
-  'non-owner cannot sync another worker''s import');
+  'P0001', 'Calendar import not found', 'non-owner cannot sync another worker''s import');
 
 SELECT * FROM finish();
 ROLLBACK;
