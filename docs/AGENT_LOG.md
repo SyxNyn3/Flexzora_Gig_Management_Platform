@@ -365,3 +365,30 @@ can't force-match, #27 seats_needed frozen after match).
   other `crew_iou` writers: ride/lodging/food/swap cascades and approve_timesheet
   are already definer. Also fixed enum literal casts in the new pgTAP fixtures
   (INSERT ... SELECT needs explicit enum casts).
+## Lane A — Security Builder — ride-match MED batch (#25, #26, #27)
+
+- Branch `fix/lane-a-ride-match`.
+- Migration `20261104000000_p0rt_ride_match.sql`:
+  - **#25** partial unique index on active `(rider_worker_id, shift_id)` rows
+    (`status IN ('open','matched')`). Closed requests don't count, so rejoining
+    after a bail still works. Race-free, unlike a trigger.
+  - **#26** `guard_ride_request_update`: the company may only move a request to
+    `cancelled` and may not change its offer. Matching stays rider-consented.
+  - **#27** `seats_needed` frozen once a request is `matched`.
+- Tests: pgTAP `025_ride_one_active_per_shift` (5), `026_ride_company_cancel_only`
+  (4), `027_ride_seats_frozen_when_matched` (3). Casts on every enum literal
+  from the start (lesson from the #19 batch CI run).
+- Migration-time caveat: if production already has two active requests from one
+  rider on one shift, the index creation fails loudly. Resolving that means
+  withdrawing the extra row, which is a human decision, so the migration does not
+  do it.
+- Left for later in Lane A: #30 (booking check on ride_requests inserts) is a
+  separate single in the itinerary, not this batch.
+- Addendum (CI found it): `check_ride_match` is SECURITY INVOKER, so it reads
+  the offer through RLS. The 025/027 fixtures used a draft event and a
+  non-broadcast shift, so the rider could not see the offer and the check failed
+  with "Ride offer not found" before reaching the intended error. Fixed the
+  fixtures (`published` event, `broadcast_stage='public'`). The product behaviour
+  is intended: a rider can only touch an offer on a call they can see (fail
+  closed). Lesson recorded for future pgTAP fixtures: model visibility
+  (event status, broadcast stage) explicitly.
