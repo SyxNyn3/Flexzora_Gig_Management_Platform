@@ -34,7 +34,7 @@ CREATE OR REPLACE FUNCTION approve_timesheet(
   p_break_minutes integer DEFAULT NULL,
   p_payout_method text DEFAULT 'ach'
 ) RETURNS invoices
-LANGUAGE plpgsql SECURITY DEFINER AS $$
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, extensions AS $$
 DECLARE
   v_ts timesheets%ROWTYPE;
   v_assignment shift_assignments%ROWTYPE;
