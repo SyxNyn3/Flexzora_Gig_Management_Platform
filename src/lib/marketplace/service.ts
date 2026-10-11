@@ -524,11 +524,12 @@ export class MarketplaceService {
         venue
           ? supabase.rpc('worker_distances', { p_worker_ids: workerIds, p_lat: venue.latitude, p_lng: venue.longitude })
           : Promise.resolve({ data: [] as { worker_id: string; distance_km: number | null }[], error: null }),
-        supabase.rpc('worker_conflicts', {
+        supabase.rpc('worker_travel_conflicts', {
           p_worker_ids: workerIds,
           p_start: shift.starts_at,
           p_end: shift.ends_at,
-          p_buffer_minutes: 60,
+          p_venue_lat: venue?.latitude ?? null,
+          p_venue_lng: venue?.longitude ?? null,
         }),
       ]);
       if (distancesRes.error) throw distancesRes.error;
@@ -537,9 +538,9 @@ export class MarketplaceService {
         ((distancesRes.data ?? []) as { worker_id: string; distance_km: number | null }[]).map((d) => [d.worker_id, d.distance_km]),
       );
       const conflictsByWorker = new Map(
-        ((conflictsRes.data ?? []) as { worker_id: string; hard_conflict: boolean; buffer_conflict: boolean }[]).map((c) => [
+        ((conflictsRes.data ?? []) as { worker_id: string; hard_conflict: boolean; travel_infeasible: boolean; travel_tight: boolean }[]).map((c) => [
           c.worker_id,
-          { hard: c.hard_conflict, buffer: c.buffer_conflict },
+          { hard: c.hard_conflict, buffer: c.travel_tight && !c.travel_infeasible, infeasible: c.travel_infeasible },
         ]),
       );
 

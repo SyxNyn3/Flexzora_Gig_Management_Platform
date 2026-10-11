@@ -33,8 +33,8 @@ export interface MatchWorkerInput {
   skills: Pick<WorkerSkill, 'skill_id' | 'proficiency_level'>[];
   bookedWindows: BookedWindow[];
   unavailableWindows?: BookedWindow[];
-  /** Set by callers that resolve conflicts via worker_conflicts() instead of windows. */
-  conflicts?: { hard: boolean; buffer: boolean };
+  /** Set by callers that resolve conflicts via worker_travel_conflicts() instead of windows. */
+  conflicts?: { hard: boolean; buffer: boolean; infeasible?: boolean };
   avgRating: number | null;        // 1..5
   reliabilityRate: number | null;  // 0..1
   completedShifts: number;
@@ -119,7 +119,7 @@ export function proximityScore(worker: MatchWorkerInput, shift: MatchShiftInput)
 export function availabilityScore(worker: MatchWorkerInput, shift: MatchShiftInput): number {
   const window: BookedWindow = { starts_at: shift.starts_at, ends_at: shift.ends_at };
   const hardConflict = worker.conflicts
-    ? worker.conflicts.hard
+    ? worker.conflicts.hard || worker.conflicts.infeasible === true
     : worker.bookedWindows.some((w) => windowsOverlap(w, window)) ||
       (worker.unavailableWindows ?? []).some((w) => windowsOverlap(w, window));
   if (hardConflict) return 0;
@@ -171,8 +171,13 @@ export function calculateMatch(worker: MatchWorkerInput, shift: MatchShiftInput)
   const reasons: string[] = [...gate.reasons];
   if (gate.passed) {
     if (dist != null) reasons.push(dist < 25 ? `Local crew (${dist} km away)` : `${dist} km from venue`);
-    if (availability === 0) reasons.push('Schedule conflict with a confirmed booking');
-    else if (availability < 100) reasons.push('Tight turnaround from another booking');
+    if (availability === 0) {
+      if (worker.conflicts?.infeasible && !worker.conflicts?.hard) {
+        reasons.push('Cannot reach the venue in time from another booking');
+      } else {
+        reasons.push('Schedule conflict with a confirmed booking');
+      }
+    } else if (availability < 100) reasons.push('Tight turnaround from another booking');
     if (performance >= 85) reasons.push('Top-rated, highly reliable');
     else if (performance < 50) reasons.push('Reliability concerns in history');
     if (roster === 100) reasons.push('Core roster member');

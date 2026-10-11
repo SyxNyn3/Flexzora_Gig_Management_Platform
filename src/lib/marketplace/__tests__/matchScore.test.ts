@@ -106,6 +106,25 @@ describe('weighted score', () => {
     expect(r.breakdown.availability).toBe(60);
   });
 
+  it('zeroes availability when the hop is travel-infeasible', () => {
+    const r = calculateMatch(
+      baseWorker({ conflicts: { hard: false, buffer: false, infeasible: true } }),
+      shift,
+    );
+    expect(r.breakdown.availability).toBe(0);
+    expect(r.reasons.join()).toMatch(/Cannot reach the venue in time/);
+  });
+
+  it('distinguishes a hard overlap from an infeasible commute in the reasons', () => {
+    const r = calculateMatch(
+      baseWorker({ conflicts: { hard: true, buffer: false, infeasible: true } }),
+      shift,
+    );
+    expect(r.breakdown.availability).toBe(0);
+    expect(r.reasons.join()).toMatch(/Schedule conflict/);
+    expect(r.reasons.join()).not.toMatch(/Cannot reach/);
+  });
+
   it('applies the 20% roster boost', () => {
     const core = calculateMatch(baseWorker(), shift).score;
     const preferred = calculateMatch(baseWorker({ rosterTier: 'preferred' }), shift).score;
