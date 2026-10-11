@@ -1,6 +1,7 @@
 // CalendarFeedService — create/revoke/list capability-URL ICS feeds.
+// CalendarImportService — inbound: worker's personal iCal → busy blocks.
 import { supabase } from '@/lib/supabase';
-import { CalendarFeed, CalendarFeedScope } from '@/lib/types';
+import { CalendarFeed, CalendarFeedScope, CalendarImport } from '@/lib/types';
 
 type Result<T> = { data: T; error: string | null };
 const ok = <T>(data: T): Result<T> => ({ data, error: null });
@@ -66,6 +67,60 @@ export class CalendarFeedService {
       return ok(true);
     } catch (e) {
       return fail(false, e);
+    }
+  }
+}
+
+// Inbound sync: a worker's personal calendar feed becomes is_available=false
+// blocks in `availability`, so matching/travel checks respect real busy time.
+export class CalendarImportService {
+  static async list(workerId: string): Promise<Result<CalendarImport[]>> {
+    try {
+      const { data, error } = await supabase
+        .from('calendar_imports')
+        .select('*')
+        .eq('worker_id', workerId)
+        .order('created_at');
+      if (error) throw error;
+      return ok((data ?? []) as CalendarImport[]);
+    } catch (e) {
+      return fail([], e);
+    }
+  }
+
+  static async add(workerId: string, name: string, feedUrl: string): Promise<Result<CalendarImport | null>> {
+    try {
+      const { data, error } = await supabase
+        .from('calendar_imports')
+        .insert({ worker_id: workerId, name: name.trim() || 'Calendar', feed_url: feedUrl.trim() })
+        .select()
+        .single();
+      if (error) throw error;
+      return ok(data as CalendarImport);
+    } catch (e) {
+      return fail(null, e);
+    }
+  }
+
+  static async remove(id: string): Promise<Result<boolean>> {
+    try {
+      const { error } = await supabase.from('calendar_imports').delete().eq('id', id);
+      if (error) throw error;
+      return ok(true);
+    } catch (e) {
+      return fail(false, e);
+    }
+  }
+
+  /** Fetches + parses server-side (feeds can't be fetched from the browser — CORS). */
+  static async syncNow(id: string): Promise<Result<number>> {
+    try {
+      const { data, error } = await supabase.functions.invoke('ical-sync', { body: { import_id: id } });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return ok(typeof data?.synced === 'number' ? data.synced : 0);
+    } catch (e) {
+      return fail(0, e);
     }
   }
 }
