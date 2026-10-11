@@ -3,7 +3,6 @@
 Shared journal — every session appends: date, lane, what shipped, what's next, blockers.
 Newest entries on top.
 - **2026-10-11 — Lane B — Swap sweetener via payout deduction** — `feat/swap-sweetener-deduction` → PR #119. One-word-severity fix in `swap_on_offer_response`: sweeteners mint `payout_deduction` instead of `manual` — the #28 carry-over collects them from the requester's next approved timesheet once the swapped shift ends (so the claimer has worked the handoff before money moves), and `iou_transfer` pays them out. Manual IOUs untouched. pgTAP `085` — 5 asserts w/ a manual-IOU negative control.
-
 - **2026-10-11 — Lane B — IOU beneficiary transfer (+ union-pack repair)** — `feat/iou-transfers` → PR #118. Settled cents now leave escrow: `payouts` gains `kind`/`crew_iou_id`; the #28 settle loop queues an `iou_transfer` payout per collection (beneficiary = payee) which `release-payout` sends to their Connect account unchanged — queued until onboarded, W-9 hold applies. `UNIQUE(invoice_id)` narrowed to `kind=timesheet`; one transfer per (IOU, invoice) via partial index. REPAIR: `20261111` union rewrite had silently dropped the entire partial-settlement block + regressed the weekly-OT prior query — both restored, escrow now draws gross (net + deductions). Queue shows "Crew IOU → payee"; worker Payouts labels "Crew share settled". pgTAP `084` — 7 asserts.
 
 
