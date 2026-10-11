@@ -58,3 +58,18 @@ verify_jwt = true
 
 [functions.authkit-token]
 verify_jwt = true
+
+# Worker SMS notifications — verifies the caller is a party inside.
+[functions.notify-assignment]
+verify_jwt = true
+
+# Stripe Connect onboarding + payout release — self-verifying, worker/company
+# scoped; degrade gracefully when STRIPE_SECRET_KEY is absent.
+[functions.connect-onboard]
+verify_jwt = true
+
+[functions.connect-status]
+verify_jwt = true
+
+[functions.release-payout]
+verify_jwt = true

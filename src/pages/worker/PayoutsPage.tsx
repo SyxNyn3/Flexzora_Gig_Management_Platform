@@ -1,5 +1,7 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { format } from 'date-fns';
+import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -11,7 +13,8 @@ import { useInvoices, usePayouts } from '@/hooks/useMarketplace';
 import { Invoice, Payout } from '@/lib/types';
 import { money } from '@/components/marketplace/format';
 import { IS_PAYMENTS_SANDBOX, SANDBOX_PAYOUT_LABEL, SANDBOX_TRANSFER_LABEL } from '@/lib/payments';
-import { Download, FileText, Landmark, Zap, Clock, FlaskConical } from 'lucide-react';
+import { ConnectStatus, getConnectStatus, onboardToConnect } from '@/lib/connect';
+import { Download, FileText, Landmark, Zap, Clock, FlaskConical, Loader2, Wallet } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
 
@@ -84,6 +87,33 @@ const PayoutsPage: React.FC = () => {
   const [year, setYear] = useState(thisYear);
   const invoices = useInvoices({ workerId: profile?.id, taxYear: year });
   const payouts = usePayouts(profile?.id);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [connect, setConnect] = useState<ConnectStatus | null>(null);
+  const [connectBusy, setConnectBusy] = useState(false);
+
+  useEffect(() => {
+    if (!profile?.id) return;
+    getConnectStatus().then(({ data }) => setConnect(data));
+    // Returning from the hosted onboarding flow: sync the status.
+    if (searchParams.get('connect')) {
+      getConnectStatus().then(({ data }) => {
+        setConnect(data);
+        if (data?.payoutsEnabled) toast.success('Payout account connected');
+        else toast.info('Onboarding not finished yet — payouts stay off until Stripe clears the account');
+      });
+      setSearchParams({}, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile?.id]);
+
+  const startOnboarding = async () => {
+    setConnectBusy(true);
+    const { data, error } = await onboardToConnect();
+    setConnectBusy(false);
+    if (error) return toast.error(error);
+    if (!data.available || !data.url) return toast.info('Payout transfers are not enabled on this deployment yet');
+    window.location.href = data.url;
+  };
 
   const upcoming = payouts.data.filter((p) => p.status === 'queued' || p.status === 'processing');
   const upcomingTotal = upcoming.reduce((n, p) => n + Number(p.amount), 0);
@@ -119,6 +149,36 @@ const PayoutsPage: React.FC = () => {
           </SelectContent>
         </Select>
       </div>
+
+      {connect?.available && (
+        <Card>
+          <CardContent className="p-4 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className={`p-2 rounded-md ${connect.payoutsEnabled ? 'bg-green-500/15 text-emerald-500' : 'bg-muted text-muted-foreground'}`}>
+                <Wallet className="w-4 h-4" />
+              </div>
+              <div>
+                <p className="font-medium text-sm">
+                  {connect.payoutsEnabled ? 'Payouts connected' : connect.connected ? 'Finish payout setup' : 'Get paid to your bank'}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {connect.payoutsEnabled
+                    ? 'Payouts transfer to your connected account automatically'
+                    : connect.connected
+                      ? 'Stripe still needs a few details before transfers can be sent'
+                      : 'Connect a bank account — takes about 2 minutes'}
+                </p>
+              </div>
+            </div>
+            {!connect.payoutsEnabled && (
+              <Button size="sm" onClick={startOnboarding} disabled={connectBusy}>
+                {connectBusy && <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />}
+                {connect.connected ? 'Finish setup' : 'Set up payouts'}
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground inline-flex items-center gap-1"><Clock className="w-3 h-3" /> Upcoming payouts</p><p className="text-xl font-semibold">{money(upcomingTotal)}</p><p className="text-xs text-muted-foreground">{upcoming.length} in flight</p></CardContent></Card>

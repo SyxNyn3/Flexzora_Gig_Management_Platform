@@ -9,12 +9,13 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
-import { useCompanyTimesheets, useInvoices, useMyCompany, useOvertimeRules } from '@/hooks/useMarketplace';
+import { useCompanyPayouts, useCompanyTimesheets, useInvoices, useMyCompany, useOvertimeRules } from '@/hooks/useMarketplace';
 import { MarketplaceService } from '@/lib/marketplace/service';
+import { releasePayout } from '@/lib/connect';
 import { calculateShiftPay, FLSA_DEFAULT } from '@/lib/marketplace/overtime';
 import { PayoutMethod, Timesheet } from '@/lib/types';
 import { money } from '@/components/marketplace/format';
-import { CheckCircle2, MapPinCheck, MapPinOff, AlertTriangle, Zap, Landmark, Download } from 'lucide-react';
+import { CheckCircle2, MapPinCheck, MapPinOff, AlertTriangle, Zap, Landmark, Download, Send } from 'lucide-react';
 
 const statusTone: Record<Timesheet['status'], string> = {
   open: 'bg-muted text-foreground/80',
@@ -38,6 +39,7 @@ const TimesheetApprovalPage: React.FC = () => {
   const sheets = useCompanyTimesheets(company?.id);
   const taxYear = new Date().getFullYear();
   const invoices = useInvoices({ companyId: company?.id, taxYear });
+  const payouts = useCompanyPayouts(company?.id);
   const rules = useOvertimeRules();
   const [breaks, setBreaks] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState<string | null>(null);
@@ -109,6 +111,16 @@ const TimesheetApprovalPage: React.FC = () => {
   };
 
   const totalPending = grouped.review.reduce((n, t) => n + (preview(t)?.grossPay ?? 0), 0);
+  const payoutQueue = payouts.data.filter((p) => p.status === 'queued' || p.status === 'failed');
+
+  const sendPayout = async (payoutId: string) => {
+    setBusy(payoutId);
+    const { data, error } = await releasePayout(payoutId);
+    setBusy(null);
+    if (error) return toast.error(error);
+    toast.success(data.status === 'paid' ? 'Payout sent — transfer created' : `Payout ${data.status}`);
+    payouts.refetch();
+  };
 
   const exportContractorCsv = () => {
     const byWorker = new Map<string, { name: string; email: string; count: number; subtotal: number; fees: number; total: number }>();
@@ -243,6 +255,30 @@ const TimesheetApprovalPage: React.FC = () => {
           </CardContent>
         </Card>
       </div>
+
+      {payoutQueue.length > 0 && (
+        <Card>
+          <CardContent className="p-4 space-y-2">
+            <p className="text-sm font-medium">Payouts to release ({payoutQueue.length})</p>
+            {payoutQueue.map((p) => (
+              <div key={p.id} className="flex items-center justify-between gap-3 text-sm border-t first:border-0 pt-2 first:pt-0">
+                <div className="min-w-0">
+                  <p className="font-medium truncate">{p.invoice?.worker?.full_name ?? 'Worker'} · {p.invoice?.invoice_number}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {p.invoice?.event?.name ?? 'Payout'}{p.status === 'failed' ? ` — failed: ${p.failure_reason ?? 'retry available'}` : ' — awaiting release'}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="font-semibold">{money(p.amount)}</span>
+                  <Button size="sm" disabled={busy !== null} onClick={() => sendPayout(p.id)} title="Send the transfer to the worker's connected account">
+                    <Send className="w-3.5 h-3.5 mr-1" /> {p.status === 'failed' ? 'Retry' : 'Pay out'}
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
 
       {sheets.loading ? (
         <Skeleton className="h-40 w-full" />

@@ -7,6 +7,26 @@ Each entry: lane, branch/PR, what shipped, verification status, notes.
 
 ## Builder — Crew OS sprint (overnight)
 
+### feat/stripe-connect — Stripe Connect onboarding + payout release
+
+- `connect-onboard`: worker gets/reuses a Stripe Express account,
+  returns a hosted onboarding link (return/refresh URLs derive from
+  APP_BASE_URL or the caller's Origin — used only for their redirect).
+- `connect-status`: reports + syncs `worker_sensitive.payouts_enabled`
+  and `stripe_connect_details_submitted` from the live account object.
+- `release-payout`: company-side "send the money" — verifies the caller
+  owns the payout's invoice company (404 oracle-free), checks the
+  worker is onboarded + payouts-enabled, creates the transfer with
+  `transfer_group=invoice_id`, marks the payout paid with the
+  transfer id.
+- All three flag-gated: `{available:false}` when STRIPE_SECRET_KEY is
+  absent — the UI hides and no code path breaks.
+- UI: "Get paid to your bank" connect card on the worker Payouts page
+  (handles `?connect=return`), "Payouts to release" queue on the
+  company Timesheets page via `useCompanyPayouts`.
+- Live blocker: Stripe account + secrets at deploy time.
+- Stacked on `feat/shift-swap`.
+
 ### feat/shift-swap → PR #15 — ShiftSwap
 
 - `swap_requests`/`swap_claims`: confirmed booking -> open swap ->
