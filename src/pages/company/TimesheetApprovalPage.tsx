@@ -342,9 +342,13 @@ const TimesheetApprovalPage: React.FC = () => {
               return (
                 <div key={p.id} className="flex items-center justify-between gap-3 text-sm border-t first:border-0 pt-2 first:pt-0">
                   <div className="min-w-0">
-                    <p className="font-medium truncate">{p.invoice?.worker?.full_name ?? 'Worker'} · {p.invoice?.invoice_number}</p>
+                    <p className="font-medium truncate">
+                      {p.kind === 'iou_transfer'
+                        ? `Crew IOU → ${(p as { payee?: { full_name?: string } }).payee?.full_name ?? 'beneficiary'}`
+                        : `${p.invoice?.worker?.full_name ?? 'Worker'} · ${p.invoice?.invoice_number}`}
+                    </p>
                     <p className="text-xs text-muted-foreground">
-                      {p.invoice?.event?.name ?? 'Payout'}
+                      {p.kind === 'iou_transfer' ? `settled crew share on ${p.invoice?.invoice_number}` : p.invoice?.event?.name ?? 'Payout'}
                       {held
                         ? ' — compliance hold: no approved W-9'
                         : p.status === 'failed'

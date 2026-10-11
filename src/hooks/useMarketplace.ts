@@ -147,7 +147,7 @@ export function useCompanyPayouts(companyId: string | undefined | null) {
     if (!companyId) return { data: [] as Payout[], error: null };
     const { data, error } = await supabase
       .from('payouts')
-      .select('*, invoice:invoices!inner(id, company_id, invoice_number, event:events(name), worker:profiles!invoices_worker_id_fkey(full_name))')
+      .select('*, invoice:invoices!inner(id, company_id, invoice_number, event:events(name), worker:profiles!invoices_worker_id_fkey(full_name)), payee:profiles!payouts_worker_id_fkey(full_name)')
       .eq('invoice.company_id', companyId)
       .order('created_at', { ascending: false });
     return { data: (data ?? null) as Payout[] | null, error: error?.message ?? null };
