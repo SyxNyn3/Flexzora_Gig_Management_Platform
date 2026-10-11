@@ -74,11 +74,11 @@ serve(async (req) => {
     if (payout.status === "paid") {
       return json({ status: "paid", already: true });
     }
-    if (!["queued", "failed"].includes(payout.status)) {
-      return json({ error: `Payout is ${payout.status} — cannot release` }, 409);
-    }
 
-    // The worker must have a Connect account with payouts enabled.
+    // The worker must have a Connect account with payouts enabled. These
+    // columns are service-role-only (#47: worker_sensitive_guard_write), so
+    // the stored account id is the one connect-onboard created — not a
+    // self-written destination.
     const { data: sensitive } = await supabaseAdmin
       .from("worker_sensitive")
       .select("stripe_connect_account_id, payouts_enabled")
@@ -91,20 +91,62 @@ serve(async (req) => {
       return json({ error: "Worker's payout account is not fully onboarded" }, 409);
     }
 
+    // #24: claim the row atomically BEFORE touching Stripe. A single UPDATE …
+    // WHERE status IN (queued, failed | stale processing) RETURNING is the
+    // lock: a concurrent release (or a double-click) gets zero rows and a 409.
+    const { data: claimedRows, error: claimError } = await supabaseAdmin
+      .rpc("claim_payout_for_release", { p_payout_id: payout.id });
+    if (claimError) throw claimError;
+    const claimed = Array.isArray(claimedRows) ? claimedRows[0] : claimedRows;
+    if (!claimed) {
+      return json({ error: `Payout is ${payout.status} — already being released` }, 409);
+    }
+
     const invoiceId = payout.invoice && (Array.isArray(payout.invoice) ? payout.invoice[0]?.id ?? null : payout.invoice.id);
-    const amountCents = Math.round(Number(payout.amount) * 100);
-    const transfer = await stripe.transfers.create({
-      amount: amountCents,
-      currency: String(payout.currency || "USD").toLowerCase(),
-      destination: sensitive.stripe_connect_account_id,
-      transfer_group: invoiceId ?? undefined,
-      metadata: { payout_id: payout.id },
-    });
+    const amountCents = Math.round(Number(claimed.amount) * 100);
+
+    let transfer: Stripe.Transfer | undefined;
+
+    // Re-claimed a stale 'processing' row: a previous attempt may have made
+    // the transfer and died before recording it. Look it up by group +
+    // metadata first — belt and braces beyond the 24h idempotency window.
+    if (payout.status === "processing" && invoiceId) {
+      const existing = await stripe.transfers.list({ transfer_group: invoiceId, limit: 100 });
+      transfer = existing.data.find((t) => t.metadata?.payout_id === claimed.id);
+    }
+
+    if (!transfer) {
+      try {
+        // Idempotency key = payout id: if we crashed after Stripe created the
+        // transfer but before the paid-update landed, the stale-processing
+        // re-claim replays this exact call and Stripe returns the SAME
+        // transfer instead of moving the money twice.
+        transfer = await stripe.transfers.create(
+          {
+            amount: amountCents,
+            currency: String(claimed.currency || "USD").toLowerCase(),
+            destination: sensitive.stripe_connect_account_id,
+            transfer_group: invoiceId ?? undefined,
+            metadata: { payout_id: claimed.id },
+          },
+          { idempotencyKey: `payout:${claimed.id}` },
+        );
+      } catch (stripeError) {
+        // Release the claim so the company can retry once the cause is fixed.
+        const reason = stripeError instanceof Stripe.errors.StripeError ? stripeError.message : "Stripe transfer failed";
+        await supabaseAdmin
+          .from("payouts")
+          .update({ status: "failed", failure_reason: reason.slice(0, 500) })
+          .eq("id", claimed.id)
+          .eq("status", "processing");
+        throw stripeError;
+      }
+    }
 
     const { error: updateError } = await supabaseAdmin
       .from("payouts")
       .update({ status: "paid", stripe_transfer_id: transfer.id, paid_at: new Date().toISOString() })
-      .eq("id", payout.id);
+      .eq("id", claimed.id);
     if (updateError) throw updateError;
 
     return json({ status: "paid", transfer_id: transfer.id });
