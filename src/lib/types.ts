@@ -262,8 +262,11 @@ export interface Database {
       };
       food_runs: {
         Row: FoodRun;
-        Insert: Omit<FoodRun, 'id' | 'created_at' | 'updated_at' | 'runner'>;
-        Update: Partial<Omit<FoodRun, 'id' | 'created_at' | 'updated_at' | 'runner'>>;
+        Insert: Omit<FoodRun, 'id' | 'created_at' | 'updated_at' | 'runner' | 'pending_runner' | 'min_orders' | 'late_fee_cents' | 'pending_runner_worker_id'> & {
+          min_orders?: number;
+          late_fee_cents?: number;
+        };
+        Update: Partial<Omit<FoodRun, 'id' | 'created_at' | 'updated_at' | 'runner' | 'pending_runner'>>;
       };
       food_run_orders: {
         Row: FoodRunOrder;
@@ -1397,17 +1400,21 @@ export interface FoodRun {
   id: string;
   shift_id: string;
   runner_worker_id: string;
+  pending_runner_worker_id?: string;
   restaurant: string;
   menu_link?: string;
   order_cutoff_at: string;
   delivery_area?: string;
   pickup_lat?: number;
   pickup_lng?: number;
+  min_orders: number;
+  late_fee_cents: number;
   notes?: string;
   status: FoodRunStatus;
   created_at: string;
   updated_at: string;
   runner?: Profile;
+  pending_runner?: Profile;
 }
 
 export interface CrewDistance {
