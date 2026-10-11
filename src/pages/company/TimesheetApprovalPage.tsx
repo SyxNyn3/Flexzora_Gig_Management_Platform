@@ -24,6 +24,7 @@ const statusTone: Record<Timesheet['status'], string> = {
   approved: 'bg-primary/15 text-primary',
   disputed: 'bg-red-500/15 text-destructive dark:text-red-400',
   paid: 'bg-green-500/15 text-emerald-500 dark:text-green-400',
+  voided: 'bg-muted text-muted-foreground line-through',
 };
 
 const Geo: React.FC<{ verified: boolean; distance?: number }> = ({ verified, distance }) => (
@@ -45,6 +46,13 @@ const TimesheetApprovalPage: React.FC = () => {
   const [breaks, setBreaks] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState<string | null>(null);
   const [dispute, setDispute] = useState<{ sheet: Timesheet; notes: string } | null>(null);
+  const [resolution, setResolution] = useState<{
+    sheet: Timesheet;
+    mode: 'as_submitted' | 'adjusted' | 'voided';
+    clockIn: string;
+    clockOut: string;
+    note: string;
+  } | null>(null);
   const [holds, setHolds] = useState<Map<string, boolean>>(new Map());
 
   useEffect(() => {
@@ -56,7 +64,12 @@ const TimesheetApprovalPage: React.FC = () => {
 
   const grouped = useMemo(() => {
     const by = (statuses: Timesheet['status'][]) => sheets.data.filter((t) => statuses.includes(t.status));
-    return { review: by(['submitted', 'disputed']), live: by(['open']), settled: by(['approved', 'paid']) };
+    return {
+      review: by(['submitted']),
+      disputes: by(['disputed']),
+      live: by(['open']),
+      settled: by(['approved', 'paid', 'voided']),
+    };
   }, [sheets.data]);
 
   const rateFor = (t: Timesheet) => Number(t.assignment?.offered_rate ?? t.shift?.hourly_rate ?? 0);
@@ -96,6 +109,34 @@ const TimesheetApprovalPage: React.FC = () => {
     if (error) return toast.error(error);
     toast.success('Timesheet flagged for review');
     setDispute(null);
+    sheets.refetch();
+  };
+
+  const openResolve = (t: Timesheet) =>
+    setResolution({
+      sheet: t,
+      mode: 'as_submitted',
+      clockIn: t.clock_in_at ? format(new Date(t.clock_in_at), "yyyy-MM-dd'T'HH:mm") : '',
+      clockOut: t.clock_out_at ? format(new Date(t.clock_out_at), "yyyy-MM-dd'T'HH:mm") : '',
+      note: '',
+    });
+
+  const submitResolution = async () => {
+    if (!resolution) return;
+    setBusy(resolution.sheet.id);
+    const { error } = await MarketplaceService.resolveDispute(resolution.sheet.id, resolution.mode, {
+      clockIn: resolution.mode === 'adjusted' && resolution.clockIn ? new Date(resolution.clockIn).toISOString() : undefined,
+      clockOut: resolution.mode === 'adjusted' && resolution.clockOut ? new Date(resolution.clockOut).toISOString() : undefined,
+      note: resolution.note || undefined,
+    });
+    setBusy(null);
+    if (error) return toast.error(error);
+    toast.success(
+      resolution.mode === 'voided'
+        ? 'Timesheet voided — the worker has been notified'
+        : 'Dispute resolved — timesheet is back in the approval queue',
+    );
+    setResolution(null);
     sheets.refetch();
   };
 
@@ -196,7 +237,12 @@ const TimesheetApprovalPage: React.FC = () => {
             )}
             <div className="flex flex-col items-end gap-2">
               <Badge variant="outline" className={statusTone[t.status]}>{t.status}</Badge>
-              {actions && t.clock_out_at && (
+              {actions && t.status === 'disputed' && (
+                <Button size="sm" disabled={busy !== null} onClick={() => openResolve(t)}>
+                  <AlertTriangle className="w-3.5 h-3.5 mr-1" /> Resolve dispute
+                </Button>
+              )}
+              {actions && t.status === 'submitted' && t.clock_out_at && (
                 <>
                   <div className="flex items-center gap-1 text-xs">
                     <span className="text-muted-foreground">Break</span>
@@ -222,6 +268,17 @@ const TimesheetApprovalPage: React.FC = () => {
               )}
             </div>
           </div>
+          {t.dispute_reason && (
+            <p className="text-xs text-destructive dark:text-red-400 mt-2 border-t pt-2">
+              {t.dispute_opened_by === t.worker_id ? 'Worker dispute' : 'Manager dispute'}: {t.dispute_reason}
+            </p>
+          )}
+          {t.resolution && (
+            <p className="text-xs text-muted-foreground mt-1">
+              Resolved {t.resolution === 'as_submitted' ? 'as submitted' : t.resolution}
+              {t.resolved_at && ` · ${format(new Date(t.resolved_at), 'MMM d HH:mm')}`}
+            </p>
+          )}
           {t.worker_notes && <p className="text-xs text-muted-foreground mt-2 border-t pt-2">Crew note: {t.worker_notes}</p>}
           {t.manager_notes && <p className="text-xs text-destructive dark:text-red-400 mt-1">Manager: {t.manager_notes}</p>}
         </CardContent>
@@ -307,6 +364,7 @@ const TimesheetApprovalPage: React.FC = () => {
         <Tabs defaultValue="review">
           <TabsList>
             <TabsTrigger value="review">Needs review ({grouped.review.length})</TabsTrigger>
+            <TabsTrigger value="disputes">Disputes ({grouped.disputes.length})</TabsTrigger>
             <TabsTrigger value="live">On the clock ({grouped.live.length})</TabsTrigger>
             <TabsTrigger value="settled">Approved & paid ({grouped.settled.length})</TabsTrigger>
           </TabsList>
@@ -317,6 +375,12 @@ const TimesheetApprovalPage: React.FC = () => {
               </p>
             )}
             {grouped.review.map((t) => <Row key={t.id} t={t} actions />)}
+          </TabsContent>
+          <TabsContent value="disputes" className="space-y-3 mt-4">
+            {grouped.disputes.length === 0 && (
+              <p className="text-center text-muted-foreground py-10 text-sm">No open disputes — timesheets flagged by you or the crew land here.</p>
+            )}
+            {grouped.disputes.map((t) => <Row key={t.id} t={t} actions />)}
           </TabsContent>
           <TabsContent value="live" className="space-y-3 mt-4">
             {grouped.live.length === 0 && <p className="text-center text-muted-foreground py-10 text-sm">Nobody is clocked in right now.</p>}
@@ -334,6 +398,70 @@ const TimesheetApprovalPage: React.FC = () => {
           <p className="text-sm text-muted-foreground">The worker will be notified and can respond. Nothing is paid until you approve.</p>
           <Textarea rows={3} placeholder="e.g. Clock-out shows 02:10 but load-out wrapped at 00:30" value={dispute?.notes ?? ''} onChange={(e) => dispute && setDispute({ ...dispute, notes: e.target.value })} />
           <Button variant="destructive" disabled={!dispute?.notes || busy !== null} onClick={submitDispute}>Flag for review</Button>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={resolution !== null} onOpenChange={(o) => !o && setResolution(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Resolve timesheet dispute</DialogTitle></DialogHeader>
+          {resolution && (
+            <div className="space-y-4">
+              {resolution.sheet.dispute_reason && (
+                <p className="text-sm bg-muted rounded p-2">
+                  {resolution.sheet.dispute_opened_by === resolution.sheet.worker_id ? 'Worker' : 'Manager'}: {resolution.sheet.dispute_reason}
+                </p>
+              )}
+              <div className="space-y-2">
+                {(
+                  [
+                    { v: 'as_submitted', label: 'Accept as submitted', hint: 'Clock record stands — returns to the approval queue' },
+                    { v: 'adjusted', label: 'Adjust times', hint: 'Correct the clock record, then it returns to approval' },
+                    { v: 'voided', label: 'Void the timesheet', hint: 'No pay is due — the worker is notified' },
+                  ] as const
+                ).map((o) => (
+                  <label key={o.v} className="flex items-start gap-2 text-sm cursor-pointer">
+                    <input
+                      type="radio"
+                      name="resolution"
+                      checked={resolution.mode === o.v}
+                      onChange={() => setResolution({ ...resolution, mode: o.v })}
+                      className="mt-1"
+                    />
+                    <span>
+                      <span className="font-medium">{o.label}</span>
+                      <span className="block text-xs text-muted-foreground">{o.hint}</span>
+                    </span>
+                  </label>
+                ))}
+              </div>
+              {resolution.mode === 'adjusted' && (
+                <div className="grid grid-cols-2 gap-2">
+                  <label className="text-xs text-muted-foreground space-y-1">
+                    Clock in
+                    <Input type="datetime-local" value={resolution.clockIn} onChange={(e) => setResolution({ ...resolution, clockIn: e.target.value })} />
+                  </label>
+                  <label className="text-xs text-muted-foreground space-y-1">
+                    Clock out
+                    <Input type="datetime-local" value={resolution.clockOut} onChange={(e) => setResolution({ ...resolution, clockOut: e.target.value })} />
+                  </label>
+                </div>
+              )}
+              <Textarea
+                rows={2}
+                placeholder="Note to the worker (optional)"
+                value={resolution.note}
+                onChange={(e) => setResolution({ ...resolution, note: e.target.value })}
+              />
+              <Button
+                className="w-full"
+                variant={resolution.mode === 'voided' ? 'destructive' : 'default'}
+                disabled={busy !== null || (resolution.mode === 'adjusted' && (!resolution.clockIn || !resolution.clockOut))}
+                onClick={submitResolution}
+              >
+                Resolve dispute
+              </Button>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

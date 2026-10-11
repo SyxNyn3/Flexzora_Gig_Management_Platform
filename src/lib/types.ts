@@ -689,7 +689,7 @@ export type AssignmentStatus =
   | 'completed';
 export type AssignmentSource = 'direct_book' | 'roster_broadcast' | 'public_marketplace';
 export type BroadcastStage = 'none' | 'roster' | 'public';
-export type TimesheetStatus = 'open' | 'submitted' | 'approved' | 'disputed' | 'paid';
+export type TimesheetStatus = 'open' | 'submitted' | 'approved' | 'disputed' | 'paid' | 'voided';
 export type InvoiceStatus = 'draft' | 'issued' | 'paid' | 'void';
 export type PayoutStatus = 'queued' | 'processing' | 'paid' | 'failed';
 export type PayoutMethod = 'ach' | 'instant';
@@ -857,6 +857,11 @@ export interface Timesheet {
   manager_notes?: string;
   approved_by?: string;
   approved_at?: string;
+  dispute_opened_by?: string;
+  dispute_reason?: string;
+  resolution?: 'as_submitted' | 'adjusted' | 'voided';
+  resolved_by?: string;
+  resolved_at?: string;
   created_at: string;
   updated_at: string;
   shift?: Shift;
