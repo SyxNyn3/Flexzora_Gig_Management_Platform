@@ -127,7 +127,7 @@ export interface Database {
       };
       shift_assignments: {
         Row: ShiftAssignment;
-        Insert: Omit<ShiftAssignment, 'id' | 'created_at' | 'updated_at' | 'shift' | 'worker' | 'timesheet'>;
+        Insert: Omit<ShiftAssignment, 'id' | 'created_at' | 'updated_at' | 'shift' | 'worker' | 'timesheet' | 'needs_ride' | 'can_drive'>;
         Update: Partial<Omit<ShiftAssignment, 'id' | 'created_at' | 'updated_at' | 'shift' | 'worker' | 'timesheet'>>;
       };
       preferred_rosters: {
@@ -159,6 +159,16 @@ export interface Database {
         Row: CrewIOU;
         Insert: Omit<CrewIOU, 'id' | 'created_at' | 'updated_at'>;
         Update: Partial<Omit<CrewIOU, 'id' | 'created_at' | 'updated_at'>>;
+      };
+      ride_offers: {
+        Row: RideOffer;
+        Insert: Omit<RideOffer, 'id' | 'created_at' | 'updated_at' | 'seats_taken' | 'driver'>;
+        Update: Partial<Omit<RideOffer, 'id' | 'created_at' | 'updated_at' | 'seats_taken' | 'driver'>>;
+      };
+      ride_requests: {
+        Row: RideRequest;
+        Insert: Omit<RideRequest, 'id' | 'created_at' | 'updated_at' | 'rider'>;
+        Update: Partial<Omit<RideRequest, 'id' | 'created_at' | 'updated_at' | 'rider'>>;
       };
     };
   };
@@ -636,6 +646,8 @@ export interface ShiftAssignment {
   match_score?: number;
   match_breakdown?: MatchBreakdown;
   offered_rate?: number;
+  needs_ride: boolean;
+  can_drive: boolean;
   responded_at?: string;
   confirmed_at?: string;
   created_at: string;
@@ -813,5 +825,39 @@ export interface CrewIOU {
   settled_timesheet_id?: string;
   created_at: string;
   updated_at: string;
+}
+
+// --- CrewPool rides --------------------------------------------------------
+export type RideOfferStatus = 'open' | 'full' | 'cancelled';
+export type RideRequestStatus = 'open' | 'matched' | 'withdrawn' | 'cancelled';
+
+export interface RideOffer {
+  id: string;
+  shift_id: string;
+  driver_worker_id: string;
+  seats: number;
+  seats_taken: number;
+  departure_area?: string;
+  departure_at?: string;
+  gas_share_cents: number;
+  notes?: string;
+  status: RideOfferStatus;
+  created_at: string;
+  updated_at: string;
+  driver?: Profile;
+}
+
+export interface RideRequest {
+  id: string;
+  shift_id: string;
+  rider_worker_id: string;
+  seats_needed: number;
+  pickup_area?: string;
+  notes?: string;
+  status: RideRequestStatus;
+  offer_id?: string;
+  created_at: string;
+  updated_at: string;
+  rider?: Profile;
 }
 
