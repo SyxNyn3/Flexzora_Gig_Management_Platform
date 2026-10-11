@@ -719,7 +719,6 @@ const CrewBoardPage: React.FC = () => {
                       {p.status === 'resolved' && p.fulfiller && (
                         <p className="text-xs text-muted-foreground mt-1">Fulfilled by {p.fulfiller.full_name}</p>
                       )}
-<<<<<<< HEAD
                       {p.status === 'awaiting_accept' && p.fulfilled_by_worker_id === profile?.id && (
                         <div className="flex items-center gap-2 mt-2">
                           <Button size="sm" className="h-7" disabled={busy !== null}
@@ -734,7 +733,7 @@ const CrewBoardPage: React.FC = () => {
                       )}
                       {p.status === 'awaiting_accept' && p.fulfilled_by_worker_id !== profile?.id && (
                         <p className="text-xs text-muted-foreground mt-1">Waiting for {p.fulfiller?.full_name ?? 'the fulfiller'} to accept before anything is owed.</p>
-=======
+                      )}
                       {p.status === 'resolved' && (p.amount_cents ?? 0) > 0 && p.fulfilled_by_worker_id && !p.debtor_confirmed_at && (
                         p.fulfilled_by_worker_id === profile?.id && p.direction === 'offer' ? (
                           <div className="mt-2 flex items-center gap-2 text-xs">
@@ -747,7 +746,6 @@ const CrewBoardPage: React.FC = () => {
                         ) : (
                           <p className="text-xs text-muted-foreground mt-2">Waiting for {p.fulfiller?.full_name ?? 'the fulfiller'} to accept the {money((p.amount_cents ?? 0) / 100)} share.</p>
                         )
->>>>>>> origin/main
                       )}
                     </div>
                     {mine && p.status === 'open' && (
