@@ -3,6 +3,18 @@
 Shared journal — every session appends: date, lane, what shipped, what's next, blockers.
 Newest entries on top.
 
+
+- **2026-10-11 — Challenger (deep-sweep tail: certs, timesheets, waitlist, gig_messages)** — Finished the systematic pass over every remaining unauthenticated/definer surface on main. **Filed #117 LOW** — `gig_messages` SELECT policy (and confirmations) ignores `recipients[]`, so messages "targeted" at one worker are readable by every accepted worker on the gig; fix = recipients-array filter in the worker half of both policies. **Clean-verified, no issues filed:** `certifications_verification_guard` (INSERT forces `verified=false`, verified-col edits raise, substance edits on verified certs auto-unverify — ShiftSwap cert gate has no self-service bypass); `validate_clock_event`/`approve_timesheet` (assignment-derived worker identity, geofence + clock-window, `FOR UPDATE` lock, `submitted/disputed`-only, `companies.created_by` ownership, per-worker+company advisory lock serializing weekly-OT math — double-approve and OT-cap races are dead); `waitlist_public_stats`/`waitlist_referral_status` (deliberate anon grants, curated non-PII returns); `notifications` (no INSERT policy — direct client minting impossible; the only hole remains definer `create_notification` = #113); timesheet INSERT (no client path — auto-minted by clock events only, `ON CONFLICT` per assignment). **Main is now fully swept** — all 56 migrations + P0-RT fix chain regression-verified. Open challenger issues: ~35 filed, of which Lane-A batches killed ~20; standing verified-live: #105-#117 plus residuals noted on #23/#27/#37/#45.
+
+- **2026-10-11 — Lane B #1 — cert verification workflow** — `feat/cert-verification` → PR #85. The guard already blocked self-verify (`verified` was platform-review-only); the review path itself was missing so nothing could ever verify. Built it: `document_path` in a private `cert-docs` bucket (worker writes own folder; companies read only when related via roster/booking/gig — `worker_related_to_company`), `verification_status` + review fields guarded definer-only, `pending_cert_reviews`/`review_certification` RPCs (reject needs a note, worker notified), `cert_review` alert kind on the sweep (queue >48h). Worker ProfilePage got the real status badges + attach-and-submit flow (previously every cert displayed "Pending"); company gets `/cert-reviews`. pgTAP 060: self-stamp blocks, relationship gate, approve/reject/resubmit.
+
+- **2026-10-11 — Lane B (Feature Builder)** — Claimed the recovered-PRD lane per MORNING ITINERARY. Working top-down: cert verification workflow → shift templates → auto-backfill cascade + no-show detection → standby pools → travel-time feasibility → W-9 vault → rate guidance → dispute queue → earnings PDF → remaining listed items (skipping the two "design needed" until the list clears). Works from `../flexzora-laneb` worktree off `origin/main`; feature migrations from `20261025`. No local Node — CI (lint/typecheck/vitest/build + db-tests replay) verifies per PR.
+
+
+- **2026-10-11 — Challenger (P0-RT mid-session merge verification, cont.)** — Regression-verified the three fix PRs that landed while the Company OS sweep ran. **#86 (company consent batch, merged):** #19 consent-gated minting verified dead — `debtor_confirmed_at` stampable only by the debtor on a resolved post, mint trigger fires on consent; resolved posts freeze fulfiller/amount/direction; `workers post own` INSERT requires `debtor_confirmed_at IS NULL` so consent can't be pre-stamped. #20 dead (companies read-only on crew_iou; cancel/delete voids made definer). #23 mostly dead (terms frozen from `offered` onward). #51 dead (debtor read-only; beneficiary-only forgive, pre-settlement). **#88 (ride-match batch, merged):** #25 dead (partial unique index on active rider+shift); #26 dead (company cancel-only, offer_id immutable to them); #27 ride half dead (seats_needed frozen at match). **#91:** #21 dead (`timesheets_break_minutes_floor` CHECK NOT VALID — replay-safe, floors both worker and company-override writers). **New filing:** #116 MEDIUM — GrubRun `price_cents` rewritable on confirmed orders, minted IOU never re-syncs (display/debt divergence; closes when PR #103 merges — verified its lock + consent-mint logic on the branch). **Residual comments:** #23 — `applied→confirmed` can still carry an `offered_rate` the worker never saw (applied isn't in the frozen set); #27 — lodging `spots_needed` still editable on same-status `joined` updates (ride half only was fixed). Also verified open fix PR #103 (#52 grub price lock) — solid design, will close #52 + #116.
+
+- **2026-10-11 — Challenger (P0-RT regression + new-surface red-team)** — Re-attacked all 10 merged P0-RT fixes on main, then swept the newly-merged Company OS stack (PRs #53-#62) and the notification/helper-grant surface. **Filed 10 issues labeled `challenger`: #105-#114.** Verification: #45/#47/#28/#22/#24/#38 confirmed dead (guard patterns solid — allowlist signup, immutable role/created_by/anchors, partial settlement with row locks, atomic payout claim + Stripe idempotency, per-role state machines). **Fix bypasses/regressions filed:** #105 (#44's `REVOKE FROM PUBLIC` also stripped service_role → `lookup-user` RPC now 500s → **username sign-in broken on main**), #106 (#49 guard covers company rows only — `DELETE` on shifts/events still cascades through assignments+timesheets), #107 (#43 froze shift cols but `events.overtime_rule_code` + `event_budgets.platform_fee_pct` still live-edit post-confirm → pay repriced). Residuals commented on #37 (pending-app satisfies participation) + #45 (`review_count` still self-editable). **New surface:** #108 send_broadcast no row lock + revertible status → double-send + replay notification spam; #109 staff `profile_id` unverified link → notify arbitrary users; #110 roster_contacts import = bulk worker-existence oracle; #113 `create_notification` PUBLIC-exec definer → spoofed notifications with attacker action_url on ANY user (highest-value new find); #114 PUBLIC-exec definer hygiene sweep (generate_shift_briefing, worker_meets_shift_certs, helpers); #111/#112 commit/sweep concurrency LOWs. Clean-passed: copilot_query (whitelist + owns_company re-checks), ICS feeds (unguessable tokens, company-filtered), staff/import/ops/alerts scoping, company_alerts dedupe.
+
 - **2026-10-11 — Lane B #3 — auto-backfill cascade + no-show detection** — `feat/auto-backfill` → PR #89. Decline/withdraw/no-show trigger re-offers freed seats to the next-ranked roster candidate (tier → reliability → rating, cert+skill gated) — declines chain down the pool. Exhausted pool → urgent ops card + owner page. `detect_no_shows` sweep (call+15min, no clock-in, 48h window) runs on OpsBoard/EventDetail load. pgTAP `070_auto_backfill`: 12 asserts. Seed: in-progress call with a confirmed no-clock-in worker — first load demos the whole loop.
 
 - **2026-10-11 — Lane B #2 — shift templates ("call packs")** — `feat/shift-templates` → PR #87. `shift_templates` (role + headcount + cert gates + rate + typical length, upsert by company+name). ShiftForm: pack picker prefills the whole form (typical length re-times the wrap), "save as call pack" on create. Wizard `shift_templates` target: a rate-card sheet imports as packs — the backlog's "natural partner" note made real. Seed: Arena load-in / FOH audio / Strike crew packs.
@@ -10,7 +22,6 @@ Newest entries on top.
 - **2026-10-11 — Lane B #1 — cert verification workflow** — `feat/cert-verification` → PR #85. The guard already blocked self-verify (`verified` was platform-review-only); the review path itself was missing so nothing could ever verify. Built it: `document_path` in a private `cert-docs` bucket (worker writes own folder; companies read only when related via roster/booking/gig — `worker_related_to_company`), `verification_status` + review fields guarded definer-only, `pending_cert_reviews`/`review_certification` RPCs (reject needs a note, worker notified), `cert_review` alert kind on the sweep (queue >48h). Worker ProfilePage got the real status badges + attach-and-submit flow (previously every cert displayed "Pending"); company gets `/cert-reviews`. pgTAP 060: self-stamp blocks, relationship gate, approve/reject/resubmit.
 
 - **2026-10-11 — Lane B (Feature Builder)** — Claimed the recovered-PRD lane per MORNING ITINERARY. Working top-down: cert verification workflow → shift templates → auto-backfill cascade + no-show detection → standby pools → travel-time feasibility → W-9 vault → rate guidance → dispute queue → earnings PDF → remaining listed items (skipping the two "design needed" until the list clears). Works from `../flexzora-laneb` worktree off `origin/main`; feature migrations from `20261025`. No local Node — CI (lint/typecheck/vitest/build + db-tests replay) verifies per PR.
-
 - **2026-10-11 — Security core (paid-quota window — P0-RT top of queue)** — Landed the entire ordered fix list. **#45 CRITICAL (PR #76, merged):** `handle_new_user` allowlists metadata (role='admin' self-claim coerced to worker), profiles UPDATE guard denies role changes by API role, companies.created_by non-transferable, +9-test pgTAP (`045_role_escalation.test.sql`) and a new `db-tests` CI job (migration replay + `supabase test db`). **#28 (PR #77, merged):** settle loop redesigned to partial settlement — `settled_cents` + `crew_iou_settlements` ledger, min(outstanding, remaining-cap) per IOU, carry-over from earlier ended shifts, per-collection invoice lines; TS mirror + pgTAP. **Held-PR blockers pushed to the SAME PRs:** #22 on feat/shift-swap — swap_requests/claims anchors immutable, sweetener locked once claims exist (`36982cc` + pgTAP 022); #24/#47 on feat/stripe-connect — `claim_payout_for_release()` atomic claim + Stripe idempotencyKey + stale-processing transfer lookup, Connect fields server-owned (`74e77c8` + pgTAP 047, `01dec7d`). **HIGH batch (PR #78, merged):** #49 company-with-history delete blocked; #43 shift terms freeze post-confirmation (headcount ≥ confirmed); #38 gig_applications state machine (worker: pending→withdrawn only; owner: pending→accepted/rejected); #37 reviews require real shared gig + distinct parties; #44 `lookup_user_by_username_or_email` revoked (incl. PUBLIC). Exposed + fixed along the way: migration replay blockers (orphan `follows` RLS, waitlist enum same-tx, PostGIS ownership, duplicated `LANGUAGE plpgsql`, stray INSERT), invoker calendar-sync triggers dead-on-RLS now SECURITY DEFINER. Main merged into both held branches; CI re-running — merge gate: green checks + db-tests.
 - **2026-10-11 — Reviewer (cycle 4 — P0-RT queue completed)** — Reviewed #72 (docs: P0-RT red-team sweep + recovered PRD ideas + ops rule 9); found the queue covered only the second challenger sweep. Audited the excluded first-sweep range #19–#33 **against current main**: 10 verified live (#19, #20, #21, #23, #25, #26, #27, #29, #30, #31, #33) — incl. company-side `crew_iou` rewrite with no column immutability, `offered_rate` mutable on the company guard branch, ride-request force-match/duplicate-match/seat-editing, and the "Ride cancelled" alert confirmed dead code (BEFORE cascade runs before the AFTER alert trigger). #28 verified worse than filed (settle loop `EXIT`s on first over-cap IOU — whole queue deadlocks, no partial settle). Merged #72 (net-positive), filed #73, landed #74 completing the queue — all 33 open challenger findings now claimable P0-RT items, each verified. Deploy verified end-to-end earlier this cycle: https://syxnyn3.github.io/flexzora-live/ serves the real build. Queue: still only #15 (held #22) and #16 (held #24 + #47) — no fix commits.
 
@@ -304,3 +315,95 @@ Newest entries on top.
 - Waitlist verify link no longer returned in responses.
 - `20261008000000`: `search_path` pinned on all SECURITY DEFINER functions.
 - `sw.js`: network-first navigation; `schedule-demo` persists demo_requests.
+
+## Lane A — Security Builder — single: #21 break_minutes floor
+
+- Branch `fix/lane-a-break-minutes`. Migration `20261105000000_p0rt_break_minutes_floor.sql`:
+  `CHECK (break_minutes >= 0) NOT VALID` on `timesheets`. A row CHECK covers every
+  writer (worker edits and the company override in `approve_timesheet`).
+  `NOT VALID` means existing rows aren't scanned, so `db push` can't be blocked by
+  legacy data. A legacy negative row fails its next approval loudly.
+- Test: pgTAP `021_break_minutes_floor` (3 assertions).
+- Deeper item noted, not built: a break longer than the clock span can still make
+  hours negative. A row CHECK against the clock span would close it, but needs a
+  data-quality pass first (see #35 temporal validation).
+## Lane A — Security Builder — P0-RT company-side consent batch (#19, #20, #23, #51)
+
+- Branch `fix/lane-a-company-consent` (claim: PR #83 `chore/lane-a-claim`).
+- Migration `20261103000000_p0rt_company_consent.sql` — one idempotent file:
+  - **#19** `crew_posts.debtor_confirmed_at`. Minting moved out of the
+    resolve trigger into an AFTER-UPDATE mint that fires only once the
+    *debtor* has consented: the author when resolving a `want` (author owes),
+    the fulfiller accepting an `offer`. Resolved posts can no longer change
+    fulfiller or amount; a post cannot be fulfilled by its own author; a paid
+    post must name a fulfiller before it resolves.
+  - **#20** `guard_crew_iou_update`: companies are read-only on shift-anchored
+    IOUs. Every legitimate write is definer (shift-cancel void, approve_timesheet
+    settlement) and is exempt via `current_user`.
+  - **#51** the debtor cannot change an IOU at all. The beneficiary can forgive
+    (void) only while `settled_cents = 0`.
+  - **#23** `guard_assignment_update`: `offered_rate`, `match_score`,
+    `match_breakdown` are frozen from offered/confirmed/completed/no_show.
+    Re-offering a declined/withdrawn row may set a new rate.
+- Tests (pgTAP, run by the `db-tests` CI job): `019_board_consent`,
+  `020_crew_iou_company_readonly`, `023_offer_terms_frozen`,
+  `051_debtor_cannot_void`. 15 + 6 + 6 + 7 assertions; plans verified.
+- Local verification (Node 24, same commands as CI): `tsc` clean except
+  `pdfjs-dist` / `read-excel-file`, which are declared in package.json but
+  absent from this machine's stale node_modules (installed `--no-save`, no
+  manifest/lockfile change). `eslint src`: 0 errors / 17 pre-existing warnings.
+  `vitest run`: 97/97. `vite build`: green. **pgTAP not run locally** — no
+  Postgres/Supabase CLI on this machine; it is the verification gate in CI.
+
+Judgment calls / things a reviewer should check:
+
+- Grandfathered rows: offer-direction posts already resolved before this fix
+  keep their minted IOUs (backfill stamps consent on any resolved post that
+  already has one). These were minted without consent; they need a human review,
+  not an automatic unwind.
+- Bail/cancel voids (ride withdraw, lodging leave, food cancel, shift cancel)
+  still void through definer cascades. That is the explicit seat/booking release,
+  not a debtor bypass. The debtor's direct table write is what is now closed.
+- `voidIou()` in `src/lib/crew/iou.ts` is exported but unused in the UI; it now
+  fails for debtors as intended. Left in place; a beneficiary-only forgive
+  helper can replace it when the UI needs one.
+- New UI: the fulfiller sees "You owe $X — Accept" on unaccepted offer posts;
+  the author sees "Waiting for <fulfiller> to accept".
+
+Next in Lane A: ride-match MED batch (#25 unique rider/shift, #26 company
+can't force-match, #27 seats_needed frozen after match).
+
+- Addendum (CI found it): `void_ious_on_shift_cancel` / `_delete` were
+  SECURITY INVOKER (my own PR #8 code). They only worked because companies
+  were exempt from the IOU guard. The migration now makes them SECURITY DEFINER
+  with a pinned search_path, so companies can be fully read-only. Audit of all
+  other `crew_iou` writers: ride/lodging/food/swap cascades and approve_timesheet
+  are already definer. Also fixed enum literal casts in the new pgTAP fixtures
+  (INSERT ... SELECT needs explicit enum casts).
+## Lane A — Security Builder — ride-match MED batch (#25, #26, #27)
+
+- Branch `fix/lane-a-ride-match`.
+- Migration `20261104000000_p0rt_ride_match.sql`:
+  - **#25** partial unique index on active `(rider_worker_id, shift_id)` rows
+    (`status IN ('open','matched')`). Closed requests don't count, so rejoining
+    after a bail still works. Race-free, unlike a trigger.
+  - **#26** `guard_ride_request_update`: the company may only move a request to
+    `cancelled` and may not change its offer. Matching stays rider-consented.
+  - **#27** `seats_needed` frozen once a request is `matched`.
+- Tests: pgTAP `025_ride_one_active_per_shift` (5), `026_ride_company_cancel_only`
+  (4), `027_ride_seats_frozen_when_matched` (3). Casts on every enum literal
+  from the start (lesson from the #19 batch CI run).
+- Migration-time caveat: if production already has two active requests from one
+  rider on one shift, the index creation fails loudly. Resolving that means
+  withdrawing the extra row, which is a human decision, so the migration does not
+  do it.
+- Left for later in Lane A: #30 (booking check on ride_requests inserts) is a
+  separate single in the itinerary, not this batch.
+- Addendum (CI found it): `check_ride_match` is SECURITY INVOKER, so it reads
+  the offer through RLS. The 025/027 fixtures used a draft event and a
+  non-broadcast shift, so the rider could not see the offer and the check failed
+  with "Ride offer not found" before reaching the intended error. Fixed the
+  fixtures (`published` event, `broadcast_stage='public'`). The product behaviour
+  is intended: a rider can only touch an offer on a call they can see (fail
+  closed). Lesson recorded for future pgTAP fixtures: model visibility
+  (event status, broadcast stage) explicitly.
