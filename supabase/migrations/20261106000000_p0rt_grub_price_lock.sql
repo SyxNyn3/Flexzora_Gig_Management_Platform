@@ -126,3 +126,27 @@ BEGIN
   END IF;
   RETURN NEW;
 END $$;
+
+-- INSERT side of the same consent gate: a worker-supplied price_accepted_at on
+-- a new order would sit in OLD on the confirm update, so the consent-mint
+-- (`OLD.price_accepted_at IS NULL`) would never fire — the orderer eats free.
+-- Same pre-stamp dodge the board fix closed on crew_posts. Force it null at
+-- insert for API writers; definer paths bypass the check.
+CREATE OR REPLACE FUNCTION check_food_order() RETURNS trigger AS $$
+DECLARE
+  v_run food_runs%ROWTYPE;
+BEGIN
+  IF current_user NOT IN ('authenticated', 'anon') THEN RETURN NEW; END IF;
+  IF NEW.status <> 'placed' THEN RETURN NEW; END IF;
+  NEW.price_accepted_at := NULL;
+
+  SELECT * INTO v_run FROM food_runs WHERE id = NEW.run_id;
+  IF v_run.id IS NULL THEN RAISE EXCEPTION 'Food run not found'; END IF;
+  IF v_run.status <> 'open' THEN RAISE EXCEPTION 'This food run is %', v_run.status; END IF;
+  IF NEW.worker_id = v_run.runner_worker_id THEN RAISE EXCEPTION 'Runner does not order from themselves'; END IF;
+  IF v_run.order_cutoff_at < now() AND current_profile_id() <> v_run.runner_worker_id THEN
+    RAISE EXCEPTION 'The order cutoff has passed';
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
