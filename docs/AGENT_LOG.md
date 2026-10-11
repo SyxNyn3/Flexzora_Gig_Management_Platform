@@ -7,6 +7,20 @@ Each entry: lane, branch/PR, what shipped, verification status, notes.
 
 ## Builder-2 — Company OS sprint (overnight)
 
+### feat/tour-exports → PR #61 — tour exports
+
+- /exports: date range + section checkboxes (crew list / schedule / staff
+  sheet), live preview counts, CSV + PDF downloads.
+- Crew list collapses the same worker across calls — contacts, distinct
+  roles, events, call count. Schedule emits one row per call with booked
+  names flattened in and "(unfilled)" flagged; staff sheet lists internal
+  team assignments.
+- No migration/RLS needed: reads through the caller's own session.
+- toCsv: RFC-4180 escaping + UTF-8 BOM for Excel. buildPdf:
+  dependency-free multi-page Helvetica writer (title + page-number
+  footers) — real .pdf file, not print dialog.
+- Tests: row builders + CSV escaping (vitest). Verification: CI.
+
 ### feat/ops-kanban → PR #60 — ops board
 
 - ops_tasks + generate_unfilled_tasks: idempotent sweep on board load —
