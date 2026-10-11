@@ -52,11 +52,13 @@ BEGIN
               AND geo_km(v.latitude, v.longitude, p_lat, p_lng) <= p_radius_km)
         )
     )
+    -- k-anonymity floor: below 3 cleared rates the "percentiles" are a single
+    -- worker's negotiated number — suppress them, keep the count
     SELECT jsonb_build_object(
       'count', count(*),
-      'p25', percentile_cont(0.25) WITHIN GROUP (ORDER BY rate),
-      'p50', percentile_cont(0.5)  WITHIN GROUP (ORDER BY rate),
-      'p75', percentile_cont(0.75) WITHIN GROUP (ORDER BY rate)
+      'p25', CASE WHEN count(*) >= 3 THEN percentile_cont(0.25) WITHIN GROUP (ORDER BY rate) END,
+      'p50', CASE WHEN count(*) >= 3 THEN percentile_cont(0.5)  WITHIN GROUP (ORDER BY rate) END,
+      'p75', CASE WHEN count(*) >= 3 THEN percentile_cont(0.75) WITHIN GROUP (ORDER BY rate) END
     ) FROM rates
   );
 END $$;
