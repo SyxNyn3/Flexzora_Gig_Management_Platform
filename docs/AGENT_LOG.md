@@ -3,6 +3,8 @@
 Shared journal — every session appends: date, lane, what shipped, what's next, blockers.
 Newest entries on top.
 
+- **2026-10-11 — Lane B (Feature Builder)** — Claimed the recovered-PRD lane per MORNING ITINERARY. Working top-down: cert verification workflow → shift templates → auto-backfill cascade + no-show detection → standby pools → travel-time feasibility → W-9 vault → rate guidance → dispute queue → earnings PDF → remaining listed items (skipping the two "design needed" until the list clears). Works from `../flexzora-laneb` worktree off `origin/main`; feature migrations from `20261025`. No local Node — CI (lint/typecheck/vitest/build + db-tests replay) verifies per PR.
+
 - **2026-10-11 — Security core (paid-quota window — P0-RT top of queue)** — Landed the entire ordered fix list. **#45 CRITICAL (PR #76, merged):** `handle_new_user` allowlists metadata (role='admin' self-claim coerced to worker), profiles UPDATE guard denies role changes by API role, companies.created_by non-transferable, +9-test pgTAP (`045_role_escalation.test.sql`) and a new `db-tests` CI job (migration replay + `supabase test db`). **#28 (PR #77, merged):** settle loop redesigned to partial settlement — `settled_cents` + `crew_iou_settlements` ledger, min(outstanding, remaining-cap) per IOU, carry-over from earlier ended shifts, per-collection invoice lines; TS mirror + pgTAP. **Held-PR blockers pushed to the SAME PRs:** #22 on feat/shift-swap — swap_requests/claims anchors immutable, sweetener locked once claims exist (`36982cc` + pgTAP 022); #24/#47 on feat/stripe-connect — `claim_payout_for_release()` atomic claim + Stripe idempotencyKey + stale-processing transfer lookup, Connect fields server-owned (`74e77c8` + pgTAP 047, `01dec7d`). **HIGH batch (PR #78, merged):** #49 company-with-history delete blocked; #43 shift terms freeze post-confirmation (headcount ≥ confirmed); #38 gig_applications state machine (worker: pending→withdrawn only; owner: pending→accepted/rejected); #37 reviews require real shared gig + distinct parties; #44 `lookup_user_by_username_or_email` revoked (incl. PUBLIC). Exposed + fixed along the way: migration replay blockers (orphan `follows` RLS, waitlist enum same-tx, PostGIS ownership, duplicated `LANGUAGE plpgsql`, stray INSERT), invoker calendar-sync triggers dead-on-RLS now SECURITY DEFINER. Main merged into both held branches; CI re-running — merge gate: green checks + db-tests.
 - **2026-10-11 — Reviewer (cycle 4 — P0-RT queue completed)** — Reviewed #72 (docs: P0-RT red-team sweep + recovered PRD ideas + ops rule 9); found the queue covered only the second challenger sweep. Audited the excluded first-sweep range #19–#33 **against current main**: 10 verified live (#19, #20, #21, #23, #25, #26, #27, #29, #30, #31, #33) — incl. company-side `crew_iou` rewrite with no column immutability, `offered_rate` mutable on the company guard branch, ride-request force-match/duplicate-match/seat-editing, and the "Ride cancelled" alert confirmed dead code (BEFORE cascade runs before the AFTER alert trigger). #28 verified worse than filed (settle loop `EXIT`s on first over-cap IOU — whole queue deadlocks, no partial settle). Merged #72 (net-positive), filed #73, landed #74 completing the queue — all 33 open challenger findings now claimable P0-RT items, each verified. Deploy verified end-to-end earlier this cycle: https://syxnyn3.github.io/flexzora-live/ serves the real build. Queue: still only #15 (held #22) and #16 (held #24 + #47) — no fix commits.
 
@@ -308,6 +310,59 @@ Newest entries on top.
 - Deeper item noted, not built: a break longer than the clock span can still make
   hours negative. A row CHECK against the clock span would close it, but needs a
   data-quality pass first (see #35 temporal validation).
+## Lane A — Security Builder — P0-RT company-side consent batch (#19, #20, #23, #51)
+
+- Branch `fix/lane-a-company-consent` (claim: PR #83 `chore/lane-a-claim`).
+- Migration `20261103000000_p0rt_company_consent.sql` — one idempotent file:
+  - **#19** `crew_posts.debtor_confirmed_at`. Minting moved out of the
+    resolve trigger into an AFTER-UPDATE mint that fires only once the
+    *debtor* has consented: the author when resolving a `want` (author owes),
+    the fulfiller accepting an `offer`. Resolved posts can no longer change
+    fulfiller or amount; a post cannot be fulfilled by its own author; a paid
+    post must name a fulfiller before it resolves.
+  - **#20** `guard_crew_iou_update`: companies are read-only on shift-anchored
+    IOUs. Every legitimate write is definer (shift-cancel void, approve_timesheet
+    settlement) and is exempt via `current_user`.
+  - **#51** the debtor cannot change an IOU at all. The beneficiary can forgive
+    (void) only while `settled_cents = 0`.
+  - **#23** `guard_assignment_update`: `offered_rate`, `match_score`,
+    `match_breakdown` are frozen from offered/confirmed/completed/no_show.
+    Re-offering a declined/withdrawn row may set a new rate.
+- Tests (pgTAP, run by the `db-tests` CI job): `019_board_consent`,
+  `020_crew_iou_company_readonly`, `023_offer_terms_frozen`,
+  `051_debtor_cannot_void`. 15 + 6 + 6 + 7 assertions; plans verified.
+- Local verification (Node 24, same commands as CI): `tsc` clean except
+  `pdfjs-dist` / `read-excel-file`, which are declared in package.json but
+  absent from this machine's stale node_modules (installed `--no-save`, no
+  manifest/lockfile change). `eslint src`: 0 errors / 17 pre-existing warnings.
+  `vitest run`: 97/97. `vite build`: green. **pgTAP not run locally** — no
+  Postgres/Supabase CLI on this machine; it is the verification gate in CI.
+
+Judgment calls / things a reviewer should check:
+
+- Grandfathered rows: offer-direction posts already resolved before this fix
+  keep their minted IOUs (backfill stamps consent on any resolved post that
+  already has one). These were minted without consent; they need a human review,
+  not an automatic unwind.
+- Bail/cancel voids (ride withdraw, lodging leave, food cancel, shift cancel)
+  still void through definer cascades. That is the explicit seat/booking release,
+  not a debtor bypass. The debtor's direct table write is what is now closed.
+- `voidIou()` in `src/lib/crew/iou.ts` is exported but unused in the UI; it now
+  fails for debtors as intended. Left in place; a beneficiary-only forgive
+  helper can replace it when the UI needs one.
+- New UI: the fulfiller sees "You owe $X — Accept" on unaccepted offer posts;
+  the author sees "Waiting for <fulfiller> to accept".
+
+Next in Lane A: ride-match MED batch (#25 unique rider/shift, #26 company
+can't force-match, #27 seats_needed frozen after match).
+
+- Addendum (CI found it): `void_ious_on_shift_cancel` / `_delete` were
+  SECURITY INVOKER (my own PR #8 code). They only worked because companies
+  were exempt from the IOU guard. The migration now makes them SECURITY DEFINER
+  with a pinned search_path, so companies can be fully read-only. Audit of all
+  other `crew_iou` writers: ride/lodging/food/swap cascades and approve_timesheet
+  are already definer. Also fixed enum literal casts in the new pgTAP fixtures
+  (INSERT ... SELECT needs explicit enum casts).
 ## Lane A — Security Builder — ride-match MED batch (#25, #26, #27)
 
 - Branch `fix/lane-a-ride-match`.
