@@ -30,3 +30,18 @@ jobs:
 
       - name: Build
         run: npx vite build
+
+  # Real-Postgres regression tests (pgTAP) for the RLS / trigger security
+  # fixes. Replays every migration + seed into a throwaway local stack, then
+  # runs supabase/tests/database/*.test.sql.
+  db-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Start local database (applies migrations + seed)
+        run: supabase db start
+      - name: Run pgTAP tests
+        run: supabase test db
