@@ -268,6 +268,16 @@ export interface Database {
         Insert: BaseGearItem;
         Update: Partial<BaseGearItem>;
       };
+      swap_requests: {
+        Row: SwapRequest;
+        Insert: Omit<SwapRequest, 'id' | 'created_at' | 'updated_at' | 'status' | 'accepted_claim_id' | 'offered_assignment_id' | 'requester'>;
+        Update: Partial<Omit<SwapRequest, 'id' | 'created_at' | 'updated_at' | 'requester'>>;
+      };
+      swap_claims: {
+        Row: SwapClaim;
+        Insert: Omit<SwapClaim, 'id' | 'created_at' | 'updated_at' | 'status' | 'claimer'>;
+        Update: Partial<Omit<SwapClaim, 'id' | 'created_at' | 'updated_at' | 'claimer'>>;
+      };
     };
   };
 }
@@ -1302,6 +1312,36 @@ export interface CertGearItem {
 
 export interface BaseGearItem {
   item: string;
+}
+
+// --- ShiftSwap ---------------------------------------------------------------
+export type SwapRequestStatus = 'open' | 'offered' | 'completed' | 'cancelled';
+export type SwapClaimStatus = 'pending' | 'accepted' | 'rejected' | 'withdrawn';
+
+export interface SwapRequest {
+  id: string;
+  assignment_id: string;
+  shift_id: string;
+  requester_worker_id: string;
+  reason?: string;
+  sweetener_cents: number;
+  accepted_claim_id?: string;
+  offered_assignment_id?: string;
+  status: SwapRequestStatus;
+  created_at: string;
+  updated_at: string;
+  requester?: Profile;
+}
+
+export interface SwapClaim {
+  id: string;
+  swap_request_id: string;
+  claimer_worker_id: string;
+  message?: string;
+  status: SwapClaimStatus;
+  created_at: string;
+  updated_at: string;
+  claimer?: Profile;
 }
 
 // ---------------------------------------------------------------------------

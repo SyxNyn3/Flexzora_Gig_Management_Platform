@@ -51,6 +51,8 @@ Multiple sessions work this repo in parallel. **Before starting any item, mark i
 - [x] CrewBoard: structured post categories — **done: Builder** (`20261013000000_crew_board.sql`: `crew_posts` on shift_id (gig_messages is creator-broadcast on legacy gigs — wrong anchor); category ride/lodging/food/borrow/announce/general + want/offer direction + optional amount_cents; resolve with fulfilled_by mints the `crew_iou` in the correct debt direction; zero-amount resolves as a favor. Client `src/lib/crew/board.ts`.)
 - [x] GrubRun food pooling: `food_runs`/`food_run_orders` with cutoff times — **done: Builder** (`20261014000000_grubrun.sql`: runner posts restaurant + cutoff; workers place orders pre-cutoff (runner can add late); runner confirms with real price — THAT mints the food `crew_iou` (beneficiary=runner, group=order); cancel/run-cancel/shift-cancel void. One order per worker per run. Client `src/lib/crew/food.ts`.)
 - [x] SmartAlerts: per-shift briefing — **done: Builder** (`20261015000000_crew_alerts.sql`: `cert_gear_items`+`base_gear_items` data-driven packing lists; `crew_alerts` feed with dedupe keys; confirm-trigger generates gear/parking/departure briefing — departure = worker_sensitive geo -> venue @ 55km/h + 20min buffer; ride-cancel alerts matched riders. Briefing card + unread badges on the crew page. Client `src/lib/crew/alerts.ts`.)
+- [x] ShiftSwap — **done: Builder** (`20261016000000_shift_swap.sql`: `swap_requests`/`swap_claims`; cert-gated visibility + claim gate via `worker_meets_shift_certs` (verified/active/not-expired for call date, mirrors matchScore); requester accepts claim -> claimer gets an 'offered' assignment in the normal offer flow (company notified via `notifications`, retains cancel levers); claimer confirms -> original goes 'withdrawn', swap completes, sweetener mints a manual `crew_iou` + alerts both parties; unwind on offer-death/cancel/shift-delete. Swap card on crew page: post/claim/accept/cancel one-tap. Client `src/lib/crew/swap.ts`.)
+- [x] Auth UX completion: check-email state post-signup, forgot-password flow, Google button behind `VITE_ENABLE_GOOGLE_AUTH` flag, error states matching design — **in PR #6: Builder** (`feat/auth-ux`: check-email view + resend w/ cooldown, `/reset-password` page, Google+Apple gated behind flags, friendly error map incl. email-not-confirmed resend, fixed `type=email` blocking username sign-in)
 - [ ] ShiftSwap: `swap_requests`/`swap_claims`, cert-gated visibility, company approval via offer flow — **PR #15 open, needs review**
 - [x] Auth UX completion: check-email state post-signup, forgot-password flow, Google button behind `VITE_ENABLE_GOOGLE_AUTH` flag, error states matching design — **done: Builder, merged PR #6** (check-email view + resend w/ cooldown, `/reset-password` page, Google+Apple gated behind flags, friendly error map incl. email-not-confirmed resend, fixed `type=email` blocking username sign-in)
 
@@ -114,6 +116,17 @@ Roadmap "Next" items in `PRD.md §4` the sprints skipped. Rewritten as claimable
 - [ ] **Matching v2 learning** — per-company weight adjustments learned from confirm/decline history (design needed — start by logging outcomes).
 - [ ] **pg_cron for roster→public auto-release** — currently client-triggered on page load (works only when someone visits); move to a scheduled job.
 - [ ] Expo/React Native app — PRD 1.4. **Deferred by design** — revisit after P0-RT + recovered items land.
+
+### Crew OS — deeper versions (noted during the sprint, not yet built)
+- [ ] **Recurring ride buddies**: remember who drove/rode together across shifts; when a new shift confirms, suggest "same car as last time?" and pre-fill the offer/request.
+- [ ] **Bail fairness**: late rider/member withdrawal (>X hours before call) keeps a % of the share committed instead of voiding fully — compensates the driver/host who can't refill the spot.
+- [ ] **Pool suggestions by distance**: rank ride offers / lodging pools / food runs by distance to the worker's home geo vs. venue; surface "closest bunk" / "ride passing your exit".
+- [ ] **GrubRun runner substitution + minimums**: runner can hand the run off; run-level minimum order count before the runner is committed; late-cancel fee shares the sunk cost.
+- [ ] **IOU beneficiary transfer**: deducted cents currently stay in event escrow — push them to the beneficiary's Stripe Connect account (needs worker Connect onboarding).
+- [ ] **Swap sweetener via payout deduction**: sweeteners are manual-settle today (requester has no payout on the swapped shift); settle against the requester's NEXT shift payout instead.
+- [ ] **SmartAlerts transports**: feed is in-app only — push (FCM/APNs) and SMS digest behind feature flags; alert preferences per kind.
+- [ ] **Company swap-approval UI**: swaps currently notify + rely on the normal offer levers; a dedicated approve/reject surface on the roster page would close the loop explicitly.
+- [ ] **Cert-gated swap visibility is conservative**: workers who almost qualify see nothing; consider "ineligible" preview with the missing cert listed (drives cert uploads).
 
 ## P0 — ship blockers
 - [x] Add `.github/workflows/ci.yml`: `npx eslint src`, `npx tsc --noEmit -p tsconfig.app.json`, `npx vitest run`, `npm run build` on every PR (free minutes). — **claimed: Mark — working on it**

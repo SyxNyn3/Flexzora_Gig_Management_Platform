@@ -6,7 +6,8 @@ import { listFoodBoard } from '@/lib/crew/food';
 import { listBoard } from '@/lib/crew/board';
 import { listIousForShift } from '@/lib/crew/iou';
 import { listShiftAlerts } from '@/lib/crew/alerts';
-import { CrewAlert, CrewIOU, CrewPost, FoodRun, FoodRunOrder, LodgingPool, PoolMember, RideOffer, RideRequest, Shift } from '@/lib/types';
+import { listSwapBoard } from '@/lib/crew/swap';
+import { CrewAlert, CrewIOU, CrewPost, FoodRun, FoodRunOrder, LodgingPool, PoolMember, RideOffer, RideRequest, Shift, SwapClaim, SwapRequest } from '@/lib/types';
 
 export function useShift(shiftId: string | undefined) {
   return useSupabaseQuery(
@@ -25,23 +26,26 @@ export interface CrewBoard {
   posts: CrewPost[];
   ious: CrewIOU[];
   alerts: CrewAlert[];
+  swaps: SwapRequest[];
+  swapClaims: SwapClaim[];
 }
 
-const EMPTY_BOARD: CrewBoard = { offers: [], requests: [], pools: [], members: [], runs: [], orders: [], posts: [], ious: [], alerts: [] };
+const EMPTY_BOARD: CrewBoard = { offers: [], requests: [], pools: [], members: [], runs: [], orders: [], posts: [], ious: [], alerts: [], swaps: [], swapClaims: [] };
 
 /** Everything the CrewBoardPage renders — one refetch for all boards. */
 export function useCrewBoard(shiftId: string | undefined) {
   const q = useSupabaseQuery(async (): Promise<{ data: CrewBoard; error: string | null }> => {
     if (!shiftId) return { data: EMPTY_BOARD, error: null };
-    const [rides, lodging, food, posts, ious, alerts] = await Promise.all([
+    const [rides, lodging, food, posts, ious, alerts, swaps] = await Promise.all([
       listRideBoard(shiftId),
       listLodgingBoard(shiftId),
       listFoodBoard(shiftId),
       listBoard(shiftId),
       listIousForShift(shiftId),
       listShiftAlerts(shiftId),
+      listSwapBoard(shiftId),
     ]);
-    const error = [rides.error, lodging.error, food.error, posts.error, ious.error, alerts.error].find(Boolean) ?? null;
+    const error = [rides.error, lodging.error, food.error, posts.error, ious.error, alerts.error, swaps.error].find(Boolean) ?? null;
     return {
       data: {
         offers: rides.data?.offers ?? [],
@@ -53,6 +57,8 @@ export function useCrewBoard(shiftId: string | undefined) {
         posts: posts.data ?? [],
         ious: ious.data ?? [],
         alerts: alerts.data ?? [],
+        swaps: swaps.data?.requests ?? [],
+        swapClaims: swaps.data?.claims ?? [],
       },
       error,
     };

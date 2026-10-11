@@ -409,6 +409,17 @@ begin
           'confirmed', 'public_marketplace', 44.00, now() - interval '12 hours')
   on conflict (id) do nothing;
 
+  -- ShiftSwap demo: Alex posts an open swap with a sweetener. Jordan is
+  -- already booked on the same call so the claim guard blocks them —
+  -- showing the board state a third crewmate would claim.
+  insert into swap_requests (id, assignment_id, shift_id, requester_worker_id,
+                             reason, sweetener_cents)
+  values ('55555555-0000-4000-8000-000000000060',
+          '55555555-0000-4000-8000-000000000050', v_shift_public, p_worker1,
+          'Got called for a stadium overnight — will pay to offload.',
+          5000)
+  on conflict (id) do nothing;
+
   -- ------------------------------------------------------------------
   -- Company OS demo: alerts inbox — one resolved alert shows the audit
   -- trail; live ones generate themselves on inbox load via the sweep.
