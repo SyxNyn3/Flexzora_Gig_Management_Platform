@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
@@ -7,7 +8,7 @@ import { ShiftAssignment } from '@/lib/types';
 import { MarketplaceService } from '@/lib/marketplace/service';
 import { checkGeofence, getCurrentPosition } from '@/lib/marketplace/geo';
 import { shiftWindow } from '../format';
-import { LogIn, LogOut, MapPin, Loader2, Navigation } from 'lucide-react';
+import { LogIn, LogOut, MapPin, Loader2, Navigation, Users } from 'lucide-react';
 
 interface Props {
   assignment: ShiftAssignment;
@@ -146,6 +147,12 @@ const ClockCard: React.FC<Props> = ({ assignment, onChanged }) => {
             {busy ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <LogOut className="w-4 h-4 mr-1" />} Clock out
           </Button>
         )}
+      </div>
+
+      <div className="mt-2 flex justify-end">
+        <Button asChild variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground">
+          <Link to={`/shifts/${shift.id}/crew`}><Users className="w-3.5 h-3.5 mr-1" /> Crew — rides, bunks, grub, board</Link>
+        </Button>
       </div>
     </div>
   );
