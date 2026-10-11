@@ -763,6 +763,10 @@ export interface OvertimeRule {
   dt_multiplier: number;
   minimum_call_hours: number;
   meal_penalty_after_hours: number | null;
+  /** Union packs: minimum rest hours between calls; early hours inside the gap bill at double time. */
+  turnaround_min_hours?: number | null;
+  /** Union packs: break length that counts as a real meal. */
+  meal_break_min_minutes?: number;
   created_at: string;
 }
 
@@ -876,6 +880,8 @@ export interface Timesheet {
   regular_hours: number;
   overtime_hours: number;
   doubletime_hours: number;
+  meal_penalty_hours?: number;
+  turnaround_penalty_hours?: number;
   gross_pay: number;
   status: TimesheetStatus;
   worker_notes?: string;
