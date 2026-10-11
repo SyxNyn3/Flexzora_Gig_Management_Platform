@@ -144,7 +144,7 @@ const AppRoutes: React.FC = () => {
   const ApplicationsComponent = profile?.role === 'worker' ? WorkerApplications : ApplicationsManager;
 
   return (
-    <Router>
+    <Router basename={import.meta.env.BASE_URL}>
       <Suspense fallback={<LoadingSpinner />}>
       <Routes>
         <Route path="/" element={<LandingPage />} />
