@@ -33,9 +33,9 @@ INSERT INTO shifts (id, event_id, title, role_name, headcount, starts_at, ends_a
 
 -- rides: A pinned halfway home→venue (tiny detour), B pinned south of venue (big detour), C unpinned
 INSERT INTO ride_offers (id, shift_id, driver_worker_id, seats, departure_lat, departure_lng)
-SELECT '00000000-0000-0000-0000-000000009b01', '00000000-0000-0000-0000-00000000fb01', id, 3, 0.05, 0 FROM profiles WHERE user_id = '00000000-0000-0000-0000-00000000b0e2'
-UNION ALL SELECT '00000000-0000-0000-0000-000000009b02', '00000000-0000-0000-0000-00000000fb01', id, 3, -0.1, 0 FROM profiles WHERE user_id = '00000000-0000-0000-0000-00000000b0e2'
-UNION ALL SELECT '00000000-0000-0000-0000-000000009b03', '00000000-0000-0000-0000-00000000fb01', id, 3, NULL, NULL FROM profiles WHERE user_id = '00000000-0000-0000-0000-00000000b0e2';
+SELECT '00000000-0000-0000-0000-000000009b01'::uuid, '00000000-0000-0000-0000-00000000fb01'::uuid, id, 3, 0.05, 0 FROM profiles WHERE user_id = '00000000-0000-0000-0000-00000000b0e2'::uuid
+UNION ALL SELECT '00000000-0000-0000-0000-000000009b02'::uuid, '00000000-0000-0000-0000-00000000fb01'::uuid, id, 3, -0.1, 0 FROM profiles WHERE user_id = '00000000-0000-0000-0000-00000000b0e2'::uuid
+UNION ALL SELECT '00000000-0000-0000-0000-000000009b03'::uuid, '00000000-0000-0000-0000-00000000fb01'::uuid, id, 3, NULL, NULL FROM profiles WHERE user_id = '00000000-0000-0000-0000-00000000b0e2'::uuid;
 
 -- bunk ~2km from venue + a food pickup ~11km away
 INSERT INTO lodging_pools (id, shift_id, host_worker_id, name, kind, spots, share_cents, geo_lat, geo_lng)
