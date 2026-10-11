@@ -24,8 +24,11 @@ import {
   Camera,
   Edit,
   Trash2,
-  ExternalLink
+  ExternalLink,
+  FileUp,
+  ShieldCheck,
 } from 'lucide-react';
+import { CertService } from '@/lib/certs/service';
 import { toast } from 'sonner';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -270,6 +273,28 @@ const ProfilePage: React.FC = () => {
       console.error('Error saving certification:', error);
       toast.error((error as Error).message || 'Failed to save certification');
     }
+  };
+
+  const [certBusy, setCertBusy] = useState<string | null>(null);
+  const certFileRef = React.useRef<HTMLInputElement>(null);
+  const certFileTarget = React.useRef<string | null>(null);
+
+  const submitCertDoc = async (file: File) => {
+    const certId = certFileTarget.current;
+    if (!certId || !profile?.id) return;
+    setCertBusy(certId);
+    const up = await CertService.uploadDocument(profile.id, certId, file);
+    if (up.error || !up.data) {
+      toast.error(up.error ?? 'Upload failed');
+    } else {
+      const r = await CertService.submitForReview(certId, up.data, file.name);
+      if (r.error) toast.error(r.error);
+      else {
+        toast.success('Submitted — a company you work with can now verify it');
+        await refetchCertifications();
+      }
+    }
+    setCertBusy(null);
   };
 
   const removeCertification = async (certId: string) => {
@@ -746,6 +771,17 @@ const ProfilePage: React.FC = () => {
                 </div>
               </CardHeader>
               <CardContent>
+                <input
+                  ref={certFileRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,application/pdf"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) submitCertDoc(f);
+                    e.target.value = '';
+                  }}
+                />
                 {(certifications ?? []).length > 0 ? (
                   <div className="space-y-4">
                     {(certifications ?? []).map((cert) => (
@@ -781,17 +817,57 @@ const ProfilePage: React.FC = () => {
                                 </a>
                               )}
                             </div>
+                            {cert.verification_status === 'rejected' && cert.review_note && (
+                              <p className="text-xs text-red-500 mt-1">Review note: {cert.review_note}</p>
+                            )}
                           </div>
                         </div>
                         <div className="flex items-center space-x-2">
-                          <Badge
-                            variant="outline"
-                            className={cert.verified
-                              ? 'border-green-300 bg-emerald-500/10 text-emerald-500'
-                              : 'border-amber-300 bg-amber-50 text-amber-500'}
-                          >
-                            {cert.verified ? 'Verified' : 'Pending'}
-                          </Badge>
+                          {cert.verification_status === 'verified' ? (
+                            <Badge variant="outline" className="border-green-300 bg-emerald-500/10 text-emerald-500">
+                              <ShieldCheck className="w-3 h-3 mr-1" /> Verified
+                            </Badge>
+                          ) : cert.verification_status === 'pending' ? (
+                            <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-500">
+                              In review
+                            </Badge>
+                          ) : cert.verification_status === 'rejected' ? (
+                            <Badge variant="outline" className="border-red-300 bg-red-50 text-red-500">
+                              Rejected
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-muted-foreground">Not submitted</Badge>
+                          )}
+                          {cert.verification_status !== 'verified' && cert.verification_status !== 'pending' && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-8"
+                              disabled={certBusy === cert.id}
+                              onClick={() => {
+                                certFileTarget.current = cert.id;
+                                certFileRef.current?.click();
+                              }}
+                            >
+                              <FileUp className="w-3 h-3 mr-1" />
+                              {cert.verification_status === 'rejected' ? 'Re-submit' : 'Verify'}
+                            </Button>
+                          )}
+                          {cert.document_path && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-8 px-2"
+                              title={cert.document_name ?? 'Document'}
+                              onClick={async () => {
+                                const url = await CertService.documentUrl(cert.document_path!);
+                                if (url) window.open(url, '_blank');
+                                else toast.error('Document unavailable');
+                              }}
+                            >
+                              <ExternalLink className="h-4 w-4" />
+                            </Button>
+                          )}
                           {!cert.is_active && <Badge variant="secondary">Inactive</Badge>}
                           <Button
                             size="sm"

@@ -133,6 +133,18 @@ begin
     (p_worker2, 'OSHA 10-Hour General Industry', 'OSHA', '2022-03-10', 'OSHA_10', false, true)
   on conflict do nothing;
 
+  -- Company OS demo: Alex submitted a new cert for verification — it sits
+  -- in the demo company's /cert-reviews queue (document row is a stub;
+  -- the storage object is uploaded on the machine that owns the demo).
+  insert into certifications (id, worker_id, name, issuing_organization, issue_date,
+                              cert_type_code, verification_status, verification_requested_at,
+                              document_path, document_name, is_active)
+  values ('dddddddd-0000-4000-8000-00000000ce01', p_worker1,
+          'Aerial / Scissor Lift Operator', 'ANSI', '2025-09-01',
+          'AERIAL_LIFT', 'pending', now() - interval '3 days',
+          null, 'aerial-lift-card.pdf', true)
+  on conflict (id) do nothing;
+
   -- ------------------------------------------------------------------
   -- Event + shifts (roster-first waterfall demo)
   -- ------------------------------------------------------------------
