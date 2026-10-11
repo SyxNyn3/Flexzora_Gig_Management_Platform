@@ -122,7 +122,7 @@ RETURNS SETOF certifications
 LANGUAGE plpgsql STABLE SECURITY DEFINER
 SET search_path = public, extensions, pg_temp AS $$
 BEGIN
-  IF NOT owns_company(p_company_id) THEN
+  IF current_user IN ('authenticated','anon') AND NOT owns_company(p_company_id) THEN
     RAISE EXCEPTION 'Not authorized for this company';
   END IF;
   RETURN QUERY
@@ -147,7 +147,7 @@ DECLARE
   v_cert certifications%ROWTYPE;
   v_reviewer uuid := current_profile_id();
 BEGIN
-  IF NOT owns_company(p_company_id) THEN
+  IF current_user IN ('authenticated','anon') AND NOT owns_company(p_company_id) THEN
     RAISE EXCEPTION 'Not authorized for this company';
   END IF;
   SELECT * INTO v_cert FROM certifications WHERE id = p_cert_id FOR UPDATE;
@@ -239,7 +239,7 @@ DECLARE
   v_row record;
   v_pending int;
 BEGIN
-  IF NOT owns_company(p_company_id) THEN
+  IF current_user IN ('authenticated','anon') AND NOT owns_company(p_company_id) THEN
     RAISE EXCEPTION 'Not authorized for this company';
   END IF;
 
