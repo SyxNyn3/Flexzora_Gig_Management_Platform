@@ -14,6 +14,7 @@ import { Star, Trash2 } from 'lucide-react';
 
 const tierTone: Record<RosterTier, string> = {
   core: 'bg-amber-500/10 text-amber-800 border-amber-500/30',
+  standby: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30',
   preferred: 'bg-primary/15 text-primary border-primary/30',
   blocked: 'bg-red-500/15 text-destructive dark:text-red-400 border-red-500/30',
 };
@@ -24,10 +25,10 @@ const RosterPage: React.FC = () => {
   const roster = useRoster(company?.id);
   const [busy, setBusy] = useState<string | null>(null);
 
-  const setTier = async (workerId: string, tier: RosterTier) => {
+  const setTier = async (workerId: string, tier: RosterTier, standbyRate?: number | null) => {
     if (!company || !profile) return;
     setBusy(workerId);
-    const { error } = await MarketplaceService.setRosterTier(company.id, workerId, tier, profile.id);
+    const { error } = await MarketplaceService.setRosterTier(company.id, workerId, tier, profile.id, standbyRate);
     setBusy(null);
     if (error) return toast.error(error);
     roster.refetch();
@@ -47,7 +48,7 @@ const RosterPage: React.FC = () => {
       <div>
         <h1 className="text-2xl font-bold">Trusted roster</h1>
         <p className="text-sm text-muted-foreground">
-          Core crew rank highest in smart matching and see your calls first. Blocked workers never see your shifts. Add people from any shift's Smart match tab.
+          Core crew rank highest in smart matching and see your calls first. Standby is your on-call pool — they get the first ping when a seat needs backfilling. Blocked workers never see your shifts. Add people from any shift's Smart match tab.
         </p>
       </div>
       {roster.loading && <Skeleton className="h-32 w-full" />}
@@ -67,10 +68,31 @@ const RosterPage: React.FC = () => {
                 <p className="text-xs text-muted-foreground truncate">{entry.worker?.location ?? entry.worker?.email}</p>
               </div>
               <Badge variant="outline" className={tierTone[entry.tier]}>{entry.tier}</Badge>
-              <Select value={entry.tier} onValueChange={(v) => setTier(entry.worker_id, v as RosterTier)} disabled={busy === entry.worker_id}>
+              {entry.tier === 'standby' && (
+                <label className="flex items-center gap-1 text-xs text-muted-foreground">
+                  $
+                  <input
+                    type="number"
+                    min={0}
+                    step="0.5"
+                    defaultValue={entry.standby_rate ?? ''}
+                    placeholder="rate"
+                    aria-label="Standby rate"
+                    disabled={busy === entry.worker_id}
+                    className="w-16 h-8 px-2 rounded-md border border-input bg-background text-foreground"
+                    onBlur={(e) => {
+                      const rate = parseFloat(e.target.value);
+                      setTier(entry.worker_id, 'standby', Number.isFinite(rate) ? rate : null);
+                    }}
+                  />
+                  /hr
+                </label>
+              )}
+              <Select value={entry.tier} onValueChange={(v) => setTier(entry.worker_id, v as RosterTier, entry.standby_rate)} disabled={busy === entry.worker_id}>
                 <SelectTrigger className="w-32 h-8"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="core">Core</SelectItem>
+                  <SelectItem value="standby">Standby</SelectItem>
                   <SelectItem value="preferred">Preferred</SelectItem>
                   <SelectItem value="blocked">Blocked</SelectItem>
                 </SelectContent>

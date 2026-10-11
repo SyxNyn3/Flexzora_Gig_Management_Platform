@@ -472,11 +472,14 @@ export class MarketplaceService {
     }
   }
 
-  static async setRosterTier(companyId: string, workerId: string, tier: RosterTier, addedBy: string): Promise<Result<PreferredRosterEntry | null>> {
+  static async setRosterTier(companyId: string, workerId: string, tier: RosterTier, addedBy: string, standbyRate?: number | null): Promise<Result<PreferredRosterEntry | null>> {
     try {
       const { data, error } = await supabase
         .from('preferred_rosters')
-        .upsert({ company_id: companyId, worker_id: workerId, tier, added_by: addedBy }, { onConflict: 'company_id,worker_id' })
+        .upsert(
+          { company_id: companyId, worker_id: workerId, tier, added_by: addedBy, standby_rate: tier === 'standby' ? (standbyRate ?? null) : null },
+          { onConflict: 'company_id,worker_id' },
+        )
         .select()
         .single();
       if (error) throw error;

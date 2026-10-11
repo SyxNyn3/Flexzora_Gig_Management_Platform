@@ -81,7 +81,7 @@ export const IMPORT_TARGETS: ImportTargetDef[] = [
       { key: 'full_name', label: 'Full name', kind: 'text', required: true, sniff: 'name', aliases: ['name', 'fullname', 'worker', 'crewmember', 'contact', 'employee', 'crewname'] },
       { key: 'email', label: 'Email or username', kind: 'email', required: true, sniff: 'email', aliases: ['email', 'emailaddress', 'mail', 'username', 'handle', 'login'] },
       { key: 'phone', label: 'Phone', kind: 'phone', sniff: 'phone', aliases: ['phone', 'phonenumber', 'mobile', 'cell', 'tel', 'telephone'] },
-      { key: 'tier', label: 'Roster tier', kind: 'text', aliases: ['tier', 'rostertier', 'level', 'rank'], hint: 'core | preferred — defaults to preferred' },
+      { key: 'tier', label: 'Roster tier', kind: 'text', aliases: ['tier', 'rostertier', 'level', 'rank'], hint: 'core | standby | preferred | blocked — defaults to preferred' },
       { key: 'notes', label: 'Notes', kind: 'text', aliases: ['notes', 'note', 'comments', 'about'] },
     ],
   },

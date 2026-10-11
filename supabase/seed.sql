@@ -173,9 +173,9 @@ begin
           44.00, 'open', 'public', now())
   on conflict (id) do nothing;
 
-  insert into preferred_rosters (company_id, worker_id, tier, notes, added_by) values
-    (v_company, p_worker1, 'core', 'First call for rigging work.', p_company_user),
-    (v_company, p_worker2, 'preferred', null, p_company_user)
+  insert into preferred_rosters (company_id, worker_id, tier, standby_rate, notes, added_by) values
+    (v_company, p_worker1, 'core', null, 'First call for rigging work.', p_company_user),
+    (v_company, p_worker2, 'standby', 48.00, 'On-call — first ping on backfills.', p_company_user)
   on conflict (company_id, worker_id) do nothing;
 
   -- In-progress call with a confirmed worker who never clocked in: the first

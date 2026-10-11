@@ -663,7 +663,7 @@ export type InvoiceStatus = 'draft' | 'issued' | 'paid' | 'void';
 export type PayoutStatus = 'queued' | 'processing' | 'paid' | 'failed';
 export type PayoutMethod = 'ach' | 'instant';
 export type EscrowStatus = 'pending' | 'funded' | 'partially_released' | 'released' | 'refunded';
-export type RosterTier = 'preferred' | 'core' | 'blocked';
+export type RosterTier = 'preferred' | 'core' | 'blocked' | 'standby';
 
 export interface CertificationType {
   code: string;
@@ -794,6 +794,7 @@ export interface PreferredRosterEntry {
   company_id: string;
   worker_id: string;
   tier: RosterTier;
+  standby_rate?: number | null;
   notes?: string;
   added_by?: string;
   created_at: string;
