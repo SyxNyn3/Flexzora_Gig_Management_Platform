@@ -155,6 +155,11 @@ export interface Database {
         Insert: Omit<Payout, 'id' | 'created_at' | 'updated_at' | 'invoice'>;
         Update: Partial<Omit<Payout, 'id' | 'created_at' | 'updated_at' | 'invoice'>>;
       };
+      crew_iou: {
+        Row: CrewIOU;
+        Insert: Omit<CrewIOU, 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Omit<CrewIOU, 'id' | 'created_at' | 'updated_at'>>;
+      };
     };
   };
 }
@@ -699,8 +704,9 @@ export interface EscrowDeposit {
 
 export interface InvoiceLineItem {
   description: string;
-  hours: number;
-  rate: number;
+  // null for non-hourly items (e.g. IOU deduction lines)
+  hours: number | null;
+  rate: number | null;
   amount: number;
 }
 
@@ -784,5 +790,28 @@ export interface VenueFormData {
   latitude: number;
   longitude: number;
   geofence_radius_m: number;
+}
+
+// --- Crew OS ---------------------------------------------------------------
+export type CrewIOUKind = 'ride' | 'lodging' | 'food' | 'gear' | 'other';
+export type CrewIOUStatus = 'committed' | 'settled' | 'void' | 'failed';
+export type CrewIOUSettleVia = 'payout_deduction' | 'instant_pay' | 'manual';
+
+export interface CrewIOU {
+  id: string;
+  worker_id: string;
+  shift_id?: string;
+  kind: CrewIOUKind;
+  amount_cents: number;
+  beneficiary_worker_id?: string;
+  beneficiary?: string;
+  status: CrewIOUStatus;
+  settle_via: CrewIOUSettleVia;
+  iou_group_id?: string;
+  notes?: string;
+  settled_at?: string;
+  settled_timesheet_id?: string;
+  created_at: string;
+  updated_at: string;
 }
 

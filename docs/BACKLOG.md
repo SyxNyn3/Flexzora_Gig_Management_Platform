@@ -28,7 +28,28 @@ Two sessions work this repo in parallel. **Before starting any item, mark it**: 
   - `schedule-demo` dropped every submission — now persists to new `demo_requests` table (`20261008010000`, service-role-only RLS).
   - Removed dead `stripe.ts` exports calling edge functions that were never deployed (`setup-payment-method`, `list-payment-methods`, `create-customer`, `create-payment-link`).
   - Still open: `.env` sits in git history with anon/publishable keys (low — public by design); stray scratch files `00`/`01` duplicate migration `20251006224047`; `send-waitlist-verification`/`resend` still only log the email — no real mail provider wired (needs e.g. Resend/SES key); sales-team notification for demo requests is a TODO in `schedule-demo`.
+- **Builder lane — claimed: Builder — working on it** (overnight self-drive, started 2026-10-10)
 - Everything below is unclaimed.
+
+## Company OS — overnight sprint (see `docs/VISION_COMPANY_OS.md` — spec + competitor findings)
+- [ ] AI Upload Wizard: `import_jobs`/`import_rows`, XLSX/CSV/PDF parse → LLM entity mapping (OmniRoute `localhost:20128/v1`, heuristic fallback) → review screen → bulk import
+- [ ] Company Copilot: `company_docs` + copilot panel — ask-your-data queries + action previews (broadcast drafts, schedule lookups). Flag `VITE_ENABLE_COPILOT`
+- [ ] Staff layer: `staff_members`/`staff_assignments` — PMs/coordinators on rosters, crew+staff unified show view
+- [ ] Broadcast messaging: compose to crew AND staff (per-event/shift/all) + delivery log
+- [ ] ICS calendar feed (subscribe links that actually update) + `events.timezone` multi-timezone display
+- [ ] Ops kanban: `ops_tasks` + auto-created urgent cards for unfilled calls
+- [ ] Tour-level export: full crew list + schedule per event range → CSV/PDF
+- [ ] Auto-reminders: shift, cert-expiry, unfilled-call, timesheet-pending — one alerts inbox
+
+## Crew OS — overnight sprint (see `docs/VISION_CREW_OS.md` for full spec + quality bar)
+- [x] `crew_iou` ledger migration + settlement hook in `approve_timesheet` (gross − Σ open IOUs, 25% cap, void on shift cancel) — **done: Builder** (`20261010000000_crew_iou.sql`: enum'd ledger w/ append-only guard, RLS for worker/beneficiary/company, void-on-shift-cancel + void-on-shift-delete triggers; `approve_timesheet` settles committed payout-deduction IOUs oldest-first, whole rows, capped at 25% of gross, records deduction as an invoice line item, escrow draws net. Client: `src/lib/crew/iou.ts` + `iou.test.ts`; demo rows in `seed.sql`. Open v1 gap: deducted cents stay in event escrow — beneficiary transfer lands with Stripe Connect.)
+- [ ] CrewPool rides: `ride_offers`/`ride_requests`, need-ride/can-drive flags, gas-share IOU
+- [ ] BunkUp lodging pools: `lodging_pools`/`pool_members`, venue overnight-parking fields
+- [ ] CrewBoard: structured post categories (ride/lodging/food/borrow) on `gig_messages`
+- [ ] GrubRun food pooling: `food_runs`/`food_run_orders` with cutoff times
+- [ ] SmartAlerts: per-shift briefing (gear checklist from certs, parking intel, departure estimate) — `venues.parking_json`, notification feed
+- [ ] ShiftSwap: `swap_requests`/`swap_claims`, cert-gated visibility, company approval via offer flow
+- [x] Auth UX completion: check-email state post-signup, forgot-password flow, Google button behind `VITE_ENABLE_GOOGLE_AUTH` flag, error states matching design — **in PR #6: Builder** (`feat/auth-ux`: check-email view + resend w/ cooldown, `/reset-password` page, Google+Apple gated behind flags, friendly error map incl. email-not-confirmed resend, fixed `type=email` blocking username sign-in)
 
 ## P0 — ship blockers
 - [x] Add `.github/workflows/ci.yml`: `npx eslint src`, `npx tsc --noEmit -p tsconfig.app.json`, `npx vitest run`, `npm run build` on every PR (free minutes). — **claimed: Mark — working on it**
@@ -36,7 +57,7 @@ Two sessions work this repo in parallel. **Before starting any item, mark it**: 
 - [ ] `supabase db push` to the live project; deploy edge functions (`submit-waitlist`, `verify-waitlist-email`, `resend-waitlist-verification`, `stripe-webhook` with `--no-verify-jwt`); set `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `VITE_STRIPE_PUBLISHABLE_KEY` when the Stripe account exists.
 
 ## P1 — Phase 1.2 marketplace completion
-- [ ] Twilio SMS on offer/application/status changes (edge function `notify-assignment`, called from service methods; needs `TWILIO_*` secrets).
+- [x] Twilio SMS on offer/application/status changes (edge function `notify-assignment`, called from service methods; needs `TWILIO_*` secrets). — **in PR #7: Builder** (`feat/notify-assignment`: edge fn resolves assignment server-side, caller must be a party, recipient+copy keyed by kind, graceful no-op without TWILIO_*; wired into applyToShift/directBook/respondToOffer/decideApplication via fire-and-forget `notifyAssignment`)
 - [ ] Stripe Connect worker onboarding + real payout transfers (requires live Stripe account; `worker_sensitive.stripe_connect_account_id` is ready).
 - [x] Seed/demo script: sample companies, venues, workers w/ certs, events+shifts for a click-through demo. — **done: Tom** (`supabase/seed.sql` — demo-company/demo-worker/demo-worker2 @flexzora.dev, pw `Demo1234!`; roster+public shifts, verified certs, accepted gig. Also fixed a notification-trigger FK bug blocking application writes.)
 - [x] Worker availability calendar UI (blocked/available windows editor feeding `availability` rows). — **done: Tom** (`/availability` editor + worker-dashboard link; `deleteAvailability` service method)
