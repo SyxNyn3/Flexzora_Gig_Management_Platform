@@ -176,16 +176,16 @@ BEGIN
     SELECT b.buddy_id, p.full_name, count(*) AS rides,
            (array_agg(b.i_drove ORDER BY b.starts_at DESC))[1] AS i_drove
     FROM (
-      SELECT o.driver_worker_id AS buddy_id, false AS i_drove, s.starts_at
+      SELECT o.driver_worker_id AS buddy_id, false AS i_drove, sh.starts_at
       FROM ride_requests r
       JOIN ride_offers o ON o.id = r.offer_id
-      JOIN shifts s ON s.id = o.shift_id
+      JOIN shifts sh ON sh.id = o.shift_id
       WHERE r.rider_worker_id = a.worker_id AND r.status = 'matched'
       UNION ALL
-      SELECT r.rider_worker_id, true, s.starts_at
+      SELECT r.rider_worker_id, true, sh.starts_at
       FROM ride_requests r
       JOIN ride_offers o ON o.id = r.offer_id
-      JOIN shifts s ON s.id = o.shift_id
+      JOIN shifts sh ON sh.id = o.shift_id
       WHERE o.driver_worker_id = a.worker_id AND r.status = 'matched'
     ) b
     JOIN profiles p ON p.id = b.buddy_id
