@@ -24,13 +24,13 @@ INSERT INTO shift_assignments (id, shift_id, worker_id, status, source)
 SELECT 'bbbb0028-0000-4000-8000-000000000002', 'aaaa0028-0000-4000-8000-000000000002', p.id, 'confirmed', 'public_marketplace'
 FROM profiles p WHERE p.user_id = '11111111-0000-4000-8000-000000000002';
 
-INSERT INTO timesheets (id, assignment_id, shift_id, worker_id, clock_in_at, clock_out_at, status)
+INSERT INTO timesheets (id, assignment_id, shift_id, worker_id, clock_in_at, clock_out_at, break_minutes, status)
 SELECT 'cccc0028-0000-4000-8000-000000000001', 'bbbb0028-0000-4000-8000-000000000001', 'aaaa0028-0000-4000-8000-000000000001', p.id,
-       now() - interval '2 days', now() - interval '2 days' + interval '8 hours', 'submitted'
+       now() - interval '2 days', now() - interval '2 days' + interval '8 hours 30 minutes', 30, 'submitted'
 FROM profiles p WHERE p.user_id = '11111111-0000-4000-8000-000000000002';
-INSERT INTO timesheets (id, assignment_id, shift_id, worker_id, clock_in_at, clock_out_at, status)
+INSERT INTO timesheets (id, assignment_id, shift_id, worker_id, clock_in_at, clock_out_at, break_minutes, status)
 SELECT 'cccc0028-0000-4000-8000-000000000002', 'bbbb0028-0000-4000-8000-000000000002', 'aaaa0028-0000-4000-8000-000000000002', p.id,
-       now() - interval '1 day', now() - interval '1 day' + interval '8 hours', 'submitted'
+       now() - interval '1 day', now() - interval '1 day' + interval '8 hours 30 minutes', 30, 'submitted'
 FROM profiles p WHERE p.user_id = '11111111-0000-4000-8000-000000000002';
 
 INSERT INTO escrow_deposits (event_id, company_id, amount, status, funded_at)
