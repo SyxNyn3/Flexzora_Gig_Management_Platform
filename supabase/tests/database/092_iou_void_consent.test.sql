@@ -46,7 +46,7 @@ SELECT throws_ok(
   '42501', NULL, 'debtor cannot void a system-minted IOU');
 
 -- 2: request → flag set + beneficiary alerted
-SELECT ok(request_iou_void('00000000-0000-0000-0000-0000000050b1') IS NOT NULL, 'void request lands');
+SELECT lives_ok($$ SELECT request_iou_void('00000000-0000-0000-0000-0000000050b1') $$, 'void request lands');
 SELECT is(
   (SELECT count(*) FROM crew_alerts WHERE ref_id = '00000000-0000-0000-0000-0000000050b1' AND title = 'Void requested'),
   1::bigint, 'beneficiary was asked to consent');
@@ -58,7 +58,7 @@ SELECT throws_ok(
 
 -- 4: deny path — flag clears, stays committed
 SELECT set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000050a2","role":"authenticated"}', true);
-SELECT ok(deny_iou_void('00000000-0000-0000-0000-0000000050b1') IS NOT NULL, 'beneficiary denies');
+SELECT lives_ok($$ SELECT deny_iou_void('00000000-0000-0000-0000-0000000050b1') $$, 'beneficiary denies');
 SELECT is(
   (SELECT status::text FROM crew_iou WHERE id = '00000000-0000-0000-0000-0000000050b1'),
   'committed', 'denied IOU stays committed');
