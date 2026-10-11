@@ -8,6 +8,81 @@ Newest entries on top.
 
 - **2026-10-10 — Reviewer (overnight PR gate, cycle 1)** — Lane claimed (PR #36). Setup: portable gh 2.102.0 in `$TEMP` authed via git credential manager; `../flexzora-reviewer-wt` worktree keeps the Builder's checkout untouched. **Merged #5** (ops docs + Pages base + migration replay fixes), **#6** auth-ux, **#7** notify-assignment, **#8** crew_iou, **#9** CrewPool rides, **#10** BunkUp lodging, **#12** GrubRun, **#13** crew board UI, **#14** SmartAlerts. Retargeted the whole stack to main after #8's base-branch deletion cascade; resolved 3 doc-conflict merges preserving both lanes' claims/marks. **HELD #11** (Challenger #19 verified: offer-direction resolve mints payout-deduction IOU on non-consenting worker — countersign or manual-settle fix needed), **HELD #15** (#22 verified + worse: `swap_requests` non-status columns mutable → repoint `assignment_id` withdraws a VICTIM's confirmed booking; lock columns + freeze sweetener post-accept), **HELD #16** (#24 verified: no atomic claim/idempotency on `transfers.create` → double-pay; fix = processing-status claim + `idempotencyKey: payout.id`; also #47 `worker_sensitive` self-write on the columns it trusts). Filed **#52** (reviewer-labeled): GrubRun runner sets price unilaterally at confirm — inflation vector on orderer's payout. Verified #48 in #14's merge comment. Awaiting Builder fix commits; then re-review.
 
+### feat/tour-exports → PR #61 — tour exports
+
+- /exports: date range + section checkboxes (crew list / schedule / staff
+  sheet), live preview counts, CSV + PDF downloads.
+- Crew list collapses the same worker across calls — contacts, distinct
+  roles, events, call count. Schedule emits one row per call with booked
+  names flattened in and "(unfilled)" flagged; staff sheet lists internal
+  team assignments.
+- No migration/RLS needed: reads through the caller's own session.
+- toCsv: RFC-4180 escaping + UTF-8 BOM for Excel. buildPdf:
+  dependency-free multi-page Helvetica writer (title + page-number
+  footers) — real .pdf file, not print dialog.
+- Tests: row builders + CSV escaping (vitest). Verification: CI.
+
+### feat/ops-kanban → PR #60 — ops board
+
+- ops_tasks + generate_unfilled_tasks: idempotent sweep on board load —
+  one urgent card per short-staffed call (14d window, due 12h pre-call),
+  auto-completes cards whose call filled. The board mirrors reality.
+- /ops: 3-column HTML5 drag-drop, priority/assignee/due/event links,
+  auto badge, overdue highlight, done strikethrough.
+- Seed: manual in-flight + done task; unfilled cards self-generate.
+
+### feat/ics-timezone → PR #59 — calendar feeds + timezones
+
+- calendar_feeds: capability URLs (unguessable token, scoped
+  company/event/staff/worker, revocable, last_accessed tracked).
+- ics-feed edge fn (verify_jwt=false — token is the auth): real
+  VCALENDAR — events all-day across dates, timed calls/assignments in
+  UTC with the event's IANA zone named in each DESCRIPTION.
+- events.timezone + create-form picker + header display.
+- FeedManager on /events: create scoped feeds, copy URL, revoke,
+  last-fetch marker. Seed: company + PM feeds.
+
+### feat/broadcast → PR #58 — broadcast messaging
+
+- broadcasts + broadcast_recipients (per-person channel/status delivery
+  log, deduped per broadcast+channel+person).
+- resolve_broadcast_audience is the single resolver: compose previews
+  with the same definer function send_broadcast executes.
+- Delivery today: workers + account-linked staff → in-app notification;
+  accountless staff → 'email' recipient rows queued for transports.
+- /broadcast composer (audience/event/call pickers, staff toggle, live
+  preview with names) + expandable history. Copilot draft → composer
+  deep-link.
+
+### feat/staff-layer → PR #56 — staff_members / staff_assignments
+
+- Internal team (PMs, coordinators, crew leads) distinct from marketplace
+  crew — no Flexzora worker account required; profile_id link reserved.
+- staff_assignments: staff × event with role label, call time,
+  assigned/confirmed/declined. Unique per (staff, event, role).
+- /staff roster page (add/edit/active toggle); event detail gains a
+  "Staff on this event" panel — one screen shows everybody working.
+- Import 'staff' target live: commit_import_job upserts by email, so
+  re-imported staff sheets update instead of duplicating.
+- Seed: 3 staff members, 2 assigned to the demo event.
+
+### feat/company-copilot → PR #55 — Company Copilot
+
+- `company_docs` + `copilot_messages` + `copilot_query`: whitelisted
+  SECURITY DEFINER read catalog (unfilled_calls, upcoming_events,
+  cert_expiring, timesheets_pending, budget_status, crew_for_shift) that
+  re-verifies owns_company and rejects unknown kinds.
+- Intent routing: pure regex router (vitest-covered) answers instantly;
+  OmniRoute LLM only disambiguates failures and only returns a catalog
+  kind + ids resolved from context — the model never sees the database.
+- Every action is a preview card: "remember that…" confirms into
+  company_docs; "text the crew…" renders a broadcast draft (copy-out
+  until the broadcast lane lands). Rows snapshot onto the message row.
+- Flag-gated (VITE_ENABLE_COPILOT): nav item + /copilot route redirect.
+- Shared OmniRoute client extracted to src/lib/llm.ts; import wizard
+  refactored onto it. Seed: 3 demo company docs.
+
+### feat/import-wizard → PR #53 — AI Upload Wizard
 - **2026-10-11 — Builder-2 (Company OS lane)** — **PR #60 `feat/ops-kanban`: ops board.** ops_tasks — manual tasks + generated urgent cards for short-staffed calls. generate_unfilled_tasks() is idempotent both ways: creates one card per unfilled call (no open card already) and auto-completes cards whose call filled/cancelled/completed. owns_company FOR ALL; /ops board page.
 - **2026-10-11 — Builder-2 (Company OS lane)** — **PR #59 `feat/ics-timezone`: calendar feeds + event timezones.** events.timezone (IANA wall-clock zone); shifts keep absolute timestamptz, ICS emits UTC instants with the zone named in description. calendar_feeds capability URLs — unguessable uuid token is the auth (verify_jwt=false; calendar clients cant hold JWTs), scoped company/event/staff/worker, revocable via is_active, service-role read-only. FeedManager UI + timezone picker on events.
 - **2026-10-11 — Builder-2 (Company OS lane)** — **PR #58 `feat/broadcast`: broadcast messaging.** broadcasts + broadcast_recipients; one message to a resolved audience — a call's crew, an event's crew+staff, or the whole roster. resolve_broadcast_audience is the single source of truth (compose preview and send_broadcast share it); send_broadcast writes recipients server-side + in-app notifies. Accountless staff → 'email' recipient rows queued honestly until transports land. Dedupe unique index + ON CONFLICT for idempotency.
