@@ -137,9 +137,10 @@ export async function gatherExportData(companyId: string, from: string, to: stri
       : { data: [] };
 
     const crewByShift = new Map<string, ExportShiftCrew[]>();
-    for (const a of (assignments ?? []) as { shift_id: string; status: string; worker?: { full_name: string; email?: string; phone?: string } | null }[]) {
+    for (const a of (assignments ?? []) as { shift_id: string; status: string; worker?: { full_name: string; email?: string; phone?: string }[] | { full_name: string; email?: string; phone?: string } | null }[]) {
+      const worker = Array.isArray(a.worker) ? a.worker[0] : a.worker;
       const list = crewByShift.get(a.shift_id) ?? [];
-      list.push({ name: a.worker?.full_name ?? '—', email: a.worker?.email, phone: a.worker?.phone, status: a.status });
+      list.push({ name: worker?.full_name ?? '—', email: worker?.email, phone: worker?.phone, status: a.status });
       crewByShift.set(a.shift_id, list);
     }
 
@@ -160,18 +161,21 @@ export async function gatherExportData(companyId: string, from: string, to: stri
       .from('staff_assignments')
       .select('event_id, role_label, call_time, status, member:staff_members(full_name, email, phone)')
       .in('event_id', eventIds);
-    staff = ((staffRows ?? []) as { event_id: string; role_label?: string | null; call_time?: string | null; status: string; member?: { full_name: string; email?: string; phone?: string } | null }[])
+    staff = ((staffRows ?? []) as { event_id: string; role_label?: string | null; call_time?: string | null; status: string; member?: { full_name: string; email?: string; phone?: string }[] | { full_name: string; email?: string; phone?: string } | null }[])
       .filter((s) => !s.call_time || (s.call_time >= fromIso && s.call_time <= toIso))
-      .map((s) => ({
+      .map((s) => {
+        const member = Array.isArray(s.member) ? s.member[0] : s.member;
+        return {
         event_name: eventMap.get(s.event_id)?.name ?? '',
         event_id: s.event_id,
-        member_name: s.member?.full_name ?? '—',
-        member_email: s.member?.email,
-        member_phone: s.member?.phone,
+        member_name: member?.full_name ?? '—',
+        member_email: member?.email,
+        member_phone: member?.phone,
         role_label: s.role_label,
         call_time: s.call_time,
         status: s.status,
-      }));
+        };
+      });
   }
 
   return { shifts, staff, from, to };
