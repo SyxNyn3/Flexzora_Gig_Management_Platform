@@ -329,7 +329,7 @@ const CrewBoardPage: React.FC = () => {
                     {b.buddy_offer_id && (
                       <Button size="sm" disabled={busy !== null || !!myRequest}
                         title={myRequest ? 'You already have a ride request' : undefined}
-                        onClick={() => act(b.buddy_worker_id, () => joinRide(b.buddy_offer_id!, { shiftId }), `Riding with ${b.buddy_name} again`)}>
+                        onClick={() => act(b.buddy_worker_id, () => joinRide(b.buddy_offer_id!, { shiftId: shiftId! }), `Riding with ${b.buddy_name} again`)}>
                         Ride with {b.buddy_name.split(' ')[0] ?? b.buddy_name}
                       </Button>
                     )}
