@@ -862,7 +862,6 @@ export interface Timesheet {
   resolution?: 'as_submitted' | 'adjusted' | 'voided';
   resolved_by?: string;
   resolved_at?: string;
-  debtor_confirmed_at?: string;
   created_at: string;
   updated_at: string;
   shift?: Shift;
