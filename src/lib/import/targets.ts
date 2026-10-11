@@ -88,10 +88,18 @@ export const IMPORT_TARGETS: ImportTargetDef[] = [
   {
     key: 'staff',
     label: 'Staff members',
-    description: 'Internal PMs, coordinators, crew leads — lands with the staff layer.',
-    signature: [],
-    comingSoon: true,
-    fields: [],
+    description: 'Internal PMs, coordinators, crew leads — upserts by email so re-imports update.',
+    signature: ['department', 'employment', 'dayrate', 'title'],
+    fields: [
+      { key: 'full_name', label: 'Full name', kind: 'text', required: true, sniff: 'name', aliases: ['name', 'fullname', 'staff', 'staffmember', 'employee', 'member', 'contact'] },
+      { key: 'email', label: 'Email', kind: 'email', sniff: 'email', aliases: ['email', 'emailaddress', 'mail', 'workemail'], hint: 'Dedupe key — re-imports update the same person' },
+      { key: 'phone', label: 'Phone', kind: 'phone', sniff: 'phone', aliases: ['phone', 'phonenumber', 'mobile', 'cell', 'tel', 'telephone'] },
+      { key: 'title', label: 'Job title', kind: 'text', aliases: ['title', 'jobtitle', 'role', 'position', 'job', 'staffrole'], hint: 'Production Manager, Stage Manager, …' },
+      { key: 'department', label: 'Department', kind: 'text', aliases: ['department', 'dept', 'team', 'division', 'crew'] },
+      { key: 'employment_type', label: 'Employment type', kind: 'text', aliases: ['employmenttype', 'employment', 'type', 'paytype', 'contract'], hint: 'salaried | day_rate | hourly — defaults to day_rate' },
+      { key: 'day_rate', label: 'Day rate', kind: 'money', sniff: 'money', aliases: ['dayrate', 'rate', 'dailyrate', 'daily', 'perday', 'salary', 'dailyrateusd'] },
+      { key: 'notes', label: 'Notes', kind: 'text', aliases: ['notes', 'note', 'comments', 'about'] },
+    ],
   },
 ];
 

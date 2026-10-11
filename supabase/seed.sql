@@ -240,6 +240,31 @@ begin
      '{rates,crew}')
   on conflict (id) do nothing;
 
+
+  -- ------------------------------------------------------------------
+  -- Company OS demo: staff layer — internal team + event assignments.
+  -- ------------------------------------------------------------------
+  insert into staff_members (id, company_id, full_name, email, phone, title,
+                             department, employment_type, day_rate, notes)
+  values
+    ('88888888-0000-4000-8000-000000000001', v_company, 'Dana Whitfield',
+     'dana@demoproductions.example', '+1 415 555 0110', 'Production Manager',
+     'Production', 'salaried', null, 'Runs all arena shows; first call for anything that moves.'),
+    ('88888888-0000-4000-8000-000000000002', v_company, 'Priya Nair',
+     'priya@demoproductions.example', '+1 415 555 0111', 'Site Coordinator',
+     'Ops', 'day_rate', 450.00, 'Owns vendor access + credentials at the gate.'),
+    ('88888888-0000-4000-8000-000000000003', v_company, 'Marcus Bell',
+     'marcus@demoproductions.example', '+1 415 555 0112', 'Crew Lead',
+     'Production', 'day_rate', 400.00, null)
+  on conflict (id) do nothing;
+
+  insert into staff_assignments (id, company_id, staff_id, event_id, role_label, call_time, status)
+  values
+    ('88888888-0000-4000-8000-000000000011', v_company, '88888888-0000-4000-8000-000000000001',
+     v_event, 'PM', current_date + 7 + interval '7 hours', 'confirmed'),
+    ('88888888-0000-4000-8000-000000000012', v_company, '88888888-0000-4000-8000-000000000002',
+     v_event, 'Site lead', current_date + 7 + interval '7 hours', 'assigned')
+  on conflict (id) do nothing;
   -- Crew OS demo: Jordan posts a ride offer; Alex's matched request
   -- makes the sync trigger mint his gas-share IOU automatically.
   -- Jordan already settled a manual burrito-run debt to Alex.

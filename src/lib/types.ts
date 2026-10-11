@@ -175,6 +175,17 @@ export interface Database {
         Insert: Omit<CopilotMessage, 'id' | 'created_at'> & { profile_id?: string | null };
         Update: Partial<Pick<CopilotMessage, 'action' | 'content'>>;
       };
+
+      staff_members: {
+        Row: StaffMember;
+        Insert: Omit<StaffMember, 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Omit<StaffMember, 'id' | 'created_at' | 'company_id'>>;
+      };
+      staff_assignments: {
+        Row: StaffAssignment;
+        Insert: Omit<StaffAssignment, 'id' | 'created_at' | 'updated_at' | 'member'>;
+        Update: Partial<Omit<StaffAssignment, 'id' | 'created_at' | 'company_id' | 'staff_id' | 'event_id' | 'member'>>;
+      };
       crew_iou: {
         Row: CrewIOU;
         Insert: Omit<CrewIOU, 'id' | 'created_at' | 'updated_at'>;
@@ -955,6 +966,44 @@ export interface CopilotMessage {
   result?: Record<string, unknown>[] | null;
   action?: CopilotAction | null;
   created_at: string;
+}
+
+
+// ---------------------------------------------------------------------------
+// Company OS — staff layer (internal team, distinct from marketplace crew)
+// ---------------------------------------------------------------------------
+export type StaffEmploymentType = 'salaried' | 'day_rate' | 'hourly';
+export type StaffAssignmentStatus = 'assigned' | 'confirmed' | 'declined';
+
+export interface StaffMember {
+  id: string;
+  company_id: string;
+  profile_id?: string | null;
+  full_name: string;
+  email?: string | null;
+  phone?: string | null;
+  title?: string | null;
+  department?: string | null;
+  employment_type: StaffEmploymentType;
+  day_rate?: number | null;
+  is_active: boolean;
+  notes?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface StaffAssignment {
+  id: string;
+  company_id: string;
+  staff_id: string;
+  event_id: string;
+  role_label?: string | null;
+  call_time?: string | null;
+  status: StaffAssignmentStatus;
+  notes?: string | null;
+  created_at: string;
+  updated_at: string;
+  member?: StaffMember;
 }
 
 // --- Crew OS ---------------------------------------------------------------
