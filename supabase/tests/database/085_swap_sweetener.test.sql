@@ -57,7 +57,7 @@ VALUES ('00000000-0000-0000-0000-00000000d0e1', 1000, 'funded');
 SET LOCAL ROLE authenticated;
 SELECT set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000d0a1","role":"authenticated"}', true);
 
-SELECT ok(approve_timesheet('00000000-0000-0000-0000-00000000d0d2') IS NOT NULL, 'approval succeeds');
+SELECT lives_ok($$ SELECT approve_timesheet('00000000-0000-0000-0000-00000000d0d2') $$, 'approval succeeds');
 
 SELECT is(
   (SELECT status::text FROM crew_iou WHERE id = '00000000-0000-0000-0000-00000000d0b1'),
