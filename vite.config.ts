@@ -3,8 +3,10 @@ import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
+  // VITE_BASE_PATH lets CI publish the same app under any path — the public
+  // demo site (flexzora-live repo) lives at /flexzora-live/, local dev at /.
+  base: process.env.VITE_BASE_PATH || '/',
   plugins: [react()],
-  base: process.env.GITHUB_PAGES ? '/Flexzora_Gig_Management_Platform/' : '/',
   server: {
     allowedHosts: ['.trycloudflare.com'],
   },
