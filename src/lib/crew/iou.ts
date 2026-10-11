@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import { CrewIOU, CrewIOUKind, CrewIOUSettleVia } from '@/lib/types';
 
+import { DEFAULT_BAIL_POLICY } from './iouMath';
 export { IOU_CAP_PCT, iouCapCents, selectSettleableIous, iouCapacity, bailKeptCents, DEFAULT_BAIL_POLICY } from './iouMath';
 export type { IouCapacity, BailPolicy } from './iouMath';
 
