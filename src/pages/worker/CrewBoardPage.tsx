@@ -7,7 +7,7 @@ import { useCrewBoard, useShift } from '@/hooks/useCrew';
 import { useWorkerAssignments } from '@/hooks/useMarketplace';
 import { joinRide, withdrawRideRequest, cancelRideOffer, postRideOffer, setRideFlags, listRideBuddies, fetchMyLastOfferParams } from '@/lib/crew/rides';
 import { joinPool, leavePool, cancelLodgingPool, postLodgingPool } from '@/lib/crew/lodging';
-import { placeOrder, cancelOrder, confirmOrder, acceptOrderPrice, acceptFoodPrice, rejectFoodPrice, postFoodRun, updateFoodRunStatus, isAcceptingOrders, offerRunHandoff, acceptRunHandoff, declineRunHandoff } from '@/lib/crew/food';
+import { placeOrder, cancelOrder, confirmOrder, acceptFoodPrice, rejectFoodPrice, postFoodRun, updateFoodRunStatus, isAcceptingOrders, offerRunHandoff, acceptRunHandoff, declineRunHandoff } from '@/lib/crew/food';
 import { postToBoard, resolvePost, closePost, acceptPostDebt, acceptFulfilment, declineFulfilment } from '@/lib/crew/board';
 import { iouCapacity, bailKeptCents, DEFAULT_BAIL_POLICY } from '@/lib/crew/iouMath';
 import { fetchBailPolicy } from '@/lib/crew/iou';
@@ -675,25 +675,10 @@ const CrewBoardPage: React.FC = () => {
                       ))}
                     </div>
                   )}
-<<<<<<< HEAD
                   {!mine && accepting && !myOrder && <PlaceOrderBox busy={busy} onPlace={(item, quotedCents, note) => act(`order-${r.id}`, () => placeOrder(r.id, item, quotedCents, note), 'Order in')} />}
                   {myOrder?.status === 'placed' && <p className="text-xs text-muted-foreground">Your order is in (quoted {money((myOrder.quoted_price_cents ?? 0) / 100)}) — runner confirms the real price.</p>}
                   {myOrder?.status === 'price_review' && <p className="text-xs text-amber-600">Runner&apos;s price {money((myOrder.price_cents ?? 0) / 100)} is over your quote — accept or bounce it back above.</p>}
                   {myOrder?.status === 'confirmed' && <p className="text-xs"><Badge variant="secondary">Confirmed {money((myOrder.price_cents ?? 0) / 100)}</Badge> — settles from your payout.</p>}
-=======
-                  {!mine && accepting && !myOrder && <PlaceOrderBox busy={busy} onPlace={(item, note) => act(`order-${r.id}`, () => placeOrder(r.id, item, note), 'Order in')} />}
-                  {myOrder?.status === 'placed' && <p className="text-xs text-muted-foreground">Your order is in — runner sets the price.</p>}
-                  {myOrder?.status === 'confirmed' && !myOrder.price_accepted_at && (
-                    <p className="text-xs flex items-center gap-2">
-                      <Badge variant="secondary">Runner says {money((myOrder.price_cents ?? 0) / 100)}</Badge>
-                      <Button size="sm" className="h-7" disabled={busy !== null}
-                        onClick={() => act(`accept-${myOrder.id}`, () => acceptOrderPrice(myOrder.id), 'Price accepted — it settles from your payout')}>
-                        <Check className="w-3 h-3 mr-1" /> Accept
-                      </Button>
-                    </p>
-                  )}
-                  {myOrder?.status === 'confirmed' && myOrder.price_accepted_at && <p className="text-xs"><Badge variant="secondary">Confirmed {money((myOrder.price_cents ?? 0) / 100)}</Badge> — settles from your payout.</p>}
->>>>>>> origin/main
                   {mine && r.status === 'open' && (
                     <div className="flex items-center gap-3">
                       <Button size="sm" variant="ghost" className="h-6 px-0 text-xs text-muted-foreground" disabled={busy !== null}
@@ -740,7 +725,6 @@ const CrewBoardPage: React.FC = () => {
                       {p.status === 'resolved' && p.fulfiller && (
                         <p className="text-xs text-muted-foreground mt-1">Fulfilled by {p.fulfiller.full_name}</p>
                       )}
-<<<<<<< HEAD
                       {p.status === 'awaiting_accept' && p.fulfilled_by_worker_id === profile?.id && (
                         <div className="flex items-center gap-2 mt-2">
                           <Button size="sm" className="h-7" disabled={busy !== null}
@@ -755,7 +739,7 @@ const CrewBoardPage: React.FC = () => {
                       )}
                       {p.status === 'awaiting_accept' && p.fulfilled_by_worker_id !== profile?.id && (
                         <p className="text-xs text-muted-foreground mt-1">Waiting for {p.fulfiller?.full_name ?? 'the fulfiller'} to accept before anything is owed.</p>
-=======
+                      )}
                       {p.status === 'resolved' && (p.amount_cents ?? 0) > 0 && p.fulfilled_by_worker_id && !p.debtor_confirmed_at && (
                         p.fulfilled_by_worker_id === profile?.id && p.direction === 'offer' ? (
                           <div className="mt-2 flex items-center gap-2 text-xs">
@@ -768,7 +752,6 @@ const CrewBoardPage: React.FC = () => {
                         ) : (
                           <p className="text-xs text-muted-foreground mt-2">Waiting for {p.fulfiller?.full_name ?? 'the fulfiller'} to accept the {money((p.amount_cents ?? 0) / 100)} share.</p>
                         )
->>>>>>> origin/main
                       )}
                     </div>
                     {mine && p.status === 'open' && (
