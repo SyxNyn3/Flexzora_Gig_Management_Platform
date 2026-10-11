@@ -69,8 +69,12 @@ BEGIN
   IF NOT FOUND THEN
     RAISE EXCEPTION 'timesheet not found';
   END IF;
-  IF v_ts.status NOT IN ('submitted', 'approved') THEN
-    RAISE EXCEPTION 'Only submitted or approved timesheets can be disputed (status: %)', v_ts.status;
+  -- Disputes are a pre-approval mediation only. Opening one on an approved
+  -- sheet would let resolve→'submitted'→approve mint a second invoice and
+  -- payout for the same work. Post-approval corrections need an adjustment
+  -- flow, not a status rewind.
+  IF v_ts.status <> 'submitted' THEN
+    RAISE EXCEPTION 'Only submitted timesheets can be disputed (status: %)', v_ts.status;
   END IF;
   IF btrim(COALESCE(p_reason, '')) = '' THEN
     RAISE EXCEPTION 'a reason is required';
