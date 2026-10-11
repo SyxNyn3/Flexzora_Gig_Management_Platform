@@ -2,7 +2,7 @@
 
 Shared journal — every session appends: date, lane, what shipped, what's next, blockers.
 Newest entries on top.
-- **2026-10-11 — Lane B — SmartAlerts transports** — `feat/alert-transports`. `alert_preferences` (per-kind push/sms toggles, self-RLS); push dispatch honors prefs; `send_alert_sms_digests()` on pg_cron (30min) batches unsent sms-enabled alerts (15min aging window so bursts roll up, phone required, 24h cap) → `alert-digest` edge fn (X-Push-Secret auth like send-push, phone resolved server-side, graceful no-op without TWILIO_*). Briefing-card gear popover toggles per kind. pgTAP `086` — 6 asserts.
+- **2026-10-11 — Lane B — SmartAlerts transports** — `feat/alert-transports` → PR #121. `alert_preferences` (per-kind push/sms toggles, self-RLS); push dispatch honors prefs; `send_alert_sms_digests()` on pg_cron (30min) batches unsent sms-enabled alerts (15min aging window so bursts roll up, phone required, 24h cap) → `alert-digest` edge fn (X-Push-Secret auth like send-push, phone resolved server-side, graceful no-op without TWILIO_*). Briefing-card gear popover toggles per kind. pgTAP `086` — 6 asserts.
 
 - **2026-10-11 — Lane B — Swap sweetener via payout deduction** — `feat/swap-sweetener-deduction` → PR #119. One-word-severity fix in `swap_on_offer_response`: sweeteners mint `payout_deduction` instead of `manual` — the #28 carry-over collects them from the requester's next approved timesheet once the swapped shift ends (so the claimer has worked the handoff before money moves), and `iou_transfer` pays them out. Manual IOUs untouched. pgTAP `085` — 5 asserts w/ a manual-IOU negative control.
 
