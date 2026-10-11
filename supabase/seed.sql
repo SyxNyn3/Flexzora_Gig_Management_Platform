@@ -315,6 +315,7 @@ begin
     ('bbbbbbbb-0000-4000-8000-000000000002', v_company, v_event,
      'Send load-in details to crew', null, 'done', 'normal', 'manual',
      '88888888-0000-4000-8000-000000000001', null, p_company_user, now() - interval '6 hours')
+  on conflict (id) do nothing;
   -- Crew OS demo: Jordan posts a ride offer; Alex's matched request
   -- makes the sync trigger mint his gas-share IOU automatically.
   -- Jordan already settled a manual burrito-run debt to Alex.
