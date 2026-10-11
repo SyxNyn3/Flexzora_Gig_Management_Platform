@@ -79,7 +79,7 @@ SELECT throws_ok(
   'P0001', NULL, 'a decided swap cannot be re-decided');
 
 -- 5: owner rejects r2 → cancelled + claim rejected + offer declined
-SELECT ok(company_decide_swap('00000000-0000-0000-0000-00000000f0b2', false, 'need the original crew') IS NOT NULL, 'reject succeeds');
+SELECT lives_ok($$ SELECT company_decide_swap('00000000-0000-0000-0000-00000000f0b2', false, 'need the original crew') $$, 'reject succeeds');
 SELECT results_eq(
   $$ SELECT r.status::text, c.status::text, a.status::text
      FROM swap_requests r
