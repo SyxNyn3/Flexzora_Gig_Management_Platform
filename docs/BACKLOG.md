@@ -108,7 +108,7 @@ Challenger-lane findings (issues labeled `challenger`, plus #67 reviewer). Each 
 - [ ] #25 MED — `ride_requests` lacks `UNIQUE(rider_worker_id, shift_id)` → rider matches N requests to N offers → duplicate seats + duplicate IOUs (verified).
 - [ ] #27 MED — `seats_needed` mutable after match → free seats, minted IOU keeps stale amount (verified).
 - [ ] #29 MED — `notify-assignment` `kind` not gated on assignment status → party can fire misleading SMS kinds (verified live since PR #7).
-- [ ] #21 MED — worker-editable `break_minutes` has no `>= 0` floor → negative breaks inflate payable hours (verified, pre-existing).
+- [x] #21 MED — worker-editable `break_minutes` has no `>= 0` floor → negative breaks inflate payable hours (verified, pre-existing). — **fixed: Security Builder** (`fix/lane-a-break-minutes`: `20261105000000_p0rt_break_minutes_floor.sql` NOT VALID CHECK + pgTAP `021`)
 - [ ] #30 MED — `ride_requests` INSERT only checks self-ownership → request squatting + phantom IOUs on shifts the worker isn't booked on (verified).
 - [x] #28 MED — settle loop `EXIT WHEN` on first over-cap IOU **deadlocks the whole queue** (worse than filed: EXIT not skip; over-cap IOU is permanent) (verified).
 - [ ] #31 MED — "Ride cancelled" alert is dead code: BEFORE cascade flips requests to 'open' before the AFTER alert trigger reads them (verified).
