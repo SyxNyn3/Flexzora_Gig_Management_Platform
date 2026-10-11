@@ -87,6 +87,7 @@ SELECT lives_ok(
                                   '00000000-0000-0000-0000-00000000c0aa', true) $$,
   'related company approves the W-9');
 
+RESET ROLE;
 SELECT is(
   (SELECT count(*)::int FROM notifications n JOIN profiles p ON p.id = n.user_id
     WHERE p.user_id = '00000000-0000-0000-0000-00000000b053' AND n.title = 'W9 approved'),
