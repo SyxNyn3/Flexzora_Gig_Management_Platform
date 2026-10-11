@@ -13,7 +13,7 @@ import { iouCapacity, bailKeptCents, DEFAULT_BAIL_POLICY } from '@/lib/crew/iouM
 import { fetchBailPolicy } from '@/lib/crew/iou';
 import { listCrewDistances } from '@/lib/crew/distance';
 import { markAllAlertsRead, myAlertPreferences, setAlertPreference } from '@/lib/crew/alerts';
-import { postSwapRequest, cancelSwapRequest, claimSwap, withdrawClaim, acceptClaim, rejectClaim } from '@/lib/crew/swap';
+import { postSwapRequest, cancelSwapRequest, claimSwap, withdrawClaim, acceptClaim, rejectClaim, myLockedSwaps } from '@/lib/crew/swap';
 import { hasPushSubscription, pushSupported, subscribeToPush, unsubscribeFromPush } from '@/lib/push';
 import { hoursBetween, money, shiftWindow, toLocalInputValue } from '@/components/marketplace/format';
 import { Card, CardContent } from '@/components/ui/card';
@@ -30,7 +30,7 @@ import {
   MapPin, Clock, Users, Wallet, HandHelping, CircleAlert, BellRing, Backpack, Navigation, ParkingSquare,
   Repeat2, Settings2,
 } from 'lucide-react';
-import { AlertPreference, CrewAlertKind, CrewDistance, CrewPostCategory, CrewPostDirection, LastRideOfferParams, RideBuddy, Shift } from '@/lib/types';
+import { AlertPreference, CrewAlertKind, CrewDistance, CrewPostCategory, CrewPostDirection, LastRideOfferParams, LockedSwap, RideBuddy, Shift } from '@/lib/types';
 import type { BailPolicy } from '@/lib/crew/iouMath';
 
 const cents = (v: string): number | null => {
@@ -91,6 +91,7 @@ const CrewBoardPage: React.FC = () => {
   const [bailPolicy, setBailPolicy] = useState<BailPolicy>(DEFAULT_BAIL_POLICY);
   const [distances, setDistances] = useState<CrewDistance[]>([]);
   const [alertPrefs, setAlertPrefs] = useState<AlertPreference[]>([]);
+  const [lockedSwaps, setLockedSwaps] = useState<LockedSwap[]>([]);
 
   useEffect(() => {
     hasPushSubscription().then(setPushOn);
@@ -103,6 +104,7 @@ const CrewBoardPage: React.FC = () => {
     listRideBuddies(shiftId).then(({ data }) => setBuddies(data));
     fetchMyLastOfferParams().then(({ data }) => setLastOffer(data));
     listCrewDistances(shiftId).then(({ data }) => setDistances(data));
+    myLockedSwaps(shiftId).then(({ data }) => setLockedSwaps(data));
   }, [shiftId, buddyTick]);
 
   const shift = shiftQ.data ?? undefined;
@@ -310,7 +312,7 @@ const CrewBoardPage: React.FC = () => {
       )}
 
       {/* Shift swaps — hand the whole call to a credentialed crewmate */}
-      {(myAssignment?.status === 'confirmed' || board.data.swaps.length > 0) && (
+      {(myAssignment?.status === 'confirmed' || board.data.swaps.length > 0 || lockedSwaps.length > 0) && (
         <Card>
           <CardContent className="p-4 space-y-3">
             <p className="text-sm font-medium inline-flex items-center gap-2"><Repeat2 className="w-4 h-4" /> Shift swap</p>
@@ -374,6 +376,24 @@ const CrewBoardPage: React.FC = () => {
                 </div>
               );
             })}
+            {lockedSwaps.map((l) => (
+              <div key={l.swap_id} className="text-sm rounded p-2 border border-dashed border-muted-foreground/40">
+                <p className="font-medium inline-flex items-center gap-1.5 text-muted-foreground">
+                  <Repeat2 className="w-3.5 h-3.5" /> Swap available
+                  {l.sweetener_cents > 0 && <span className="text-emerald-600 dark:text-emerald-400">+{money(l.sweetener_cents / 100)} sweetener</span>}
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  You're one credential short of claiming it:{' '}
+                  {l.missing.map((m, i) => (
+                    <span key={m.code}>
+                      {i > 0 && ', '}
+                      <Link to="/profile" className="font-medium text-primary underline underline-offset-2">{m.name}</Link>
+                    </span>
+                  ))}
+                  {l.missing.some((m) => m.state === 'pending') && ' — one is already in review'}
+                </p>
+              </div>
+            ))}
             {myAssignment?.status === 'confirmed' && !board.data.swaps.some((s) => s.requester_worker_id === profile?.id && s.status !== 'cancelled') && (
               <SwapForm busy={busy} onSubmit={(reason, sweetener) =>
                 act('swap', () => postSwapRequest({ assignmentId: myAssignment.id, shiftId: shift.id, reason, sweetenerCents: sweetener }), 'Swap posted — cert-eligible crew can claim')} />
