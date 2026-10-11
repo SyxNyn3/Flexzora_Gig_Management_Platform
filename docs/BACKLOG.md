@@ -145,7 +145,7 @@ Roadmap "Next" items in `PRD.md §4` the sprints skipped. Rewritten as claimable
 >>>>>>> origin/main
 - [ ] **Crew-chief "bring my team" bundles** — apply as a group under one chief's booking (matching v2; design needed).
 - [ ] **Matching v2 learning** — per-company weight adjustments learned from confirm/decline history (design needed — start by logging outcomes).
-- [ ] **pg_cron for roster→public auto-release** — currently client-triggered on page load (works only when someone visits); move to a scheduled job.
+- [x] **pg_cron for roster→public auto-release** — currently client-triggered on page load (works only when someone visits); move to a scheduled job. — **in PR #100: Lane B** (`feat/scheduled-sweeps` on `20261112000000_scheduled_sweeps.sql`: `release_stale_roster_broadcasts()` global release + `run_company_sweeps()` orchestrator that also runs `generate_unfilled_tasks`, `detect_no_shows`, and `generate_company_alerts` for every company — same page-load-only flaw fixed across the family; named pg_cron job `company-sweeps` every 15min, exec revoked from clients; client calls stay as the prompt path; pgTAP `079`)
 - [ ] Expo/React Native app — PRD 1.4. **Deferred by design** — revisit after P0-RT + recovered items land.
 
 ### Crew OS — deeper versions (noted during the sprint, not yet built)
