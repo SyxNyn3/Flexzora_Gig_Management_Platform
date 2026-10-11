@@ -11,7 +11,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useSkills } from '@/hooks/useSupabaseQuery';
 import { useCertificationTypes, useEvent, useMyCompany } from '@/hooks/useMarketplace';
 import { MarketplaceService } from '@/lib/marketplace/service';
-import { Shift, ShiftFormData, Skill } from '@/lib/types';
+import { TemplateService } from '@/lib/templates/service';
+import { Shift, ShiftFormData, ShiftTemplate, Skill } from '@/lib/types';
 import RosterBoard from '@/components/marketplace/company/RosterBoard';
 import ShiftForm from '@/components/marketplace/company/ShiftForm';
 import CandidatesPanel from '@/components/marketplace/company/CandidatesPanel';
@@ -30,6 +31,12 @@ const EventDetailPage: React.FC = () => {
   const [shiftDialog, setShiftDialog] = useState<{ open: boolean; editing?: Shift }>({ open: false });
   const [submitting, setSubmitting] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [templates, setTemplates] = useState<ShiftTemplate[]>([]);
+
+  useEffect(() => {
+    if (company?.id) TemplateService.list(company.id).then(setTemplates);
+    // Refresh after each save — a pack saved mid-create shows up next open.
+  }, [company?.id, refreshKey]);
 
   const selected = useMemo(() => event.data?.shifts?.find((s) => s.id === selectedId) ?? null, [event.data, selectedId]);
 
@@ -244,6 +251,8 @@ const EventDetailPage: React.FC = () => {
             initial={shiftDialog.editing}
             onSubmit={saveShift}
             submitting={submitting}
+            companyId={company?.id}
+            templates={templates}
           />
         </DialogContent>
       </Dialog>

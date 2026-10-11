@@ -210,6 +210,11 @@ export interface Database {
         Insert: Omit<OpsTask, 'id' | 'created_at' | 'updated_at' | 'done_at' | 'event' | 'shift' | 'assignee'>;
         Update: Partial<Omit<OpsTask, 'id' | 'created_at' | 'company_id' | 'event' | 'shift' | 'assignee'>>;
       };
+      shift_templates: {
+        Row: ShiftTemplate;
+        Insert: Omit<ShiftTemplate, 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Omit<ShiftTemplate, 'id' | 'created_at' | 'company_id'>>;
+      };
       company_alerts: {
         Row: CompanyAlert;
         Insert: Omit<CompanyAlert, 'id' | 'created_at' | 'updated_at' | 'resolved_at' | 'event' | 'shift'>;
@@ -935,7 +940,7 @@ export interface VenueFormData {
 // ---------------------------------------------------------------------------
 // Company OS — AI Upload Wizard
 // ---------------------------------------------------------------------------
-export type ImportTarget = 'venues' | 'shifts' | 'roster_contacts' | 'staff';
+export type ImportTarget = 'venues' | 'shifts' | 'roster_contacts' | 'staff' | 'shift_templates';
 export type ImportJobStatus =
   | 'uploaded'
   | 'mapped'
@@ -1126,6 +1131,25 @@ export interface CalendarFeed {
 export type OpsColumn = 'todo' | 'in_progress' | 'done';
 export type OpsPriority = 'low' | 'normal' | 'high' | 'urgent';
 export type OpsTaskSource = 'manual' | 'auto_unfilled';
+
+// ---------------------------------------------------------------------------
+// Lane B — shift templates ("call packs")
+// ---------------------------------------------------------------------------
+export interface ShiftTemplate {
+  id: string;
+  company_id: string;
+  name: string;
+  role_name: string;
+  skill_id?: string | null;
+  min_proficiency: number;
+  required_cert_codes: string[];
+  headcount: number;
+  hourly_rate: number;
+  duration_minutes: number;
+  notes?: string | null;
+  created_at: string;
+  updated_at: string;
+}
 
 export interface OpsTask {
   id: string;

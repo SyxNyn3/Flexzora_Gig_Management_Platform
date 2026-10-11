@@ -445,4 +445,20 @@ begin
      'timesheet:demo-seeded-1', v_event, now() - interval '3 days', now() - interval '2 days')
   on conflict (id) do nothing;
 
+  -- ------------------------------------------------------------------
+  -- Lane B demo: call packs — the rate card a production office reuses.
+  -- ------------------------------------------------------------------
+  insert into shift_templates (id, company_id, name, role_name, skill_id,
+                               min_proficiency, required_cert_codes, headcount,
+                               hourly_rate, duration_minutes, notes)
+  values
+    ('eeeeeeee-0000-4000-8000-000000000001', v_company, 'Arena load-in pack',
+     'Up Rigger', v_skill_rigging, 4, '{ETCP_ARENA}', 8, 52.00, 480,
+     'Steel toes + harness. Dock 3, ask for Marcus.'),
+    ('eeeeeeee-0000-4000-8000-000000000002', v_company, 'FOH audio pack',
+     'A1 Audio', v_skill_audio, 3, '{}', 2, 65.00, 600, 'Console provided.'),
+    ('eeeeeeee-0000-4000-8000-000000000003', v_company, 'Strike crew',
+     'Stagehand', null, 1, '{}', 12, 38.00, 360, 'Overnight strike — meal provided.')
+  on conflict (company_id, name) do nothing;
+
 end $$;

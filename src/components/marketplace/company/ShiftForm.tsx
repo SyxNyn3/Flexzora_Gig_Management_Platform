@@ -5,9 +5,11 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CertificationType, Shift, ShiftFormData, Skill } from '@/lib/types';
+import { CertificationType, Shift, ShiftFormData, ShiftTemplate, Skill } from '@/lib/types';
 import { projectedShiftCost } from '@/lib/marketplace/overtime';
+import { TemplateService } from '@/lib/templates/service';
 import { money, toLocalInputValue } from '../format';
+import { toast } from 'sonner';
 
 const ROLE_PRESETS = ['Stagehand', 'Ground Rigger', 'Up Rigger', 'A1 Audio', 'A2 Audio', 'L1 Lighting', 'L2 Lighting', 'Video Engineer', 'LED Tech', 'Carpenter', 'Forklift Operator', 'Truck Loader', 'Spot Op'];
 const RIGGING_ROLES = ['Ground Rigger', 'Up Rigger'];
@@ -19,9 +21,12 @@ interface Props {
   initial?: Shift;
   onSubmit: (form: ShiftFormData) => Promise<unknown>;
   submitting?: boolean;
+  /** Enables the "save as call pack" row + the start-from-pack picker. */
+  companyId?: string;
+  templates?: ShiftTemplate[];
 }
 
-const ShiftForm: React.FC<Props> = ({ eventDate, skills, certTypes, initial, onSubmit, submitting }) => {
+const ShiftForm: React.FC<Props> = ({ eventDate, skills, certTypes, initial, onSubmit, submitting, companyId, templates }) => {
   const [form, setForm] = useState<ShiftFormData>({
     title: initial?.title ?? '',
     role_name: initial?.role_name ?? 'Stagehand',
@@ -35,7 +40,31 @@ const ShiftForm: React.FC<Props> = ({ eventDate, skills, certTypes, initial, onS
     notes: initial?.notes ?? '',
   });
 
+  const [savePack, setSavePack] = useState(false);
+  const [packName, setPackName] = useState('');
+
   const set = <K extends keyof ShiftFormData>(k: K, v: ShiftFormData[K]) => setForm((f) => ({ ...f, [k]: v }));
+
+  // One-tap from a call pack: everything prefills except the clock — the pack's
+  // typical length moves the wrap time so the crew math stays honest.
+  const applyTemplate = (templateId: string) => {
+    const t = templates?.find((x) => x.id === templateId);
+    if (!t) return;
+    const start = form.starts_at || `${eventDate}T08:00`;
+    const end = new Date(new Date(start).getTime() + t.duration_minutes * 60000);
+    setForm((f) => ({
+      ...f,
+      title: t.name,
+      role_name: t.role_name,
+      skill_id: t.skill_id ?? '',
+      min_proficiency: t.min_proficiency,
+      required_cert_codes: t.required_cert_codes,
+      headcount: t.headcount,
+      hourly_rate: t.hourly_rate,
+      ends_at: toLocalInputValue(end.toISOString()),
+      notes: t.notes ?? f.notes,
+    }));
+  };
 
   const pickRole = (role: string) => {
     const certs = new Set(form.required_cert_codes);
@@ -59,15 +88,36 @@ const ShiftForm: React.FC<Props> = ({ eventDate, skills, certTypes, initial, onS
   return (
     <form
       className="space-y-4"
-      onSubmit={(e) => {
+      onSubmit={async (e) => {
         e.preventDefault();
-        onSubmit({
+        const isoForm = {
           ...form,
           starts_at: new Date(form.starts_at).toISOString(),
           ends_at: new Date(form.ends_at).toISOString(),
-        });
+        };
+        if (savePack && companyId && packName.trim()) {
+          const r = await TemplateService.savePack(companyId, packName.trim(), isoForm);
+          if (r.error) toast.error(`Pack not saved: ${r.error}`);
+          else toast.success(`Saved "${packName.trim()}" — reusable next time`);
+        }
+        onSubmit(isoForm);
       }}
     >
+      {!initial && templates && templates.length > 0 && (
+        <div className="rounded-md border border-border bg-muted/40 p-3 space-y-1">
+          <Label className="text-xs">Start from a call pack</Label>
+          <Select onValueChange={applyTemplate}>
+            <SelectTrigger className="bg-background"><SelectValue placeholder="Pick a pack — fills everything but the clock" /></SelectTrigger>
+            <SelectContent>
+              {templates.map((t) => (
+                <SelectItem key={t.id} value={t.id}>
+                  {t.name} — {t.headcount}× {t.role_name} @ {money(t.hourly_rate)}/hr · {Math.round(t.duration_minutes / 60)}h
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
       <div className="grid grid-cols-2 gap-3">
         <div>
           <Label>Role</Label>
@@ -150,6 +200,25 @@ const ShiftForm: React.FC<Props> = ({ eventDate, skills, certTypes, initial, onS
         <span className="text-muted-foreground">Projected labor (incl. OT)</span>
         <span className="font-semibold">{money(projected)}</span>
       </div>
+      {!initial && companyId && (
+        <div className="space-y-2">
+          <label className="flex items-center gap-2 text-sm cursor-pointer">
+            <Checkbox checked={savePack} onCheckedChange={(v) => {
+              setSavePack(v === true);
+              if (v === true && !packName) setPackName(form.title || form.role_name);
+            }} />
+            <span>Save as a call pack — reuse this setup next time</span>
+          </label>
+          {savePack && (
+            <Input
+              required
+              value={packName}
+              onChange={(e) => setPackName(e.target.value)}
+              placeholder="Pack name — e.g. Arena load-in pack"
+            />
+          )}
+        </div>
+      )}
       <Button type="submit" className="w-full" disabled={submitting}>
         {submitting ? 'Saving…' : initial ? 'Save shift' : 'Add shift'}
       </Button>

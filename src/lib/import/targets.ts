@@ -101,6 +101,23 @@ export const IMPORT_TARGETS: ImportTargetDef[] = [
       { key: 'notes', label: 'Notes', kind: 'text', aliases: ['notes', 'note', 'comments', 'about'] },
     ],
   },
+  {
+    key: 'shift_templates',
+    label: 'Call packs (shift templates)',
+    description: 'Your rate card — role, headcount, rate, cert gates, typical length — becomes one-tap call packs.',
+    signature: ['duration', 'pack', 'template'],
+    fields: [
+      { key: 'name', label: 'Pack name', kind: 'text', sniff: 'name', aliases: ['name', 'pack', 'packname', 'template', 'templatename', 'callpack', 'preset'], hint: 'Defaults to the role name — dedupe key, re-imports update' },
+      { key: 'role_name', label: 'Role', kind: 'text', required: true, aliases: ['role', 'rolename', 'position', 'job', 'craft', 'department', 'gig'] },
+      { key: 'skill', label: 'Skill', kind: 'text', aliases: ['skill', 'skillname', 'tradecategory'], hint: 'Must match a Flexzora skill name' },
+      { key: 'required_cert_codes', label: 'Required certs', kind: 'list', aliases: ['certs', 'certifications', 'requiredcerts', 'certreqs', 'certification', 'requirements', 'certcodes'], hint: 'Codes or names — "ETCP_ARENA" or "ETCP Arena"' },
+      { key: 'headcount', label: 'Headcount', kind: 'integer', required: true, sniff: 'integer', aliases: ['headcount', 'count', 'crew', 'crewnumber', 'qty', 'needed', 'numworkers', 'workers', 'slots', 'positions'] },
+      { key: 'hourly_rate', label: 'Hourly rate', kind: 'money', required: true, sniff: 'money', aliases: ['rate', 'hourlyrate', 'hourly', 'pay', 'wage', 'payrate', 'hrly', 'price', 'hr'] },
+      { key: 'duration_minutes', label: 'Length (minutes)', kind: 'integer', sniff: 'integer', aliases: ['duration', 'minutes', 'durationminutes', 'length', 'calllength', 'hours'], hint: 'In minutes — 480 = an 8-hour call (defaults to 8h)' },
+      { key: 'min_proficiency', label: 'Min skill tier (1–5)', kind: 'integer', sniff: 'integer', aliases: ['mintier', 'minproficiency', 'level', 'tier', 'minlevel', 'experience'] },
+      { key: 'notes', label: 'Notes', kind: 'text', aliases: ['notes', 'note', 'comments', 'details', 'instructions'] },
+    ],
+  },
 ];
 
 export const importTarget = (key: ImportTarget | string | undefined): ImportTargetDef | undefined =>
