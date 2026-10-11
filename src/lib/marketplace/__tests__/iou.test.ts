@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { iouCapacity, iouCapCents, selectSettleableIous } from '@/lib/crew/iou';
+import { iouCapacity, iouCapCents, selectSettleableIous } from '@/lib/crew/iouMath';
 
 const iou = (id: string, amount_cents: number) => ({ id, amount_cents });
 
