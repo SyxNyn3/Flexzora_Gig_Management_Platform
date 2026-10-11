@@ -81,7 +81,7 @@ SELECT ok(
 SELECT set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000b0f4","role":"authenticated"}', true);
 SELECT ok(accept_run_handoff('00000000-0000-0000-0000-000000009c02'), 'target accepts the handoff');
 SELECT is(
-  (SELECT beneficiary_worker_id FROM crew_iou WHERE iou_group_id = '00000000-0000-0000-0000-000000009c13'),
+  (SELECT beneficiary_worker_id FROM crew_iou WHERE iou_group_id = '00000000-0000-0000-0000-000000009c12'),
   (SELECT id FROM profiles WHERE user_id = '00000000-0000-0000-0000-00000000b0f4'),
   'committed order IOU re-points to the new runner');
 
