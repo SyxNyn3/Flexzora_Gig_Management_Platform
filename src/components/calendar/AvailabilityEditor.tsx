@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,16 +7,64 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Calendar, Clock, Plus, Trash2, CheckCircle, XCircle } from 'lucide-react';
+import { Calendar, Clock, Plus, Trash2, CheckCircle, XCircle, RefreshCw, Link2 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAvailability } from '@/hooks/useSupabaseQuery';
 import { DatabaseService } from '@/lib/supabase';
+import { CalendarImportService } from '@/lib/calendar/service';
+import { CalendarImport } from '@/lib/types';
 
 const AvailabilityEditor: React.FC = () => {
   const { profile } = useAuth();
   const { data: windows = [], loading, refetch } = useAvailability(profile?.id);
+
+  useEffect(() => {
+    if (!profile?.id) return;
+    CalendarImportService.list(profile.id).then(({ data }) => setImports(data));
+  }, [profile?.id]);
+
+  const addImport = async () => {
+    if (!profile?.id || !feedUrl.trim()) return;
+    if (!/^(https?|webcal):\/\//i.test(feedUrl.trim())) {
+      toast.error('Paste an https:// or webcal:// calendar URL');
+      return;
+    }
+    setSaving(true);
+    const { data, error } = await CalendarImportService.add(profile.id, feedName || 'Personal calendar', feedUrl);
+    setSaving(false);
+    if (error) return toast.error(error);
+    setFeedName('');
+    setFeedUrl('');
+    if (data) {
+      setImports((prev) => [...prev, data]);
+      toast.success('Calendar added — syncing now');
+      syncImport(data.id);
+    }
+  };
+
+  const syncImport = async (id: string) => {
+    setSyncing(id);
+    const { data, error } = await CalendarImportService.syncNow(id);
+    setSyncing(null);
+    if (error) {
+      toast.error(`Sync failed: ${error}`);
+    } else {
+      toast.success(`Synced — ${data} busy block${data === 1 ? '' : 's'} imported`);
+    }
+    const { data: refreshed } = await CalendarImportService.list(profile?.id ?? '');
+    setImports(refreshed);
+    refetch();
+  };
+
+  const removeImport = async (id: string) => {
+    const { error } = await CalendarImportService.remove(id);
+    if (error) return toast.error(error);
+    setImports((prev) => prev.filter((i) => i.id !== id));
+    refetch();
+    toast.success('Calendar removed — its busy blocks were cleared');
+  };
 
   const [startDate, setStartDate] = useState('');
   const [startTime, setStartTime] = useState('08:00');
@@ -25,6 +73,10 @@ const AvailabilityEditor: React.FC = () => {
   const [isAvailable, setIsAvailable] = useState(false);
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
+  const [imports, setImports] = useState<CalendarImport[]>([]);
+  const [feedName, setFeedName] = useState('');
+  const [feedUrl, setFeedUrl] = useState('');
+  const [syncing, setSyncing] = useState<string | null>(null);
 
   const upcoming = useMemo(
     () => (windows ?? [])
@@ -128,6 +180,52 @@ const AvailabilityEditor: React.FC = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center">
+            <Link2 className="h-5 w-5 mr-2" />
+            Sync a calendar
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Paste a personal iCal feed (Google Calendar → "Secret address in iCal format", Outlook → "Publish a calendar").
+            Events become blocked windows here, so offers that clash with your real calendar never reach you.
+          </p>
+          <div className="grid sm:grid-cols-[1fr_2fr_auto] gap-2">
+            <Input placeholder="Name (e.g. Personal)" value={feedName} onChange={e => setFeedName(e.target.value)} />
+            <Input placeholder="https:// or webcal:// feed URL" value={feedUrl} onChange={e => setFeedUrl(e.target.value)} />
+            <Button onClick={addImport} disabled={saving || !feedUrl.trim()}>Add feed</Button>
+          </div>
+          {imports.length > 0 && (
+            <div className="space-y-2 border-t pt-3">
+              {imports.map((imp) => (
+                <div key={imp.id} className="flex items-center justify-between gap-3 text-sm">
+                  <div className="min-w-0">
+                    <p className="font-medium truncate">{imp.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {imp.last_error
+                        ? <span className="text-destructive">{imp.last_error}</span>
+                        : imp.synced_at
+                          ? `${imp.block_count} busy blocks · synced ${format(parseISO(imp.synced_at), 'MMM d, h:mm a')}`
+                          : 'Not synced yet'}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <Button size="sm" variant="ghost" className="h-7" disabled={syncing !== null} onClick={() => syncImport(imp.id)} title="Re-fetch the feed">
+                      <RefreshCw className={`w-3.5 h-3.5 ${syncing === imp.id ? 'animate-spin' : ''}`} />
+                    </Button>
+                    <Button size="sm" variant="ghost" className="h-7" onClick={() => removeImport(imp.id)} title="Remove feed and its busy blocks">
+                      <Trash2 className="w-3.5 h-3.5 text-muted-foreground" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
             <Calendar className="h-5 w-5 mr-2" />
             Your windows
           </CardTitle>
@@ -159,6 +257,7 @@ const AvailabilityEditor: React.FC = () => {
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
+                    {w.import_id && <Badge variant="secondary">Synced</Badge>}
                     <Badge variant={w.is_available ? 'outline' : 'destructive'}>
                       {w.is_available ? 'Available' : 'Blocked'}
                     </Badge>

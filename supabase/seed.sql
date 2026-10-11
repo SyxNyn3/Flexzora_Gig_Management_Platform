@@ -504,4 +504,22 @@ begin
           p_worker1, 'Clock-out shows early but I worked until strike wrap — check with the deck lead.')
   on conflict (id) do nothing;
 
+  -- Lane B demo: inbound calendar sync — Alex's personal iCal feed imported
+  -- two busy blocks; they count as conflicts for matching like any declared
+  -- window (shows the "Synced" badge in the availability editor).
+  insert into calendar_imports (id, worker_id, name, feed_url, synced_at, block_count)
+  values ('77777777-0000-4000-8000-000000000001', p_worker1, 'Personal calendar',
+          'https://calendar.example.com/alex/basic.ics', now() - interval '2 hours', 2)
+  on conflict (worker_id, feed_url) do nothing;
+
+  insert into availability (id, worker_id, start_time, end_time, is_available, notes, import_id)
+  values
+    ('77777777-0000-4000-8000-000000000011', p_worker1,
+     current_date + 3 + interval '14 hours', current_date + 3 + interval '17 hours',
+     false, 'Dentist', '77777777-0000-4000-8000-000000000001'),
+    ('77777777-0000-4000-8000-000000000012', p_worker1,
+     current_date + 5 + interval '8 hours', current_date + 5 + interval '20 hours',
+     false, 'Family reunion', '77777777-0000-4000-8000-000000000001')
+  on conflict (id) do nothing;
+
 end $$;

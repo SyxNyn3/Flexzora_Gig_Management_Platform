@@ -57,6 +57,11 @@ export interface Database {
         Insert: Omit<Availability, 'id' | 'created_at'>;
         Update: Partial<Omit<Availability, 'id' | 'created_at'>>;
       };
+      calendar_imports: {
+        Row: CalendarImport;
+        Insert: Omit<CalendarImport, 'id' | 'created_at' | 'block_count' | 'synced_at' | 'last_error'>;
+        Update: Partial<Pick<CalendarImport, 'name' | 'feed_url'>>;
+      };
       payments: {
         Row: Payment;
         Insert: Omit<Payment, 'id' | 'created_at' | 'updated_at'>;
@@ -506,6 +511,18 @@ export interface Availability {
   end_time: string;
   is_available: boolean;
   notes?: string;
+  import_id?: string;
+  created_at: string;
+}
+
+export interface CalendarImport {
+  id: string;
+  worker_id: string;
+  name: string;
+  feed_url: string;
+  synced_at?: string;
+  block_count: number;
+  last_error?: string;
   created_at: string;
 }
 

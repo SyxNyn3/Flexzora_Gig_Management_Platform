@@ -45,6 +45,11 @@ verify_jwt = false
 [functions.ics-feed]
 verify_jwt = false
 
+# Worker-scoped inbound sync: the caller's JWT drives both the RLS read of
+# calendar_imports and the ownership check inside sync_calendar_import.
+[functions.ical-sync]
+verify_jwt = true
+
 # --- Authenticated endpoints ------------------------------------------------
 
 # Invoked function-to-function by submit/resend-waitlist-verification using
