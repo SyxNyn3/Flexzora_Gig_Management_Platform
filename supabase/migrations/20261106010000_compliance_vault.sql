@@ -42,6 +42,15 @@ CREATE POLICY "related companies read compliance docs" ON compliance_docs FOR SE
 CREATE OR REPLACE FUNCTION guard_compliance_doc() RETURNS trigger AS $$
 BEGIN
   IF current_user NOT IN ('authenticated', 'anon') THEN RETURN NEW; END IF;
+  IF TG_OP = 'INSERT' THEN
+    -- Review fields are server-owned on insert too: a worker must not be able
+    -- to land a doc already 'approved' (that would bypass the W-9 payout hold).
+    NEW.status := 'pending';
+    NEW.reviewed_by := NULL;
+    NEW.reviewed_at := NULL;
+    NEW.review_note := NULL;
+    RETURN NEW;
+  END IF;
   IF NEW.worker_id <> OLD.worker_id OR NEW.doc_type <> OLD.doc_type THEN
     RAISE EXCEPTION 'Document worker and type are immutable';
   END IF;
@@ -57,7 +66,7 @@ BEGIN
 END $$ LANGUAGE plpgsql;
 
 DROP TRIGGER IF EXISTS compliance_docs_guard ON compliance_docs;
-CREATE TRIGGER compliance_docs_guard BEFORE UPDATE ON compliance_docs
+CREATE TRIGGER compliance_docs_guard BEFORE INSERT OR UPDATE ON compliance_docs
   FOR EACH ROW EXECUTE FUNCTION guard_compliance_doc();
 
 -- Private bucket, same folder posture as cert-docs.
@@ -88,9 +97,17 @@ CREATE POLICY "compliance docs review read" ON storage.objects FOR SELECT TO aut
 
 CREATE OR REPLACE FUNCTION worker_has_approved_doc(p_worker_id uuid, p_doc_type text)
 RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
-  SELECT EXISTS (
-    SELECT 1 FROM compliance_docs
-    WHERE worker_id = p_worker_id AND doc_type = p_doc_type AND status = 'approved');
+  -- self, a related company, or a definer/service caller (e.g. the payout
+  -- claim gate) — not an arbitrary probe of another worker's compliance state
+  SELECT (current_user NOT IN ('authenticated', 'anon')
+          OR p_worker_id = current_profile_id()
+          OR EXISTS (
+            SELECT 1 FROM companies c
+            WHERE owns_company(c.id)
+              AND worker_related_to_company(p_worker_id, c.id)))
+    AND EXISTS (
+      SELECT 1 FROM compliance_docs
+      WHERE worker_id = p_worker_id AND doc_type = p_doc_type AND status = 'approved');
 $$;
 
 -- Review queue + decision RPCs — same relationship gate as cert review.

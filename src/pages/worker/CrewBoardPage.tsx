@@ -7,8 +7,8 @@ import { useCrewBoard, useShift } from '@/hooks/useCrew';
 import { useWorkerAssignments } from '@/hooks/useMarketplace';
 import { joinRide, withdrawRideRequest, cancelRideOffer, postRideOffer, setRideFlags, listRideBuddies, fetchMyLastOfferParams } from '@/lib/crew/rides';
 import { joinPool, leavePool, cancelLodgingPool, postLodgingPool } from '@/lib/crew/lodging';
-import { placeOrder, cancelOrder, confirmOrder, postFoodRun, updateFoodRunStatus, isAcceptingOrders, offerRunHandoff, acceptRunHandoff, declineRunHandoff } from '@/lib/crew/food';
-import { postToBoard, resolvePost, closePost } from '@/lib/crew/board';
+import { placeOrder, cancelOrder, confirmOrder, acceptOrderPrice, postFoodRun, updateFoodRunStatus, isAcceptingOrders, offerRunHandoff, acceptRunHandoff, declineRunHandoff } from '@/lib/crew/food';
+import { postToBoard, resolvePost, closePost, acceptPostDebt } from '@/lib/crew/board';
 import { iouCapacity, bailKeptCents, DEFAULT_BAIL_POLICY } from '@/lib/crew/iouMath';
 import { fetchBailPolicy } from '@/lib/crew/iou';
 import { listCrewDistances } from '@/lib/crew/distance';
@@ -663,7 +663,16 @@ const CrewBoardPage: React.FC = () => {
                   )}
                   {!mine && accepting && !myOrder && <PlaceOrderBox busy={busy} onPlace={(item, note) => act(`order-${r.id}`, () => placeOrder(r.id, item, note), 'Order in')} />}
                   {myOrder?.status === 'placed' && <p className="text-xs text-muted-foreground">Your order is in — runner sets the price.</p>}
-                  {myOrder?.status === 'confirmed' && <p className="text-xs"><Badge variant="secondary">Confirmed {money((myOrder.price_cents ?? 0) / 100)}</Badge> — settles from your payout.</p>}
+                  {myOrder?.status === 'confirmed' && !myOrder.price_accepted_at && (
+                    <p className="text-xs flex items-center gap-2">
+                      <Badge variant="secondary">Runner says {money((myOrder.price_cents ?? 0) / 100)}</Badge>
+                      <Button size="sm" className="h-7" disabled={busy !== null}
+                        onClick={() => act(`accept-${myOrder.id}`, () => acceptOrderPrice(myOrder.id), 'Price accepted — it settles from your payout')}>
+                        <Check className="w-3 h-3 mr-1" /> Accept
+                      </Button>
+                    </p>
+                  )}
+                  {myOrder?.status === 'confirmed' && myOrder.price_accepted_at && <p className="text-xs"><Badge variant="secondary">Confirmed {money((myOrder.price_cents ?? 0) / 100)}</Badge> — settles from your payout.</p>}
                   {mine && r.status === 'open' && (
                     <div className="flex items-center gap-3">
                       <Button size="sm" variant="ghost" className="h-6 px-0 text-xs text-muted-foreground" disabled={busy !== null}
@@ -709,6 +718,19 @@ const CrewBoardPage: React.FC = () => {
                       {p.body && <p className="text-sm text-muted-foreground mt-1">{p.body}</p>}
                       {p.status === 'resolved' && p.fulfiller && (
                         <p className="text-xs text-muted-foreground mt-1">Fulfilled by {p.fulfiller.full_name}</p>
+                      )}
+                      {p.status === 'resolved' && (p.amount_cents ?? 0) > 0 && p.fulfilled_by_worker_id && !p.debtor_confirmed_at && (
+                        p.fulfilled_by_worker_id === profile?.id && p.direction === 'offer' ? (
+                          <div className="mt-2 flex items-center gap-2 text-xs">
+                            <span>You owe {money((p.amount_cents ?? 0) / 100)} for this.</span>
+                            <Button size="sm" className="h-7" disabled={busy !== null}
+                              onClick={() => act(`accept-${p.id}`, () => acceptPostDebt(p.id), 'Accepted — the share is on your ledger')}>
+                              <Check className="w-3 h-3 mr-1" /> Accept
+                            </Button>
+                          </div>
+                        ) : (
+                          <p className="text-xs text-muted-foreground mt-2">Waiting for {p.fulfiller?.full_name ?? 'the fulfiller'} to accept the {money((p.amount_cents ?? 0) / 100)} share.</p>
+                        )
                       )}
                     </div>
                     {mine && p.status === 'open' && (

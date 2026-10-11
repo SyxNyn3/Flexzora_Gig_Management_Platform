@@ -2,7 +2,7 @@
 -- unrelated companies can't review; the payout claim refuses a worker with no
 -- approved W-9.
 BEGIN;
-SELECT plan(8);
+SELECT plan(10);
 
 INSERT INTO auth.users (id, instance_id, aud, role, email, encrypted_password, raw_user_meta_data, created_at, updated_at)
 VALUES
@@ -87,6 +87,7 @@ SELECT lives_ok(
                                   '00000000-0000-0000-0000-00000000c0aa', true) $$,
   'related company approves the W-9');
 
+RESET ROLE;
 SELECT is(
   (SELECT count(*)::int FROM notifications n JOIN profiles p ON p.id = n.user_id
     WHERE p.user_id = '00000000-0000-0000-0000-00000000b053' AND n.title = 'W9 approved'),
@@ -104,6 +105,24 @@ SELECT throws_ok(
 SELECT is(
   (SELECT status::text FROM claim_payout_for_release('00000000-0000-0000-0000-00000000df01')),
   'processing', 'approved W-9 → payout claims normally');
+
+-- ============================================================================
+-- 5. pre-stamp dodge: an API-side INSERT cannot land an already-'approved'
+--    doc (that would bypass the W-9 payout hold)
+-- ============================================================================
+SET LOCAL ROLE authenticated;
+SELECT set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000b053","role":"authenticated"}', true);
+
+SELECT lives_ok(
+  $$ INSERT INTO compliance_docs (worker_id, doc_type, document_path, status, reviewed_by, reviewed_at)
+     SELECT p.id, 'i9', p.id::text || '/i9/sneaky.pdf', 'approved', p.id, now()
+     FROM profiles p WHERE p.user_id = '00000000-0000-0000-0000-00000000b053' $$,
+  'worker can file a doc — pre-stamped review fields are stripped');
+
+SELECT is(
+  (SELECT status FROM compliance_docs d JOIN profiles p ON p.id = d.worker_id
+    WHERE p.user_id = '00000000-0000-0000-0000-00000000b053' AND d.doc_type = 'i9'),
+  'pending', 'insert-time status is forced to pending');
 
 SELECT * FROM finish();
 ROLLBACK;
