@@ -87,7 +87,7 @@ BEGIN
     UPDATE ride_offers
        SET seats_taken = GREATEST(seats_taken - OLD.seats_needed, 0),
            status = CASE WHEN status = 'full' THEN 'open'::ride_offer_status ELSE status END
-     WHERE id = OLD.offer_id;
+     WHERE id = OLD.offer_id AND status <> 'cancelled'::ride_offer_status;
 
     -- Bail fairness: rider's OWN withdrawal inside the window keeps a share.
     IF NEW.status = 'withdrawn' THEN
