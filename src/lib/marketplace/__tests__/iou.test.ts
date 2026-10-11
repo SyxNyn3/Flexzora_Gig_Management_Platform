@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { iouCapacity, iouCapCents, selectSettleableIous } from '@/lib/crew/iouMath';
+import { bailKeptCents, iouCapacity, iouCapCents, selectSettleableIous } from '@/lib/crew/iouMath';
 
 const iou = (id: string, amount_cents: number, settled_cents = 0) => ({ id, amount_cents, settled_cents });
 
@@ -84,5 +84,28 @@ describe('iouCapacity', () => {
   it('never reports negative remaining room', () => {
     const cap = iouCapacity([iou('a', 3000)], 10000);
     expect(cap.remainingCents).toBe(0);
+  });
+});
+
+describe('bailKeptCents (late-bail fairness)', () => {
+  const now = new Date('2026-10-10T12:00:00Z');
+  const inWindow = '2026-10-11T08:00:00Z'; // 20h out — inside the default 24h window
+  const outWindow = '2026-10-12T13:00:00Z'; // 49h out — outside
+
+  it('keeps keepPct of the share inside the window', () => {
+    expect(bailKeptCents(inWindow, 2000, { windowHours: 24, keepPct: 50 }, now)).toBe(1000);
+  });
+
+  it('voids fully outside the window', () => {
+    expect(bailKeptCents(outWindow, 2000, { windowHours: 24, keepPct: 50 }, now)).toBe(0);
+  });
+
+  it('counts a shift already started as inside the window', () => {
+    expect(bailKeptCents('2026-10-10T08:00:00Z', 2000, { windowHours: 24, keepPct: 50 }, now)).toBe(1000);
+  });
+
+  it('respects a tuned policy row', () => {
+    expect(bailKeptCents(inWindow, 2000, { windowHours: 12, keepPct: 75 }, now)).toBe(0);
+    expect(bailKeptCents('2026-10-10T20:00:00Z', 2000, { windowHours: 12, keepPct: 75 }, now)).toBe(1500);
   });
 });
