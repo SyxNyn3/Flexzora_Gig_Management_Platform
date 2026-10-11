@@ -572,7 +572,8 @@ export class MarketplaceService {
         required_cert_codes: shift.required_cert_codes ?? [],
         skill_id: shift.skill_id,
         min_proficiency: shift.min_proficiency,
-        venueLocation: venue ? { lat: venue.latitude, lng: venue.longitude } : null,
+        venueLocation:
+          venue && venue.latitude != null && venue.longitude != null ? { lat: venue.latitude, lng: venue.longitude } : null,
       });
 
       const byId = new Map(workers.map((w) => [w.id, w]));
@@ -628,7 +629,8 @@ export class MarketplaceService {
           required_cert_codes: s.required_cert_codes ?? [],
           skill_id: s.skill_id,
           min_proficiency: s.min_proficiency,
-          venueLocation: venue ? { lat: venue.latitude, lng: venue.longitude } : null,
+          venueLocation:
+            venue && venue.latitude != null && venue.longitude != null ? { lat: venue.latitude, lng: venue.longitude } : null,
         });
         results.set(s.id, r);
       }
