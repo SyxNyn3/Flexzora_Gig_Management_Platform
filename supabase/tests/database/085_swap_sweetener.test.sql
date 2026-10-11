@@ -51,8 +51,8 @@ INSERT INTO crew_iou (id, worker_id, shift_id, kind, amount_cents, beneficiary_w
    '00000000-0000-0000-0000-00000000d0f2', 'other', 1000,
    (SELECT id FROM profiles WHERE user_id = '00000000-0000-0000-0000-00000000d0a3'), 'manual', 'off-platform promise');
 
-INSERT INTO escrow_deposits (event_id, amount, status)
-VALUES ('00000000-0000-0000-0000-00000000d0e1', 1000, 'funded');
+INSERT INTO escrow_deposits (event_id, company_id, amount, status)
+VALUES ('00000000-0000-0000-0000-00000000d0e1', '00000000-0000-0000-0000-00000000d0f1', 1000, 'funded');
 
 SET LOCAL ROLE authenticated;
 SELECT set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000d0a1","role":"authenticated"}', true);
