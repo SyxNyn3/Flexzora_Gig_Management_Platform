@@ -206,16 +206,16 @@ serve(async (req) => {
     // Confirmed/completed calls for one crew member.
     const { data: assignments } = await supabase
       .from("shift_assignments")
-      .select("id, status, shift:shifts(id, event_id, title, role_name, starts_at, ends_at, notes, event:events(id, name, timezone, venue:venues(name, address, city)))")
+      .select("id, status, shift:shifts(id, event_id, title, role_name, starts_at, ends_at, notes, event:events(id, name, timezone, company_id, venue:venues(name, address, city)))")
       .eq("worker_id", f.worker_id)
       .in("status", ["confirmed", "completed"]);
     for (const a of assignments ?? []) {
       const s = a.shift as {
         id: string; event_id: string; title: string; role_name: string;
         starts_at: string; ends_at: string; notes?: string;
-        event?: { name?: string; timezone?: string; venue?: { name?: string; address?: string; city?: string } | null } | null;
+        event?: { name?: string; timezone?: string; company_id?: string; venue?: { name?: string; address?: string; city?: string } | null } | null;
       } | null;
-      if (!s) continue;
+      if (!s || s.event?.company_id !== f.company_id) continue;
       const v = s.event?.venue;
       events.push({
         uid: `work-${a.id}`,
