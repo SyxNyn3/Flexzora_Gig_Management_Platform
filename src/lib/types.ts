@@ -1120,6 +1120,8 @@ export interface OpsTask {
   event?: { id: string; name: string } | null;
   shift?: { id: string; title: string } | null;
   assignee?: StaffMember | null;
+}
+
 // --- Crew OS ---------------------------------------------------------------
 export type CrewIOUKind = 'ride' | 'lodging' | 'food' | 'gear' | 'other';
 export type CrewIOUStatus = 'committed' | 'settled' | 'void' | 'failed';
