@@ -64,3 +64,10 @@ verify_jwt = true
 
 [functions.authkit-token]
 verify_jwt = true
+
+# SMS on assignment lifecycle changes — caller is authenticated; the function
+# additionally verifies the caller is a party to the assignment. Graceful
+# no-op until TWILIO_ACCOUNT_SID / TWILIO_AUTH_TOKEN / TWILIO_FROM_NUMBER are
+# provisioned as function secrets.
+[functions.notify-assignment]
+verify_jwt = true

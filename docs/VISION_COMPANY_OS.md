@@ -9,6 +9,11 @@ group text, a paper timesheet clipboard, and a manager's inbox.
 is `crew_master_FINAL_v9.xlsx` plus group texts. Every competitor asks her to
 re-enter that data by hand before it does anything useful.
 
+
+The killer onboarding promise: **"Upload everything you have — spreadsheets,
+docs, tribal knowledge — and Flexzora builds your operation."** Flexzora wins
+production companies by fixing what every incumbent gets wrong.
+
 ## Competitor findings (what they do, where they fall short)
 
 | Product | What it does well | The gap we exploit |
@@ -22,6 +27,24 @@ re-enter that data by hand before it does anything useful.
 Common thread: **nobody eats the spreadsheet.** Every tool assumes you'll
 re-type your crew into their schema. The Upload Wizard is the wedge — parse
 whatever Dana already has, map it with an LLM, review once, import.
+### User-level complaints (researched)
+
+| Competitor complaint | Source | Flexzora answer |
+|---|---|---|
+| "Too many clicks to get one thing done" | LASSO users | Action-dense UI: every screen answers "what needs my decision NOW" |
+| Heavy training just to get started | LASSO, most tools | AI import — no blank-canvas setup, no training week |
+| Onboarding/data entry is tedious | LASSO, all | Upload wizard: Excel/CSV/docs → mapped → imported |
+| No automatic reminders; craft emails per event | LASSO | SmartAlerts generate per-shift briefings automatically |
+| No admin mobile app — browser only | LASSO | Mobile-responsive admin: approve timesheets from a phone |
+| Can't export a whole tour's crew list | LASSO | One-click tour/event exports (CSV + PDF) |
+| Calendar sync doesn't reliably update | LASSO | Real ICS feed + Google/Outlook subscribe links that stay current |
+| Rate breakdowns inconsistent; timesheets need cleanup before ADP | LASSO | Clean structured rates; payroll-ready export per event/period |
+| Can't mark worker unavailable when arranged off-platform | LASSO | Admin can set worker availability/notes on their behalf |
+| No multi-timezone support | Deputy, Shiftboard | Venue-local timezone stored per event — touring crews span zones |
+| GPS/timeclock errors → manual fixes | Deputy, Nowsta | Geofence + sustained-exit rules (already built); dispute flow |
+| "Devalues skilled labor, treats techs as commodities" | LASSO freelancer | Crew OS layer — workers are people, not headcount (the brand) |
+| Opaque/expensive pricing | Nowsta, LASSO | Free tier for small companies = wedge into the market |
+
 
 ## Quality bar
 
@@ -36,6 +59,8 @@ Not the simplest version — the version Dana would pick over her spreadsheet.
 - Match the existing design language (shadcn cards/tables/dialogs, muted
   palette, `money`/date formatting helpers) and seed demo rows so a fresh
   `supabase db reset` shows the feature working, not an empty state.
+
+
 
 ## The build queue
 
