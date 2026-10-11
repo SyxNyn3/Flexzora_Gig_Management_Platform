@@ -1386,6 +1386,7 @@ export interface CrewPost {
   status: CrewPostStatus;
   fulfilled_by_worker_id?: string;
   resolved_at?: string;
+  debtor_confirmed_at?: string;
   created_at: string;
   updated_at: string;
   author?: Profile;
@@ -1432,6 +1433,7 @@ export interface FoodRunOrder {
   worker_id: string;
   item: string;
   price_cents?: number;
+  price_accepted_at?: string;
   status: FoodOrderStatus;
   notes?: string;
   created_at: string;

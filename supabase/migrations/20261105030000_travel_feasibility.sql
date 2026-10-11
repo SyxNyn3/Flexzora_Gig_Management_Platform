@@ -80,6 +80,15 @@ LANGUAGE sql STABLE SECURITY DEFINER AS $$
         )
     )
   FROM unnest(p_worker_ids) AS w(id)
+  -- Availability-oracle guard (#50 class): API callers only see rows for
+  -- workers related to a company they own (roster, assignment, or accepted
+  -- application). Service/definer callers (matching sweeps, tests) are
+  -- unfiltered. Non-related workers simply emit no row.
+  WHERE current_user NOT IN ('authenticated', 'anon')
+     OR EXISTS (
+       SELECT 1 FROM companies c
+       WHERE c.created_by = current_profile_id()
+         AND worker_related_to_company(w.id, c.id))
 $$;
 
 GRANT EXECUTE ON FUNCTION travel_minutes(double precision, double precision, double precision, double precision) TO authenticated;
