@@ -102,6 +102,8 @@ SELECT is(
      FROM certifications WHERE id = '00000000-0000-0000-0000-00000000ce01'),
   true, 'approve stamps verified + review fields');
 
+-- notifications RLS shows a user only their own inbox — count as service role.
+RESET ROLE;
 SELECT is(
   (SELECT count(*)::int FROM notifications
     WHERE user_id = (SELECT worker_id FROM certifications WHERE id = '00000000-0000-0000-0000-00000000ce01')),

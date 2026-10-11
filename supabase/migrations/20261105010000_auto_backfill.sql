@@ -186,6 +186,10 @@ ALTER TABLE ops_tasks DROP CONSTRAINT IF EXISTS ops_tasks_source_check;
 ALTER TABLE ops_tasks ADD CONSTRAINT ops_tasks_source_check
   CHECK (source IN ('manual', 'auto_unfilled', 'auto_backfill'));
 
-GRANT EXECUTE ON FUNCTION next_backfill_candidate(uuid) TO authenticated;
-GRANT EXECUTE ON FUNCTION auto_backfill_shift(uuid) TO authenticated;
+-- auto_backfill_shift + next_backfill_candidate stay definer-internal: fired
+-- by the seat-loss trigger and detect_no_shows, never by the API. Granting them
+-- to authenticated would let any user fire backfill offers/notifications on
+-- another company's shift.
+REVOKE EXECUTE ON FUNCTION next_backfill_candidate(uuid) FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION auto_backfill_shift(uuid) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION detect_no_shows(uuid) TO authenticated;
