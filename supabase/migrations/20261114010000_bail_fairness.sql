@@ -81,9 +81,13 @@ BEGIN
   END IF;
 
   -- leaving a match (withdrawn, or switching offers): free seats, reopen the
-  -- offer, void the rider's IOU for the old offer only
+  -- offer, void the rider's IOU for the old offer only. Skipped while an
+  -- offer-cancel cascade is in flight — the cascade resets the offer's own
+  -- seat ledger and re-writing the same tuple mid-command raises
+  -- "tuple to be updated was already modified".
   IF TG_OP = 'UPDATE' AND OLD.status = 'matched' AND OLD.offer_id IS NOT NULL
-     AND (NEW.status IS DISTINCT FROM 'matched' OR NEW.offer_id IS DISTINCT FROM OLD.offer_id) THEN
+     AND (NEW.status IS DISTINCT FROM 'matched' OR NEW.offer_id IS DISTINCT FROM OLD.offer_id)
+     AND current_setting('app.offer_cancel_cascade', true) IS DISTINCT FROM 'on' THEN
     UPDATE ride_offers
        SET seats_taken = GREATEST(seats_taken - OLD.seats_needed, 0),
            status = CASE WHEN status = 'full' THEN 'open'::ride_offer_status ELSE status END
@@ -187,3 +191,23 @@ BEGIN
   END IF;
   RETURN NEW;
 END $$;
+
+-- Offer-cancel cascade re-entry guard: opening matched requests fires their
+-- sync trigger, which would try to free seats on the offer tuple that is
+-- already being updated by this command. A transaction-local flag tells the
+-- request sync to skip the seat-free; the cascade resets seats_taken itself.
+CREATE OR REPLACE FUNCTION cascade_ride_offer_cancel() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, extensions AS $$
+BEGIN
+  IF NEW.status = 'cancelled' AND OLD.status IS DISTINCT FROM 'cancelled' THEN
+    PERFORM set_config('app.offer_cancel_cascade', 'on', true);
+    UPDATE ride_requests
+       SET status = 'open', offer_id = NULL, updated_at = now()
+     WHERE offer_id = NEW.id AND status = 'matched';
+    UPDATE crew_iou SET status = 'void', updated_at = now()
+     WHERE iou_group_id = NEW.id AND status = 'committed';
+    NEW.seats_taken := 0;
+  END IF;
+  RETURN NEW;
+END;
+$$;
