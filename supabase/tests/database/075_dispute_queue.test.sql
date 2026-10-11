@@ -2,7 +2,7 @@
 -- resolves (as submitted / adjust clock record / void); dispute fields are
 -- system-managed and the other side is always notified.
 BEGIN;
-SELECT plan(10);
+SELECT plan(11);
 
 INSERT INTO auth.users (id, instance_id, aud, role, email, encrypted_password, raw_user_meta_data, created_at, updated_at)
 VALUES
@@ -108,6 +108,16 @@ SELECT results_eq(
 
 -- 6: voided on d503 ends the dispute with no pay
 SELECT ok(resolve_timesheet_dispute('00000000-0000-0000-0000-00000000d503', 'voided', NULL, NULL, 'Duplicate sheet'), 'owner can void a disputed sheet');
+
+-- 7: an approved sheet cannot be disputed back into the approval queue —
+-- resolve→approve would mint a second invoice and payout for the same work
+RESET ROLE;
+UPDATE timesheets SET status = 'approved' WHERE id = '00000000-0000-0000-0000-00000000d502';
+SET LOCAL ROLE authenticated;
+SELECT set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000b072","role":"authenticated"}', true);
+SELECT throws_ok(
+  $$ SELECT open_timesheet_dispute('00000000-0000-0000-0000-00000000d502', 'double pay attempt') $$,
+  'P0001', NULL, 'disputing an approved timesheet is refused');
 
 SELECT * FROM finish();
 ROLLBACK;
