@@ -195,6 +195,21 @@ export interface Database {
         Insert: Omit<FoodRunOrder, 'id' | 'created_at' | 'updated_at' | 'worker'>;
         Update: Partial<Omit<FoodRunOrder, 'id' | 'created_at' | 'updated_at' | 'worker'>>;
       };
+      crew_alerts: {
+        Row: CrewAlert;
+        Insert: Omit<CrewAlert, 'id' | 'created_at' | 'read_at'>;
+        Update: Partial<Omit<CrewAlert, 'id' | 'created_at'>>;
+      };
+      cert_gear_items: {
+        Row: CertGearItem;
+        Insert: CertGearItem;
+        Update: Partial<CertGearItem>;
+      };
+      base_gear_items: {
+        Row: BaseGearItem;
+        Insert: BaseGearItem;
+        Update: Partial<BaseGearItem>;
+      };
     };
   };
 }
@@ -982,5 +997,30 @@ export interface FoodRunOrder {
   created_at: string;
   updated_at: string;
   worker?: Profile;
+}
+
+// --- SmartAlerts -------------------------------------------------------------
+export type CrewAlertKind = 'gear' | 'parking' | 'departure' | 'pool' | 'iou' | 'custom';
+
+export interface CrewAlert {
+  id: string;
+  worker_id: string;
+  shift_id?: string;
+  kind: CrewAlertKind;
+  title: string;
+  body: string;
+  ref_id?: string;
+  dedupe_key?: string;
+  read_at?: string;
+  created_at: string;
+}
+
+export interface CertGearItem {
+  cert_code: string;
+  item: string;
+}
+
+export interface BaseGearItem {
+  item: string;
 }
 

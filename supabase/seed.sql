@@ -262,4 +262,28 @@ begin
           'Carnitas burrito, no onions', 'Extra napkins please')
   on conflict (id) do nothing;
 
+  -- ------------------------------------------------------------------
+  -- SmartAlerts demo: venue parking intel + worker locations + confirmed
+  -- bookings — the briefing trigger generates gear/parking/departure alerts.
+  -- ------------------------------------------------------------------
+  update venues
+  set overnight_parking = true,
+      parking_notes = 'Crew lot C — overnight OK for the weekend, badge on dash. No camping inside Gate 4.',
+      parking_json = '{"crew_lot":"Lot C, enter Gate 2","shuttle":"Golf carts run lot->dock on the hour"}'::jsonb
+  where id = v_venue;
+
+  insert into worker_sensitive (worker_id, latitude, longitude) values
+    (p_worker1, 37.4419, -122.1430),   -- Palo Alto
+    (p_worker2, 37.8044, -122.2712)    -- Oakland
+  on conflict (worker_id) do nothing;
+
+  -- Confirmed bookings on the crew-pool shift; the confirm trigger writes
+  -- each worker's gear/parking/departure briefing rows automatically.
+  insert into shift_assignments (id, shift_id, worker_id, status, source, offered_rate, confirmed_at)
+  values ('55555555-0000-4000-8000-000000000050', v_shift_public, p_worker1,
+          'confirmed', 'roster_broadcast', 44.00, now() - interval '1 day'),
+         ('55555555-0000-4000-8000-000000000051', v_shift_public, p_worker2,
+          'confirmed', 'public_marketplace', 44.00, now() - interval '12 hours')
+  on conflict (id) do nothing;
+
 end $$;

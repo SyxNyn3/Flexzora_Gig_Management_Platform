@@ -10,6 +10,7 @@ import { joinPool, leavePool, cancelLodgingPool, postLodgingPool } from '@/lib/c
 import { placeOrder, cancelOrder, confirmOrder, postFoodRun, updateFoodRunStatus, isAcceptingOrders } from '@/lib/crew/food';
 import { postToBoard, resolvePost, closePost } from '@/lib/crew/board';
 import { iouCapacity } from '@/lib/crew/iouMath';
+import { markAllAlertsRead } from '@/lib/crew/alerts';
 import { hoursBetween, money, shiftWindow, toLocalInputValue } from '@/components/marketplace/format';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -21,7 +22,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import {
   Car, BedDouble, UtensilsCrossed, MessageSquare, ArrowLeft, Plus, X, Check,
-  MapPin, Clock, Users, Wallet, HandHelping, CircleAlert,
+  MapPin, Clock, Users, Wallet, HandHelping, CircleAlert, BellRing, Backpack, Navigation, ParkingSquare,
 } from 'lucide-react';
 import { CrewPostCategory, CrewPostDirection, Shift } from '@/lib/types';
 
@@ -94,6 +95,7 @@ const CrewBoardPage: React.FC = () => {
     assignments.refetch();
   };
 
+  const unreadAlerts = board.data.alerts.filter((a) => !a.read_at);
   const myRequest = board.data.requests.find((r) => r.rider_worker_id === profile?.id && r.status !== 'withdrawn' && r.status !== 'cancelled');
   const myMembershipByPool = new Map(board.data.members.filter((m) => m.worker_id === profile?.id && m.status === 'joined').map((m) => [m.pool_id, m]));
   const myOrderByRun = new Map(board.data.orders.filter((o) => o.worker_id === profile?.id && o.status !== 'cancelled').map((o) => [o.run_id, o]));
@@ -135,6 +137,37 @@ const CrewBoardPage: React.FC = () => {
             <Badge variant={capacity.remainingCents > 0 ? 'secondary' : 'destructive'}>
               {capacity.remainingCents > 0 ? `${money(capacity.remainingCents / 100)} room` : 'Cap reached'}
             </Badge>
+          </CardContent>
+        </Card>
+      )}
+
+      {board.data.alerts.length > 0 && (
+        <Card>
+          <CardContent className="p-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium inline-flex items-center gap-1.5">
+                <BellRing className="w-4 h-4" /> Briefing
+                {unreadAlerts.length > 0 && <Badge variant="destructive">{unreadAlerts.length} new</Badge>}
+              </p>
+              {unreadAlerts.length > 0 && (
+                <Button variant="ghost" size="sm" className="h-7 text-xs" disabled={busy !== null}
+                  onClick={() => act('read', () => markAllAlertsRead(), 'Marked read')}>
+                  Mark all read
+                </Button>
+              )}
+            </div>
+            {board.data.alerts.map((a) => (
+              <div key={a.id} className={`text-sm rounded p-2 ${a.read_at ? 'text-muted-foreground' : 'bg-muted'}`}>
+                <p className="font-medium inline-flex items-center gap-1.5">
+                  {a.kind === 'gear' && <Backpack className="w-3.5 h-3.5" />}
+                  {a.kind === 'parking' && <ParkingSquare className="w-3.5 h-3.5" />}
+                  {a.kind === 'departure' && <Navigation className="w-3.5 h-3.5" />}
+                  {!['gear', 'parking', 'departure'].includes(a.kind) && <CircleAlert className="w-3.5 h-3.5" />}
+                  {a.title}
+                </p>
+                <p className="text-xs whitespace-pre-line mt-0.5">{a.body}</p>
+              </div>
+            ))}
           </CardContent>
         </Card>
       )}

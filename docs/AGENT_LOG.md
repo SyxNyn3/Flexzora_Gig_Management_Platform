@@ -1,0 +1,111 @@
+# Agent Log
+
+Running ledger for the Flexzora overnight build. Newest entries first.
+Each entry: lane, branch/PR, what shipped, verification status, notes.
+
+---
+
+## Builder — Crew OS sprint (overnight)
+
+### feat/crew-ui → PR #13 — Crew board UI
+
+- `/shifts/:shiftId/crew` — phone-first crew page: commitments strip
+  (shares committed vs. 25% deduction cap estimated from rate × call length),
+  getting-there toggles, four tabs (Rides / Bunks / Grub / Board),
+  collapsible post forms, briefing card for SmartAlerts.
+- Entry point: "Crew" link on every booking card; lazy route.
+- One-tap Join/Bail/Leave/Order everywhere; runner price-confirm mints IOU;
+  author-resolve picker populated from everyone visible on the boards.
+- Verification: no local Node/Deno on this machine — CI runs
+  lint/typecheck/vitest/build per PR.
+- Stacked on `feat/grubrun`. Merge order: #8 → #9 → #10 → #11 → #12 → #13.
+
+### feat/grubrun → PR #12 — GrubRun food pooling
+
+- `food_runs` (restaurant, menu link, order cutoff, delivery area) +
+  `food_run_orders` (one per worker per run).
+- Debt isn't real until it costs something: runner confirms each order
+  with the actual price — THAT mints the food `crew_iou`
+  (beneficiary=runner, group=order).
+- Worker edits/cancels while 'placed'; runner/company cancels anytime;
+  run/shift cancel closes orders and voids group IOUs.
+- Seed: burrito run + a still-placed order.
+- Stacked on `feat/crew-board`.
+
+### feat/crew-board → PR #11 — CrewBoard structured posts
+
+- `crew_posts` anchored on `shift_id` — gig_messages is creator-broadcast
+  on legacy gigs, wrong anchor for worker-to-crew posts.
+- Categories ride/lodging/food/borrow/announce/general + want/offer
+  direction + optional amount.
+- Resolve names the fulfiller; priced posts mint the `crew_iou` in the
+  correct debt direction; zero-amount resolves as a favor.
+- Seed: open glove borrow ($5) + spare-harness offer.
+
+### feat/crew-lodging → PR #10 — BunkUp lodging pools
+
+- `lodging_pools` (hotel/airbnb/house/camp/rv) + `pool_members` with
+  spot accounting via sync triggers.
+- Joined members get a lodging-share `crew_iou` against the host;
+  leaving/pool-cancel/shift-cancel voids committed shares.
+- Venue fields: `overnight_parking`, `camping_allowed`, `parking_notes`,
+  `parking_json` (feeds SmartAlerts later).
+- Seed: Airbnb pool near venue with one joined bunk.
+- Stacked on `feat/crew-rides`.
+
+### feat/crew-rides → PR #9 — CrewPool rides
+
+- `needs_ride`/`can_drive` flags on `shift_assignments`.
+- `ride_offers` + `ride_requests`; seat accounting in triggers;
+  a matched request mints the gas-share IOU (beneficiary=driver,
+  group=offer). Withdraw frees the seat and voids the IOU.
+- Offer-change-while-matched handled (frees old seat, voids old IOU).
+- `guard_crew_iou_update` gained the same `current_user` exemption used by
+  the assignment guard so SECURITY DEFINER cascades stay legal.
+- Seed: 3-seat offer from the hotel + matched rider (IOU auto-minted).
+- Stacked on `feat/crew-iou`.
+
+### feat/crew-iou → PR #8 — crew_iou ledger (foundation)
+
+- Append-only `crew_iou` ledger: kind, amount, beneficiary (worker or
+  free-text), status (committed/settled/void/failed), settle_via, group.
+- `approve_timesheet` hook: settles committed payout-deduction IOUs
+  oldest-first, capped at 25% of gross, as a negative invoice line; payout
+  draws net from escrow.
+- Shift cancel/delete voids committed IOUs; no DELETE — void instead.
+- Guard trigger restricts transitions; definer exemption for cascades.
+- Pure math split into `iouMath.ts` so Vitest runs without Supabase env
+  (CI fix: `supabaseUrl is required`).
+- v1 gap (noted in backlog): deducted funds stay in event escrow —
+  beneficiary transfer lands with Stripe Connect.
+
+### feat/notify-assignment → PR #7 — Twilio assignment SMS
+
+- `notify-assignment` edge function: verifies caller is a party to the
+  assignment, resolves worker/company phones server-side, sends via
+  Twilio REST. No `TWILIO_*` → `{sent:false}` graceful degrade.
+- `src/lib/notify.ts` fire-and-forget helper; wired into applyToShift,
+  directBook, respondToOffer, decideApplication.
+- `supabase/config.toml` verify_jwt entry added.
+- Blocker for live SMS: needs `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`,
+  `TWILIO_FROM` secrets.
+
+### feat/auth-ux → PR #6 — Auth UX completion
+
+- Check-email state after signup (email confirmation is ON — was routing
+  to dashboard and bouncing users back).
+- Forgot-password flow: forgot view + `/reset-password` page +
+  `updateUser` handling.
+- Google/Apple buttons gated behind `VITE_ENABLE_GOOGLE_AUTH` /
+  `VITE_ENABLE_APPLE_AUTH` (don't render unconfigured OAuth).
+- Friendly error map incl. email-not-confirmed → resend with cooldown.
+- Fixed `type="email"` + email Zod schema blocking username sign-in.
+
+## Earlier — security hardening (main, pre-lane split)
+
+- `authkit-token`: JWT verified, identity = auth user id (was raw header).
+- Checkout/payment-intent functions: JWT + ownership + server-side amounts.
+- `lookup-user`: usernames only (email-enumeration oracle closed).
+- Waitlist verify link no longer returned in responses.
+- `20261008000000`: `search_path` pinned on all SECURITY DEFINER functions.
+- `sw.js`: network-first navigation; `schedule-demo` persists demo_requests.
