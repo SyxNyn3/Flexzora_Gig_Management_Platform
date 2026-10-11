@@ -3,7 +3,7 @@
 -- (never appends, keeps last-known state on failure); synced blocks count as
 -- hard conflicts in worker_travel_conflicts like any declared busy window.
 BEGIN;
-SELECT plan(7);
+SELECT plan(8);
 
 INSERT INTO auth.users (id, instance_id, aud, role, email, encrypted_password, raw_user_meta_data, created_at, updated_at)
 VALUES
