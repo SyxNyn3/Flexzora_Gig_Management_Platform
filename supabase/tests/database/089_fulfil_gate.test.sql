@@ -70,7 +70,7 @@ SELECT throws_ok(
 
 -- 5: fulfiller declines → post re-opens, nomination cleared, no IOU
 SELECT set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000020a3","role":"authenticated"}', true);
-SELECT ok(decline_fulfilment('00000000-0000-0000-0000-0000000020b2') IS NOT NULL, 'fulfiller declines');
+SELECT lives_ok($$ SELECT decline_fulfilment('00000000-0000-0000-0000-0000000020b2') $$, 'fulfiller declines');
 SELECT results_eq(
   $$ SELECT status::text, fulfilled_by_worker_id IS NULL FROM crew_posts WHERE id = '00000000-0000-0000-0000-0000000020b2' $$,
   $$ VALUES ('open'::text, true) $$,
