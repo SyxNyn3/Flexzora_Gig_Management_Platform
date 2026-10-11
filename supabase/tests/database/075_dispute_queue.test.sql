@@ -72,12 +72,14 @@ SELECT results_eq(
 SELECT set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000b073","role":"authenticated"}', true);
 SELECT throws_ok(
   $$ SELECT open_timesheet_dispute('00000000-0000-0000-0000-00000000d502'::uuid, 'not mine') $$,
-  'Not a party', 'non-party cannot open a dispute');
+  'P0001', 'Not a party', 'non-party cannot open a dispute');
 
 -- 3: workers can't write dispute fields directly (system-managed) — d502 is
 -- still 'submitted' so RLS passes the row through to the guard
 SELECT set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000b072","role":"authenticated"}', true);
 SELECT throws_ok(
+  $$ UPDATE timesheets SET resolution = 'as_submitted' WHERE id = '00000000-0000-0000-0000-00000000d502'::uuid $$,
+  'P0001', 'system-managed', 'worker cannot self-resolve via direct update');
 
 -- 4: owner resolves d501 as submitted; company notified on open, worker on resolve
 SELECT set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000b071","role":"authenticated"}', true);
