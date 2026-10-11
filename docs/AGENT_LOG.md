@@ -2,7 +2,7 @@
 
 Shared journal — every session appends: date, lane, what shipped, what's next, blockers.
 Newest entries on top.
-- **2026-10-11 — Lane B — Cert-gated swap preview** — `feat/swap-cert-preview`. `my_locked_swaps(shift)` definer RPC: open swaps the caller can't claim return sweetener + posted time + the caller's missing certs w/ state (mirrors worker_meets_shift_certs + cert-gap state labels) — no requester identity, no other workers' certs. Crew board renders dashed "one credential short" cards with profile-upload links. pgTAP `088` — 5 asserts (RLS hides, gap preview, no identity leak, eligible sees none, requester excluded).
+- **2026-10-11 — Lane B — Cert-gated swap preview** — `feat/swap-cert-preview` → PR #123. `my_locked_swaps(shift)` definer RPC: open swaps the caller can't claim return sweetener + posted time + the caller's missing certs w/ state (mirrors worker_meets_shift_certs + cert-gap state labels) — no requester identity, no other workers' certs. Crew board renders dashed "one credential short" cards with profile-upload links. pgTAP `088` — 5 asserts (RLS hides, gap preview, no identity leak, eligible sees none, requester excluded).
 
 - **2026-10-11 — Lane B — Company swap-approval** — `feat/swap-approval` → PR #122. `swap_requests` gains company_decision/decided_at/reason (system-managed — joins the #22 guard's immutable set); `company_decide_swap(owns_shift)` — approve stamps + crew_alerts the claimer to confirm (consent stays worker-side), reject cancels with a reason and the existing triggers cascade claims + pull the offer. `SwapQueue` card on EventDetailPage lists live swaps w/ per-swap claim state + reject-reason dialog. pgTAP `087` — 6 asserts.
 
