@@ -107,7 +107,7 @@ export interface Database {
       };
       venues: {
         Row: Venue;
-        Insert: Omit<Venue, 'id' | 'created_at' | 'updated_at'>;
+        Insert: Omit<Venue, 'id' | 'created_at' | 'updated_at' | 'overnight_parking' | 'camping_allowed'>;
         Update: Partial<Omit<Venue, 'id' | 'created_at' | 'updated_at'>>;
       };
       overtime_rules: {
@@ -169,6 +169,16 @@ export interface Database {
         Row: RideRequest;
         Insert: Omit<RideRequest, 'id' | 'created_at' | 'updated_at' | 'rider'>;
         Update: Partial<Omit<RideRequest, 'id' | 'created_at' | 'updated_at' | 'rider'>>;
+      };
+      lodging_pools: {
+        Row: LodgingPool;
+        Insert: Omit<LodgingPool, 'id' | 'created_at' | 'updated_at' | 'spots_taken' | 'host'>;
+        Update: Partial<Omit<LodgingPool, 'id' | 'created_at' | 'updated_at' | 'spots_taken' | 'host'>>;
+      };
+      pool_members: {
+        Row: PoolMember;
+        Insert: Omit<PoolMember, 'id' | 'created_at' | 'updated_at' | 'worker'>;
+        Update: Partial<Omit<PoolMember, 'id' | 'created_at' | 'updated_at' | 'worker'>>;
       };
     };
   };
@@ -561,6 +571,10 @@ export interface Venue {
   longitude: number;
   geofence_radius_m: number;
   load_in_notes?: string;
+  overnight_parking: boolean;
+  camping_allowed: boolean;
+  parking_notes?: string;
+  parking_json?: Record<string, unknown>;
   created_at: string;
   updated_at: string;
 }
@@ -859,5 +873,42 @@ export interface RideRequest {
   created_at: string;
   updated_at: string;
   rider?: Profile;
+}
+
+// --- BunkUp lodging --------------------------------------------------------
+export type LodgingPoolKind = 'hotel' | 'airbnb' | 'house' | 'camp' | 'rv' | 'other';
+export type LodgingPoolStatus = 'open' | 'full' | 'cancelled';
+export type PoolMemberStatus = 'joined' | 'left' | 'removed' | 'cancelled';
+
+export interface LodgingPool {
+  id: string;
+  shift_id: string;
+  host_worker_id: string;
+  kind: LodgingPoolKind;
+  name: string;
+  address_area?: string;
+  check_in_at?: string;
+  check_out_at?: string;
+  spots: number;
+  spots_taken: number;
+  total_cost_cents?: number;
+  share_cents: number;
+  notes?: string;
+  status: LodgingPoolStatus;
+  created_at: string;
+  updated_at: string;
+  host?: Profile;
+}
+
+export interface PoolMember {
+  id: string;
+  pool_id: string;
+  worker_id: string;
+  spots_needed: number;
+  status: PoolMemberStatus;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+  worker?: Profile;
 }
 

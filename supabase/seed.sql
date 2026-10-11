@@ -217,4 +217,20 @@ begin
           'Burrito run — paid cash after load-in.')
   on conflict (id) do nothing;
 
+  -- Alex hosts an Airbnb near the venue; Jordan takes a bunk — the sync
+  -- trigger mints Jordan's lodging-share IOU automatically.
+  insert into lodging_pools (id, shift_id, host_worker_id, kind, name,
+                             address_area, check_in_at, check_out_at,
+                             spots, total_cost_cents, share_cents, notes)
+  values ('55555555-0000-4000-8000-000000000020', v_shift_public, p_worker1, 'airbnb',
+          'BunkUp — 10 min from venue', 'Eastside, near Dock B',
+          current_date + 8 + interval '12 hours', current_date + 9 + interval '10 hours',
+          4, 24000, 6000, 'Two doubles + a couch. Late load-out OK.')
+  on conflict (id) do nothing;
+
+  insert into pool_members (id, pool_id, worker_id, spots_needed, status)
+  values ('55555555-0000-4000-8000-000000000021',
+          '55555555-0000-4000-8000-000000000020', p_worker2, 1, 'joined')
+  on conflict (id) do nothing;
+
 end $$;
