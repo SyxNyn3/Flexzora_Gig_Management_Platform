@@ -23,7 +23,8 @@ const ClockCard: React.FC<Props> = ({ assignment, onChanged }) => {
   const [locating, setLocating] = useState<string | null>(null);
   const shift = assignment.shift;
   const venue = shift?.event?.venue;
-  const hasFence = venue != null && venue.latitude != null && venue.longitude != null;
+  const fenceCenter =
+    venue && venue.latitude != null && venue.longitude != null ? { lat: venue.latitude, lng: venue.longitude } : null;
   const ts = assignment.timesheet;
   const clockedIn = !!ts?.clock_in_at;
   const clockedOut = !!ts?.clock_out_at;
@@ -38,8 +39,8 @@ const ClockCard: React.FC<Props> = ({ assignment, onChanged }) => {
     try {
       const pos = await getCurrentPosition();
       const here = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-      if (hasFence) {
-        const fence = checkGeofence(here, { lat: venue.latitude, lng: venue.longitude }, venue.geofence_radius_m, pos.coords.accuracy);
+      if (fenceCenter && venue) {
+        const fence = checkGeofence(here, fenceCenter, venue.geofence_radius_m, pos.coords.accuracy);
         setLocating(fence.inside ? `Inside geofence (${Math.round(fence.distanceM)} m)` : `${Math.round(fence.distanceM)} m from venue`);
         if (!fence.inside && kind === 'in') {
           toast.error(`You're ${Math.round(fence.distanceM)} m from ${venue.name}. Clock-in requires being within ${venue.geofence_radius_m} m.`);
@@ -65,12 +66,12 @@ const ClockCard: React.FC<Props> = ({ assignment, onChanged }) => {
   // position fixes outside the fence clock the worker out and flag it for
   // the manager (timesheet keeps the GPS distance/verification fields).
   useEffect(() => {
-    if (!clockedIn || clockedOut || !hasFence || typeof navigator === 'undefined' || !navigator.geolocation) return;
+    if (!clockedIn || clockedOut || !fenceCenter || !venue || typeof navigator === 'undefined' || !navigator.geolocation) return;
     const watchId = navigator.geolocation.watchPosition(
       (pos) => {
         const fence = checkGeofence(
           { lat: pos.coords.latitude, lng: pos.coords.longitude },
-          { lat: venue.latitude, lng: venue.longitude },
+          fenceCenter,
           venue.geofence_radius_m,
           pos.coords.accuracy,
         );
