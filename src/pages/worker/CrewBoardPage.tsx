@@ -11,6 +11,7 @@ import { placeOrder, cancelOrder, confirmOrder, postFoodRun, updateFoodRunStatus
 import { postToBoard, resolvePost, closePost } from '@/lib/crew/board';
 import { iouCapacity, bailKeptCents, DEFAULT_BAIL_POLICY } from '@/lib/crew/iouMath';
 import { fetchBailPolicy } from '@/lib/crew/iou';
+import { listCrewDistances } from '@/lib/crew/distance';
 import { markAllAlertsRead } from '@/lib/crew/alerts';
 import { postSwapRequest, cancelSwapRequest, claimSwap, withdrawClaim, acceptClaim, rejectClaim } from '@/lib/crew/swap';
 import { hasPushSubscription, pushSupported, subscribeToPush, unsubscribeFromPush } from '@/lib/push';
@@ -28,7 +29,7 @@ import {
   MapPin, Clock, Users, Wallet, HandHelping, CircleAlert, BellRing, Backpack, Navigation, ParkingSquare,
   Repeat2,
 } from 'lucide-react';
-import { CrewPostCategory, CrewPostDirection, LastRideOfferParams, RideBuddy, Shift } from '@/lib/types';
+import { CrewDistance, CrewPostCategory, CrewPostDirection, LastRideOfferParams, RideBuddy, Shift } from '@/lib/types';
 import type { BailPolicy } from '@/lib/crew/iouMath';
 
 const cents = (v: string): number | null => {
@@ -37,6 +38,30 @@ const cents = (v: string): number | null => {
 };
 
 const fmt = (iso?: string | null) => (iso ? format(new Date(iso), 'MMM d · HH:mm') : '—');
+
+/** "Pin this spot" — captures device geo for distance-ranked suggestions. */
+const useGeoPin = () => {
+  const [pin, setPin] = useState<{ lat: number; lng: number } | null>(null);
+  const grab = () => {
+    if (!('geolocation' in navigator)) return toast.error('Location unavailable on this device');
+    navigator.geolocation.getCurrentPosition(
+      (pos) => setPin({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => toast.error('Could not get your location'),
+    );
+  };
+  return { pin, setPin, grab };
+};
+
+const GeoPinButton: React.FC<{ pin: { lat: number; lng: number } | null; onPin: () => void; onClear: () => void }> = ({ pin, onPin, onClear }) =>
+  pin ? (
+    <Button type="button" size="sm" variant="secondary" className="w-full" onClick={onClear}>
+      <MapPin className="w-3.5 h-3.5 mr-1" /> Spot pinned — tap to clear
+    </Button>
+  ) : (
+    <Button type="button" size="sm" variant="outline" className="w-full" onClick={onPin}>
+      <MapPin className="w-3.5 h-3.5 mr-1" /> Pin this spot (helps crew find it)
+    </Button>
+  );
 
 /** Small collapsible "post something" form used by every tab. */
 const MiniForm: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => {
@@ -63,6 +88,7 @@ const CrewBoardPage: React.FC = () => {
   const [lastOffer, setLastOffer] = useState<LastRideOfferParams | null>(null);
   const [buddyTick, setBuddyTick] = useState(0);
   const [bailPolicy, setBailPolicy] = useState<BailPolicy>(DEFAULT_BAIL_POLICY);
+  const [distances, setDistances] = useState<CrewDistance[]>([]);
 
   useEffect(() => {
     hasPushSubscription().then(setPushOn);
@@ -73,6 +99,7 @@ const CrewBoardPage: React.FC = () => {
     if (!shiftId) return;
     listRideBuddies(shiftId).then(({ data }) => setBuddies(data));
     fetchMyLastOfferParams().then(({ data }) => setLastOffer(data));
+    listCrewDistances(shiftId).then(({ data }) => setDistances(data));
   }, [shiftId, buddyTick]);
 
   const shift = shiftQ.data ?? undefined;
@@ -84,6 +111,17 @@ const CrewBoardPage: React.FC = () => {
     () => board.data.ious.filter((i) => i.worker_id === profile?.id && i.status === 'committed'),
     [board.data.ious, profile?.id],
   );
+  const distById = useMemo(() => new Map(distances.map((d) => [d.ref_id, d])), [distances]);
+  const closestBunkId = useMemo(() => {
+    const bunks = distances.filter((d) => d.kind === 'lodging');
+    return bunks.length ? bunks.reduce((a, b) => (a.km <= b.km ? a : b)).ref_id : null;
+  }, [distances]);
+  const sortedOffers = useMemo(() => {
+    const pinned = board.data.offers.filter((o) => distById.has(o.id));
+    const rest = board.data.offers.filter((o) => !distById.has(o.id));
+    pinned.sort((a, b) => (distById.get(a.id)?.detour_km ?? 0) - (distById.get(b.id)?.detour_km ?? 0));
+    return [...pinned, ...rest];
+  }, [board.data.offers, distById]);
 
   // "Committed vs. cap" preview: estimates gross from the posted rate × call
   // length. The real cap applies to approved gross inside approve_timesheet.
@@ -345,10 +383,11 @@ const CrewBoardPage: React.FC = () => {
           {board.data.offers.length === 0 && board.data.requests.length === 0 && (
             <p className="text-center text-muted-foreground py-8 text-sm">No rides yet — post the first one.</p>
           )}
-          {board.data.offers.map((o) => {
+          {sortedOffers.map((o) => {
             const matched = myRequest?.offer_id === o.id && myRequest.status === 'matched';
             const mine = o.driver_worker_id === profile?.id;
             const full = o.seats_taken >= o.seats;
+            const dist = distById.get(o.id);
             return (
               <Card key={o.id}>
                 <CardContent className="p-4">
@@ -358,6 +397,11 @@ const CrewBoardPage: React.FC = () => {
                         <p className="font-semibold">{o.driver?.full_name ?? 'Crew driver'}</p>
                         <Badge variant={full ? 'secondary' : 'outline'}>{o.seats_taken}/{o.seats} seats</Badge>
                         {o.gas_share_cents > 0 && <Badge variant="secondary">{money(o.gas_share_cents / 100)}/seat</Badge>}
+                        {dist?.detour_km != null && (
+                          <Badge variant={dist.detour_km <= 3 ? 'default' : 'outline'}>
+                            {dist.detour_km <= 3 ? 'On your way' : `+${dist.detour_km} km detour`} · {dist.km} km away
+                          </Badge>
+                        )}
                         {matched && <Badge>You're in</Badge>}
                       </div>
                       <p className="text-sm text-muted-foreground mt-1">
@@ -433,6 +477,11 @@ const CrewBoardPage: React.FC = () => {
                         <Badge variant="secondary">{p.kind}</Badge>
                         <Badge variant="outline">{p.spots_taken}/{p.spots} spots</Badge>
                         {p.share_cents > 0 && <Badge variant="secondary">{money(p.share_cents / 100)}/spot</Badge>}
+                        {distById.get(p.id) && (
+                          <Badge variant={p.id === closestBunkId ? 'default' : 'outline'}>
+                            {p.id === closestBunkId ? 'Closest bunk · ' : ''}{distById.get(p.id)!.km} km to venue
+                          </Badge>
+                        )}
                       </div>
                       <p className="text-sm text-muted-foreground mt-1">
                         Host: {p.host?.full_name ?? '—'} · {p.address_area ?? 'area TBD'}
@@ -492,6 +541,7 @@ const CrewBoardPage: React.FC = () => {
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className="font-semibold">{r.restaurant}</p>
                         <Badge variant={r.status === 'open' ? 'default' : 'secondary'}>{r.status}</Badge>
+                        {distById.get(r.id) && <Badge variant="outline">Pickup {distById.get(r.id)!.km} km from venue</Badge>}
                       </div>
                       <p className="text-sm text-muted-foreground mt-1">
                         Runner: {r.runner?.full_name ?? '—'} · cutoff {fmt(r.order_cutoff_at)}
@@ -608,6 +658,7 @@ const RideOfferForm: React.FC<{ shift: Shift; busy: string | null; initial?: Las
   const [at, setAt] = useState(toLocalInputValue(shift.starts_at));
   const [gas, setGas] = useState('');
   const [notes, setNotes] = useState('');
+  const geo = useGeoPin();
 
   // "Offer again": hydrate from my most recent live offer once it loads.
   useEffect(() => {
@@ -616,6 +667,10 @@ const RideOfferForm: React.FC<{ shift: Shift; busy: string | null; initial?: Las
     setArea(initial.departure_area ?? '');
     setGas(initial.gas_share_cents > 0 ? String(initial.gas_share_cents / 100) : '');
     setNotes(initial.notes ?? '');
+    if (initial.departure_lat != null && initial.departure_lng != null) {
+      geo.setPin({ lat: initial.departure_lat, lng: initial.departure_lng });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- setPin is stable
   }, [initial]);
   return (
     <MiniForm label="Offer a ride">
@@ -626,8 +681,9 @@ const RideOfferForm: React.FC<{ shift: Shift; busy: string | null; initial?: Las
       <Input placeholder="Leaving from (hotel, lot, city)" value={area} onChange={(e) => setArea(e.target.value)} />
       <Input placeholder="Gas share per seat ($, optional)" inputMode="decimal" value={gas} onChange={(e) => setGas(e.target.value)} />
       <Input placeholder="Notes — gear room, stops, playlist rules" value={notes} onChange={(e) => setNotes(e.target.value)} />
+      <GeoPinButton pin={geo.pin} onPin={geo.grab} onClear={() => geo.setPin(null)} />
       <Button size="sm" className="w-full" disabled={busy !== null || !seats || parseInt(seats) < 1}
-        onClick={() => onSubmit({ shiftId: shift.id, seats: parseInt(seats), departureArea: area || undefined, departureAt: new Date(at).toISOString(), gasShareCents: cents(gas) ?? 0, notes: notes || undefined })}>
+        onClick={() => onSubmit({ shiftId: shift.id, seats: parseInt(seats), departureArea: area || undefined, departureAt: new Date(at).toISOString(), departureLat: geo.pin?.lat, departureLng: geo.pin?.lng, gasShareCents: cents(gas) ?? 0, notes: notes || undefined })}>
         Post ride
       </Button>
     </MiniForm>
@@ -642,6 +698,7 @@ const LodgingForm: React.FC<{ shift: Shift; busy: string | null; onSubmit: (i: P
   const [share, setShare] = useState('');
   const [checkIn, setCheckIn] = useState(toLocalInputValue(shift.starts_at));
   const [notes, setNotes] = useState('');
+  const geo = useGeoPin();
   return (
     <MiniForm label="Host a bunk pool">
       <Input placeholder="Name — La Quinta suite, Riverside campground" value={name} onChange={(e) => setName(e.target.value)} />
@@ -655,13 +712,14 @@ const LodgingForm: React.FC<{ shift: Shift; busy: string | null; onSubmit: (i: P
         <Input placeholder="Spots" inputMode="numeric" value={spots} onChange={(e) => setSpots(e.target.value)} />
       </div>
       <Input placeholder="Area / address" value={area} onChange={(e) => setArea(e.target.value)} />
+      <GeoPinButton pin={geo.pin} onPin={geo.grab} onClear={() => geo.setPin(null)} />
       <div className="grid grid-cols-2 gap-2">
         <Input type="datetime-local" value={checkIn} onChange={(e) => setCheckIn(e.target.value)} />
         <Input placeholder="Share per spot ($)" inputMode="decimal" value={share} onChange={(e) => setShare(e.target.value)} />
       </div>
       <Input placeholder="Notes" value={notes} onChange={(e) => setNotes(e.target.value)} />
       <Button size="sm" className="w-full" disabled={busy !== null || !name || parseInt(spots) < 1}
-        onClick={() => onSubmit({ shiftId: shift.id, kind, name, addressArea: area || undefined, checkInAt: new Date(checkIn).toISOString(), spots: parseInt(spots), shareCents: cents(share) ?? 0, notes: notes || undefined })}>
+        onClick={() => onSubmit({ shiftId: shift.id, kind, name, addressArea: area || undefined, geoLat: geo.pin?.lat, geoLng: geo.pin?.lng, checkInAt: new Date(checkIn).toISOString(), spots: parseInt(spots), shareCents: cents(share) ?? 0, notes: notes || undefined })}>
         Post pool
       </Button>
     </MiniForm>
@@ -674,6 +732,7 @@ const FoodRunForm: React.FC<{ shift: Shift; busy: string | null; onSubmit: (i: P
   const [area, setArea] = useState('');
   const [menu, setMenu] = useState('');
   const [notes, setNotes] = useState('');
+  const geo = useGeoPin();
   return (
     <MiniForm label="Start a food run">
       <Input placeholder="Restaurant" value={restaurant} onChange={(e) => setRestaurant(e.target.value)} />
@@ -682,9 +741,10 @@ const FoodRunForm: React.FC<{ shift: Shift; busy: string | null; onSubmit: (i: P
         <Input placeholder="Menu link" value={menu} onChange={(e) => setMenu(e.target.value)} />
       </div>
       <Input placeholder="Meet where — Dock B 18:30" value={area} onChange={(e) => setArea(e.target.value)} />
+      <GeoPinButton pin={geo.pin} onPin={geo.grab} onClear={() => geo.setPin(null)} />
       <Input placeholder="Notes — cash or IOU, etc." value={notes} onChange={(e) => setNotes(e.target.value)} />
       <Button size="sm" className="w-full" disabled={busy !== null || !restaurant}
-        onClick={() => onSubmit({ shiftId: shift.id, restaurant, orderCutoffAt: new Date(cutoff).toISOString(), deliveryArea: area || undefined, menuLink: menu || undefined, notes: notes || undefined })}>
+        onClick={() => onSubmit({ shiftId: shift.id, restaurant, orderCutoffAt: new Date(cutoff).toISOString(), deliveryArea: area || undefined, pickupLat: geo.pin?.lat, pickupLng: geo.pin?.lng, menuLink: menu || undefined, notes: notes || undefined })}>
         Post run
       </Button>
     </MiniForm>

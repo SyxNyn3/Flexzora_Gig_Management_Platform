@@ -16,6 +16,8 @@ export interface NewFoodRun {
   menuLink?: string;
   orderCutoffAt: string;
   deliveryArea?: string;
+  pickupLat?: number;
+  pickupLng?: number;
   notes?: string;
 }
 
@@ -53,6 +55,8 @@ export async function postFoodRun(input: NewFoodRun): Promise<Result<FoodRun | n
         menu_link: input.menuLink ?? null,
         order_cutoff_at: input.orderCutoffAt,
         delivery_area: input.deliveryArea ?? null,
+        pickup_lat: input.pickupLat ?? null,
+        pickup_lng: input.pickupLng ?? null,
         notes: input.notes ?? null,
       })
       .select()

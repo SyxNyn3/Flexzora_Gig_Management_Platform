@@ -15,6 +15,8 @@ export interface NewLodgingPool {
   kind: LodgingPoolKind;
   name: string;
   addressArea?: string;
+  geoLat?: number;
+  geoLng?: number;
   checkInAt?: string;
   checkOutAt?: string;
   spots: number;
@@ -61,6 +63,8 @@ export async function postLodgingPool(input: NewLodgingPool): Promise<Result<Lod
         kind: input.kind,
         name: input.name,
         address_area: input.addressArea ?? null,
+        geo_lat: input.geoLat ?? null,
+        geo_lng: input.geoLng ?? null,
         check_in_at: input.checkInAt ?? null,
         check_out_at: input.checkOutAt ?? null,
         spots: input.spots,
