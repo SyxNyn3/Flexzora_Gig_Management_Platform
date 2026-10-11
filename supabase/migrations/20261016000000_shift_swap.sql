@@ -129,16 +129,43 @@ CREATE TRIGGER guard_swap_request_insert BEFORE INSERT ON swap_requests
 
 -- Users can only cancel an open/offered swap. Every other transition
 -- (offered, completed, reopen) belongs to the definer state machine.
+--
+-- #22: this guard fires on EVERY update, not just status. The anchor
+-- columns (assignment, shift, requester) and the system pointers
+-- (accepted_claim_id, offered_assignment_id) are immutable through the API —
+-- otherwise a requester could re-point the swap at a cert-gated shift after
+-- an uncerted claim passed validation, or aim offered_assignment_id at a
+-- victim's booking so the handoff trigger withdraws it. The sweetener locks
+-- the moment anyone has claimed, killing the bait-and-switch.
 CREATE OR REPLACE FUNCTION guard_swap_request_update() RETURNS trigger AS $$
 BEGIN
   IF current_user NOT IN ('authenticated', 'anon') THEN RETURN NEW; END IF;
+
+  IF NEW.assignment_id IS DISTINCT FROM OLD.assignment_id
+     OR NEW.shift_id IS DISTINCT FROM OLD.shift_id
+     OR NEW.requester_worker_id IS DISTINCT FROM OLD.requester_worker_id THEN
+    RAISE EXCEPTION 'swap request anchors (assignment, shift, requester) are immutable'
+      USING ERRCODE = '42501';
+  END IF;
+  IF NEW.accepted_claim_id IS DISTINCT FROM OLD.accepted_claim_id
+     OR NEW.offered_assignment_id IS DISTINCT FROM OLD.offered_assignment_id THEN
+    RAISE EXCEPTION 'swap pointers are system-managed' USING ERRCODE = '42501';
+  END IF;
+  IF NEW.sweetener_cents IS DISTINCT FROM OLD.sweetener_cents THEN
+    IF OLD.status <> 'open' OR EXISTS (
+      SELECT 1 FROM swap_claims c WHERE c.swap_request_id = OLD.id AND c.status IN ('pending', 'accepted')
+    ) THEN
+      RAISE EXCEPTION 'sweetener is locked once a claim exists' USING ERRCODE = '42501';
+    END IF;
+  END IF;
+
   IF NEW.status = OLD.status THEN RETURN NEW; END IF;
   IF NEW.status = 'cancelled' AND OLD.status IN ('open', 'offered') THEN RETURN NEW; END IF;
   RAISE EXCEPTION 'swap requests move only through the claim/offer flow';
 END $$ LANGUAGE plpgsql;
 
 DROP TRIGGER IF EXISTS guard_swap_request_update ON swap_requests;
-CREATE TRIGGER guard_swap_request_update BEFORE UPDATE OF status ON swap_requests
+CREATE TRIGGER guard_swap_request_update BEFORE UPDATE ON swap_requests
   FOR EACH ROW EXECUTE FUNCTION guard_swap_request_update();
 
 -- Claim validation: claimer must meet the cert gate, must not be the
@@ -183,6 +210,13 @@ DECLARE
   caller uuid := current_profile_id();
 BEGIN
   IF current_user NOT IN ('authenticated', 'anon') THEN RETURN NEW; END IF;
+  -- #22: a claim belongs to exactly one claimer on exactly one request — the
+  -- requester/company must not be able to re-point it at a non-consenting
+  -- worker and then accept it.
+  IF NEW.claimer_worker_id IS DISTINCT FROM OLD.claimer_worker_id
+     OR NEW.swap_request_id IS DISTINCT FROM OLD.swap_request_id THEN
+    RAISE EXCEPTION 'claim identity is immutable' USING ERRCODE = '42501';
+  END IF;
   IF NEW.status = OLD.status THEN RETURN NEW; END IF;
   SELECT * INTO r FROM swap_requests WHERE id = OLD.swap_request_id;
 
@@ -206,7 +240,7 @@ BEGIN
 END $$ LANGUAGE plpgsql;
 
 DROP TRIGGER IF EXISTS guard_swap_claim_update ON swap_claims;
-CREATE TRIGGER guard_swap_claim_update BEFORE UPDATE OF status ON swap_claims
+CREATE TRIGGER guard_swap_claim_update BEFORE UPDATE ON swap_claims
   FOR EACH ROW EXECUTE FUNCTION guard_swap_claim_update();
 
 -- ---------------------------------------------------------------------------
