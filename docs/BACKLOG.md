@@ -28,7 +28,29 @@ Two sessions work this repo in parallel. **Before starting any item, mark it**: 
   - `schedule-demo` dropped every submission — now persists to new `demo_requests` table (`20261008010000`, service-role-only RLS).
   - Removed dead `stripe.ts` exports calling edge functions that were never deployed (`setup-payment-method`, `list-payment-methods`, `create-customer`, `create-payment-link`).
   - Still open: `.env` sits in git history with anon/publishable keys (low — public by design); stray scratch files `00`/`01` duplicate migration `20251006224047`; `send-waitlist-verification`/`resend` still only log the email — no real mail provider wired (needs e.g. Resend/SES key); sales-team notification for demo requests is a TODO in `schedule-demo`.
+- **Builder lane — claimed: Builder — working on it** (overnight self-drive, started 2026-10-10)
+- **Challenger lane — claimed: Devin-Challenger — working on it** (overnight red-team, started 2026-10-10; files issues labeled `challenger`)
 - Everything below is unclaimed.
+
+## Company OS — overnight sprint (see `docs/VISION_COMPANY_OS.md` — spec + competitor findings)
+- [ ] AI Upload Wizard: `import_jobs`/`import_rows`, XLSX/CSV/PDF parse → LLM entity mapping (OmniRoute `localhost:20128/v1`, heuristic fallback) → review screen → bulk import
+- [ ] Company Copilot: `company_docs` + copilot panel — ask-your-data queries + action previews (broadcast drafts, schedule lookups). Flag `VITE_ENABLE_COPILOT`
+- [ ] Staff layer: `staff_members`/`staff_assignments` — PMs/coordinators on rosters, crew+staff unified show view
+- [ ] Broadcast messaging: compose to crew AND staff (per-event/shift/all) + delivery log
+- [ ] ICS calendar feed (subscribe links that actually update) + `events.timezone` multi-timezone display
+- [ ] Ops kanban: `ops_tasks` + auto-created urgent cards for unfilled calls
+- [ ] Tour-level export: full crew list + schedule per event range → CSV/PDF
+- [ ] Auto-reminders: shift, cert-expiry, unfilled-call, timesheet-pending — one alerts inbox
+
+## Crew OS — overnight sprint (see `docs/VISION_CREW_OS.md` for full spec + quality bar)
+- [ ] `crew_iou` ledger migration + settlement hook in `approve_timesheet` (gross − Σ open IOUs, 25% cap, void on shift cancel) — **foundation, do first**
+- [ ] CrewPool rides: `ride_offers`/`ride_requests`, need-ride/can-drive flags, gas-share IOU
+- [ ] BunkUp lodging pools: `lodging_pools`/`pool_members`, venue overnight-parking fields
+- [ ] CrewBoard: structured post categories (ride/lodging/food/borrow) on `gig_messages`
+- [ ] GrubRun food pooling: `food_runs`/`food_run_orders` with cutoff times
+- [ ] SmartAlerts: per-shift briefing (gear checklist from certs, parking intel, departure estimate) — `venues.parking_json`, notification feed
+- [ ] ShiftSwap: `swap_requests`/`swap_claims`, cert-gated visibility, company approval via offer flow
+- [ ] Auth UX completion: check-email state post-signup, forgot-password flow, Google button behind `VITE_ENABLE_GOOGLE_AUTH` flag, error states matching design
 
 ## P0 — ship blockers
 - [x] Add `.github/workflows/ci.yml`: `npx eslint src`, `npx tsc --noEmit -p tsconfig.app.json`, `npx vitest run`, `npm run build` on every PR (free minutes). — **claimed: Mark — working on it**
