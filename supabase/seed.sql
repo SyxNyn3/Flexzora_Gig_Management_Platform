@@ -192,4 +192,74 @@ begin
           'high')
   on conflict do nothing;
 
+  -- ------------------------------------------------------------------
+  -- Crew OS demo: Jordan posts a ride offer; Alex's matched request
+  -- makes the sync trigger mint his gas-share IOU automatically.
+  -- Jordan already settled a manual burrito-run debt to Alex.
+  -- ------------------------------------------------------------------
+  insert into ride_offers (id, shift_id, driver_worker_id, seats,
+                           departure_area, departure_at, gas_share_cents, notes)
+  values ('55555555-0000-4000-8000-000000000010', v_shift_public, p_worker2, 3,
+          'Pensacola hotel lot', current_date + 8 + interval '14 hours', 2000,
+          'Room for 3 + small gear. Leaving before soundcheck.')
+  on conflict (id) do nothing;
+
+  insert into ride_requests (id, shift_id, rider_worker_id, seats_needed,
+                             pickup_area, status, offer_id)
+  values ('55555555-0000-4000-8000-000000000011', v_shift_public, p_worker1, 1,
+          'Hotel lobby', 'matched', '55555555-0000-4000-8000-000000000010')
+  on conflict (id) do nothing;
+
+  insert into crew_iou (id, worker_id, shift_id, kind, amount_cents,
+                        beneficiary_worker_id, status, settle_via, settled_at, notes)
+  values ('55555555-0000-4000-8000-000000000002', p_worker2, v_shift_public, 'food', 1200,
+          p_worker1, 'settled', 'manual', now() - interval '1 day',
+          'Burrito run — paid cash after load-in.')
+  on conflict (id) do nothing;
+
+  -- Alex hosts an Airbnb near the venue; Jordan takes a bunk — the sync
+  -- trigger mints Jordan's lodging-share IOU automatically.
+  insert into lodging_pools (id, shift_id, host_worker_id, kind, name,
+                             address_area, check_in_at, check_out_at,
+                             spots, total_cost_cents, share_cents, notes)
+  values ('55555555-0000-4000-8000-000000000020', v_shift_public, p_worker1, 'airbnb',
+          'BunkUp — 10 min from venue', 'Eastside, near Dock B',
+          current_date + 8 + interval '12 hours', current_date + 9 + interval '10 hours',
+          4, 24000, 6000, 'Two doubles + a couch. Late load-out OK.')
+  on conflict (id) do nothing;
+
+  insert into pool_members (id, pool_id, worker_id, spots_needed, status)
+  values ('55555555-0000-4000-8000-000000000021',
+          '55555555-0000-4000-8000-000000000020', p_worker2, 1, 'joined')
+  on conflict (id) do nothing;
+
+  -- CrewBoard demo: open borrow ask + an announce post
+  insert into crew_posts (id, shift_id, author_worker_id, category, direction,
+                          title, body, amount_cents)
+  values ('55555555-0000-4000-8000-000000000030', v_shift_public, p_worker2, 'borrow', 'want',
+          'Spare black work gloves?', 'Mine walked off at load-in. Will pay $5 for the weekend.',
+          500)
+  on conflict (id) do nothing;
+
+  insert into crew_posts (id, shift_id, author_worker_id, category, direction,
+                          title, body)
+  values ('55555555-0000-4000-8000-000000000031', v_shift_public, p_worker1, 'announce', 'offer',
+          'Extra harness available', 'Brought a spare Petzl — free to borrow for the weekend.')
+  on conflict (id) do nothing;
+
+  -- GrubRun demo: Alex runs a burrito order before show call; Jordan's
+  -- order is still 'placed' so the board shows the pre-confirm state.
+  insert into food_runs (id, shift_id, runner_worker_id, restaurant,
+                         order_cutoff_at, delivery_area, notes)
+  values ('55555555-0000-4000-8000-000000000040', v_shift_public, p_worker1,
+          'El Burrito Grande', current_date + 8 + interval '15 hours',
+          'Dock B at 18:30', 'Cash or IOU — list your order by 15:00.')
+  on conflict (id) do nothing;
+
+  insert into food_run_orders (id, run_id, worker_id, item, notes)
+  values ('55555555-0000-4000-8000-000000000041',
+          '55555555-0000-4000-8000-000000000040', p_worker2,
+          'Carnitas burrito, no onions', 'Extra napkins please')
+  on conflict (id) do nothing;
+
 end $$;
