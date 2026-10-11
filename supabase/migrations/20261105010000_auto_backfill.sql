@@ -147,7 +147,7 @@ RETURNS integer LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE
   v_flagged integer := 0;
 BEGIN
-  IF NOT owns_company(p_company_id) THEN
+  IF current_user IN ('authenticated','anon') AND NOT owns_company(p_company_id) THEN
     RAISE EXCEPTION 'Not authorized for this company';
   END IF;
 
