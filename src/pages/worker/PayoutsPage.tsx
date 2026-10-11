@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useAuth } from '@/contexts/AuthContext';
 import { useInvoices, usePayouts } from '@/hooks/useMarketplace';
 import { Invoice, Payout } from '@/lib/types';
+import { payerSummaryRows, statementRows, statementTotals } from '@/lib/export/earnings';
 import { money } from '@/components/marketplace/format';
 import { IS_PAYMENTS_SANDBOX, SANDBOX_PAYOUT_LABEL, SANDBOX_TRANSFER_LABEL } from '@/lib/payments';
 import { ConnectStatus, getConnectStatus, onboardToConnect } from '@/lib/connect';
@@ -80,6 +81,43 @@ const downloadInvoicePdf = (inv: Invoice) => {
     theme: 'striped',
   });
   doc.save(`${inv.invoice_number}.pdf`);
+};
+
+/** Year-end earnings statement — payer summary (1099-ready) + invoice detail. */
+const downloadStatementPdf = (invoices: Invoice[], year: number, workerName: string, workerEmail?: string) => {
+  const doc = new jsPDF();
+  const at = doc as unknown as { autoTable: (o: object) => { lastAutoTable: { finalY: number } }; lastAutoTable?: { finalY: number } };
+  const t = statementTotals(invoices);
+  doc.setFontSize(18);
+  doc.text('FlexZora Annual Earnings Statement', 14, 18);
+  doc.setFontSize(11);
+  doc.text(`Tax year ${year}`, 14, 28);
+  doc.setFontSize(10);
+  doc.text(`Worker: ${workerName}${workerEmail ? ` <${workerEmail}>` : ''}`, 14, 36);
+  doc.text(`Generated ${format(new Date(), 'MMMM d, yyyy')} · ${t.invoices} invoice${t.invoices === 1 ? '' : 's'}`, 14, 43);
+
+  const summary = payerSummaryRows(invoices);
+  at.autoTable({
+    startY: 50,
+    head: [['Paid by', 'Invoices', 'Gross earnings', 'Platform fees', 'Net paid']],
+    body: summary.body,
+    foot: summary.foot,
+    theme: 'striped',
+  });
+  const afterSummary = at.lastAutoTable?.finalY ?? 50;
+
+  doc.setFontSize(12);
+  doc.text('Invoice detail', 14, afterSummary + 10);
+  at.autoTable({
+    startY: afterSummary + 14,
+    head: [['Invoice #', 'Issued', 'Paid', 'Company', 'Event', 'Gross', 'Fee', 'Net', 'Status']],
+    body: statementRows(invoices),
+    theme: 'striped',
+    styles: { fontSize: 8 },
+  });
+  doc.setFontSize(8);
+  doc.text('Earnings summary for tax preparation. This is not a 1099 — companies issue their own forms.', 14, 285);
+  doc.save(`flexzora-earnings-statement-${year}.pdf`);
 };
 
 const PayoutsPage: React.FC = () => {
@@ -187,7 +225,7 @@ const PayoutsPage: React.FC = () => {
         <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground inline-flex items-center gap-1"><Clock className="w-3 h-3" /> Upcoming payouts</p><p className="text-xl font-semibold">{money(upcomingTotal)}</p><p className="text-xs text-muted-foreground">{upcoming.length} in flight</p></CardContent></Card>
         <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Paid in {year}</p><p className="text-xl font-semibold">{money(paidThisYear)}</p></CardContent></Card>
         <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Gross billed (1099 basis)</p><p className="text-xl font-semibold">{money(grossThisYear)}</p><p className="text-xs text-muted-foreground">{money(feesThisYear)} platform fees</p></CardContent></Card>
-        <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Invoices</p><p className="text-xl font-semibold">{invoices.data.length}</p><Button size="sm" variant="outline" className="mt-1 h-7 text-xs" disabled={!invoices.data.length} onClick={() => downloadCsv(invoices.data, year)}><Download className="w-3 h-3 mr-1" /> Export CSV</Button></CardContent></Card>
+        <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Invoices</p><p className="text-xl font-semibold">{invoices.data.length}</p><div className="mt-1 flex gap-1"><Button size="sm" variant="outline" className="h-7 text-xs" disabled={!invoices.data.length} onClick={() => downloadCsv(invoices.data, year)}><Download className="w-3 h-3 mr-1" /> Export CSV</Button><Button size="sm" variant="outline" className="h-7 text-xs" disabled={!invoices.data.length} onClick={() => downloadStatementPdf(invoices.data, year, profile?.full_name ?? 'Worker', profile?.email)} title="Year-end statement — payer summary + invoice detail"><FileText className="w-3 h-3 mr-1" /> Statement</Button></div></CardContent></Card>
       </div>
 
       <Tabs defaultValue="payouts">
