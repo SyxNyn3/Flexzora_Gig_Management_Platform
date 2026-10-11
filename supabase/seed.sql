@@ -316,4 +316,17 @@ begin
      '88888888-0000-4000-8000-000000000001', null, p_company_user, now() - interval '6 hours')
   on conflict (id) do nothing;
 
+  -- ------------------------------------------------------------------
+  -- Company OS demo: alerts inbox — one resolved alert shows the audit
+  -- trail; live ones generate themselves on inbox load via the sweep.
+  -- ------------------------------------------------------------------
+  insert into company_alerts (id, company_id, kind, severity, status, title, body,
+                              dedupe_key, event_id, due_at, resolved_at)
+  values
+    ('cccccccc-0000-4000-8000-000000000001', v_company, 'timesheet_pending', 'warning',
+     'resolved', 'Timesheet waiting — Jordan Lee',
+     'Metro Gala · Stagehands · submitted Mon 03 Nov 18:20 UTC',
+     'timesheet:demo-seeded-1', v_event, now() - interval '3 days', now() - interval '2 days')
+  on conflict (id) do nothing;
+
 end $$;

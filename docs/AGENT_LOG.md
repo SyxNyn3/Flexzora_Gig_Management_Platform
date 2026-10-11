@@ -7,6 +7,22 @@ Each entry: lane, branch/PR, what shipped, verification status, notes.
 
 ## Builder-2 — Company OS sprint (overnight)
 
+### feat/company-alerts → PR #62 — automatic reminders inbox
+
+- company_alerts + generate_company_alerts: idempotent sweep that opens
+  alerts for live conditions, escalates severity as deadlines near, and
+  auto-resolves conditions that cleared — the inbox mirrors reality like
+  the ops board.
+- Signal kinds: unfilled_call (warning → urgent inside 48h), cert_expiring
+  (booked crew's cert lapses ≤30d; ≤7d urgent, deduped per cert×shift),
+  timesheet_pending (submitted >48h), shift_tomorrow (locked call <24h).
+- Dedupe via (company_id, dedupe_key) — re-sweeps never double-open, and
+  dismissed alerts stay dismissed.
+- /alerts inbox: severity-ordered cards, kind + severity badges, event
+  links, open/resolved/dismissed tabs, "rescan" runs the sweep on demand.
+- Seed: one resolved timesheet alert for the audit trail; live alerts
+  self-generate. Verification: CI.
+
 ### feat/tour-exports → PR #61 — tour exports
 
 - /exports: date range + section checkboxes (crew list / schedule / staff
