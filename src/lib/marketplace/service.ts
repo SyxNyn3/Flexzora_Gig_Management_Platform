@@ -15,6 +15,7 @@ import {
   PreferredRosterEntry,
   ProductionEvent,
   Profile,
+  RateGuidance,
   RosterTier,
   Shift,
   ShiftAssignment,
@@ -641,6 +642,32 @@ export class MarketplaceService {
       return ok(results);
     } catch (e) {
       return fail(new Map(), e);
+    }
+  }
+
+  /**
+   * Cleared-rate percentiles for a role family inside a market radius —
+   * what the shift form shows next to the rate field. Aggregate-only RPC.
+   */
+  static async rateGuidance(
+    companyId: string,
+    roleName: string | null,
+    skillId: string | null,
+    lat: number | null,
+    lng: number | null,
+  ): Promise<Result<RateGuidance | null>> {
+    try {
+      const { data, error } = await supabase.rpc('rate_guidance', {
+        p_company_id: companyId,
+        p_role_name: roleName,
+        p_skill_id: skillId,
+        p_lat: lat,
+        p_lng: lng,
+      });
+      if (error) throw error;
+      return ok(data as RateGuidance | null);
+    } catch (e) {
+      return fail(null, e);
     }
   }
 

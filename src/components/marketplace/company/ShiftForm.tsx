@@ -1,12 +1,13 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CertificationType, Shift, ShiftFormData, ShiftTemplate, Skill } from '@/lib/types';
+import { CertificationType, RateGuidance, Shift, ShiftFormData, ShiftTemplate, Skill } from '@/lib/types';
 import { projectedShiftCost } from '@/lib/marketplace/overtime';
+import { MarketplaceService } from '@/lib/marketplace/service';
 import { TemplateService } from '@/lib/templates/service';
 import { money, toLocalInputValue } from '../format';
 import { toast } from 'sonner';
@@ -24,9 +25,11 @@ interface Props {
   /** Enables the "save as call pack" row + the start-from-pack picker. */
   companyId?: string;
   templates?: ShiftTemplate[];
+  /** Event venue coords — scopes the market-rate hint under the rate field. */
+  market?: { lat: number; lng: number } | null;
 }
 
-const ShiftForm: React.FC<Props> = ({ eventDate, skills, certTypes, initial, onSubmit, submitting, companyId, templates }) => {
+const ShiftForm: React.FC<Props> = ({ eventDate, skills, certTypes, initial, onSubmit, submitting, companyId, templates, market }) => {
   const [form, setForm] = useState<ShiftFormData>({
     title: initial?.title ?? '',
     role_name: initial?.role_name ?? 'Stagehand',
@@ -42,6 +45,27 @@ const ShiftForm: React.FC<Props> = ({ eventDate, skills, certTypes, initial, onS
 
   const [savePack, setSavePack] = useState(false);
   const [packName, setPackName] = useState('');
+  const [guidance, setGuidance] = useState<RateGuidance | null>(null);
+
+  // Cleared-rate guidance for this role family around the venue — debounced so
+  // preset clicks don't spam the RPC.
+  useEffect(() => {
+    if (!companyId || (!form.role_name.trim() && !form.skill_id)) {
+      setGuidance(null);
+      return;
+    }
+    const t = setTimeout(async () => {
+      const r = await MarketplaceService.rateGuidance(
+        companyId,
+        form.role_name.trim() || null,
+        form.skill_id || null,
+        market?.lat ?? null,
+        market?.lng ?? null,
+      );
+      setGuidance(r.data);
+    }, 350);
+    return () => clearTimeout(t);
+  }, [companyId, form.role_name, form.skill_id, market?.lat, market?.lng]);
 
   const set = <K extends keyof ShiftFormData>(k: K, v: ShiftFormData[K]) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -153,6 +177,17 @@ const ShiftForm: React.FC<Props> = ({ eventDate, skills, certTypes, initial, onS
         <div>
           <Label htmlFor="sh-rate">Rate ($/hr)</Label>
           <Input id="sh-rate" type="number" min={0} step="0.5" required value={form.hourly_rate} onChange={(e) => set('hourly_rate', Number(e.target.value))} />
+          {guidance && guidance.count >= 3 && guidance.p25 != null && guidance.p50 != null && guidance.p75 != null && (
+            <p className="text-[11px] text-muted-foreground mt-1">
+              Clears {money(guidance.p25)}–{money(guidance.p75)} · median {money(guidance.p50)} ({guidance.count} booked{market ? ' nearby' : ''})
+            </p>
+          )}
+          {guidance && guidance.count >= 3 && guidance.p25 != null && form.hourly_rate < guidance.p25 && (
+            <p className="text-[11px] text-amber-600 dark:text-amber-400 mt-0.5">Below market — underpriced calls fill slower</p>
+          )}
+          {guidance && guidance.count >= 3 && guidance.p75 != null && form.hourly_rate > guidance.p75 && (
+            <p className="text-[11px] text-muted-foreground mt-0.5">Above market P75 — premium rate</p>
+          )}
         </div>
         <div>
           <Label>Min skill tier</Label>

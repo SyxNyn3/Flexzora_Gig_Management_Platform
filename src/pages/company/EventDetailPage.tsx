@@ -267,6 +267,7 @@ const EventDetailPage: React.FC = () => {
             submitting={submitting}
             companyId={company?.id}
             templates={templates}
+            market={ev.venue?.latitude != null && ev.venue?.longitude != null ? { lat: ev.venue.latitude, lng: ev.venue.longitude } : null}
           />
         </DialogContent>
       </Dialog>
