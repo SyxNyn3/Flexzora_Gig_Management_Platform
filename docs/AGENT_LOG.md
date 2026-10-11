@@ -297,6 +297,17 @@ Newest entries on top.
 - `20261008000000`: `search_path` pinned on all SECURITY DEFINER functions.
 - `sw.js`: network-first navigation; `schedule-demo` persists demo_requests.
 
+## Lane A — Security Builder — single: #21 break_minutes floor
+
+- Branch `fix/lane-a-break-minutes`. Migration `20261105000000_p0rt_break_minutes_floor.sql`:
+  `CHECK (break_minutes >= 0) NOT VALID` on `timesheets`. A row CHECK covers every
+  writer (worker edits and the company override in `approve_timesheet`).
+  `NOT VALID` means existing rows aren't scanned, so `db push` can't be blocked by
+  legacy data. A legacy negative row fails its next approval loudly.
+- Test: pgTAP `021_break_minutes_floor` (3 assertions).
+- Deeper item noted, not built: a break longer than the clock span can still make
+  hours negative. A row CHECK against the clock span would close it, but needs a
+  data-quality pass first (see #35 temporal validation).
 ## Lane A — Security Builder — ride-match MED batch (#25, #26, #27)
 
 - Branch `fix/lane-a-ride-match`.

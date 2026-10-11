@@ -32,6 +32,7 @@ Multiple sessions work this repo in parallel. **Before starting any item, mark i
 - **Challenger lane — claimed: Devin-Challenger — working on it** (overnight red-team, started 2026-10-10; files issues labeled `challenger`)
 - **Reviewer lane — claimed: Devin-Reviewer — working on it** (overnight PR gate, started 2026-10-10; works in `../flexzora-reviewer-wt` worktree; merges only CI-green + clean)
 - **Builder-2 lane (Company OS) — claimed: Builder-2 — working on it** (overnight self-drive, started 2026-10-10; works in `../flexzora-builder2` worktree, migrations from `20261018` — `20261017` is taken by the Connect-payouts WIP)
+- **Lane A — Security Builder — claimed: Security Builder — working on it** (P0-RT top-down per MORNING ITINERARY: company-side HIGH batch #19/#20/#23/#51 first; one migration + regression test per issue; each fix on its own `fix/*` branch → PR)
 - Everything below is unclaimed.
 
 ## MORNING ITINERARY — lane assignments (2026-10-11)
@@ -107,7 +108,7 @@ Challenger-lane findings (issues labeled `challenger`, plus #67 reviewer). Each 
 - [x] #25 MED — `ride_requests` lacks `UNIQUE(rider_worker_id, shift_id)` → rider matches N requests to N offers → duplicate seats + duplicate IOUs (verified). — **fixed: Security Builder** (`fix/lane-a-ride-match`: `20261104000000_p0rt_ride_match.sql` + pgTAP `025/026/027`)
 - [x] #27 MED — `seats_needed` mutable after match → free seats, minted IOU keeps stale amount (verified). — **fixed: Security Builder** (`fix/lane-a-ride-match`: `20261104000000_p0rt_ride_match.sql` + pgTAP `025/026/027`)
 - [ ] #29 MED — `notify-assignment` `kind` not gated on assignment status → party can fire misleading SMS kinds (verified live since PR #7).
-- [ ] #21 MED — worker-editable `break_minutes` has no `>= 0` floor → negative breaks inflate payable hours (verified, pre-existing).
+- [x] #21 MED — worker-editable `break_minutes` has no `>= 0` floor → negative breaks inflate payable hours (verified, pre-existing). — **fixed: Security Builder** (`fix/lane-a-break-minutes`: `20261105000000_p0rt_break_minutes_floor.sql` NOT VALID CHECK + pgTAP `021`)
 - [ ] #30 MED — `ride_requests` INSERT only checks self-ownership → request squatting + phantom IOUs on shifts the worker isn't booked on (verified).
 - [x] #28 MED — settle loop `EXIT WHEN` on first over-cap IOU **deadlocks the whole queue** (worse than filed: EXIT not skip; over-cap IOU is permanent) (verified).
 - [ ] #31 MED — "Ride cancelled" alert is dead code: BEFORE cascade flips requests to 'open' before the AFTER alert trigger reads them (verified).
