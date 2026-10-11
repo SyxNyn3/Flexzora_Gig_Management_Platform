@@ -2,7 +2,7 @@
 -- orderer's debt minted at that price. A confirmed price is now locked, and a
 -- price above the auto-accept cap mints only once the orderer accepts it.
 BEGIN;
-SELECT plan(8);
+SELECT plan(10);
 
 INSERT INTO auth.users (id, instance_id, aud, role, email, encrypted_password, raw_user_meta_data, created_at, updated_at)
 VALUES
@@ -77,6 +77,20 @@ RESET ROLE;
 SELECT is((SELECT count(*)::int FROM crew_iou WHERE iou_group_id = '52000000-0000-0000-0000-0000000000b2'
             AND amount_cents = 90000), 1,
           'accepting mints the debt once, at the price the orderer accepted');
+
+-- pre-stamp dodge: an orderer-supplied price_accepted_at on INSERT would sit in
+-- OLD on the confirm update, so the consent-mint would never fire — free food.
+SET LOCAL ROLE authenticated;
+SELECT set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000b523","role":"authenticated"}', true);
+SELECT lives_ok($$
+  INSERT INTO food_run_orders (id, run_id, worker_id, item, status, price_accepted_at)
+  SELECT '52000000-0000-0000-0000-0000000000b3', '52000000-0000-0000-0000-0000000000a1', id, 'Sneaky fries', 'placed'::food_order_status, now()
+  FROM profiles WHERE user_id = '00000000-0000-0000-0000-00000000b523'
+$$, 'orderer can place an order (pre-stamped consent gets stripped)');
+
+RESET ROLE;
+SELECT is((SELECT price_accepted_at IS NULL FROM food_run_orders WHERE id = '52000000-0000-0000-0000-0000000000b3'),
+          true, 'insert-time price_accepted_at is forced NULL for API writers');
 
 SELECT * FROM finish();
 ROLLBACK;
