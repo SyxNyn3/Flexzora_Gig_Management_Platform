@@ -197,6 +197,11 @@ export interface Database {
         Insert: Omit<BroadcastRecipient, 'id' | 'created_at'>;
         Update: Partial<Omit<BroadcastRecipient, 'id' | 'created_at' | 'broadcast_id'>>;
       };
+      calendar_feeds: {
+        Row: CalendarFeed;
+        Insert: Omit<CalendarFeed, 'id' | 'created_at' | 'token' | 'last_accessed_at'> & { token?: string };
+        Update: Partial<Pick<CalendarFeed, 'label' | 'is_active'>>;
+      };
     };
   };
 }
@@ -621,6 +626,8 @@ export interface ProductionEvent {
   status: EventStatus;
   overtime_rule_code: string;
   color: string;
+  /** IANA wall-clock zone of the venue (America/Los_Angeles default). */
+  timezone?: string;
   /** From event_budgets; only present for the owning company. */
   budget_cap?: number;
   platform_fee_pct?: number;
@@ -804,6 +811,7 @@ export interface EventFormData {
   ends_on: string;
   budget_cap?: number;
   overtime_rule_code: string;
+  timezone?: string;
 }
 
 export interface ShiftFormData {
@@ -994,5 +1002,25 @@ export interface BroadcastRecipient {
   delivered_at?: string | null;
   worker_name?: string;
   staff_name?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Company OS — calendar feeds (ICS)
+// ---------------------------------------------------------------------------
+export type CalendarFeedScope = 'company' | 'event' | 'staff' | 'worker';
+
+export interface CalendarFeed {
+  id: string;
+  company_id: string;
+  token: string;
+  scope: CalendarFeedScope;
+  event_id?: string | null;
+  staff_id?: string | null;
+  worker_id?: string | null;
+  label?: string | null;
+  created_by?: string | null;
+  is_active: boolean;
+  last_accessed_at?: string | null;
+  created_at: string;
 }
 

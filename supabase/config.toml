@@ -39,6 +39,12 @@ verify_jwt = false
 [functions.stripe-webhook]
 verify_jwt = false
 
+# Calendar clients can't hold JWTs — the unguessable ?token= is the
+# capability (scoped + revocable in calendar_feeds), resolved with the
+# service role inside the function.
+[functions.ics-feed]
+verify_jwt = false
+
 # --- Authenticated endpoints ------------------------------------------------
 
 # Invoked function-to-function by submit/resend-waitlist-verification using
