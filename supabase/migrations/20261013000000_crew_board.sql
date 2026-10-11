@@ -81,7 +81,7 @@ BEGIN
   END IF;
   RAISE EXCEPTION 'Not a party to this post';
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 DROP TRIGGER IF EXISTS crew_posts_guard ON crew_posts;
 CREATE TRIGGER crew_posts_guard BEFORE UPDATE ON crew_posts
@@ -137,7 +137,7 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 DROP TRIGGER IF EXISTS shifts_close_crew_posts ON shifts;
 CREATE TRIGGER shifts_close_crew_posts AFTER UPDATE OF status ON shifts
