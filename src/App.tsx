@@ -402,9 +402,9 @@ const AppRoutes: React.FC = () => {
           }
         />
         <Route
-<<<<<<< HEAD
           path="/ops"
           element={
+            <ProtectedRoute>
               <Layout>
                 <OpsBoardPage />
               </Layout>
@@ -412,9 +412,9 @@ const AppRoutes: React.FC = () => {
           }
         />
         <Route
-=======
->>>>>>> origin/main
           path="/broadcast"
+          element={
+            <ProtectedRoute>
               <Layout>
                 <BroadcastPage />
               </Layout>
