@@ -296,3 +296,23 @@ Newest entries on top.
 - Waitlist verify link no longer returned in responses.
 - `20261008000000`: `search_path` pinned on all SECURITY DEFINER functions.
 - `sw.js`: network-first navigation; `schedule-demo` persists demo_requests.
+
+## Lane A — Security Builder — ride-match MED batch (#25, #26, #27)
+
+- Branch `fix/lane-a-ride-match`.
+- Migration `20261104000000_p0rt_ride_match.sql`:
+  - **#25** partial unique index on active `(rider_worker_id, shift_id)` rows
+    (`status IN ('open','matched')`). Closed requests don't count, so rejoining
+    after a bail still works. Race-free, unlike a trigger.
+  - **#26** `guard_ride_request_update`: the company may only move a request to
+    `cancelled` and may not change its offer. Matching stays rider-consented.
+  - **#27** `seats_needed` frozen once a request is `matched`.
+- Tests: pgTAP `025_ride_one_active_per_shift` (5), `026_ride_company_cancel_only`
+  (4), `027_ride_seats_frozen_when_matched` (3). Casts on every enum literal
+  from the start (lesson from the #19 batch CI run).
+- Migration-time caveat: if production already has two active requests from one
+  rider on one shift, the index creation fails loudly. Resolving that means
+  withdrawing the extra row, which is a human decision, so the migration does not
+  do it.
+- Left for later in Lane A: #30 (booking check on ride_requests inserts) is a
+  separate single in the itinerary, not this batch.

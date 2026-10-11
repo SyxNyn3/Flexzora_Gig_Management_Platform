@@ -103,9 +103,9 @@ Challenger-lane findings (issues labeled `challenger`, plus #67 reviewer). Each 
 - [ ] #50 MED — `worker_distances`/`worker_conflicts` callable by any user on any worker → location triangulation + availability oracle. Restrict to parties sharing an assignment/event.
 - [ ] #52 MED — GrubRun runner confirms at arbitrary price → inflated payout-deduction IOU. Fix: price locked at claim time + orderer confirm above a variance threshold.
 - [ ] #48 MED — `crew_alerts.dedupe_key` globally unique + self-insertable → pre-squatting suppresses another worker's briefings. Fix: per-worker keyspace + service-insert only.
-- [ ] #26 MED — company can force-match any open `ride_requests` → `matched` (no transition limits on the company branch of the guard) → non-consensual gas-share IOU (verified).
-- [ ] #25 MED — `ride_requests` lacks `UNIQUE(rider_worker_id, shift_id)` → rider matches N requests to N offers → duplicate seats + duplicate IOUs (verified).
-- [ ] #27 MED — `seats_needed` mutable after match → free seats, minted IOU keeps stale amount (verified).
+- [x] #26 MED — company can force-match any open `ride_requests` → `matched` (no transition limits on the company branch of the guard) → non-consensual gas-share IOU (verified). — **fixed: Security Builder** (`fix/lane-a-ride-match`: `20261104000000_p0rt_ride_match.sql` + pgTAP `025/026/027`)
+- [x] #25 MED — `ride_requests` lacks `UNIQUE(rider_worker_id, shift_id)` → rider matches N requests to N offers → duplicate seats + duplicate IOUs (verified). — **fixed: Security Builder** (`fix/lane-a-ride-match`: `20261104000000_p0rt_ride_match.sql` + pgTAP `025/026/027`)
+- [x] #27 MED — `seats_needed` mutable after match → free seats, minted IOU keeps stale amount (verified). — **fixed: Security Builder** (`fix/lane-a-ride-match`: `20261104000000_p0rt_ride_match.sql` + pgTAP `025/026/027`)
 - [ ] #29 MED — `notify-assignment` `kind` not gated on assignment status → party can fire misleading SMS kinds (verified live since PR #7).
 - [ ] #21 MED — worker-editable `break_minutes` has no `>= 0` floor → negative breaks inflate payable hours (verified, pre-existing).
 - [ ] #30 MED — `ride_requests` INSERT only checks self-ownership → request squatting + phantom IOUs on shifts the worker isn't booked on (verified).
