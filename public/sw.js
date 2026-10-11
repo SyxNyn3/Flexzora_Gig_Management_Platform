@@ -1,4 +1,4 @@
-const CACHE_NAME = 'flexzora-v2';
+const CACHE_NAME = 'flexzora-v3';
 
 // Only same-origin static assets are cacheable. API calls and auth traffic are
 // never cached.
@@ -58,5 +58,40 @@ self.addEventListener('fetch', (event) => {
           return response;
         })
     )
+  );
+});
+
+// --- Web Push ---------------------------------------------------------------
+// Payloads arrive from the send-push edge function: {title, body, url}.
+
+self.addEventListener('push', (event) => {
+  let data = { title: 'FlexZora', body: '', url: '/dashboard' };
+  try {
+    if (event.data) data = { ...data, ...event.data.json() };
+  } catch (_) { /* keep defaults */ }
+  event.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: '/icon-192x192.png',
+      badge: '/icon-192x192.png',
+      data: { url: data.url },
+      tag: 'flexzora-alert',
+      renotify: true,
+    })
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const url = event.notification.data?.url || '/dashboard';
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+      const existing = clients.find((c) => 'focus' in c);
+      if (existing) {
+        existing.focus();
+        return existing.navigate(url);
+      }
+      return self.clients.openWindow(url);
+    })
   );
 });

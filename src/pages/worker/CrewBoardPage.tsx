@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -12,6 +12,7 @@ import { postToBoard, resolvePost, closePost } from '@/lib/crew/board';
 import { iouCapacity } from '@/lib/crew/iouMath';
 import { markAllAlertsRead } from '@/lib/crew/alerts';
 import { postSwapRequest, cancelSwapRequest, claimSwap, withdrawClaim, acceptClaim, rejectClaim } from '@/lib/crew/swap';
+import { hasPushSubscription, pushSupported, subscribeToPush, unsubscribeFromPush } from '@/lib/push';
 import { hoursBetween, money, shiftWindow, toLocalInputValue } from '@/components/marketplace/format';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -55,6 +56,11 @@ const CrewBoardPage: React.FC = () => {
   const board = useCrewBoard(shiftId);
   const assignments = useWorkerAssignments(profile?.id);
   const [busy, setBusy] = useState<string | null>(null);
+  const [pushOn, setPushOn] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    hasPushSubscription().then(setPushOn);
+  }, []);
 
   const shift = shiftQ.data ?? undefined;
   const myAssignment = useMemo(
@@ -151,12 +157,25 @@ const CrewBoardPage: React.FC = () => {
                 <BellRing className="w-4 h-4" /> Briefing
                 {unreadAlerts.length > 0 && <Badge variant="destructive">{unreadAlerts.length} new</Badge>}
               </p>
-              {unreadAlerts.length > 0 && (
-                <Button variant="ghost" size="sm" className="h-7 text-xs" disabled={busy !== null}
-                  onClick={() => act('read', () => markAllAlertsRead(), 'Marked read')}>
-                  Mark all read
-                </Button>
-              )}
+              <div className="flex items-center gap-2">
+                {pushSupported() && pushOn !== null && (
+                  <Button variant="ghost" size="sm" className="h-7 text-xs" disabled={busy !== null}
+                    onClick={async () => {
+                      const r = pushOn ? await unsubscribeFromPush() : await subscribeToPush();
+                      if (!r.ok) return toast.error(r.error ?? 'Push setup failed');
+                      setPushOn(!pushOn);
+                      toast.success(pushOn ? 'Device alerts off' : 'Alerts on for this device');
+                    }}>
+                    {pushOn ? 'Device alerts on' : 'Alert this device'}
+                  </Button>
+                )}
+                {unreadAlerts.length > 0 && (
+                  <Button variant="ghost" size="sm" className="h-7 text-xs" disabled={busy !== null}
+                    onClick={() => act('read', () => markAllAlertsRead(), 'Marked read')}>
+                    Mark all read
+                  </Button>
+                )}
+              </div>
             </div>
             {board.data.alerts.map((a) => (
               <div key={a.id} className={`text-sm rounded p-2 ${a.read_at ? 'text-muted-foreground' : 'bg-muted'}`}>

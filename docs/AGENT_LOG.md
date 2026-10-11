@@ -7,6 +7,25 @@ Each entry: lane, branch/PR, what shipped, verification status, notes.
 
 ## Builder — Crew OS sprint (overnight)
 
+### feat/push-alerts — Web Push transport for the alert feed
+
+- `push_subscriptions` (worker-self RLS, endpoint unique) +
+  `save-push-subscription` (JWT'd upsert/unsubscribe) +
+  `send-push` (internal shared-secret gate, `npm:web-push`, prunes
+  dead endpoints).
+- `crew_alert_push` trigger: pg_net POST to send-push — but only when
+  `app.push_fn_url` + `app.push_internal_secret` DB settings exist;
+  unset = silent skip, feed unaffected.
+- `sw.js`: push → showNotification w/ crew-page deep link;
+  notificationclick focuses/navigates the app.
+- `src/lib/push.ts`: subscribe/unsubscribe/status; "Alert this
+  device" toggle on the briefing card. Hidden without
+  `VITE_VAPID_PUBLIC_KEY`.
+- Live blockers: `VAPID_PUBLIC_KEY`/`VAPID_PRIVATE_KEY`/`VAPID_SUBJECT`,
+  `PUSH_INTERNAL_SECRET`, DB settings for dispatch URL. VAPID keys are
+  free (self-generated) — not a paid-service blocker.
+- Stacked on `feat/stripe-connect`.
+
 ### feat/stripe-connect — Stripe Connect onboarding + payout release
 
 - `connect-onboard`: worker gets/reuses a Stripe Express account,
