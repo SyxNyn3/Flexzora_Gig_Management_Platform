@@ -240,6 +240,7 @@ begin
      '{rates,crew}')
   on conflict (id) do nothing;
 
+
   -- ------------------------------------------------------------------
   -- Company OS demo: staff layer — internal team + event assignments.
   -- ------------------------------------------------------------------
