@@ -69,6 +69,7 @@ SELECT lives_ok(
 -- confirm at $12 — under the auto-accept cap, so consent is stamped (the mint
 -- only fires once price_accepted_at is set, per the #52 price lock)
 UPDATE food_run_orders SET status = 'confirmed', price_cents = 1200 WHERE id = '00000000-0000-0000-0000-000000009c13';
+UPDATE food_run_orders SET status = 'confirmed', price_cents = 900 WHERE id = '00000000-0000-0000-0000-000000009c12';
 SELECT ok(
   offer_run_handoff('00000000-0000-0000-0000-000000009c02', (SELECT id FROM profiles WHERE user_id = '00000000-0000-0000-0000-00000000b0f4')),
   'handoff offered to a confirmed crew member');
