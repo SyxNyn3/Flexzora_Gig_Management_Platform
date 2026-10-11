@@ -207,6 +207,7 @@ export interface Database {
         Row: OpsTask;
         Insert: Omit<OpsTask, 'id' | 'created_at' | 'updated_at' | 'done_at' | 'event' | 'shift' | 'assignee'>;
         Update: Partial<Omit<OpsTask, 'id' | 'created_at' | 'company_id' | 'event' | 'shift' | 'assignee'>>;
+      };
       crew_iou: {
         Row: CrewIOU;
         Insert: Omit<CrewIOU, 'id' | 'created_at' | 'updated_at'>;
