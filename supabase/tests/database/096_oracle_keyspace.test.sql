@@ -32,15 +32,15 @@ SELECT is(
   (SELECT distance_km IS NOT NULL FROM worker_distances(
      ARRAY[(SELECT id FROM profiles WHERE user_id = '00000000-0000-0000-0000-0000000063a2')]::uuid[], 34.0, -118.2)),
   true, 'roster member distance resolves (#50)');
-SELECT is(
+SELECT ok(
   (SELECT distance_km FROM worker_distances(
-     ARRAY[(SELECT id FROM profiles WHERE user_id = '00000000-0000-0000-0000-0000000063a3')]::uuid[], 34.0, -118.2)),
-  NULL, 'stranger distance is masked');
-SELECT is(
+     ARRAY[(SELECT id FROM profiles WHERE user_id = '00000000-0000-0000-0000-0000000063a3')]::uuid[], 34.0, -118.2)) IS NULL,
+  'stranger distance is masked');
+SELECT ok(
   (SELECT hard_conflict FROM worker_conflicts(
      ARRAY[(SELECT id FROM profiles WHERE user_id = '00000000-0000-0000-0000-0000000063a3')]::uuid[],
-     now(), now() + interval '8 hours')),
-  NULL, 'stranger conflicts are masked too');
+     now(), now() + interval '8 hours')) IS NULL,
+  'stranger conflicts are masked too');
 
 -- the worker always sees themselves (self-checks / availability preview)
 SELECT set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000063a3","role":"authenticated"}', true);
