@@ -58,19 +58,26 @@ SELECT is(
   (SELECT count(*) FROM crew_iou WHERE iou_group_id = '00000000-0000-0000-0000-0000000020b2'),
   0::bigint, 'no IOU until the fulfiller accepts');
 
--- 3: the fulfiller was alerted
+-- 3: the fulfiller was alerted (checked as owner — the author's RLS scope
+-- cannot read alerts addressed to another worker)
+RESET ROLE;
 SELECT is(
   (SELECT count(*) FROM crew_alerts WHERE ref_id = '00000000-0000-0000-0000-0000000020b2' AND kind = 'iou'),
   1::bigint, 'fulfiller gets the accept/decline alert');
 
 -- 4: the author cannot force it through while awaiting
+SET LOCAL ROLE authenticated;
+SELECT set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000020a2","role":"authenticated"}', true);
 SELECT throws_ok(
   $$ UPDATE crew_posts SET status = 'resolved' WHERE id = '00000000-0000-0000-0000-0000000020b2' $$,
   NULL, NULL, 'author cannot bypass the fulfiller gate');
 
 -- 5: fulfiller declines → post re-opens, nomination cleared, no IOU
+-- (state check runs as owner — post-decline the fulfiller is no longer a
+-- named party, so RLS would hide the row from them)
 SELECT set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000020a3","role":"authenticated"}', true);
 SELECT ok(decline_fulfilment('00000000-0000-0000-0000-0000000020b2') IS NOT NULL, 'fulfiller declines');
+RESET ROLE;
 SELECT results_eq(
   $$ SELECT status::text, fulfilled_by_worker_id IS NULL FROM crew_posts WHERE id = '00000000-0000-0000-0000-0000000020b2' $$,
   $$ VALUES ('open'::text, true) $$,

@@ -99,7 +99,7 @@ SET LOCAL ROLE authenticated;
 -- the debtor (fulfiller B) accepts → the IOU mints now, against B
 SELECT set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000b903","role":"authenticated"}', true);
 SELECT lives_ok($$
-  UPDATE crew_posts SET debtor_confirmed_at = now() WHERE id = '19000000-0000-0000-0000-0000000000b1'
+  SELECT accept_fulfilment('19000000-0000-0000-0000-0000000000b1')
 $$, 'debtor accepts the offer post');
 
 RESET ROLE;
