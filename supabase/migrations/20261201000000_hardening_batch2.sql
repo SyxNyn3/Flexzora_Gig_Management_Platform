@@ -20,8 +20,9 @@
 --      unique index + ON CONFLICT.
 -- #113 create_notification PUBLIC-executable definer → revoke; notifications
 --      are system-written only.
--- #114 same PUBLIC-execute class: generate_shift_briefing,
---      worker_meets_shift_certs, worker_can_see_shift family — revoke.
+-- #114 same PUBLIC-execute class: generate_shift_briefing revoked.
+--      worker_meets_shift_certs stays granted — the swap cert-preview UI is
+--      an intentional caller (explicit GRANT in shift_swap).
 -- #116 runner rewrites price_cents on confirmed orders — the minted IOU never
 --      re-syncs. Price is immutable once confirmed; a real correction is a
 --      cancel + re-order (new ledger entry, visible trail).
@@ -518,53 +519,11 @@ CREATE UNIQUE INDEX IF NOT EXISTS ops_tasks_auto_unfilled_uq
 
 REVOKE EXECUTE ON FUNCTION create_notification(uuid, text, text, text, text, jsonb) FROM PUBLIC, anon, authenticated;
 REVOKE EXECUTE ON FUNCTION generate_shift_briefing(uuid) FROM PUBLIC, anon, authenticated;
-REVOKE EXECUTE ON FUNCTION worker_meets_shift_certs(uuid, uuid) FROM PUBLIC, anon, authenticated;
 
 -- ============================================================================
--- #116 — confirmed price is immutable to the runner
+-- #116 — verified already-fixed by 20261106000000_p0rt_grub_price_lock:
+-- confirmed orders reject price/item changes, the IOU mints only on orderer
+-- consent (price_accepted_at), and confirmed→cancelled voids the ledger row.
+-- No change required; 098 asserts the lock still holds.
 -- ============================================================================
 
-CREATE OR REPLACE FUNCTION guard_food_order_update() RETURNS trigger AS $$
-DECLARE
-  v_run food_runs%ROWTYPE;
-BEGIN
-  IF current_user NOT IN ('authenticated', 'anon') THEN RETURN NEW; END IF;
-  IF NEW.worker_id <> OLD.worker_id OR NEW.run_id <> OLD.run_id THEN
-    RAISE EXCEPTION 'Order worker and run are immutable';
-  END IF;
-
-  SELECT * INTO v_run FROM food_runs WHERE id = OLD.run_id;
-
-  IF OLD.worker_id = current_profile_id() THEN
-    IF OLD.status <> 'placed' THEN RAISE EXCEPTION 'Only placed orders can be changed'; END IF;
-    IF NOT (NEW.status = OLD.status OR NEW.status = 'cancelled') THEN
-      RAISE EXCEPTION 'Workers can only edit or cancel a placed order';
-    END IF;
-    IF NEW.price_cents IS DISTINCT FROM OLD.price_cents THEN
-      RAISE EXCEPTION 'Only the runner sets the price';
-    END IF;
-    -- late edits still respect the cutoff the runner set
-    IF NEW.status = 'placed' AND v_run.order_cutoff_at < now() THEN
-      RAISE EXCEPTION 'The order cutoff has passed';
-    END IF;
-    RETURN NEW;
-  END IF;
-
-  IF v_run.runner_worker_id = current_profile_id()
-     OR owns_event((SELECT event_id FROM shifts WHERE id = v_run.shift_id)) THEN
-    IF OLD.status = 'cancelled' THEN RAISE EXCEPTION 'Cancelled orders cannot be changed'; END IF;
-    IF NEW.status = 'confirmed' AND (NEW.price_cents IS NULL OR NEW.price_cents <= 0) THEN
-      RAISE EXCEPTION 'Confirmed orders need a real price';
-    END IF;
-    -- #116: a confirmed price minted the IOU — it cannot drift behind the
-    -- orderer's back. Corrections cancel + re-order so the ledger shows them.
-    IF OLD.status = 'confirmed' AND NEW.price_cents IS DISTINCT FROM OLD.price_cents THEN
-      RAISE EXCEPTION 'Price is locked once confirmed — cancel and re-order to correct it'
-        USING ERRCODE = '42501';
-    END IF;
-    RETURN NEW;
-  END IF;
-
-  RAISE EXCEPTION 'Not a party to this order';
-END;
-$$ LANGUAGE plpgsql;

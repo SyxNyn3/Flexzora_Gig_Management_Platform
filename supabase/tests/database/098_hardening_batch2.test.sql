@@ -91,7 +91,7 @@ SELECT is(
   false, '#114 generate_shift_briefing is not client-callable');
 SELECT is(
   has_function_privilege('authenticated', 'worker_meets_shift_certs(uuid,uuid)', 'EXECUTE'),
-  false, '#114 worker_meets_shift_certs is not client-callable');
+  true, '#114 cert check stays client-callable — swap preview calls it by design');
 
 -- #116: runner cannot reprice a confirmed order
 RESET ROLE;
