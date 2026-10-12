@@ -6,7 +6,7 @@
 // the original booking withdraws, and any sweetener lands in the ledger.
 
 import { supabase } from '@/lib/supabase';
-import { SwapClaim, SwapRequest } from '@/lib/types';
+import { LockedSwap, SwapClaim, SwapRequest } from '@/lib/types';
 
 type Result<T> = { data: T; error: string | null };
 const ok = <T>(data: T): Result<T> => ({ data, error: null });
@@ -162,6 +162,17 @@ export async function listEventSwaps(eventId: string): Promise<Result<{ requests
     return ok({ requests: requests as SwapRequest[], claims: (claims ?? []) as SwapClaim[] });
   } catch (e) {
     return fail(empty, e);
+  }
+}
+
+/** Swaps I'm cert-locked out of on this shift — preview + what I'm missing. */
+export async function myLockedSwaps(shiftId: string): Promise<Result<LockedSwap[]>> {
+  try {
+    const { data, error } = await supabase.rpc('my_locked_swaps', { p_shift_id: shiftId });
+    if (error) throw error;
+    return ok((data ?? []) as LockedSwap[]);
+  } catch (e) {
+    return fail([], e);
   }
 }
 

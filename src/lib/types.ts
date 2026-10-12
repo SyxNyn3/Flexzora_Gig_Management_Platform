@@ -1522,6 +1522,14 @@ export interface SwapClaim {
   claimer?: Profile;
 }
 
+/** Cert-gated swap preview — safe fields only (no requester identity). */
+export interface LockedSwap {
+  swap_id: string;
+  sweetener_cents: number;
+  posted_at: string;
+  missing: { code: string; name: string; state: 'missing' | 'pending' | 'rejected' | 'expired' | 'unsubmitted' }[];
+}
+
 // ---------------------------------------------------------------------------
 // Company OS — automatic reminders (alerts inbox)
 // ---------------------------------------------------------------------------
