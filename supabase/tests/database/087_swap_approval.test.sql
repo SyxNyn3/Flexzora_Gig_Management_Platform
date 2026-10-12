@@ -43,15 +43,19 @@ INSERT INTO shift_assignments (id, shift_id, worker_id, source, status, confirme
 
 INSERT INTO swap_requests (id, assignment_id, shift_id, requester_worker_id, reason, status, accepted_claim_id, offered_assignment_id) VALUES
   ('00000000-0000-0000-0000-00000000f0b1', '00000000-0000-0000-0000-00000000f0a4', '00000000-0000-0000-0000-00000000f0f2',
-   (SELECT id FROM profiles WHERE user_id = '00000000-0000-0000-0000-00000000f0a2'), 'double-booked', 'offered', '00000000-0000-0000-0000-00000000f0c1', '00000000-0000-0000-0000-00000000f0a5'),
+   (SELECT id FROM profiles WHERE user_id = '00000000-0000-0000-0000-00000000f0a2'), 'double-booked', 'offered', NULL, '00000000-0000-0000-0000-00000000f0a5'),
   ('00000000-0000-0000-0000-00000000f0b2', '00000000-0000-0000-0000-00000000f0a6', '00000000-0000-0000-0000-00000000f0f3',
-   (SELECT id FROM profiles WHERE user_id = '00000000-0000-0000-0000-00000000f0a2'), 'travel', 'offered', '00000000-0000-0000-0000-00000000f0c2', '00000000-0000-0000-0000-00000000f0a7');
+   (SELECT id FROM profiles WHERE user_id = '00000000-0000-0000-0000-00000000f0a2'), 'travel', 'offered', NULL, '00000000-0000-0000-0000-00000000f0a7');
 
 INSERT INTO swap_claims (id, swap_request_id, claimer_worker_id, status) VALUES
   ('00000000-0000-0000-0000-00000000f0c1', '00000000-0000-0000-0000-00000000f0b1',
    (SELECT id FROM profiles WHERE user_id = '00000000-0000-0000-0000-00000000f0a3'), 'accepted'),
   ('00000000-0000-0000-0000-00000000f0c2', '00000000-0000-0000-0000-00000000f0b2',
    (SELECT id FROM profiles WHERE user_id = '00000000-0000-0000-0000-00000000f0a3'), 'accepted');
+
+
+UPDATE swap_requests SET accepted_claim_id = '00000000-0000-0000-0000-00000000f0c1' WHERE id = '00000000-0000-0000-0000-00000000f0b1';
+UPDATE swap_requests SET accepted_claim_id = '00000000-0000-0000-0000-00000000f0c2' WHERE id = '00000000-0000-0000-0000-00000000f0b2';
 
 SET LOCAL ROLE authenticated;
 
