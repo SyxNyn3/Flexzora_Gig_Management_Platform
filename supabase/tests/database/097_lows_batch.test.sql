@@ -55,12 +55,15 @@ INSERT INTO shift_assignments (id, shift_id, worker_id, status) VALUES
    (SELECT id FROM profiles WHERE user_id = '00000000-0000-0000-0000-0000000064a3'), 'confirmed');
 UPDATE shift_assignments SET status = 'withdrawn' WHERE id = '00000000-0000-0000-0000-0000000064c3';
 
--- #32 fixture: a claim that was withdrawn, then re-claimed
+-- #32 fixture: a claim that was withdrawn, then re-claimed — the requester
+-- needs a LIVE assignment (64c3 was withdrawn above for the #54 fixture)
 INSERT INTO shift_assignments (id, shift_id, worker_id, status) VALUES
   ('00000000-0000-0000-0000-0000000064c4', '00000000-0000-0000-0000-0000000064f3',
-   (SELECT id FROM profiles WHERE user_id = '00000000-0000-0000-0000-0000000064a4'), 'confirmed');
+   (SELECT id FROM profiles WHERE user_id = '00000000-0000-0000-0000-0000000064a4'), 'confirmed'),
+  ('00000000-0000-0000-0000-0000000064c7', '00000000-0000-0000-0000-0000000064f3',
+   (SELECT id FROM profiles WHERE user_id = '00000000-0000-0000-0000-0000000064a3'), 'confirmed');
 INSERT INTO swap_requests (id, assignment_id, shift_id, requester_worker_id, status) VALUES
-  ('00000000-0000-0000-0000-0000000064c5', '00000000-0000-0000-0000-0000000064c3', '00000000-0000-0000-0000-0000000064f3',
+  ('00000000-0000-0000-0000-0000000064c5', '00000000-0000-0000-0000-0000000064c7', '00000000-0000-0000-0000-0000000064f3',
    (SELECT id FROM profiles WHERE user_id = '00000000-0000-0000-0000-0000000064a3'), 'open');
 INSERT INTO swap_claims (swap_request_id, claimer_worker_id, status) VALUES
   ('00000000-0000-0000-0000-0000000064c5',
