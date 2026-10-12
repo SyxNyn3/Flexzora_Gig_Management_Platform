@@ -6,7 +6,7 @@
 // list even before the briefing alert lands.
 
 import { supabase } from '@/lib/supabase';
-import { CrewAlert } from '@/lib/types';
+import { AlertPreference, CrewAlert, CrewAlertKind } from '@/lib/types';
 
 type Result<T> = { data: T; error: string | null };
 const ok = <T>(data: T): Result<T> => ({ data, error: null });
@@ -79,6 +79,39 @@ export async function markAllAlertsRead(): Promise<Result<boolean>> {
       .update({ read_at: new Date().toISOString() })
       .eq('worker_id', workerId)
       .is('read_at', null);
+    if (error) throw error;
+    return ok(true);
+  } catch (e) {
+    return fail(false, e);
+  }
+}
+
+/** Per-kind transport prefs. Absent rows mean defaults: push on, SMS off. */
+export async function myAlertPreferences(): Promise<Result<AlertPreference[]>> {
+  try {
+    const workerId = await myProfileId();
+    if (!workerId) return fail([], new Error('Not signed in'));
+    const { data, error } = await supabase
+      .from('alert_preferences')
+      .select('*')
+      .eq('worker_id', workerId);
+    if (error) throw error;
+    return ok((data ?? []) as AlertPreference[]);
+  } catch (e) {
+    return fail([], e);
+  }
+}
+
+export async function setAlertPreference(
+  kind: CrewAlertKind,
+  patch: { push?: boolean; sms?: boolean },
+): Promise<Result<boolean>> {
+  try {
+    const workerId = await myProfileId();
+    if (!workerId) return fail(false, new Error('Not signed in'));
+    const { error } = await supabase
+      .from('alert_preferences')
+      .upsert({ worker_id: workerId, kind, ...patch }, { onConflict: 'worker_id,kind' });
     if (error) throw error;
     return ok(true);
   } catch (e) {
