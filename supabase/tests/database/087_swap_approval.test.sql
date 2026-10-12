@@ -74,9 +74,10 @@ SELECT throws_ok(
 
 -- 3: owner approves → stamped, swap stays offered (claimer still confirms)
 SELECT set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000f0a1","role":"authenticated"}', true);
+SELECT company_decide_swap('00000000-0000-0000-0000-00000000f0b1', true);
 SELECT results_eq(
   $$ SELECT company_decision, status FROM swap_requests WHERE id = '00000000-0000-0000-0000-00000000f0b1' $$,
-  $$ SELECT company_decision, status FROM company_decide_swap('00000000-0000-0000-0000-00000000f0b1', true) $$,
+  $$ VALUES ('approved'::text, 'offered'::text) $$,
   'approve stamps the decision and leaves the offer live');
 
 -- 4: the decision is final
