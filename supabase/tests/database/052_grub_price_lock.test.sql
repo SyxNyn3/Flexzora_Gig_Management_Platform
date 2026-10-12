@@ -25,6 +25,13 @@ INSERT INTO shifts (id, event_id, title, role_name, headcount, starts_at, ends_a
 VALUES ('00000000-0000-0000-0000-00000000d520', '00000000-0000-0000-0000-00000000e520',
         'Call', 'Stagehand', 4, '2027-03-01 08:00+00', '2027-03-01 16:00+00', 30.00, 'open', 'public');
 
+-- #30: crew tables require a live booking — seat the runner + orderers
+INSERT INTO shift_assignments (id, shift_id, worker_id, status)
+SELECT gen_random_uuid(), '00000000-0000-0000-0000-00000000d520', p.id, 'confirmed'
+FROM profiles p WHERE p.user_id IN
+  ('00000000-0000-0000-0000-00000000b522','00000000-0000-0000-0000-00000000b523',
+   '00000000-0000-0000-0000-00000000b524','00000000-0000-0000-0000-00000000b525');
+
 INSERT INTO food_runs (id, shift_id, runner_worker_id, restaurant, order_cutoff_at, status)
 SELECT '52000000-0000-0000-0000-0000000000a1', '00000000-0000-0000-0000-00000000d520', p.id, 'Taqueria', '2027-03-01 06:00+00', 'open'::food_run_status
 FROM profiles p WHERE p.user_id = '00000000-0000-0000-0000-00000000b522';

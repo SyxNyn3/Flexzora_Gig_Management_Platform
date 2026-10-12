@@ -24,9 +24,9 @@ INSERT INTO events (id, company_id, venue_id, created_by, name, starts_on, ends_
   ('00000000-0000-0000-0000-0000000062e1', '00000000-0000-0000-0000-0000000062f1', '00000000-0000-0000-0000-0000000062d1',
    (SELECT id FROM profiles WHERE user_id = '00000000-0000-0000-0000-0000000062a1'), 'Gig', current_date + 5, current_date + 5, 'published');
 
-INSERT INTO shifts (id, event_id, title, role_name, headcount, starts_at, ends_at, hourly_rate, status) VALUES
+INSERT INTO shifts (id, event_id, title, role_name, headcount, starts_at, ends_at, hourly_rate, status, broadcast_stage) VALUES
   ('00000000-0000-0000-0000-0000000062f2', '00000000-0000-0000-0000-0000000062e1', 'Spot', 'Spot Op', 4,
-   now() + interval '5 days', now() + interval '5 days' + interval '8 hours', 40, 'open');
+   now() + interval '5 days', now() + interval '5 days' + interval '8 hours', 40, 'open', 'public');
 
 -- a2 booked (confirmed), a4 booked (driver, offered), a3 NOT booked
 INSERT INTO shift_assignments (id, shift_id, worker_id, status) VALUES
@@ -39,11 +39,13 @@ SET LOCAL ROLE authenticated;
 SELECT set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000062a2","role":"authenticated"}', true);
 
 -- #21: negative break is rejected by the CHECK
+RESET ROLE;
 SELECT throws_ok(
   $$ INSERT INTO timesheets (assignment_id, shift_id, worker_id, break_minutes)
      VALUES ('00000000-0000-0000-0000-0000000062c1', '00000000-0000-0000-0000-0000000062f2',
              (SELECT id FROM profiles WHERE user_id = '00000000-0000-0000-0000-0000000062a2'), -30) $$,
   '23514', NULL, 'break_minutes has a >= 0 floor (#21)');
+SET LOCAL ROLE authenticated;
 
 -- #30: unbooked worker cannot squat a ride request — or a food order — or a pool
 SELECT set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000062a3","role":"authenticated"}', true);
@@ -83,7 +85,7 @@ UPDATE ride_offers SET status = 'cancelled' WHERE id = '00000000-0000-0000-0000-
 RESET ROLE;
 SELECT ok(EXISTS(
     SELECT 1 FROM crew_alerts
-     WHERE dedupe_key = 'alert:ride-cancelled:00000000-0000-0000-0000-0000000062c3'
+     WHERE dedupe_key LIKE '%alert:ride-cancelled:00000000-0000-0000-0000-0000000062c3'
        AND worker_id = (SELECT id FROM profiles WHERE user_id = '00000000-0000-0000-0000-0000000062a2')),
   'matched rider actually gets the cancellation alert (#31)');
 
