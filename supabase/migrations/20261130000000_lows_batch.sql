@@ -25,12 +25,12 @@ RETURNS TABLE (completed integer, no_shows integer, withdrawn integer,
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public, extensions, pg_catalog AS $$
   WITH a AS (
     SELECT
-      count(*) FILTER (WHERE status = 'completed')::integer AS completed,
-      count(*) FILTER (WHERE status = 'no_show')::integer AS no_shows,
-      count(*) FILTER (WHERE status = 'withdrawn')::integer AS withdrawn,
+      count(*) FILTER (WHERE a.status = 'completed')::integer AS completed,
+      count(*) FILTER (WHERE a.status = 'no_show')::integer AS no_shows,
+      count(*) FILTER (WHERE a.status = 'withdrawn')::integer AS withdrawn,
       -- withdrawn inside 24h of call start (status is terminal, so updated_at
       -- is the moment they bailed)
-      count(*) FILTER (WHERE status = 'withdrawn'
+      count(*) FILTER (WHERE a.status = 'withdrawn'
         AND a.updated_at <= s.starts_at
         AND a.updated_at >  s.starts_at - interval '24 hours')::integer AS late_cancels
     FROM shift_assignments a
