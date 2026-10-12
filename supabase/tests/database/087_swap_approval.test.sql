@@ -3,6 +3,7 @@
 -- the claimer, reject cancels and cascades claims + the pending offer.
 BEGIN;
 SELECT plan(6);
+SET session_replication_role = 'replica';
 
 INSERT INTO auth.users (id, instance_id, aud, role, email, encrypted_password, raw_user_meta_data, created_at, updated_at)
 VALUES
@@ -57,6 +58,7 @@ INSERT INTO swap_claims (id, swap_request_id, claimer_worker_id, status) VALUES
 UPDATE swap_requests SET accepted_claim_id = '00000000-0000-0000-0000-00000000f0c1' WHERE id = '00000000-0000-0000-0000-00000000f0b1';
 UPDATE swap_requests SET accepted_claim_id = '00000000-0000-0000-0000-00000000f0c2' WHERE id = '00000000-0000-0000-0000-00000000f0b2';
 
+SET session_replication_role = 'origin';
 SET LOCAL ROLE authenticated;
 
 -- 1: the requester cannot stamp the decision themselves
