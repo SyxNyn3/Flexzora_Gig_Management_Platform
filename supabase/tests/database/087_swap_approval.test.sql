@@ -3,7 +3,6 @@
 -- the claimer, reject cancels and cascades claims + the pending offer.
 BEGIN;
 SELECT plan(6);
-SET session_replication_role = 'replica';
 
 INSERT INTO auth.users (id, instance_id, aud, role, email, encrypted_password, raw_user_meta_data, created_at, updated_at)
 VALUES
@@ -42,6 +41,7 @@ INSERT INTO shift_assignments (id, shift_id, worker_id, source, status, confirme
   ('00000000-0000-0000-0000-00000000f0a7', '00000000-0000-0000-0000-00000000f0f3',
    (SELECT id FROM profiles WHERE user_id = '00000000-0000-0000-0000-00000000f0a3'), 'public_marketplace', 'offered', NULL);
 
+SET session_replication_role = 'replica';
 INSERT INTO swap_requests (id, assignment_id, shift_id, requester_worker_id, reason, status, accepted_claim_id, offered_assignment_id) VALUES
   ('00000000-0000-0000-0000-00000000f0b1', '00000000-0000-0000-0000-00000000f0a4', '00000000-0000-0000-0000-00000000f0f2',
    (SELECT id FROM profiles WHERE user_id = '00000000-0000-0000-0000-00000000f0a2'), 'double-booked', 'offered', NULL, '00000000-0000-0000-0000-00000000f0a5'),
