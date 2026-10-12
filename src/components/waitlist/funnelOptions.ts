@@ -33,6 +33,17 @@ export const PAIN_POINTS = [
   { value: 'no_shows', label: 'No-call / no-shows' },
 ] as const;
 
+export const WORKER_PAIN_POINTS = [
+  { value: 'finding_gigs', label: 'Finding consistent gigs' },
+  { value: 'getting_paid', label: 'Getting paid on time / chasing invoices' },
+  { value: 'last_minute_changes', label: 'Last-minute schedule & call-time changes' },
+  { value: 'transport_lodging', label: 'Rides, carpools & lodging coordination' },
+  { value: 'lost_hours', label: 'Paper timesheets & lost hours' },
+  { value: 'proving_certs', label: 'Re-proving certs & experience to every new company' },
+  { value: 'out_of_loop', label: 'Being out of the loop on crew comms' },
+  { value: 'iou_settling', label: 'Settling gas/food IOUs with crewmates' },
+] as const;
+
 export const HEARD_FROM = [
   'Friend / coworker',
   'Production company',
