@@ -95,11 +95,27 @@ const TimesheetApprovalPage: React.FC = () => {
     return prior.length ? prior[prior.length - 1] : null;
   };
 
+  /** Paid time starts at call time unless the company approved the early start — mirrors approve_timesheet(). */
+  const paidStart = (t: Timesheet) => {
+    if (!t.clock_in_at) return t.clock_in_at;
+    if (t.early_start_approved || !t.shift?.starts_at) return t.clock_in_at;
+    return new Date(t.clock_in_at) < new Date(t.shift.starts_at) ? t.shift.starts_at : t.clock_in_at;
+  };
+
   const preview = (t: Timesheet) => {
     if (!t.clock_in_at || !t.clock_out_at) return null;
     const brk = breaks[t.id] != null ? Number(breaks[t.id]) : t.break_minutes;
     const rule = { ...ruleFor(t.shift?.event?.overtime_rule_code), weekly_hours_before_shift: weeklyHoursBefore(t) };
-    return calculateShiftPay(t.clock_in_at, t.clock_out_at, brk, rateFor(t), rule, priorShiftEnd(t));
+    return calculateShiftPay(paidStart(t)!, t.clock_out_at, brk, rateFor(t), rule, priorShiftEnd(t));
+  };
+
+  const toggleEarlyStart = async (t: Timesheet) => {
+    setBusy(t.id);
+    const { error } = await MarketplaceService.setEarlyStartApproved(t.id, !t.early_start_approved);
+    setBusy(null);
+    if (error) return toast.error(error);
+    toast.success(t.early_start_approved ? 'Pay now starts at call time' : 'Early start approved — pay runs from clock-in');
+    sheets.refetch();
   };
 
   const approve = async (t: Timesheet, method: PayoutMethod) => {
@@ -268,6 +284,13 @@ const TimesheetApprovalPage: React.FC = () => {
                     />
                     <span className="text-muted-foreground">min</span>
                   </div>
+                  {t.shift?.starts_at && new Date(t.clock_in_at!) < new Date(t.shift.starts_at) && (
+                    <button type="button" disabled={busy !== null} onClick={() => toggleEarlyStart(t)}
+                      className={`text-xs underline-offset-2 hover:underline ${t.early_start_approved ? 'text-primary' : 'text-muted-foreground'}`}
+                      title="Clock-in opens 60 min early; pay normally starts at call time. Click to approve paying from clock-in.">
+                      {t.early_start_approved ? 'paying from clock-in ✓' : 'clocked in early — pay from call time'}
+                    </button>
+                  )}
                   <div className="flex gap-1">
                     <Button size="sm" variant="outline" disabled={busy !== null} onClick={() => setDispute({ sheet: t, notes: '' })}>Dispute</Button>
                     <Button size="sm" variant="outline" disabled={busy !== null} onClick={() => approve(t, 'ach')} title="Approve & pay via ACH (1–2 business days)">
