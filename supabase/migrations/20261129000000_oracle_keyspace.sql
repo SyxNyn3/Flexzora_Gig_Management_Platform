@@ -19,9 +19,9 @@
 -- #50 ------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION shares_party(p_worker uuid) RETURNS boolean
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public, extensions AS $$
-  -- non-client callers (service role, tests, admin SQL) are exempt — the gate
-  -- exists for authenticated workers probing other people's data
-  SELECT current_user NOT IN ('authenticated', 'anon')
+  -- callers with no client JWT (service role, tests, admin SQL) are exempt —
+  -- current_user can't detect them here since this fn is SECURITY DEFINER
+  SELECT auth.uid() IS NULL
     OR (p_worker IS NOT NULL AND (
     p_worker = current_profile_id()
     OR EXISTS (
