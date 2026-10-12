@@ -107,7 +107,7 @@ SET LOCAL ROLE authenticated;
 SELECT set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000063a3","role":"authenticated"}', true);
 SELECT throws_ok(
   $$ UPDATE food_run_orders SET price_cents = 3000 WHERE id = '00000000-0000-0000-0000-0000000063b2' $$,
-  'Confirmed prices are locked', NULL, '#116 confirmed price is immutable to the runner');
+  'P0001', 'Confirmed prices are locked', '#116 confirmed price is immutable to the runner');
 
 SELECT * FROM finish();
 ROLLBACK;
