@@ -81,12 +81,13 @@ SELECT is((SELECT status::text FROM crew_posts WHERE id = '00000000-0000-0000-00
 SET LOCAL ROLE authenticated;
 SELECT set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000020a3","role":"authenticated"}', true);
 SELECT is(current_profile_id()::text, (SELECT id::text FROM profiles WHERE user_id = '00000000-0000-0000-0000-0000000020a3'), 'fulfiller profile resolves');
+CREATE TEMP TABLE _errlog(m text);
 DO $$
 BEGIN
   PERFORM decline_fulfilment('00000000-0000-0000-0000-0000000020b2');
-EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'DECLINE_ERR: %', SQLERRM;
+EXCEPTION WHEN OTHERS THEN INSERT INTO _errlog VALUES (SQLSTATE || ':' || SQLERRM);
 END $$;
-SELECT ok((SELECT status = 'open' FROM crew_posts WHERE id = '00000000-0000-0000-0000-0000000020b2'), 'fulfiller declines');
+SELECT is(coalesce((SELECT m FROM _errlog), 'NO_ERROR'), 'NO_ERROR', 'fulfiller declines');
 RESET ROLE;
 SELECT results_eq(
   $$ SELECT status::text, fulfilled_by_worker_id IS NULL FROM crew_posts WHERE id = '00000000-0000-0000-0000-0000000020b2' $$,
