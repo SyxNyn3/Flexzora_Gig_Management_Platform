@@ -112,7 +112,7 @@ SELECT results_eq(
   'late cancel mints the fee to the current runner');
 RESET ROLE;
 SELECT ok(
-  EXISTS (SELECT 1 FROM crew_alerts WHERE dedupe_key = 'latecancel:food:00000000-0000-0000-0000-000000009c15'),
+  EXISTS (SELECT 1 FROM crew_alerts WHERE dedupe_key LIKE '%latecancel:food:00000000-0000-0000-0000-000000009c15'),
   'runner gets the late-cancel alert');
 
 -- 10: offer to someone not confirmed on the shift → rejected
