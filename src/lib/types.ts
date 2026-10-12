@@ -890,6 +890,8 @@ export interface Timesheet {
   clock_out_distance_m?: number;
   clock_out_verified: boolean;
   break_minutes: number;
+  /** company-approved: pay runs from clock-in instead of call time */
+  early_start_approved?: boolean;
   regular_hours: number;
   overtime_hours: number;
   doubletime_hours: number;

@@ -731,6 +731,17 @@ export class MarketplaceService {
     }
   }
 
+  /** Company approves paid time starting at clock-in instead of call time. */
+  static async setEarlyStartApproved(timesheetId: string, approved: boolean): Promise<Result<boolean>> {
+    try {
+      const { error } = await supabase.rpc('set_early_start_approved', { p_timesheet_id: timesheetId, p_approved: approved });
+      if (error) throw error;
+      return ok(true);
+    } catch (e) {
+      return fail(false, e);
+    }
+  }
+
   /** Company flags a submitted timesheet — worker gets notified. */
   static async disputeTimesheet(timesheetId: string, managerNotes: string): Promise<Result<boolean>> {
     try {

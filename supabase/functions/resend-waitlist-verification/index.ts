@@ -41,7 +41,7 @@ serve(async (req) => {
     // Check if email exists in waiting list
     const { data: existingEntry, error: lookupError } = await supabase
       .from("waiting_list")
-      .select("email, referral_code")
+      .select("email, referral_code, verification_sent_at")
       .eq("email", email)
       .single();
 
@@ -55,13 +55,28 @@ serve(async (req) => {
       );
     }
 
+    // Throttle: one resend per 60s per address — the endpoint is unauthenticated
+    // and each call sends a real email (email-bomb vector).
+    const lastSent = existingEntry.verification_sent_at
+      ? new Date(existingEntry.verification_sent_at).getTime()
+      : 0;
+    if (Date.now() - lastSent < 60_000) {
+      return new Response(
+        JSON.stringify({ error: "Please wait before requesting another email" }),
+        {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
     // Generate a new verification token
     const verificationToken = nanoid(32);
 
     // Update the verification token in the database
     const { error: updateError } = await supabase
       .from("waiting_list")
-      .update({ verification_token: verificationToken })
+      .update({ verification_token: verificationToken, verification_sent_at: new Date().toISOString() })
       .eq("email", email);
 
     if (updateError) {
