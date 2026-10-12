@@ -2,7 +2,7 @@
 -- (debtor) must accept before the IOU mints. 'want' posts still mint on
 -- resolve (the author is the debtor — their resolve IS the consent).
 BEGIN;
-SELECT plan(9);
+SELECT plan(10);
 
 INSERT INTO auth.users (id, instance_id, aud, role, email, encrypted_password, raw_user_meta_data, created_at, updated_at)
 VALUES
@@ -80,7 +80,13 @@ SELECT is((SELECT status::text FROM crew_posts WHERE id = '00000000-0000-0000-00
   'awaiting_accept', 'b2 is awaiting before decline');
 SET LOCAL ROLE authenticated;
 SELECT set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000020a3","role":"authenticated"}', true);
-SELECT ok(decline_fulfilment('00000000-0000-0000-0000-0000000020b2') IS NOT NULL, 'fulfiller declines');
+SELECT is(current_profile_id()::text, (SELECT id::text FROM profiles WHERE user_id = '00000000-0000-0000-0000-0000000020a3'), 'fulfiller profile resolves');
+DO $$
+BEGIN
+  PERFORM decline_fulfilment('00000000-0000-0000-0000-0000000020b2');
+EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'DECLINE_ERR: %', SQLERRM;
+END $$;
+SELECT ok((SELECT status = 'open' FROM crew_posts WHERE id = '00000000-0000-0000-0000-0000000020b2'), 'fulfiller declines');
 RESET ROLE;
 SELECT results_eq(
   $$ SELECT status::text, fulfilled_by_worker_id IS NULL FROM crew_posts WHERE id = '00000000-0000-0000-0000-0000000020b2' $$,
