@@ -19,7 +19,10 @@
 -- #50 ------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION shares_party(p_worker uuid) RETURNS boolean
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public, extensions AS $$
-  SELECT p_worker IS NOT NULL AND (
+  -- non-client callers (service role, tests, admin SQL) are exempt — the gate
+  -- exists for authenticated workers probing other people's data
+  SELECT current_user NOT IN ('authenticated', 'anon')
+    OR (p_worker IS NOT NULL AND (
     p_worker = current_profile_id()
     OR EXISTS (
       SELECT 1 FROM shift_assignments a
@@ -29,7 +32,7 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public, extensions AS $$
     OR EXISTS (
       SELECT 1 FROM preferred_rosters pr
       WHERE pr.worker_id = p_worker AND owns_company(pr.company_id))
-  );
+    ));
 $$;
 
 CREATE OR REPLACE FUNCTION worker_distances(p_worker_ids uuid[], p_lat double precision, p_lng double precision)

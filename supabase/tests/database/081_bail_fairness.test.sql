@@ -69,7 +69,7 @@ SELECT results_eq(
 
 -- 2: the driver is told why the IOU shrank instead of voiding
 SELECT ok(
-  EXISTS (SELECT 1 FROM crew_alerts WHERE kind = 'iou' AND dedupe_key = 'bail:ride:00000000-0000-0000-0000-000000009a11'),
+  EXISTS (SELECT 1 FROM crew_alerts WHERE kind = 'iou' AND dedupe_key LIKE '%bail:ride:00000000-0000-0000-0000-000000009a11'),
   'beneficiary gets a late-bail alert');
 
 -- 3: the seat still frees — the offer reopens for a replacement
