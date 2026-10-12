@@ -60,12 +60,36 @@ export async function postToBoard(input: NewCrewPost): Promise<Result<CrewPost |
 }
 
 /** Resolve a post and name who fulfilled it — priced posts mint the IOU. */
-export async function resolvePost(postId: string, fulfilledByWorkerId: string): Promise<Result<boolean>> {
+export async function resolvePost(postId: string, fulfilledByWorkerId: string): Promise<Result<CrewPost | null>> {
   try {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('crew_posts')
       .update({ status: 'resolved', fulfilled_by_worker_id: fulfilledByWorkerId })
-      .eq('id', postId);
+      .eq('id', postId)
+      .select()
+      .single();
+    if (error) throw error;
+    return ok(data as CrewPost);
+  } catch (e) {
+    return fail(null, e);
+  }
+}
+
+/** Fulfiller accepts a paid-offer fulfilment — mints the IOU. */
+export async function acceptFulfilment(postId: string): Promise<Result<boolean>> {
+  try {
+    const { error } = await supabase.rpc('accept_fulfilment', { p_post_id: postId });
+    if (error) throw error;
+    return ok(true);
+  } catch (e) {
+    return fail(false, e);
+  }
+}
+
+/** Fulfiller declines — the post re-opens with the nomination cleared. */
+export async function declineFulfilment(postId: string): Promise<Result<boolean>> {
+  try {
+    const { error } = await supabase.rpc('decline_fulfilment', { p_post_id: postId });
     if (error) throw error;
     return ok(true);
   } catch (e) {
