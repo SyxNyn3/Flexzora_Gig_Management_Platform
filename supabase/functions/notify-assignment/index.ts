@@ -61,6 +61,19 @@ const RECIPIENT: Record<NotifyKind, "worker" | "company"> = {
   no_show: "worker",
 };
 
+// kind must match the assignment's real status — otherwise a party could fire
+// a "You're confirmed!" SMS on a declined assignment (verified live).
+const EXPECTED_STATUS: Record<NotifyKind, string[]> = {
+  offered: ["offered"],
+  applied: ["applied"],
+  confirmed_by_worker: ["confirmed"],
+  confirmed_by_company: ["confirmed"],
+  declined: ["declined"],
+  withdrawn: ["withdrawn"],
+  rejected: ["rejected"],
+  no_show: ["no_show"],
+};
+
 const VALID_KINDS = new Set<string>(Object.keys(RECIPIENT));
 
 const fmtDate = (iso: string) =>
@@ -130,6 +143,10 @@ serve(async (req) => {
     const isCompany = company.created_by === callerProfile.id;
     if (!isWorker && !isCompany) {
       return json({ error: "Not a party to this assignment" }, 403);
+    }
+
+    if (!EXPECTED_STATUS[kind as NotifyKind].includes(assignment.status)) {
+      return json({ error: `kind '${kind}' doesn't match assignment status '${assignment.status}'` }, 409);
     }
 
     const recipientKind = RECIPIENT[kind as NotifyKind];

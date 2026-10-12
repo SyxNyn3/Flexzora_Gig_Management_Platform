@@ -31,6 +31,11 @@ INSERT INTO ride_offers (id, shift_id, driver_worker_id, seats, gas_share_cents,
 SELECT '25000000-0000-0000-0000-0000000001a2', '00000000-0000-0000-0000-00000000d250', p.id, 2, 500, 'open'::ride_offer_status
 FROM profiles p WHERE p.user_id = '00000000-0000-0000-0000-00000000b253';
 
+-- #30: the rider needs a live booking to post requests at all
+INSERT INTO shift_assignments (id, shift_id, worker_id, status)
+SELECT gen_random_uuid(), '00000000-0000-0000-0000-00000000d250', p.id, 'confirmed'
+FROM profiles p WHERE p.user_id = '00000000-0000-0000-0000-00000000b254';
+
 -- the rider's one legitimate match (sync trigger takes the seat and mints the IOU)
 INSERT INTO ride_requests (id, shift_id, rider_worker_id, seats_needed, status, offer_id)
 SELECT '25000000-0000-0000-0000-0000000002a1', '00000000-0000-0000-0000-00000000d250', p.id, 1, 'matched'::ride_request_status,
