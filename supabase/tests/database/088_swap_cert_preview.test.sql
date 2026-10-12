@@ -39,8 +39,8 @@ INSERT INTO swap_requests (id, assignment_id, shift_id, requester_worker_id, rea
    (SELECT id FROM profiles WHERE user_id = '00000000-0000-0000-0000-0000000010a2'), 'conflict', 2500, 'open');
 
 -- uncerted worker: never had OSHA_10. certed worker: verified active.
-INSERT INTO certifications (worker_id, cert_type_code, verified, is_active, verification_status)
-SELECT id, 'OSHA_10', true, true, 'verified' FROM profiles WHERE user_id = '00000000-0000-0000-0000-0000000010a4';
+INSERT INTO certifications (worker_id, name, cert_type_code, verified, is_active, verification_status)
+SELECT id, 'OSHA 10', 'OSHA_10', true, true, 'verified' FROM profiles WHERE user_id = '00000000-0000-0000-0000-0000000010a4';
 
 SET LOCAL ROLE authenticated;
 
