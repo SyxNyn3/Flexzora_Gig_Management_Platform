@@ -2,7 +2,7 @@
 -- (debtor) must accept before the IOU mints. 'want' posts still mint on
 -- resolve (the author is the debtor — their resolve IS the consent).
 BEGIN;
-SELECT plan(8);
+SELECT plan(9);
 
 INSERT INTO auth.users (id, instance_id, aud, role, email, encrypted_password, raw_user_meta_data, created_at, updated_at)
 VALUES
@@ -75,6 +75,10 @@ SELECT throws_ok(
 -- 5: fulfiller declines → post re-opens, nomination cleared, no IOU
 -- (state check runs as owner — post-decline the fulfiller is no longer a
 -- named party, so RLS would hide the row from them)
+RESET ROLE;
+SELECT is((SELECT status::text FROM crew_posts WHERE id = '00000000-0000-0000-0000-0000000020b2'),
+  'awaiting_accept', 'b2 is awaiting before decline');
+SET LOCAL ROLE authenticated;
 SELECT set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000020a3","role":"authenticated"}', true);
 SELECT ok(decline_fulfilment('00000000-0000-0000-0000-0000000020b2') IS NOT NULL, 'fulfiller declines');
 RESET ROLE;
