@@ -247,7 +247,7 @@ const AuthForm: React.FC = () => {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: provider,
         options: {
-          redirectTo: `${window.location.origin}/dashboard`,
+          redirectTo: `${window.location.origin}${import.meta.env.BASE_URL}dashboard`,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
