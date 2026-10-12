@@ -61,7 +61,7 @@ CREATE OR REPLACE FUNCTION company_decide_swap(
 ) RETURNS swap_requests
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, extensions, pg_temp
+SET search_path = public, extensions
 AS $$
 DECLARE
   r swap_requests%ROWTYPE;

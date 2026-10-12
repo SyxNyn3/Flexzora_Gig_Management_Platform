@@ -11,7 +11,7 @@ RETURNS TABLE (swap_id uuid, sweetener_cents integer, posted_at timestamptz, mis
 LANGUAGE sql
 STABLE
 SECURITY DEFINER
-SET search_path = public, extensions, pg_temp
+SET search_path = public, extensions
 AS $$
   WITH s AS (
     SELECT required_cert_codes, starts_at FROM shifts WHERE id = p_shift_id
