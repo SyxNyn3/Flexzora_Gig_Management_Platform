@@ -17,7 +17,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useWaitlistStats } from '@/hooks/useWaitlistStats';
 import { supabase } from '@/lib/supabase';
 import { WaitlistRoleInterest } from '@/lib/types';
-import { COMPANY_TYPES, CREW_ROLES, HEARD_FROM, PAIN_POINTS } from './funnelOptions';
+import { COMPANY_TYPES, CREW_ROLES, HEARD_FROM, PAIN_POINTS, WORKER_PAIN_POINTS } from './funnelOptions';
 
 const waitlistSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -339,12 +339,18 @@ const WaitlistForm: React.FC = () => {
                 </Field>
               </div>
             )}
-            <ChipGroup
-              label="Where does it hurt most right now?"
-              values={PAIN_POINTS}
-              selected={painPoints}
-              onToggle={(value) => toggleValue('pain_points', value)}
-            />
+            {role && (
+              <ChipGroup
+                label={
+                  role === 'company'
+                    ? 'Where does it hurt most right now?'
+                    : 'What makes gig work hardest right now?'
+                }
+                values={role === 'company' ? PAIN_POINTS : WORKER_PAIN_POINTS}
+                selected={painPoints}
+                onToggle={(value) => toggleValue('pain_points', value)}
+              />
+            )}
             <div>
               <Label>How did you hear about us?</Label>
               <Select onValueChange={(value) => setValue('heard_from', value)}>
