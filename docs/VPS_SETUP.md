@@ -1,11 +1,25 @@
 # VPS Setup — one box, all operations
 
+> **STATUS: LIVE (2026-10-14)** — Deployed and verified on the existing Contabo
+> VPS (`contabo-vps` ssh alias → 167.86.115.101, Tailscale 100.118.148.105,
+> 11 GB RAM / 6 cores / 168 GB free). All 8 trading-stack containers Up ≥7 days,
+> actual memory ~800 MB total (limits are caps). Flexzora ops layer live:
+> nightly `pg_dump` cron (05:00 → `/root/backups/flexzora/`, 14-day rotation,
+> first backup verified 367 KB) + 5-min uptime cron (site + Supabase heartbeat).
+> SSH key auth already on this machine — no user input was needed.
+
 Target: a single VPS hosting **Prop Firm Reaper** (trading stack) + **Flexzora
 ops** (nightly DB backups, uptime monitor, n8n automations). The Prop Firm
 Reaper `docker-compose.yml` was already designed for this — it expects
 `/opt/sovereign-portal/` paths and binds Postgres to a Tailscale IP.
 
-**User provides**: VPS IP + SSH login. Everything below is agent-run from there.
+**Notes learned from the live deploy:**
+- Supabase runs Postgres 17 → install `postgresql-client-17` from the PGDG apt
+  repo (Ubuntu's default 16.x pg_dump fails with version mismatch).
+- `~/.flexzora-db.env` needs `export PGPASSWORD=...` — unexported vars don't
+  reach pg_dump.
+- Sizing guidance below overestimates: real usage ~800 MB total. An 8 GB box
+  would run everything including ollama.
 
 ## 0. Sizing
 
