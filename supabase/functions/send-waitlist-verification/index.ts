@@ -40,19 +40,35 @@ serve(async (req) => {
     // Create verification link
     const verificationLink = `${req.headers.get('origin') || 'http://localhost:3000'}/waitlist/verify?token=${verification_token}&email=${encodeURIComponent(email)}`;
 
-    // In a production environment, you would send an actual email here
-    // For now, we'll just log the verification link and return success
-    console.log(`Verification email would be sent to: ${email}`);
-    console.log(`Verification link: ${verificationLink}`);
+    // Send via Resend when the key exists; log otherwise (beta fallback).
+    const resendKey = Deno.env.get("RESEND_API_KEY");
+    const fromAddr = Deno.env.get("RESEND_FROM_EMAIL") || "Flexzora <onboarding@resend.dev>";
+    if (resendKey) {
+      const res = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${resendKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: fromAddr,
+          to: [email],
+          subject: emailContent.subject,
+          html: emailContent.html,
+        }),
+      });
+      if (!res.ok) {
+        console.error("Resend send failed:", await res.text());
+        return new Response(JSON.stringify({ error: "Failed to send verification email" }), {
+          status: 502,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    } else {
+      console.log(`Verification email would be sent to: ${email}`);
+      console.log(`Verification link: ${verificationLink}`);
+    }
     
-    // In production, you would integrate with an email service like:
-    // - Supabase Email (if available)
-    // - SendGrid
-    // - AWS SES
-    // - Resend
-    // - Mailgun
-    
-    // Example email content:
     const emailContent = {
       to: email,
       subject: 'Verify your email for FlexZora Waitlist',
