@@ -33,6 +33,7 @@ jobs:
           VITE_BASE_PATH: "/flexzora-live/"
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_VAPID_PUBLIC_KEY: ${{ secrets.VITE_VAPID_PUBLIC_KEY }}
       - name: SPA fallback + disable Jekyll
         run: cp dist/index.html dist/404.html && touch dist/.nojekyll
       - name: Publish to SyxNyn3/flexzora-live (gh-pages)
