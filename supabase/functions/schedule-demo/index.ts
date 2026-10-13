@@ -119,8 +119,40 @@ serve(async (req) => {
       );
     }
 
-    // TODO: notify the sales team / create a calendar event once an email or
-    // CRM provider is wired up.
+    // Notify the founder when email is configured. Without RESEND_API_KEY +
+    // DEMO_NOTIFY_EMAIL the request still lands in demo_requests and the
+    // admin triage tab — this is additive, never blocks the submission.
+    const resendKey = Deno.env.get("RESEND_API_KEY");
+    const notifyTo = Deno.env.get("DEMO_NOTIFY_EMAIL");
+    if (resendKey && notifyTo) {
+      try {
+        const notify = await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${resendKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            from: "Flexzora <onboarding@resend.dev>",
+            to: [notifyTo],
+            subject: `Demo request: ${requestData.company_name}`,
+            html: `<h2>New demo request</h2>
+              <p><b>${requestData.company_name}</b> — ${requestData.contact_name}<br>
+              ${requestData.contact_email} · ${requestData.contact_phone}</p>
+              <p>Workers: ${requestData.num_workers_managed ?? "?"} · Gigs/yr: ${requestData.annual_gigs ?? "?"}<br>
+              Current stack: ${requestData.current_software ?? "?"}</p>
+              <p>Preferred: ${requestData.preferred_date} ${requestData.preferred_time}</p>
+              <p>Pain: ${requestData.pain_points}</p>
+              ${requestData.additional_notes ? `<p>Notes: ${requestData.additional_notes}</p>` : ""}`,
+          }),
+        });
+        if (!notify.ok) console.error("Resend notify failed:", await notify.text());
+      } catch (e) {
+        console.error("Resend notify error:", e);
+      }
+    } else {
+      console.log(`Demo request stored (notify skipped — no email config): ${requestData.company_name} <${requestData.contact_email}>`);
+    }
 
     return new Response(
       JSON.stringify({

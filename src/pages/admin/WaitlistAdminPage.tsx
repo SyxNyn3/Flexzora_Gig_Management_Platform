@@ -7,15 +7,36 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useWaitlistStats } from '@/hooks/useWaitlistStats';
 import { supabase } from '@/lib/supabase';
 import { WaitlistEntry, WaitlistStatus } from '@/lib/types';
+
+interface DemoRequest {
+  id: string;
+  company_name: string;
+  contact_name: string;
+  contact_email: string;
+  contact_phone: string;
+  company_size: string | null;
+  industry_focus: string | null;
+  num_workers_managed: string | null;
+  annual_gigs: string | null;
+  current_software: string | null;
+  pain_points: string | null;
+  preferred_date: string | null;
+  preferred_time: string | null;
+  additional_notes: string | null;
+  status: string;
+  created_at: string;
+}
 
 const STATUSES: WaitlistStatus[] = ['pending', 'verified', 'whitelisted', 'invited'];
 
 const WaitlistAdminPage: React.FC = () => {
   const stats = useWaitlistStats();
   const [entries, setEntries] = useState<WaitlistEntry[]>([]);
+  const [demos, setDemos] = useState<DemoRequest[]>([]);
   const [role, setRole] = useState('all');
   const [status, setStatus] = useState('all');
   const [betaOnly, setBetaOnly] = useState(false);
@@ -28,6 +49,14 @@ const WaitlistAdminPage: React.FC = () => {
   };
   useEffect(() => {
     loadEntries();
+    supabase
+      .from('demo_requests')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .then(({ data, error }) => {
+        if (error) toast.error(error.message);
+        else setDemos((data || []) as DemoRequest[]);
+      });
   }, []);
 
   const filtered = useMemo(
@@ -101,6 +130,74 @@ const WaitlistAdminPage: React.FC = () => {
           Export CSV
         </Button>
       </div>
+      <Tabs defaultValue="waitlist">
+        <TabsList>
+          <TabsTrigger value="waitlist">Waitlist</TabsTrigger>
+          <TabsTrigger value="demos">Demo requests {demos.filter((d) => d.status === 'new').length > 0 && `(${demos.filter((d) => d.status === 'new').length} new)`}</TabsTrigger>
+        </TabsList>
+        <TabsContent value="demos" className="mt-4">
+          <Card>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Company</TableHead>
+                    <TableHead>Contact</TableHead>
+                    <TableHead>Workers / gigs</TableHead>
+                    <TableHead>Current stack</TableHead>
+                    <TableHead>Pain points</TableHead>
+                    <TableHead>Preferred</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Requested</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {demos.map((d) => (
+                    <TableRow key={d.id}>
+                      <TableCell className="font-medium">{d.company_name}</TableCell>
+                      <TableCell>
+                        <div className="text-sm">
+                          <div>{d.contact_name}</div>
+                          <div className="text-muted-foreground">{d.contact_email}</div>
+                          <div className="text-muted-foreground">{d.contact_phone}</div>
+                        </div>
+                      </TableCell>
+                      <TableCell>{d.num_workers_managed || '—'} / {d.annual_gigs || '—'}</TableCell>
+                      <TableCell>{d.current_software || '—'}</TableCell>
+                      <TableCell className="max-w-56">{d.pain_points || '—'}</TableCell>
+                      <TableCell>{d.preferred_date || '—'} {d.preferred_time || ''}</TableCell>
+                      <TableCell>
+                        <Select
+                          value={d.status}
+                          onValueChange={(value) => {
+                            supabase.from('demo_requests').update({ status: value }).eq('id', d.id).then(({ error }) => {
+                              if (error) toast.error(error.message);
+                              else setDemos((cur) => cur.map((x) => (x.id === d.id ? { ...x, status: value } : x)));
+                            });
+                          }}
+                        >
+                          <SelectTrigger className="w-32">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {['new', 'contacted', 'scheduled', 'completed', 'cancelled'].map((s) => (
+                              <SelectItem key={s} value={s}>{s}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell>{new Date(d.created_at).toLocaleDateString()}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              {demos.length === 0 && (
+                <p className="p-8 text-center text-muted-foreground">No demo requests yet.</p>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+        <TabsContent value="waitlist" className="mt-4 space-y-4">
       <div className="grid gap-4 sm:grid-cols-4">
         <Stat title="Total" value={stats.total} />
         <Stat title="Companies" value={stats.companies} />
@@ -216,6 +313,8 @@ const WaitlistAdminPage: React.FC = () => {
           )}
         </CardContent>
       </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
