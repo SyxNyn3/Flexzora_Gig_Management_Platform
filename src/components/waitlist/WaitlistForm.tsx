@@ -21,6 +21,7 @@ import { COMPANY_TYPES, CREW_ROLES, HEARD_FROM, PAIN_POINTS, WORKER_PAIN_POINTS 
 
 const waitlistSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
+  confirm_email: z.string(),
   role_interest: z.enum(['worker', 'company'], { required_error: 'Please select your role' }),
   market_city: z.string().optional(),
   crew_roles: z.array(z.string()).optional(),
@@ -34,6 +35,9 @@ const waitlistSchema = z.object({
   past_communication_methods: z.string().optional(),
   desired_features: z.string().optional(),
   challenges: z.string().optional(),
+}).refine((data) => data.email.trim().toLowerCase() === data.confirm_email.trim().toLowerCase(), {
+  message: 'Email addresses do not match',
+  path: ['confirm_email'],
 });
 
 type WaitlistFormData = z.infer<typeof waitlistSchema>;
@@ -283,7 +287,10 @@ const WaitlistForm: React.FC = () => {
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Email address" error={errors.email?.message}>
-                <Input type="email" placeholder="you@example.com" {...register('email')} />
+                <Input type="email" placeholder="you@example.com" autoComplete="email" {...register('email')} />
+              </Field>
+              <Field label="Confirm email" error={errors.confirm_email?.message}>
+                <Input type="email" placeholder="Type it again" autoComplete="off" {...register('confirm_email')} />
               </Field>
               <div>
                 <Label>I am a...</Label>

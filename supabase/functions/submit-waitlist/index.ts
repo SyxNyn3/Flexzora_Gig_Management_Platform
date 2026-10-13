@@ -77,6 +77,7 @@ serve(async (req) => {
     
     // Generate a verification token
     const verificationToken = nanoid(32);
+    const skipVerification = Deno.env.get("WAITLIST_SKIP_EMAIL_VERIFICATION") === "true";
 
     // Check if referred_by_email exists and is valid
     let referredByEmail = requestData.referred_by_email;
@@ -119,6 +120,9 @@ serve(async (req) => {
         beta_tester: Boolean(requestData.beta_tester),
         heard_from: requestData.heard_from,
         utm_source: requestData.utm_source,
+        // Beta mode: when email delivery isn't configured, treat double-entry
+        // email confirmation as the proof-of-intent and skip the email step.
+        verified_at: skipVerification ? new Date().toISOString() : null,
       })
       .select()
       .single();
@@ -134,30 +138,32 @@ serve(async (req) => {
       );
     }
 
-    // Send verification email
-    try {
-      const { error: emailError } = await supabase.functions.invoke('send-waitlist-verification', {
-        body: {
-          email: requestData.email,
-          verification_token: verificationToken,
-          referral_code: referralCode
+    // Send verification email only when verification mode is on
+    if (!skipVerification) {
+      try {
+        const { error: emailError } = await supabase.functions.invoke('send-waitlist-verification', {
+          body: {
+            email: requestData.email,
+            verification_token: verificationToken,
+            referral_code: referralCode
+          }
+        });
+
+        if (emailError) {
+          console.error('Error sending verification email:', emailError);
+          // Don't fail the whole process if email fails
         }
-      });
-      
-      if (emailError) {
-        console.error('Error sending verification email:', emailError);
-        // Don't fail the whole process if email fails
+      } catch (emailError) {
+        console.error('Failed to send verification email:', emailError);
       }
-    } catch (emailError) {
-      console.error('Failed to send verification email:', emailError);
     }
 
     // Return success response with the referral code
     return new Response(
-      JSON.stringify({ 
-        message: "Successfully added to waitlist", 
+      JSON.stringify({
+        message: "Successfully added to waitlist",
         referral_code: referralCode,
-        verification_required: true,
+        verification_required: !skipVerification,
         email: requestData.email
       }),
       {
