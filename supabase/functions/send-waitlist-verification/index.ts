@@ -40,35 +40,6 @@ serve(async (req) => {
     // Create verification link
     const verificationLink = `${req.headers.get('origin') || 'http://localhost:3000'}/waitlist/verify?token=${verification_token}&email=${encodeURIComponent(email)}`;
 
-    // Send via Resend when the key exists; log otherwise (beta fallback).
-    const resendKey = Deno.env.get("RESEND_API_KEY");
-    const fromAddr = Deno.env.get("RESEND_FROM_EMAIL") || "Flexzora <onboarding@resend.dev>";
-    if (resendKey) {
-      const res = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${resendKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          from: fromAddr,
-          to: [email],
-          subject: emailContent.subject,
-          html: emailContent.html,
-        }),
-      });
-      if (!res.ok) {
-        console.error("Resend send failed:", await res.text());
-        return new Response(JSON.stringify({ error: "Failed to send verification email" }), {
-          status: 502,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-    } else {
-      console.log(`Verification email would be sent to: ${email}`);
-      console.log(`Verification link: ${verificationLink}`);
-    }
-    
     const emailContent = {
       to: email,
       subject: 'Verify your email for FlexZora Waitlist',
@@ -104,6 +75,58 @@ serve(async (req) => {
       `
     };
 
+    // Send via AgentMail (primary) or Resend when keys exist; log otherwise.
+    const amKey = Deno.env.get("AGENTMAIL_API_KEY");
+    const amInbox = Deno.env.get("AGENTMAIL_INBOX") || "syxnyn3@agentmail.to";
+    const resendKey = Deno.env.get("RESEND_API_KEY");
+    const fromAddr = Deno.env.get("RESEND_FROM_EMAIL") || "Flexzora <onboarding@resend.dev>";
+    const textBody = `Welcome to FlexZora! Verify your email to complete waitlist registration:\n\n${verificationLink}\n\nIf you didn't request this, ignore this email.`;
+    if (amKey) {
+      const res = await fetch(`https://api.agentmail.to/v0/inboxes/${encodeURIComponent(amInbox)}/messages/send`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${amKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          to: [email],
+          subject: emailContent.subject,
+          text: textBody,
+          html: emailContent.html,
+        }),
+      });
+      if (!res.ok) {
+        console.error("AgentMail send failed:", await res.text());
+        return new Response(JSON.stringify({ error: "Failed to send verification email" }), {
+          status: 502,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    } else if (resendKey) {
+      const res = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${resendKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: fromAddr,
+          to: [email],
+          subject: emailContent.subject,
+          html: emailContent.html,
+        }),
+      });
+      if (!res.ok) {
+        console.error("Resend send failed:", await res.text());
+        return new Response(JSON.stringify({ error: "Failed to send verification email" }), {
+          status: 502,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    } else {
+      console.log(`Verification email would be sent to: ${email}`);
+      console.log(`Verification link: ${verificationLink}`);
+    }
     // Return success response. Never return the verification link — it is a
     // bearer token; handing it to the HTTP caller defeats email verification.
     return new Response(
