@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { StickyScrollSection } from './StickyScrollSection';
 import { Badge } from '@/components/ui/badge';
@@ -499,28 +499,28 @@ const LandingPage: React.FC = () => {
               </ul>
             </div>
             <div>
-              <h3 className="font-semibold text-white mb-4 text-sm uppercase tracking-wider">Support</h3>
+              <h3 className="font-semibold text-white mb-4 text-sm uppercase tracking-wider">Legal</h3>
               <ul className="space-y-2 text-zinc-500 text-sm">
                 <li>
-                  <a href="#" className="hover:text-white transition-colors">
-                    Help Center
-                  </a>
+                  <Link to="/privacy" className="hover:text-white transition-colors">
+                    Privacy Policy
+                  </Link>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-white transition-colors">
+                  <Link to="/terms" className="hover:text-white transition-colors">
+                    Terms of Service
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/schedule-demo" className="hover:text-white transition-colors">
                     Contact Us
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white transition-colors">
-                    Status
-                  </a>
+                  </Link>
                 </li>
               </ul>
             </div>
           </div>
           <div className="border-t border-white/10 mt-8 pt-8 text-center text-zinc-600 text-sm">
-            <p>&copy; 2026 FlexZora. All rights reserved.</p>
+            <p>&copy; 2026 FlexZora. All rights reserved. · Private beta</p>
           </div>
         </div>
       </footer>

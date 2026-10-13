@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { validateSession } from '@/lib/auth';
 import LandingPage from '@/components/landing/LandingPage';
+import LegalPage from '@/pages/LegalPage';
 import WaitlistForm from '@/components/waitlist/WaitlistForm';
 import ScheduleDemoForm from '@/components/demo/ScheduleDemoForm';
 import Layout from '@/components/layout/Layout';
@@ -181,6 +182,8 @@ const AppRoutes: React.FC = () => {
           }
         />
         <Route path="/schedule-demo" element={<ScheduleDemoForm />} />
+        <Route path="/privacy" element={<LegalPage doc="privacy" />} />
+        <Route path="/terms" element={<LegalPage doc="terms" />} />
         <Route
           path="/auth"
           element={
