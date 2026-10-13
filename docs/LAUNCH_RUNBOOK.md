@@ -30,14 +30,12 @@ unblocks the most.
    - `RESEND_FROM_EMAIL` = `Flexzora <onboarding@resend.dev>` (works instantly; replace with your domain address after domain verification)
 4. Done — verification emails + demo-request alerts go live with zero code changes (functions already check for the key)
 5. **Later**: verify your domain in Resend (3 DNS records) → update `RESEND_FROM_EMAIL` to `name@yourdomain.com` for deliverability
+6. **Bonus — route Supabase's own emails through Resend too**: Supabase Dashboard → Authentication → SMTP Settings: host `smtp.resend.com`, port `465`, user `resend`, password = your Resend API key, sender = your verified address. This fixes signup-confirmation/password-reset deliverability (otherwise they ride the shared Supabase mailer — spam-folder territory)
 
-### 2. Auth redirect URLs (~2 min)
+### 2. Auth redirect URLs — ✅ DONE (set via Management API 2026-10-13)
 
-Supabase Dashboard → **Authentication → URL Configuration**:
-- Site URL: `https://syxnyn3.github.io/flexzora-live/`
-- Redirect URLs, add: `https://syxnyn3.github.io/flexzora-live/**`
-
-Without this, password-reset and confirmation emails bounce users to localhost.
+Site URL `https://syxnyn3.github.io/flexzora-live/` + allowlist for prod and
+localhost dev are configured. Nothing to do here.
 
 ### 3. VPS (whenever ready)
 
@@ -84,7 +82,7 @@ Needs Pica (1): `authkit-token` (Gmail integration — optional)
 |---|---|---|
 | Blank/error page | Build regression | GitHub → Actions → last run |
 | "Failed to send request to edge function" | Function down or CORS | Supabase Dashboard → Edge Functions → logs |
-| Signup works, can't log in | Auth URL config missing | Action item 2 above |
+| Signup works, can't log in | Email unconfirmed | Check spam; confirm manually via SQL Editor: `UPDATE auth.users SET email_confirmed_at = now() WHERE email='x@y.com';` |
 | Emails not arriving | Resend not configured | Action item 1 above |
 | Push deploy broken | GitHub Actions red | Actions run log → revert the commit |
 
