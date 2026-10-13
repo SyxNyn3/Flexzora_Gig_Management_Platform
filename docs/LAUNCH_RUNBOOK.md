@@ -93,6 +93,20 @@ Needs Pica (1): `authkit-token` (Gmail integration — optional)
 - GitHub repo secrets: repo → Settings → Secrets and variables → Actions
 - Delete/rotate the `SUPABASE_ACCESS_TOKEN` in .env.local when deploys are done — it was a 24-hour token
 
+## Demo content (the seeded marketplace)
+
+4 demo production companies post 19 real, open shifts (Orlando/Tampa/Atlanta/Nashville):
+Sunset Stage Productions, Gulf Coast Event Services, Peach State Production Group,
+Riverbend Live. All marked `is_demo = true` — visible badge potential, one-query removal:
+
+```sql
+-- when real companies arrive and you want the demo content gone:
+DELETE FROM companies WHERE is_demo;  -- cascades to their venues/events/shifts
+```
+
+Workers can genuinely apply/book/clock on these — they exercise the real pipeline.
+Demo owner login: `demo-company@flexzora.dev` / `SmokeTest!234` (in .env.local scope).
+
 ## What not to touch
 
 - Don't edit `supabase/migrations/` files that were already applied — create new ones
