@@ -20,17 +20,25 @@ unblocks the most.
 
 ## Your action list (the only things requiring your hands)
 
-### 1. Resend — unlocks ALL email (~10 min)
+### 1. Email — ✅ LIVE via AgentMail (2026-10-14); Resend = optional upgrade
 
-1. Sign up at **resend.com** (free tier: 100 emails/day)
-2. Copy the API key
-3. Supabase Dashboard → project → **Edge Functions → Secrets** → add:
-   - `RESEND_API_KEY` = the key
-   - `DEMO_NOTIFY_EMAIL` = your email (demo requests get emailed to you)
-   - `RESEND_FROM_EMAIL` = `Flexzora <onboarding@resend.dev>` (works instantly; replace with your domain address after domain verification)
-4. Done — verification emails + demo-request alerts go live with zero code changes (functions already check for the key)
-5. **Later**: verify your domain in Resend (3 DNS records) → update `RESEND_FROM_EMAIL` to `name@yourdomain.com` for deliverability
-6. **Bonus — route Supabase's own emails through Resend too**: Supabase Dashboard → Authentication → SMTP Settings: host `smtp.resend.com`, port `465`, user `resend`, password = your Resend API key, sender = your verified address. This fixes signup-confirmation/password-reset deliverability (otherwise they ride the shared Supabase mailer — spam-folder territory)
+Outbound email works now. `send-waitlist-verification` and `schedule-demo`
+send through **AgentMail** (`AGENTMAIL_API_KEY` + `AGENTMAIL_INBOX`
+=`syxnyn3@agentmail.to` secrets set). Demo-request notifications email the
+agent inbox (`DEMO_NOTIFY_EMAIL=syxnyn3@agentmail.to`) — Devin reads it and
+relays to you. Verified end-to-end: a real notify email landed in the inbox.
+
+Limits: ~10 sends/day, ~300/mo free — fine for beta. If you outgrow it or want
+a branded sender domain, do the Resend upgrade below — the functions already
+fall back to it when `RESEND_API_KEY` exists (AgentMail wins if both set).
+
+**Optional Resend upgrade (~10 min)**: sign up resend.com → set
+`RESEND_API_KEY`, `RESEND_FROM_EMAIL`, change `DEMO_NOTIFY_EMAIL` to your
+personal email → optionally verify your domain for deliverability.
+**Supabase Auth's own emails** (password reset, magic links) are NOT covered
+by AgentMail — they need SMTP in Dashboard → Authentication → SMTP Settings
+(Resend SMTP: host `smtp.resend.com` port 465 user `resend` pass=api key), or
+they ride Supabase's shared mailer (spam-folder territory).
 
 ### 2. Auth redirect URLs — ✅ DONE (set via Management API 2026-10-13)
 

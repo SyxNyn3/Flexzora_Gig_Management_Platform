@@ -25,3 +25,4 @@ dist-ssr
 *.sw?
 *.tsbuildinfo
 supabase/.temp/
+supabase/twilio_2FA_recovery_code.txt
