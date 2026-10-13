@@ -145,6 +145,15 @@ const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return <>{children}</>;
 };
 
+const RoleRoute: React.FC<{ role: 'worker' | 'company'; children: React.ReactNode }> = ({ role, children }) => {
+  const { profile, loading } = useAuth();
+  if (loading) return <LoadingSpinner />;
+  if (profile && profile.role !== role && profile.role !== 'admin') {
+    return <Navigate to="/dashboard" replace />;
+  }
+  return <>{children}</>;
+};
+
 const AppRoutes: React.FC = () => {
   const { profile } = useAuth();
 
@@ -207,11 +216,11 @@ const AppRoutes: React.FC = () => {
         <Route
           path="/gigs/create"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute><RoleRoute role="company">
               <Layout>
                 <CreateGigForm />
               </Layout>
-            </ProtectedRoute>
+            </RoleRoute></ProtectedRoute>
           }
         />
         <Route
@@ -227,11 +236,11 @@ const AppRoutes: React.FC = () => {
         <Route
           path="/gigs/:id/manage"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute><RoleRoute role="company">
               <Layout>
                 <GigManagement />
               </Layout>
-            </ProtectedRoute>
+            </RoleRoute></ProtectedRoute>
           }
         />
         <Route
@@ -257,21 +266,21 @@ const AppRoutes: React.FC = () => {
         <Route
           path="/availability"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute><RoleRoute role="worker">
               <Layout>
                 <AvailabilityEditor />
               </Layout>
-            </ProtectedRoute>
+            </RoleRoute></ProtectedRoute>
           }
         />
         <Route
           path="/schedule"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute><RoleRoute role="worker">
               <Layout>
                 <SchedulingInterface />
               </Layout>
-            </ProtectedRoute>
+            </RoleRoute></ProtectedRoute>
           }
         />
         <Route
@@ -327,11 +336,11 @@ const AppRoutes: React.FC = () => {
         <Route
           path="/workforce"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute><RoleRoute role="company">
               <Layout>
                 <CompanyDashboard />
               </Layout>
-            </ProtectedRoute>
+            </RoleRoute></ProtectedRoute>
           }
         />
         <Route
@@ -347,151 +356,151 @@ const AppRoutes: React.FC = () => {
         <Route
           path="/events"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute><RoleRoute role="company">
               <Layout>
                 <EventsPage />
               </Layout>
-            </ProtectedRoute>
+            </RoleRoute></ProtectedRoute>
           }
         />
         <Route
           path="/events/:eventId"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute><RoleRoute role="company">
               <Layout>
                 <EventDetailPage />
               </Layout>
-            </ProtectedRoute>
+            </RoleRoute></ProtectedRoute>
           }
         />
         <Route
           path="/timesheets"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute><RoleRoute role="company">
               <Layout>
                 <TimesheetApprovalPage />
               </Layout>
-            </ProtectedRoute>
+            </RoleRoute></ProtectedRoute>
           }
         />
         <Route
           path="/roster"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute><RoleRoute role="company">
               <Layout>
                 <RosterPage />
               </Layout>
-            </ProtectedRoute>
+            </RoleRoute></ProtectedRoute>
           }
         />
         <Route
           path="/import"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute><RoleRoute role="company">
               <Layout>
                 <ImportPage />
               </Layout>
-            </ProtectedRoute>
+            </RoleRoute></ProtectedRoute>
           }
         />
         <Route
           path="/staff"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute><RoleRoute role="company">
               <Layout>
                 <StaffPage />
               </Layout>
-            </ProtectedRoute>
+            </RoleRoute></ProtectedRoute>
           }
         />
         <Route
           path="/ops"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute><RoleRoute role="company">
               <Layout>
                 <OpsBoardPage />
               </Layout>
-            </ProtectedRoute>
+            </RoleRoute></ProtectedRoute>
           }
         />
         <Route
           path="/broadcast"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute><RoleRoute role="company">
               <Layout>
                 <BroadcastPage />
               </Layout>
-            </ProtectedRoute>
+            </RoleRoute></ProtectedRoute>
           }
         />
         <Route
           path="/cert-reviews"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute><RoleRoute role="company">
               <Layout>
                 <CertReviewPage />
               </Layout>
-            </ProtectedRoute>
+            </RoleRoute></ProtectedRoute>
           }
         />
         <Route
           path="/alerts"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute><RoleRoute role="company">
               <Layout>
                 <AlertsPage />
               </Layout>
-            </ProtectedRoute>
+            </RoleRoute></ProtectedRoute>
           }
         />
         <Route
           path="/exports"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute><RoleRoute role="company">
               <Layout>
                 <ExportsPage />
               </Layout>
-            </ProtectedRoute>
+            </RoleRoute></ProtectedRoute>
           }
         />
         <Route
           path="/copilot"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute><RoleRoute role="company">
               <Layout>
                 {COPILOT_ENABLED ? <CopilotPage /> : <Navigate to="/dashboard" replace />}
               </Layout>
-            </ProtectedRoute>
+            </RoleRoute></ProtectedRoute>
           }
         />
         <Route
           path="/shifts"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute><RoleRoute role="worker">
               <Layout>
                 <ShiftMarketplacePage />
               </Layout>
-            </ProtectedRoute>
+            </RoleRoute></ProtectedRoute>
           }
         />
         <Route
           path="/shifts/:shiftId/crew"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute><RoleRoute role="worker">
               <Layout>
                 <CrewBoardPage />
               </Layout>
-            </ProtectedRoute>
+            </RoleRoute></ProtectedRoute>
           }
         />
         <Route
           path="/payouts"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute><RoleRoute role="worker">
               <Layout>
                 <PayoutsPage />
               </Layout>
-            </ProtectedRoute>
+            </RoleRoute></ProtectedRoute>
           }
         />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
