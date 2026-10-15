@@ -1,200 +1,126 @@
-# FlexZora (Rebranding to ShiftZora / RosterFlux) - Multi-Vertical Gig Management Platform
+# Flexzora — Crew & Shift Operations Platform
 
-![FlexZora Logo](https://images.pexels.com/photos/1190297/pexels-photo-1190297.jpeg?auto=compress&cs=tinysrgb&w=1200&h=400&dpr=1)
+[![CI](https://github.com/SyxNyn3/Flexzora_Gig_Management_Platform/actions/workflows/ci.yml/badge.svg)](https://github.com/SyxNyn3/Flexzora_Gig_Management_Platform/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6)](https://www.typescriptlang.org/)
+[![Supabase](https://img.shields.io/badge/Supabase-Postgres%20%2B%20RLS-3ecf8e)](https://supabase.com/)
+[![React](https://img.shields.io/badge/React-18%20%2B%20Vite-149eca)](https://react.dev/)
 
-> 📢 **Strategic Notice**: The platform is currently undergoing an active, comprehensive update to make its scheduling, shift matching, and worker rostering engines completely industry-agnostic. While originally designed for live production crews, the new core is built to scale fluidly into healthcare, retail, security staffing, and corporate freelance management.
+Gig-marketplace infrastructure for event production: staffing companies
+post shifts, freelance crew claim and work them, and the platform carries
+the operational weight between the two — scheduling, credentials, swaps,
+rides, timesheets, IOUs, and payouts — with Postgres RLS as the security
+boundary.
 
-## Overview
+## Problem → Solution
 
-This platform is a highly adaptive, multi-vertical gig and shift management engine built for coordinators, managers, and freelance professionals. It connects dynamic labor workforces with corporate clients, automates complex scheduling conflicts, tracks real-time availability, and handles secure end-to-end payment processing in one dark, industrial-styled command center.
+| Operational pain | What Flexzora does |
+|---|---|
+| Crew calls/texts scattered across channels | Shift marketplace + broadcast alerts in one surface |
+| "Who's actually certified for this?" | Credential records + `cert_review` workflow + swap-cert preview |
+| Double-bookings and swap chaos | Fulfil-accept gate, one-active-ride-per-shift, swap immutability — enforced in DB constraints, not convention |
+| Timesheets ≠ pay disputes | Company-side timesheet approval → Stripe Connect payouts, with offer terms frozen at acceptance |
+| Re-keying spreadsheets | CSV import pipeline with field mapping, validation, and staging |
+| Trust between strangers | Reliability/compliance scoring, portfolio profiles, public company pages |
 
-### Key Features
+## Architecture
 
-- **Smart Scheduling** - Unified calendar with conflict detection and automatic sync
-- **Financial Tracking** - Track earnings, expenses, and generate professional invoices
-- **Company Integrations** - Connect with major production companies like Rhino Staging, Giglife, and more
-- **Portfolio Showcase** - Display your best work with a customizable portfolio
-- **Advanced Search** - Find the perfect gigs with powerful filtering options
-- **Secure Payments** - Process payments securely through Stripe integration
-
-## Technology Stack
-
-### Frontend
-- **React** with TypeScript
-- **React Router** for navigation
-- **TanStack Query** for data fetching
-- **Tailwind CSS** with shadcn/ui components
-- **Recharts** for data visualization
-- **React Big Calendar** for calendar views
-
-### Backend
-- **Supabase** for authentication, database, and storage
-- **PostgreSQL** database with RLS policies
-- **Supabase Edge Functions** for serverless functionality
-- **Real-time subscriptions** for notifications
-
-### Integrations
-- **AuthKit** for third-party service connections
-- **Gmail API** for email integration
-- **Google Calendar API** for calendar sync
-- **Stripe** for payment processing
-
-## Getting Started
-
-### Prerequisites
-- Node.js 18+
-- npm or yarn
-- Supabase account
-
-### Installation
-
-1. Clone the repository
-```bash
-git clone https://github.com/yourusername/flexora.git
-cd flexora
+```
+                        ┌─────────────────────────────────────────┐
+                        │             Vite + React SPA            │
+                        │  worker/ · company/ · admin surfaces    │
+                        │  TanStack Query · shadcn/ui · Tailwind  │
+                        └──────────────┬──────────────────────────┘
+                                       │ supabase-js (anon key)
+                                       ▼
+              ┌───────────────────────────────────────────────────┐
+              │                SUPABASE PROJECT                   │
+              │ ┌─────────────────┐   ┌─────────────────────────┐ │
+              │ │ Postgres + RLS  │   │   Edge Functions (20+)  │ │
+              │ │ 86 migrations   │   │ stripe-webhook · payout │ │
+              │ │ pgTAP tests(27) │   │ push notify · ical sync │ │
+              │ └────────┬────────┘   └──────┬─────────┬────────┘ │
+              └──────────┼───────────────────┼─────────┼──────────┘
+                         ▼                   ▼         ▼
+                  ┌────────────┐      ┌──────────┐  ┌───────────┐
+                  │ RLS = auth │      │  Stripe  │  │ Web Push  │
+                  │ boundary:  │      │ Connect/ │  │ + iCal/   │
+                  │ per-tenant │      │ Payments │  │ ICS feeds │
+                  └────────────┘      └──────────┘  └───────────┘
 ```
 
-2. Install dependencies
-```bash
+**Why this shape:** the security model lives in the database, not the
+client. Workers, companies, and admins read through row-level security
+policies — the anon key is publishable *by design*. Everything sensitive
+(payout release, webhook intake, push sends) runs behind edge functions
+with service-role credentials that never touch the browser. Invariants
+that protect money and schedules — frozen offer terms, immutable swaps,
+single active rides — are enforced as Postgres constraints and covered
+by pgTAP tests that run in CI against a real local Postgres.
+
+## Repo layout
+
+```
+src/pages/worker/    Shift marketplace, payouts, crew board, alerts
+src/pages/company/   Events, roster, staff, timesheet approval,
+                     broadcast, cert review, copilot, import/export
+src/lib/             Domain modules: marketplace, crew, certs,
+                     compliance, payments, push, broadcast, copilot
+supabase/migrations/ Ordered schema history (86 migrations)
+supabase/functions/  Edge functions (payments, push, ical, waitlist)
+supabase/tests/      pgTAP database regression suite
+docs/                Ops runbooks, agent log, backlog
+```
+
+## Quick start
+
+```sh
 npm install
-```
-
-3. Set up environment variables
-```bash
-cp .env.example .env
-```
-
-4. Update the `.env` file with your Supabase credentials and Stripe API keys
-
-5. Start the development server
-```bash
+cp .env.example .env.local   # add your Supabase project URL + anon key
 npm run dev
 ```
 
-## Database Schema
+Full local stack with the real database:
 
-Flexora uses a comprehensive PostgreSQL database schema with the following core entities:
-
-- **Profiles**: User profiles with role-based access (worker, company, admin)
-- **Companies**: Company information and details
-- **Skills**: Catalog of available skills
-- **Worker Skills**: Junction table connecting workers to skills with proficiency levels
-- **Certifications**: Professional certifications and licenses
-- **Gigs**: Job postings and opportunities
-- **Gig Applications**: Applications from workers to gigs
-- **Availability**: Worker availability schedules
-- **Payments**: Payment tracking and management
-- **Expenses**: Expense tracking with categories
-- **Notifications**: User notification system
-- **Company Integrations**: External service connections
-- **Calendar Events**: Scheduling and calendar management
-- **Follows**: Social connections between users
-
-## Features
-
-### Worker Features
-- Profile creation and management
-- Skill management with proficiency levels
-- Certification management
-- Availability settings
-- Gig discovery and application
-- Application tracking
-- Calendar integration
-- Expense tracking
-- Payment history
-- Company connections
-- Rating and reviews
-- Portfolio showcase
-- Invoice generation
-
-### Company Features
-- Company profile management
-- Gig creation and management
-- Worker discovery
-- Application review
-- Payment processing
-- Team management
-- Scheduling interface
-- Worker ratings
-- Analytics dashboard
-
-### Gig Management
-- Gig creation with detailed information
-- Gig discovery and search
-- Application process
-- Scheduling and calendar integration
-- Communication system
-- Conflict detection
-- Automated matching
-
-### Financial Management
-- Payment tracking
-- Expense tracking
-- Financial dashboard
-- Invoice generation
-- Tax reporting
-- Payment processing integration
-
-## Project Structure
-
-```
-flexora/
-├── public/              # Static assets
-├── src/
-│   ├── components/      # React components
-│   │   ├── auth/        # Authentication components
-│   │   ├── dashboard/   # Dashboard components
-│   │   ├── finances/    # Financial components
-│   │   ├── gigs/        # Gig management components
-│   │   ├── layout/      # Layout components
-│   │   ├── profile/     # Profile components
-│   │   ├── ui/          # UI components (shadcn/ui)
-│   ├── contexts/        # React contexts
-│   ├── hooks/           # Custom hooks
-│   ├── lib/             # Utility functions and types
-│   ├── App.tsx          # Main App component
-│   ├── main.tsx         # Entry point
-├── supabase/
-│   ├── functions/       # Edge functions
-│   ├── migrations/      # Database migrations
-├── .env.example         # Example environment variables
-├── package.json         # Dependencies
-├── tailwind.config.js   # Tailwind configuration
-├── tsconfig.json        # TypeScript configuration
-├── vite.config.ts       # Vite configuration
+```sh
+supabase start        # spins up local Postgres, replays all migrations
+supabase test db      # runs the pgTAP suite
 ```
 
-## Deployment
+## Quality gates (CI on every push/PR)
 
-Flexora can be deployed to various platforms:
+`eslint` → `tsc --noEmit` → `vitest` → coverage → `vite build`
++ pgTAP suite on a live local Postgres
++ `gitleaks` over full history
++ `npm audit --audit-level=high`
 
-- **Frontend**: Netlify, Vercel, or any static hosting
-- **Backend**: Supabase (managed service)
+> **Note:** an industry-agnostic rebrand (ShiftZora / RosterFlux) is in
+> progress — the scheduling, matching, and rostering core is already
+> vertical-neutral; healthcare, retail, and security staffing are the
+> expansion targets.
 
-## Roadmap
+## Maturity — honest status
 
-See the [ROADMAP.md](ROADMAP.md) file for the detailed development plan.
+Production-shaped, actively developed. Real payment plumbing (Stripe
+Connect, webhook-signed events), real DB-enforced invariants, real
+regression coverage. Still pre-1.0: surfaces are being iterated, the
+Company Copilot is early, and some integrations ship behind feature
+flags. See `ROADMAP.md` and `docs/BACKLOG.md` for what's next and
+`TEST_PLAN.md` for the verification approach.
 
-## Contributing
+## Contributing & security
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
+See `CONTRIBUTING.md` for the workflow (small PRs, immutable
+migrations, pgTAP for any RLS change). Report vulnerabilities privately
+per `SECURITY.md` — this repo runs secret scanning in CI.
 
 ## Acknowledgments
 
-- [StackBlitz, Inc.](https://stackblitz.com/) - Sponsor and development platform
-- [Supabase](https://supabase.com/) - Backend infrastructure
-- [shadcn/ui](https://ui.shadcn.com/) - UI components
-- [Tailwind CSS](https://tailwindcss.com/) - CSS framework
-- [Pexels](https://www.pexels.com/) - Stock photos
+- [Supabase](https://supabase.com/) — backend infrastructure
+- [shadcn/ui](https://ui.shadcn.com/) — component system
+- [Tailwind CSS](https://tailwindcss.com/)
+- [Pexels](https://www.pexels.com/) — stock imagery
 
----
+## License
 
-Built with ❤️ by the FlexZora Team
+MIT — see `LICENSE`.

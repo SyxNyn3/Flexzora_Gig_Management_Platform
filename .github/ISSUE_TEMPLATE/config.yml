@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security report
+    url: https://github.com/SyxNyn3/Flexzora_Gig_Management_Platform/security/advisories/new
+    about: Report a vulnerability privately — never in a public issue.

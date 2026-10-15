@@ -1,0 +1,13 @@
+.git
+.github
+node_modules
+dist
+.env
+.env.*
+!.env.example
+.bolt
+.ops
+coverage
+*.log
+docs
+screenshots

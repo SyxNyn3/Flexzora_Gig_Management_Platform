@@ -5,6 +5,9 @@ on:
   push:
     branches: [main, 'devin/**']
 
+permissions:
+  contents: read
+
 jobs:
   checks:
     runs-on: ubuntu-latest
@@ -16,8 +19,9 @@ jobs:
           node-version: 20
           cache: npm
 
+      # package-lock.json is committed — npm ci is the reproducible path.
       - name: Install dependencies
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
 
       - name: Lint
         run: npx eslint src
@@ -27,6 +31,16 @@ jobs:
 
       - name: Test
         run: npx vitest run
+
+      - name: Coverage
+        run: npx vitest run --coverage --coverage.reporter=lcov
+        continue-on-error: true   # informational until threshold is tuned
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        continue-on-error: true
+        with:
+          files: ./coverage/lcov.info
 
       - name: Build
         run: npx vite build
@@ -45,3 +59,24 @@ jobs:
         run: supabase db start
       - name: Run pgTAP tests
         run: supabase test db
+
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0          # full history — leaks hide in old commits
+      - uses: gitleaks/gitleaks-action@v2
+
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Dependency audit (high+ only)
+        run: npm audit --audit-level=high --omit=dev
