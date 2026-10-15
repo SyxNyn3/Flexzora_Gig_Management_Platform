@@ -16,7 +16,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
 
       # package-lock.json is committed — npm ci is the reproducible path.
@@ -54,7 +54,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 2.121.0
       - name: Start local database (applies migrations + seed)
         run: supabase db start
       - name: Run pgTAP tests
@@ -67,6 +67,8 @@ jobs:
         with:
           fetch-depth: 0          # full history — leaks hide in old commits
       - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   audit:
     runs-on: ubuntu-latest
@@ -74,7 +76,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
