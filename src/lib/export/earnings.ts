@@ -1,4 +1,3 @@
-import { format } from 'date-fns';
 import type { Invoice } from '@/lib/types';
 
 // Row builders for the worker's annual earnings statement — pure so the
@@ -51,8 +50,9 @@ export function statementRows(invoices: Invoice[]): string[][] {
     .sort((a, b) => new Date(b.issued_at).getTime() - new Date(a.issued_at).getTime())
     .map((i) => [
       i.invoice_number,
-      format(new Date(i.issued_at), 'yyyy-MM-dd'),
-      i.paid_at ? format(new Date(i.paid_at), 'yyyy-MM-dd') : '—',
+      i.issued_at.slice(0, 10),   // stored UTC business date — don't
+      // render through local TZ or the statement lies a day back
+      i.paid_at ? i.paid_at.slice(0, 10) : '—',
       i.company?.name ?? '',
       i.event?.name ?? '',
       money(Number(i.subtotal)),
