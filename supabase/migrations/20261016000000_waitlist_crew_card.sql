@@ -36,7 +36,18 @@ ALTER TABLE waiting_list
   ADD COLUMN IF NOT EXISTS preferred_areas text[] DEFAULT '{}',
   ADD COLUMN IF NOT EXISTS has_own_business boolean,
   ADD COLUMN IF NOT EXISTS business_names text[] DEFAULT '{}',
-  ADD COLUMN IF NOT EXISTS business_arrangement text;
+  ADD COLUMN IF NOT EXISTS business_arrangement text,
+  ADD COLUMN IF NOT EXISTS signup_ip inet;
+
+/* per-IP call log for waitlist_fill_crew_card — enabled RLS with zero
+   policies means PostgREST/anon can't touch it; only SECURITY DEFINER
+   internals (running as owner) read and write it */
+CREATE TABLE IF NOT EXISTS public.waitlist_rpc_hits (
+  ip inet NOT NULL,
+  ts timestamptz NOT NULL DEFAULT now()
+);
+ALTER TABLE public.waitlist_rpc_hits ENABLE ROW LEVEL SECURITY;
+CREATE INDEX IF NOT EXISTS idx_waitlist_rpc_hits_ip_ts ON public.waitlist_rpc_hits (ip, ts);
 
 CREATE INDEX IF NOT EXISTS idx_waiting_list_market ON waiting_list (market_city);
 
@@ -50,9 +61,13 @@ CREATE INDEX IF NOT EXISTS idx_waiting_list_market ON waiting_list (market_city)
 
   Safety model — "first write wins":
    * Row must already exist (the edge function inserted it).
-   * Only fills while the card is untouched (full_name IS NULL). Once any
-     writer has claimed the card, later anonymous calls change nothing, so
-     a stranger can't overwrite someone's card knowing only their email.
+   * Only fills while the card is untouched (full_name IS NULL) AND the row
+     is fresh (created in the last 30 min) — a stranger can't claim the card
+     of a legacy signup knowing only their email.
+   * Once any writer has claimed the card, later anonymous calls change
+     nothing, so nobody can overwrite someone's card.
+   * 8 calls/min per source IP — fills happen once per signup, so this only
+     bites enumeration/flood attempts.
    * sms_consent can only transition false -> true (consent can't be
      revoked through this channel).
    * profile_completeness never decreases.
@@ -97,7 +112,24 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
 AS $$
+DECLARE
+  v_ip inet;
 BEGIN
+  /* caller IP from PostgREST request headers (first hop of XFF chain) —
+     recorded on the row as a fraud signal and rate-limited per minute */
+  v_ip := COALESCE(
+    NULLIF(trim(split_part(COALESCE(
+      current_setting('request.headers', true)::jsonb ->> 'x-forwarded-for',
+      ''), ',', 1)), '')::inet,
+    '0.0.0.0'::inet
+  );
+
+  INSERT INTO waitlist_rpc_hits (ip) VALUES (v_ip);
+  DELETE FROM waitlist_rpc_hits WHERE ts < now() - interval '10 minutes';
+  IF (SELECT count(*) FROM waitlist_rpc_hits WHERE ip = v_ip AND ts > now() - interval '1 minute') > 8 THEN
+    RAISE EXCEPTION 'rate limit exceeded' USING ERRCODE = '54000';
+  END IF;
+
   UPDATE waiting_list SET
     full_name            = p_full_name,
     phone                = p_phone,
@@ -127,9 +159,11 @@ BEGIN
     referred_crew        = p_referred_crew,
     has_own_business     = p_has_own_business,
     business_names       = COALESCE(p_business_names, '{}'),
-    business_arrangement = p_business_arrangement
+    business_arrangement = p_business_arrangement,
+    signup_ip            = COALESCE(signup_ip, v_ip)
   WHERE email = lower(trim(p_email))
-    AND full_name IS NULL;
+    AND full_name IS NULL
+    AND created_at > now() - interval '30 minutes';
   RETURN found;
 END;
 $$;

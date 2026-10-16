@@ -104,6 +104,10 @@ const WaitlistForm: React.FC = () => {
   const [utmSource, setUtmSource] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [verificationError, setVerificationError] = useState<string | null>(null);
+  /* bot friction — honeypot input + minimum time-on-form. Legit humans
+     can't fill an invisible field and can't complete this form in <2s. */
+  const [honeypot, setHoneypot] = useState('');
+  const [mountedAt] = useState(() => Date.now());
   /* ?role=worker|company — deep links like "join as crew" preselect the track */
   const roleParam = searchParams.get('role');
   const {
@@ -151,6 +155,13 @@ const WaitlistForm: React.FC = () => {
   };
 
   const onSubmit = async (data: WaitlistFormData) => {
+    /* bots that trip the honeypot or submit instantly get a silent fake
+       success — no write, no error, nothing to adapt to */
+    if (honeypot || Date.now() - mountedAt < 2000) {
+      setSuccess(true);
+      setReferralCode('thanks');
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -454,6 +465,18 @@ const WaitlistForm: React.FC = () => {
               <Field label="Primary market / city">
                 <Input placeholder="Los Angeles, CA" {...register('market_city')} />
               </Field>
+            </div>
+            <div aria-hidden="true" className="absolute -left-[9999px] -top-[9999px] h-0 w-0 overflow-hidden">
+              <label>
+                Website
+                <input
+                  type="text"
+                  tabIndex={-1}
+                  autoComplete="off"
+                  value={honeypot}
+                  onChange={(e) => setHoneypot(e.target.value)}
+                />
+              </label>
             </div>
             {phone.trim().length > 5 && (
               <label className="flex items-start gap-3 rounded-lg border border-white/10 bg-card/[0.03] p-4">
