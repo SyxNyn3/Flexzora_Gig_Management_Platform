@@ -17,7 +17,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useWaitlistStats } from '@/hooks/useWaitlistStats';
 import { supabase } from '@/lib/supabase';
 import { WaitlistRoleInterest } from '@/lib/types';
-import { CALL_RESPONSE, COMPANY_TYPES, CREW_ROLES, CREW_SKILLS, DEPARTURE_NOTICE, EXPERIENCE_LEVELS, FARTHEST_TRAVEL, HEARD_FROM, PAIN_POINTS, PAYMENT_TYPES, REGIONS, TRAVEL_OPTIONS, VEHICLE_TYPES, WORKER_PAIN_POINTS } from './funnelOptions';
+import { BUSINESS_ARRANGEMENTS, CALL_RESPONSE, COMPANY_TYPES, CREW_ROLES, CREW_SKILLS, DEPARTURE_NOTICE, EXPERIENCE_LEVELS, FARTHEST_TRAVEL, HEARD_FROM, PAIN_POINTS, PAYMENT_TYPES, REGIONS, TRAVEL_OPTIONS, VEHICLE_TYPES, WORKER_PAIN_POINTS } from './funnelOptions';
 
 const waitlistSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -37,6 +37,10 @@ const waitlistSchema = z.object({
   markets_worked: z.array(z.string()).optional(),
   favorite_markets: z.array(z.string()).max(3).optional(),
   preferred_regions: z.array(z.string()).optional(),
+  preferred_areas: z.array(z.string()).optional(),
+  has_own_business: z.boolean().optional(),
+  business_names: z.array(z.string()).optional(),
+  business_arrangement: z.string().optional(),
   vehicles: z.array(z.string()).optional(),
   farthest_travel: z.string().optional(),
   willing_farther: z.boolean().optional(),
@@ -72,10 +76,11 @@ const computeCompleteness = (d: WaitlistFormData) =>
       d.experience_years, d.travel_availability?.length, d.union_affiliation,
       d.vehicles?.length, d.day_rate_min, d.instagram_handle, d.company_name,
       d.companies_worked?.length, d.markets_worked?.length, d.favorite_markets?.length,
-      d.preferred_regions?.length, d.farthest_travel, d.has_passport,
+      d.preferred_regions?.length, d.preferred_areas?.length, d.farthest_travel, d.has_passport,
+      d.has_own_business, d.business_names?.length,
       d.call_response_time, d.payment_type, d.sms_consent,
     ].filter(Boolean).length /
-      21) *
+      24) *
       100,
   );
 
@@ -113,7 +118,7 @@ const WaitlistForm: React.FC = () => {
       role_interest: roleParam === 'worker' || roleParam === 'company' ? roleParam : undefined,
       crew_roles: [], skills: [], travel_availability: [], pain_points: [],
       companies_worked: [], markets_worked: [], favorite_markets: [],
-      preferred_regions: [], vehicles: [],
+      preferred_regions: [], preferred_areas: [], vehicles: [], business_names: [],
       beta_tester: false, sms_consent: false,
     },
   });
@@ -126,7 +131,10 @@ const WaitlistForm: React.FC = () => {
   const marketsWorked = watch('markets_worked') || [];
   const favoriteMarkets = watch('favorite_markets') || [];
   const preferredRegions = watch('preferred_regions') || [];
+  const preferredAreas = watch('preferred_areas') || [];
   const vehicles = watch('vehicles') || [];
+  const hasOwnBusiness = watch('has_own_business');
+  const businessNames = watch('business_names') || [];
   const hasPassport = watch('has_passport');
   const overseasWilling = watch('overseas_willing');
   const phone = watch('phone') || '';
@@ -154,16 +162,54 @@ const WaitlistForm: React.FC = () => {
       };
       /* workers answer the structured roster — keep the legacy text column
          readable for admin views that still scan it */
-      if (payload.companies_worked?.length && !payload.production_companies_worked_with) {
-        payload.production_companies_worked_with = payload.companies_worked
-          .map((c) => `${c.name}${c.current ? ' (current)' : ''}`)
-          .join(', ');
+      if ((payload.companies_worked?.length || payload.business_names?.length) && !payload.production_companies_worked_with) {
+        payload.production_companies_worked_with = [
+          ...(payload.companies_worked ?? []).map((c) => `${c.name}${c.current ? ' (current)' : ''}`),
+          ...(payload.business_names ?? []).map((b) => `${b} (own business)`),
+        ].join(', ');
       }
       payload.has_vehicle = (payload.vehicles?.length ?? 0) > 0 ? true : payload.has_vehicle;
+      payload.has_own_business = (payload.business_names?.length ?? 0) > 0 ? true : payload.has_own_business;
       const { data: responseData, error: responseError } = await supabase.functions.invoke('submit-waitlist', {
         body: payload,
       });
       if (responseError || responseData?.error) throw new Error(responseError?.message || responseData.error);
+      /* the deployed function may lag the schema — the crew-card RPC completes
+         the row it just inserted. First-write-wins: a no-op once the function
+         persists these fields itself, and locked against anonymous overwrites. */
+      const { error: fillError } = await supabase.rpc('waitlist_fill_crew_card', {
+        p_email: data.email,
+        p_full_name: payload.full_name,
+        p_phone: payload.phone,
+        p_sms_consent: payload.sms_consent,
+        p_skills: payload.skills,
+        p_experience_years: payload.experience_years,
+        p_travel_availability: payload.travel_availability,
+        p_union_affiliation: payload.union_affiliation,
+        p_vehicles: payload.vehicles,
+        p_has_vehicle: payload.has_vehicle,
+        p_day_rate_min: payload.day_rate_min,
+        p_instagram_handle: payload.instagram_handle,
+        p_company_name: payload.company_name,
+        p_profile_completeness: payload.profile_completeness,
+        p_companies_worked: payload.companies_worked,
+        p_markets_worked: payload.markets_worked,
+        p_favorite_markets: payload.favorite_markets,
+        p_preferred_regions: payload.preferred_regions,
+        p_preferred_areas: payload.preferred_areas,
+        p_farthest_travel: payload.farthest_travel,
+        p_willing_farther: payload.willing_farther,
+        p_has_passport: payload.has_passport,
+        p_overseas_willing: payload.overseas_willing,
+        p_departure_readiness: payload.departure_readiness,
+        p_call_response_time: payload.call_response_time,
+        p_payment_type: payload.payment_type,
+        p_referred_crew: payload.referred_crew,
+        p_has_own_business: payload.has_own_business,
+        p_business_names: payload.business_names,
+        p_business_arrangement: payload.business_arrangement,
+      });
+      if (fillError) console.warn('crew card fill failed — fields will sync once the function deploys', fillError);
       const code = responseData.referral_code as string;
       setReferralCode(code);
       if (responseData.verification_required) {
@@ -500,9 +546,51 @@ const WaitlistForm: React.FC = () => {
                     setValue('companies_worked', companies.filter((c) => c.name !== key), { shouldDirty: true })
                   }
                 />
+                <div className="space-y-3 rounded-lg border border-white/10 bg-card/[0.03] p-4">
+                  <label className="flex items-start gap-3">
+                    <Checkbox
+                      checked={hasOwnBusiness}
+                      onCheckedChange={(checked) => {
+                        setValue('has_own_business', checked === true);
+                        if (checked !== true) setValue('business_arrangement', undefined);
+                      }}
+                    />
+                    <span className="text-sm text-zinc-300">I have my own business</span>
+                  </label>
+                  {hasOwnBusiness && (
+                    <>
+                      <TokenList
+                        label="Your business(es)"
+                        hint="LLC, corp, crew outfit — add every business you might take calls under."
+                        placeholder="e.g. KnoShow Productions LLC"
+                        tokens={businessNames.map((b) => ({ key: b, label: b }))}
+                        onAdd={(name) =>
+                          !businessNames.some((b) => b.toLowerCase() === name.toLowerCase()) &&
+                          setValue('business_names', [...businessNames, name], { shouldDirty: true })
+                        }
+                        onRemove={(key) =>
+                          setValue('business_names', businessNames.filter((b) => b !== key), { shouldDirty: true })
+                        }
+                      />
+                      <div>
+                        <Label>How do you work under it?</Label>
+                        <Select onValueChange={(value) => setValue('business_arrangement', value)}>
+                          <SelectTrigger className="mt-1">
+                            <SelectValue placeholder="Pick what fits" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {BUSINESS_ARRANGEMENTS.map((b) => (
+                              <SelectItem key={b} value={b}>{b}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </>
+                  )}
+                </div>
                 <TokenList
                   label="Markets you've worked"
-                  hint="Cities/regions where you've taken calls. Tap up to 3 to flag your favorites."
+                  hint="Add every market you've ever taken a call in — no limit. Then tap up to 3 to flag your favorites."
                   placeholder="e.g. Nashville, TN"
                   tokens={marketsWorked.map((m) => {
                     const rank = favoriteMarkets.indexOf(m);
@@ -529,6 +617,19 @@ const WaitlistForm: React.FC = () => {
                   values={REGIONS}
                   selected={preferredRegions}
                   onToggle={(value) => toggleValue('preferred_regions', value)}
+                />
+                <TokenList
+                  label="Specific areas you'd jump on"
+                  hint="No limit — every city, town or venue inside those regions you'd want calls from."
+                  placeholder="e.g. Atlanta, GA or Bridgestone Arena"
+                  tokens={preferredAreas.map((a) => ({ key: a, label: a }))}
+                  onAdd={(name) =>
+                    !preferredAreas.some((a) => a.toLowerCase() === name.toLowerCase()) &&
+                    setValue('preferred_areas', [...preferredAreas, name], { shouldDirty: true })
+                  }
+                  onRemove={(key) =>
+                    setValue('preferred_areas', preferredAreas.filter((a) => a !== key), { shouldDirty: true })
+                  }
                 />
                 <ChipGroup
                   label="Where will you work?"
@@ -779,7 +880,7 @@ const TokenList: React.FC<{
   placeholder: string;
   tokens: { key: string; label: string; active?: boolean }[];
   onAdd: (name: string) => void;
-  onToggle: (key: string) => void;
+  onToggle?: (key: string) => void;
   onRemove: (key: string) => void;
 }> = ({ label, hint, placeholder, tokens, onAdd, onToggle, onRemove }) => {
   const [draft, setDraft] = useState('');
@@ -821,9 +922,13 @@ const TokenList: React.FC<{
                   : 'border-white/15 text-zinc-300'
               }`}
             >
-              <button type="button" onClick={() => onToggle(t.key)} className="px-3 py-1.5">
-                {t.label}
-              </button>
+              {onToggle ? (
+                <button type="button" onClick={() => onToggle(t.key)} className="px-3 py-1.5">
+                  {t.label}
+                </button>
+              ) : (
+                <span className="px-3 py-1.5">{t.label}</span>
+              )}
               <button
                 type="button"
                 onClick={() => onRemove(t.key)}

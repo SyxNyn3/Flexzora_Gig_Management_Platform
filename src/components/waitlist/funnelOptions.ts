@@ -125,6 +125,13 @@ export const CALL_RESPONSE = [
   'A week+ of notice',
 ] as const;
 
+export const BUSINESS_ARRANGEMENTS = [
+  'I take calls under my own business (LLC/inc)',
+  'Both — under my business and personally',
+  'My business can bring its own crew',
+  'Side business — I mostly crew for others',
+] as const;
+
 export const PAYMENT_TYPES = [
   '1099 contractor — no problem',
   'W2 preferred',

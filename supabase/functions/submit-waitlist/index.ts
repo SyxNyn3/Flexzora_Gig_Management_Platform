@@ -128,6 +128,12 @@ serve(async (req) => {
       call_response_time: requestData.call_response_time,
       payment_type: requestData.payment_type,
       referred_crew: requestData.referred_crew,
+      preferred_areas: Array.isArray(requestData.preferred_areas) ? requestData.preferred_areas : [],
+      has_own_business: requestData.has_own_business === undefined
+        ? (Array.isArray(requestData.business_names) && requestData.business_names.length > 0 ? true : null)
+        : Boolean(requestData.has_own_business),
+      business_names: Array.isArray(requestData.business_names) ? requestData.business_names : [],
+      business_arrangement: requestData.business_arrangement,
     };
 
     const baseInsert = {

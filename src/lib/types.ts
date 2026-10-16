@@ -671,6 +671,10 @@ export interface WaitlistEntry {
   call_response_time?: string;
   payment_type?: string;
   referred_crew?: string;
+  preferred_areas?: string[];
+  has_own_business?: boolean | null;
+  business_names?: string[];
+  business_arrangement?: string;
 }
 
 // API Response types
