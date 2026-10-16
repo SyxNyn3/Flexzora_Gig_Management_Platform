@@ -17,14 +17,25 @@ import { Textarea } from '@/components/ui/textarea';
 import { useWaitlistStats } from '@/hooks/useWaitlistStats';
 import { supabase } from '@/lib/supabase';
 import { WaitlistRoleInterest } from '@/lib/types';
-import { COMPANY_TYPES, CREW_ROLES, HEARD_FROM, PAIN_POINTS, WORKER_PAIN_POINTS } from './funnelOptions';
+import { COMPANY_TYPES, CREW_ROLES, CREW_SKILLS, EXPERIENCE_LEVELS, HEARD_FROM, PAIN_POINTS, TRAVEL_OPTIONS, WORKER_PAIN_POINTS } from './funnelOptions';
 
 const waitlistSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
   confirm_email: z.string(),
+  full_name: z.string().min(2, 'Tell us your name'),
+  phone: z.string().optional(),
+  sms_consent: z.boolean().optional(),
   role_interest: z.enum(['worker', 'company'], { required_error: 'Please select your role' }),
   market_city: z.string().optional(),
   crew_roles: z.array(z.string()).optional(),
+  skills: z.array(z.string()).optional(),
+  experience_years: z.string().optional(),
+  travel_availability: z.array(z.string()).optional(),
+  union_affiliation: z.string().optional(),
+  has_vehicle: z.boolean().optional(),
+  day_rate_min: z.coerce.number().optional(),
+  instagram_handle: z.string().optional(),
+  company_name: z.string().optional(),
   company_type: z.string().optional(),
   events_per_month: z.coerce.number().optional(),
   typical_crew_size: z.coerce.number().optional(),
@@ -39,6 +50,19 @@ const waitlistSchema = z.object({
   message: 'Email addresses do not match',
   path: ['confirm_email'],
 });
+
+/* rough completeness score — feeds the "get ahead" ordering on the backend */
+const computeCompleteness = (d: WaitlistFormData) =>
+  Math.round(
+    ([
+      d.full_name, d.phone, d.market_city, d.crew_roles?.length, d.skills?.length,
+      d.experience_years, d.travel_availability?.length, d.union_affiliation,
+      d.has_vehicle, d.day_rate_min, d.instagram_handle, d.company_name,
+      d.production_companies_worked_with, d.desired_features, d.heard_from, d.beta_tester,
+    ].filter(Boolean).length /
+      16) *
+      100,
+  );
 
 type WaitlistFormData = z.infer<typeof waitlistSchema>;
 type ReferralStatus = { position: number; referral_count: number };
@@ -68,16 +92,22 @@ const WaitlistForm: React.FC = () => {
     formState: { errors },
   } = useForm<WaitlistFormData>({
     resolver: zodResolver(waitlistSchema),
-    defaultValues: { crew_roles: [], pain_points: [], beta_tester: false },
+    defaultValues: { crew_roles: [], skills: [], travel_availability: [], pain_points: [], beta_tester: false, sms_consent: false },
   });
   const role = watch('role_interest');
   const crewRoles = watch('crew_roles') || [];
+  const skills = watch('skills') || [];
+  const travelAvailability = watch('travel_availability') || [];
   const painPoints = watch('pain_points') || [];
+  const phone = watch('phone') || '';
 
   useEffect(() => {
     setReferredBy(searchParams.get('ref'));
     setUtmSource(searchParams.get('utm_source'));
-  }, [searchParams]);
+    /* ?role=worker|company — deep links like "join as crew" preselect the track */
+    const r = searchParams.get('role');
+    if (r === 'worker' || r === 'company') setValue('role_interest', r, { shouldValidate: true });
+  }, [searchParams, setValue]);
 
   const loadReferralStatus = async (code: string) => {
     const { data } = await supabase.rpc('waitlist_referral_status', { p_code: code });
@@ -89,7 +119,12 @@ const WaitlistForm: React.FC = () => {
     setError(null);
     try {
       const { data: responseData, error: responseError } = await supabase.functions.invoke('submit-waitlist', {
-        body: { ...data, referred_by_email: referredBy, utm_source: utmSource },
+        body: {
+          ...data,
+          referred_by_email: referredBy,
+          utm_source: utmSource,
+          profile_completeness: computeCompleteness(data),
+        },
       });
       if (responseError || responseData?.error) throw new Error(responseError?.message || responseData.error);
       const code = responseData.referral_code as string;
@@ -136,8 +171,18 @@ const WaitlistForm: React.FC = () => {
     toast.success('Referral link copied to clipboard!');
   };
   const openShare = (url: string) => window.open(url, '_blank', 'noopener,noreferrer');
-  const toggleValue = (field: 'crew_roles' | 'pain_points', value: string) => {
-    const values = field === 'crew_roles' ? crewRoles : painPoints;
+  const toggleValue = (
+    field: 'crew_roles' | 'pain_points' | 'skills' | 'travel_availability',
+    value: string,
+  ) => {
+    const values =
+      field === 'crew_roles'
+        ? crewRoles
+        : field === 'skills'
+          ? skills
+          : field === 'travel_availability'
+            ? travelAvailability
+            : painPoints;
     setValue(field, values.includes(value) ? values.filter((item) => item !== value) : [...values, value], {
       shouldDirty: true,
     });
@@ -233,7 +278,7 @@ const WaitlistForm: React.FC = () => {
             F
           </div>
           <p className="mb-3 text-xs font-semibold uppercase tracking-[0.25em] text-amber-400">
-            Private beta — live events
+            For the crew, by the crew — private beta
           </p>
           <h1 className="text-3xl font-black tracking-tight text-white sm:text-4xl lg:text-5xl">
             Join the Founding Crew
@@ -270,7 +315,8 @@ const WaitlistForm: React.FC = () => {
         <CardHeader>
           <CardTitle className="text-2xl">Get on the list</CardTitle>
           <CardDescription>
-            Tell us how you work so we can prioritize the right market and features.
+            Fill out your crew card — the more complete it is, the earlier you're in when calls open in
+            your market.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -286,15 +332,13 @@ const WaitlistForm: React.FC = () => {
           )}
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Email address" error={errors.email?.message}>
-                <Input type="email" placeholder="you@example.com" autoComplete="email" {...register('email')} />
-              </Field>
-              <Field label="Confirm email" error={errors.confirm_email?.message}>
-                <Input type="email" placeholder="Type it again" autoComplete="off" {...register('confirm_email')} />
+              <Field label="Full name" error={errors.full_name?.message}>
+                <Input placeholder="Alex Rivera" autoComplete="name" {...register('full_name')} />
               </Field>
               <div>
                 <Label>I am a...</Label>
                 <Select
+                  value={role}
                   onValueChange={(value: WaitlistRoleInterest) =>
                     setValue('role_interest', value, { shouldValidate: true })
                   }
@@ -309,41 +353,122 @@ const WaitlistForm: React.FC = () => {
                 </Select>
                 {errors.role_interest && <p className="mt-1 text-sm text-red-400">{errors.role_interest.message}</p>}
               </div>
+              <Field label="Email address" error={errors.email?.message}>
+                <Input type="email" placeholder="you@example.com" autoComplete="email" {...register('email')} />
+              </Field>
+              <Field label="Confirm email" error={errors.confirm_email?.message}>
+                <Input type="email" placeholder="Type it again" autoComplete="off" {...register('confirm_email')} />
+              </Field>
+              <Field label="Mobile number (optional)">
+                <Input type="tel" placeholder="(555) 123-4567" autoComplete="tel" {...register('phone')} />
+              </Field>
+              <Field label="Primary market / city">
+                <Input placeholder="Los Angeles, CA" {...register('market_city')} />
+              </Field>
             </div>
-            <Field label="Primary market / city">
-              <Input placeholder="Los Angeles, CA" {...register('market_city')} />
-            </Field>
+            {phone.trim().length > 5 && (
+              <label className="flex items-start gap-3 rounded-lg border border-white/10 bg-card/[0.03] p-4">
+                <Checkbox
+                  checked={watch('sms_consent')}
+                  onCheckedChange={(checked) => setValue('sms_consent', checked === true)}
+                />
+                <span className="text-sm text-zinc-300">
+                  Text me when matching calls drop — calls move fast, SMS moves faster
+                </span>
+              </label>
+            )}
             {role === 'worker' && (
-              <ChipGroup
-                label="What roles do you work?"
-                values={CREW_ROLES}
-                selected={crewRoles}
-                onToggle={(value) => toggleValue('crew_roles', value)}
-              />
+              <div className="space-y-5 rounded-lg border border-amber-400/20 bg-amber-400/[0.03] p-4 sm:p-5">
+                <div>
+                  <h3 className="text-lg font-semibold text-white">Your crew card</h3>
+                  <p className="mt-1 text-sm text-zinc-400">
+                    This is your ticket ahead — tap everything that applies. Companies will match calls to
+                    this card.
+                  </p>
+                </div>
+                <ChipGroup
+                  label="Roles you work"
+                  values={CREW_ROLES}
+                  selected={crewRoles}
+                  onToggle={(value) => toggleValue('crew_roles', value)}
+                />
+                <ChipGroup
+                  label="Skills & certifications"
+                  values={CREW_SKILLS}
+                  selected={skills}
+                  onToggle={(value) => toggleValue('skills', value)}
+                />
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <Label>Experience</Label>
+                    <Select onValueChange={(value) => setValue('experience_years', value)}>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue placeholder="Years on the road" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {EXPERIENCE_LEVELS.map((level) => (
+                          <SelectItem key={level} value={level}>
+                            {level}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Field label="Union / local # (optional)">
+                    <Input placeholder="IATSE Local 33" {...register('union_affiliation')} />
+                  </Field>
+                  <Field label="Target day rate ($, optional)">
+                    <Input type="number" min="0" placeholder="320" {...register('day_rate_min')} />
+                  </Field>
+                  <Field label="Instagram (optional)">
+                    <Input placeholder="@yourhandle" {...register('instagram_handle')} />
+                  </Field>
+                </div>
+                <ChipGroup
+                  label="Where will you work?"
+                  values={TRAVEL_OPTIONS}
+                  selected={travelAvailability}
+                  onToggle={(value) => toggleValue('travel_availability', value)}
+                />
+                <label className="flex items-start gap-3 rounded-lg border border-white/10 bg-card/[0.03] p-4">
+                  <Checkbox
+                    checked={watch('has_vehicle')}
+                    onCheckedChange={(checked) => setValue('has_vehicle', checked === true)}
+                  />
+                  <span className="text-sm text-zinc-300">
+                    I have a vehicle — down to carpool or haul gear
+                  </span>
+                </label>
+              </div>
             )}
             {role === 'company' && (
-              <div className="grid gap-4 sm:grid-cols-3">
-                <div>
-                  <Label>Company type</Label>
-                  <Select onValueChange={(value) => setValue('company_type', value)}>
-                    <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="Select type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {COMPANY_TYPES.map((type) => (
-                        <SelectItem key={type} value={type}>
-                          {type}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+              <div className="space-y-4">
+                <Field label="Company name (optional)">
+                  <Input placeholder="Stadium Ops Inc." {...register('company_name')} />
+                </Field>
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <div>
+                    <Label>Company type</Label>
+                    <Select onValueChange={(value) => setValue('company_type', value)}>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue placeholder="Select type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {COMPANY_TYPES.map((type) => (
+                          <SelectItem key={type} value={type}>
+                            {type}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Field label="Events per month">
+                    <Input type="number" min="0" {...register('events_per_month')} />
+                  </Field>
+                  <Field label="Typical crew size">
+                    <Input type="number" min="0" {...register('typical_crew_size')} />
+                  </Field>
                 </div>
-                <Field label="Events per month">
-                  <Input type="number" min="0" {...register('events_per_month')} />
-                </Field>
-                <Field label="Typical crew size">
-                  <Input type="number" min="0" {...register('typical_crew_size')} />
-                </Field>
               </div>
             )}
             {role && (
@@ -379,7 +504,8 @@ const WaitlistForm: React.FC = () => {
                 onCheckedChange={(checked) => setValue('beta_tester', checked === true)}
               />
               <span className="text-sm">
-                Count me in as a founding beta tester — I'll test early builds and give feedback
+                Founding beta tester — I'll test early builds and give feedback. Completed crew cards get
+                the first real calls.
               </span>
             </label>
             <div className="space-y-4 border-t border-white/10 pt-5">

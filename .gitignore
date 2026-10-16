@@ -28,3 +28,4 @@ supabase/.temp/
 twilio_2FA_recovery_code.txt
 .bolt/
 .ops/
+.diffui/

@@ -97,35 +97,63 @@ serve(async (req) => {
       }
     }
 
-    // Insert the new entry into the waiting list
-    const { data, error } = await supabase
+    // Crew-card fields — added by the waitlist_crew_card migration. If the
+    // remote DB hasn't applied it yet, fall back to the legacy column set and
+    // stash the extra data in `notes` so nothing is lost.
+    const crewCard = {
+      full_name: requestData.full_name,
+      company_name: requestData.company_name,
+      phone: requestData.phone,
+      sms_consent: Boolean(requestData.sms_consent),
+      skills: Array.isArray(requestData.skills) ? requestData.skills : [],
+      experience_years: requestData.experience_years,
+      travel_availability: Array.isArray(requestData.travel_availability) ? requestData.travel_availability : [],
+      union_affiliation: requestData.union_affiliation,
+      has_vehicle: requestData.has_vehicle === undefined ? null : Boolean(requestData.has_vehicle),
+      day_rate_min: Number(requestData.day_rate_min) || null,
+      instagram_handle: requestData.instagram_handle,
+      profile_completeness: Number(requestData.profile_completeness) || 0,
+    };
+
+    const baseInsert = {
+      email: requestData.email,
+      role_interest: requestData.role_interest,
+      production_companies_worked_with: requestData.production_companies_worked_with,
+      past_communication_methods: requestData.past_communication_methods,
+      desired_features: requestData.desired_features,
+      challenges: requestData.challenges,
+      referred_by_email: referredByEmail,
+      referral_code: referralCode,
+      verification_token: verificationToken,
+      status: 'pending', // Will be updated to 'verified' after email verification
+      market_city: requestData.market_city,
+      crew_roles: Array.isArray(requestData.crew_roles) ? requestData.crew_roles : [],
+      company_type: requestData.company_type,
+      events_per_month: Number(requestData.events_per_month) || null,
+      typical_crew_size: Number(requestData.typical_crew_size) || null,
+      pain_points: Array.isArray(requestData.pain_points) ? requestData.pain_points : [],
+      beta_tester: Boolean(requestData.beta_tester),
+      heard_from: requestData.heard_from,
+      utm_source: requestData.utm_source,
+      // Beta mode: when email delivery isn't configured, treat double-entry
+      // email confirmation as the proof-of-intent and skip the email step.
+      verified_at: skipVerification ? new Date().toISOString() : null,
+    };
+
+    let { data: _data, error } = await supabase
       .from("waiting_list")
-      .insert({
-        email: requestData.email,
-        role_interest: requestData.role_interest,
-        production_companies_worked_with: requestData.production_companies_worked_with,
-        past_communication_methods: requestData.past_communication_methods,
-        desired_features: requestData.desired_features,
-        challenges: requestData.challenges,
-        referred_by_email: referredByEmail,
-        referral_code: referralCode,
-        verification_token: verificationToken,
-        status: 'pending', // Will be updated to 'verified' after email verification
-        market_city: requestData.market_city,
-        crew_roles: Array.isArray(requestData.crew_roles) ? requestData.crew_roles : [],
-        company_type: requestData.company_type,
-        events_per_month: Number(requestData.events_per_month) || null,
-        typical_crew_size: Number(requestData.typical_crew_size) || null,
-        pain_points: Array.isArray(requestData.pain_points) ? requestData.pain_points : [],
-        beta_tester: Boolean(requestData.beta_tester),
-        heard_from: requestData.heard_from,
-        utm_source: requestData.utm_source,
-        // Beta mode: when email delivery isn't configured, treat double-entry
-        // email confirmation as the proof-of-intent and skip the email step.
-        verified_at: skipVerification ? new Date().toISOString() : null,
-      })
+      .insert({ ...baseInsert, ...crewCard })
       .select()
       .single();
+
+    if (error && error.code === '42703') {
+      // crew-card columns not migrated yet — persist everything via `notes`
+      ({ data: _data, error } = await supabase
+        .from("waiting_list")
+        .insert({ ...baseInsert, notes: JSON.stringify({ crew_card: crewCard }) })
+        .select()
+        .single());
+    }
 
     if (error) {
       console.error("Error inserting into waiting list:", error);

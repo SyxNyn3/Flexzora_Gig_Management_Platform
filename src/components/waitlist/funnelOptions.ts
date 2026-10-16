@@ -44,6 +44,40 @@ export const WORKER_PAIN_POINTS = [
   { value: 'iou_settling', label: 'Settling gas/food IOUs with crewmates' },
 ] as const;
 
+export const CREW_SKILLS = [
+  'ETCP Arena Rigger',
+  'ETCP Theater Rigger',
+  'CM chain hoist',
+  'Forklift / Telehandler',
+  'OSHA 10',
+  'OSHA 30',
+  'Fall protection',
+  'IATSE member',
+  "Driver's license",
+  'CDL',
+  'Passport-ready',
+  'First aid / CPR',
+  'Console programming',
+  'Networking / DMX',
+  'Owns tools',
+] as const;
+
+export const TRAVEL_OPTIONS = [
+  'Local calls only',
+  'Regional drive (2–4 hrs)',
+  'Fly anywhere',
+  'Tour-ready (weeks out)',
+  'Overnights OK',
+  'Weekends OK',
+] as const;
+
+export const EXPERIENCE_LEVELS = [
+  'New to the industry',
+  '1–3 years',
+  '4–9 years',
+  '10+ years',
+] as const;
+
 export const HEARD_FROM = [
   'Friend / coworker',
   'Production company',

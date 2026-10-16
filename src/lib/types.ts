@@ -646,6 +646,18 @@ export interface WaitlistEntry {
   heard_from?: string;
   utm_source?: string;
   notes?: string;
+  full_name?: string;
+  company_name?: string;
+  phone?: string;
+  sms_consent?: boolean;
+  skills?: string[];
+  experience_years?: string;
+  travel_availability?: string[];
+  union_affiliation?: string;
+  has_vehicle?: boolean | null;
+  day_rate_min?: number | null;
+  instagram_handle?: string;
+  profile_completeness?: number;
 }
 
 // API Response types
