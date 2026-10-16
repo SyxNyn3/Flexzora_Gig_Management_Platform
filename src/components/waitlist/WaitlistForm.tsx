@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowRight, CheckCircle, Copy, Mail, MessageSquare, Share2, Users } from 'lucide-react';
+import { ArrowRight, CheckCircle, Copy, Mail, MessageSquare, Plus, Share2, Users, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -17,7 +17,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useWaitlistStats } from '@/hooks/useWaitlistStats';
 import { supabase } from '@/lib/supabase';
 import { WaitlistRoleInterest } from '@/lib/types';
-import { COMPANY_TYPES, CREW_ROLES, CREW_SKILLS, EXPERIENCE_LEVELS, HEARD_FROM, PAIN_POINTS, TRAVEL_OPTIONS, WORKER_PAIN_POINTS } from './funnelOptions';
+import { CALL_RESPONSE, COMPANY_TYPES, CREW_ROLES, CREW_SKILLS, DEPARTURE_NOTICE, EXPERIENCE_LEVELS, FARTHEST_TRAVEL, HEARD_FROM, PAIN_POINTS, PAYMENT_TYPES, REGIONS, TRAVEL_OPTIONS, VEHICLE_TYPES, WORKER_PAIN_POINTS } from './funnelOptions';
 
 const waitlistSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -33,6 +33,19 @@ const waitlistSchema = z.object({
   travel_availability: z.array(z.string()).optional(),
   union_affiliation: z.string().optional(),
   has_vehicle: z.boolean().optional(),
+  companies_worked: z.array(z.object({ name: z.string(), current: z.boolean() })).optional(),
+  markets_worked: z.array(z.string()).optional(),
+  favorite_markets: z.array(z.string()).max(3).optional(),
+  preferred_regions: z.array(z.string()).optional(),
+  vehicles: z.array(z.string()).optional(),
+  farthest_travel: z.string().optional(),
+  willing_farther: z.boolean().optional(),
+  has_passport: z.boolean().optional(),
+  overseas_willing: z.boolean().optional(),
+  departure_readiness: z.string().optional(),
+  call_response_time: z.string().optional(),
+  payment_type: z.string().optional(),
+  referred_crew: z.string().optional(),
   day_rate_min: z.coerce.number().optional(),
   instagram_handle: z.string().optional(),
   company_name: z.string().optional(),
@@ -57,10 +70,12 @@ const computeCompleteness = (d: WaitlistFormData) =>
     ([
       d.full_name, d.phone, d.market_city, d.crew_roles?.length, d.skills?.length,
       d.experience_years, d.travel_availability?.length, d.union_affiliation,
-      d.has_vehicle, d.day_rate_min, d.instagram_handle, d.company_name,
-      d.production_companies_worked_with, d.desired_features, d.heard_from, d.beta_tester,
+      d.vehicles?.length, d.day_rate_min, d.instagram_handle, d.company_name,
+      d.companies_worked?.length, d.markets_worked?.length, d.favorite_markets?.length,
+      d.preferred_regions?.length, d.farthest_travel, d.has_passport,
+      d.call_response_time, d.payment_type, d.sms_consent,
     ].filter(Boolean).length /
-      16) *
+      21) *
       100,
   );
 
@@ -84,6 +99,8 @@ const WaitlistForm: React.FC = () => {
   const [utmSource, setUtmSource] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [verificationError, setVerificationError] = useState<string | null>(null);
+  /* ?role=worker|company — deep links like "join as crew" preselect the track */
+  const roleParam = searchParams.get('role');
   const {
     register,
     handleSubmit,
@@ -92,22 +109,33 @@ const WaitlistForm: React.FC = () => {
     formState: { errors },
   } = useForm<WaitlistFormData>({
     resolver: zodResolver(waitlistSchema),
-    defaultValues: { crew_roles: [], skills: [], travel_availability: [], pain_points: [], beta_tester: false, sms_consent: false },
+    defaultValues: {
+      role_interest: roleParam === 'worker' || roleParam === 'company' ? roleParam : undefined,
+      crew_roles: [], skills: [], travel_availability: [], pain_points: [],
+      companies_worked: [], markets_worked: [], favorite_markets: [],
+      preferred_regions: [], vehicles: [],
+      beta_tester: false, sms_consent: false,
+    },
   });
   const role = watch('role_interest');
   const crewRoles = watch('crew_roles') || [];
   const skills = watch('skills') || [];
   const travelAvailability = watch('travel_availability') || [];
   const painPoints = watch('pain_points') || [];
+  const companies = watch('companies_worked') || [];
+  const marketsWorked = watch('markets_worked') || [];
+  const favoriteMarkets = watch('favorite_markets') || [];
+  const preferredRegions = watch('preferred_regions') || [];
+  const vehicles = watch('vehicles') || [];
+  const hasPassport = watch('has_passport');
+  const overseasWilling = watch('overseas_willing');
   const phone = watch('phone') || '';
+  const completeness = computeCompleteness(watch());
 
   useEffect(() => {
     setReferredBy(searchParams.get('ref'));
     setUtmSource(searchParams.get('utm_source'));
-    /* ?role=worker|company — deep links like "join as crew" preselect the track */
-    const r = searchParams.get('role');
-    if (r === 'worker' || r === 'company') setValue('role_interest', r, { shouldValidate: true });
-  }, [searchParams, setValue]);
+  }, [searchParams]);
 
   const loadReferralStatus = async (code: string) => {
     const { data } = await supabase.rpc('waitlist_referral_status', { p_code: code });
@@ -118,13 +146,22 @@ const WaitlistForm: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
+      const payload = {
+        ...data,
+        referred_by_email: referredBy,
+        utm_source: utmSource,
+        profile_completeness: computeCompleteness(data),
+      };
+      /* workers answer the structured roster — keep the legacy text column
+         readable for admin views that still scan it */
+      if (payload.companies_worked?.length && !payload.production_companies_worked_with) {
+        payload.production_companies_worked_with = payload.companies_worked
+          .map((c) => `${c.name}${c.current ? ' (current)' : ''}`)
+          .join(', ');
+      }
+      payload.has_vehicle = (payload.vehicles?.length ?? 0) > 0 ? true : payload.has_vehicle;
       const { data: responseData, error: responseError } = await supabase.functions.invoke('submit-waitlist', {
-        body: {
-          ...data,
-          referred_by_email: referredBy,
-          utm_source: utmSource,
-          profile_completeness: computeCompleteness(data),
-        },
+        body: payload,
       });
       if (responseError || responseData?.error) throw new Error(responseError?.message || responseData.error);
       const code = responseData.referral_code as string;
@@ -172,20 +209,26 @@ const WaitlistForm: React.FC = () => {
   };
   const openShare = (url: string) => window.open(url, '_blank', 'noopener,noreferrer');
   const toggleValue = (
-    field: 'crew_roles' | 'pain_points' | 'skills' | 'travel_availability',
+    field:
+      | 'crew_roles' | 'pain_points' | 'skills' | 'travel_availability'
+      | 'vehicles' | 'preferred_regions',
     value: string,
   ) => {
-    const values =
-      field === 'crew_roles'
-        ? crewRoles
-        : field === 'skills'
-          ? skills
-          : field === 'travel_availability'
-            ? travelAvailability
-            : painPoints;
+    const values = (watch(field) as string[] | undefined) || [];
     setValue(field, values.includes(value) ? values.filter((item) => item !== value) : [...values, value], {
       shouldDirty: true,
     });
+  };
+
+  /* tap a worked-market chip to flag it top-3; tap again to release it */
+  const toggleFavoriteMarket = (market: string) => {
+    if (favoriteMarkets.includes(market)) {
+      setValue('favorite_markets', favoriteMarkets.filter((m) => m !== market), { shouldDirty: true });
+    } else if (favoriteMarkets.length < 3) {
+      setValue('favorite_markets', [...favoriteMarkets, market], { shouldDirty: true });
+    } else {
+      toast.info('Top 3 only — tap one of your picks to swap it out');
+    }
   };
 
   if (verificationSent) {
@@ -385,6 +428,15 @@ const WaitlistForm: React.FC = () => {
                     This is your ticket ahead — tap everything that applies. Companies will match calls to
                     this card.
                   </p>
+                  <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10">
+                    <div
+                      className="h-full rounded-full bg-amber-400 transition-all duration-500"
+                      style={{ width: `${completeness}%` }}
+                    />
+                  </div>
+                  <p className="mt-1.5 font-mono text-[10px] uppercase tracking-[0.15em] text-amber-400/80">
+                    Card {completeness}% complete{completeness >= 70 ? ' — top of the pile' : ' — fill it out, move up the list'}
+                  </p>
                 </div>
                 <ChipGroup
                   label="Roles you work"
@@ -424,21 +476,168 @@ const WaitlistForm: React.FC = () => {
                     <Input placeholder="@yourhandle" {...register('instagram_handle')} />
                   </Field>
                 </div>
+                <TokenList
+                  label="Production companies on your roster"
+                  hint="Everyone you've loaded for — type a name, hit Add. Tap a chip to mark where you're still current."
+                  placeholder="e.g. Rhino Staging"
+                  tokens={companies.map((c) => ({
+                    key: c.name,
+                    label: c.current ? `${c.name} · current` : c.name,
+                    active: c.current,
+                  }))}
+                  onAdd={(name) =>
+                    !companies.some((c) => c.name.toLowerCase() === name.toLowerCase()) &&
+                    setValue('companies_worked', [...companies, { name, current: false }], { shouldDirty: true })
+                  }
+                  onToggle={(key) =>
+                    setValue(
+                      'companies_worked',
+                      companies.map((c) => (c.name === key ? { ...c, current: !c.current } : c)),
+                      { shouldDirty: true },
+                    )
+                  }
+                  onRemove={(key) =>
+                    setValue('companies_worked', companies.filter((c) => c.name !== key), { shouldDirty: true })
+                  }
+                />
+                <TokenList
+                  label="Markets you've worked"
+                  hint="Cities/regions where you've taken calls. Tap up to 3 to flag your favorites."
+                  placeholder="e.g. Nashville, TN"
+                  tokens={marketsWorked.map((m) => {
+                    const rank = favoriteMarkets.indexOf(m);
+                    return { key: m, label: rank >= 0 ? `${m} ★${rank + 1}` : m, active: rank >= 0 };
+                  })}
+                  onAdd={(name) =>
+                    !marketsWorked.some((m) => m.toLowerCase() === name.toLowerCase()) &&
+                    setValue('markets_worked', [...marketsWorked, name], { shouldDirty: true })
+                  }
+                  onToggle={toggleFavoriteMarket}
+                  onRemove={(key) => {
+                    setValue('markets_worked', marketsWorked.filter((m) => m !== key), { shouldDirty: true });
+                    if (favoriteMarkets.includes(key))
+                      setValue('favorite_markets', favoriteMarkets.filter((m) => m !== key), { shouldDirty: true });
+                  }}
+                />
+                {favoriteMarkets.length > 0 && (
+                  <p className="font-mono text-[11px] uppercase tracking-[0.15em] text-amber-400/80">
+                    Your top 3: {favoriteMarkets.join(' · ')}
+                  </p>
+                )}
+                <ChipGroup
+                  label="Regions you'd rather be in"
+                  values={REGIONS}
+                  selected={preferredRegions}
+                  onToggle={(value) => toggleValue('preferred_regions', value)}
+                />
                 <ChipGroup
                   label="Where will you work?"
                   values={TRAVEL_OPTIONS}
                   selected={travelAvailability}
                   onToggle={(value) => toggleValue('travel_availability', value)}
                 />
-                <label className="flex items-start gap-3 rounded-lg border border-white/10 bg-card/[0.03] p-4">
-                  <Checkbox
-                    checked={watch('has_vehicle')}
-                    onCheckedChange={(checked) => setValue('has_vehicle', checked === true)}
+                <ChipGroup
+                  label="What do you roll in? (tap all that apply)"
+                  values={VEHICLE_TYPES}
+                  selected={vehicles}
+                  onToggle={(value) => toggleValue('vehicles', value)}
+                />
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <Label>Farthest you've traveled for a call</Label>
+                    <Select onValueChange={(value) => setValue('farthest_travel', value)}>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue placeholder="Longest haul" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {FARTHEST_TRAVEL.map((d) => (
+                          <SelectItem key={d} value={d}>{d}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>How fast can you take a call?</Label>
+                    <Select onValueChange={(value) => setValue('call_response_time', value)}>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue placeholder="Response time" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {CALL_RESPONSE.map((r) => (
+                          <SelectItem key={r} value={r}>{r}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Pay structure that works for you</Label>
+                    <Select onValueChange={(value) => setValue('payment_type', value)}>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue placeholder="1099 / W2" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {PAYMENT_TYPES.map((p) => (
+                          <SelectItem key={p} value={p}>{p}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <label className="flex items-center gap-3 self-end rounded-lg border border-white/10 bg-card/[0.03] p-3.5">
+                    <Checkbox
+                      checked={watch('willing_farther')}
+                      onCheckedChange={(checked) => setValue('willing_farther', checked === true)}
+                    />
+                    <span className="text-sm text-zinc-300">I'd go farther for the right call</span>
+                  </label>
+                </div>
+                <div className="space-y-3 rounded-lg border border-white/10 bg-card/[0.03] p-4">
+                  <label className="flex items-start gap-3">
+                    <Checkbox
+                      checked={watch('has_passport')}
+                      onCheckedChange={(checked) => {
+                        setValue('has_passport', checked === true);
+                        if (checked !== true) {
+                          setValue('overseas_willing', false);
+                          setValue('departure_readiness', undefined);
+                        }
+                      }}
+                    />
+                    <span className="text-sm text-zinc-300">I have a current passport</span>
+                  </label>
+                  {hasPassport && (
+                    <label className="ml-7 flex items-start gap-3">
+                      <Checkbox
+                        checked={overseasWilling}
+                        onCheckedChange={(checked) => {
+                          setValue('overseas_willing', checked === true);
+                          if (checked !== true) setValue('departure_readiness', undefined);
+                        }}
+                      />
+                      <span className="text-sm text-zinc-300">Willing to work overseas</span>
+                    </label>
+                  )}
+                  {hasPassport && overseasWilling && (
+                    <div className="ml-7">
+                      <Label>If the call came today, how fast could you go?</Label>
+                      <Select onValueChange={(value) => setValue('departure_readiness', value)}>
+                        <SelectTrigger className="mt-1">
+                          <SelectValue placeholder="Departure readiness" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {DEPARTURE_NOTICE.map((d) => (
+                            <SelectItem key={d} value={d}>{d}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                </div>
+                <Field label="Who do you usually roll with? (optional)">
+                  <Input
+                    placeholder="Names or crew name — we'll fast-track your people"
+                    {...register('referred_crew')}
                   />
-                  <span className="text-sm text-zinc-300">
-                    I have a vehicle — down to carpool or haul gear
-                  </span>
-                </label>
+                </Field>
               </div>
             )}
             {role === 'company' && (
@@ -510,9 +709,11 @@ const WaitlistForm: React.FC = () => {
             </label>
             <div className="space-y-4 border-t border-white/10 pt-5">
               <h3 className="text-lg font-semibold text-white">Help us build a better platform</h3>
-              <Field label="What production companies have you worked for or do you currently work with?">
-                <Textarea rows={3} {...register('production_companies_worked_with')} />
-              </Field>
+              {role !== 'worker' && (
+                <Field label="What production companies have you worked for or do you currently work with?">
+                  <Textarea rows={3} {...register('production_companies_worked_with')} />
+                </Field>
+              )}
               <Field label="How did your past employers typically reach out to you about gigs?">
                 <Textarea rows={3} {...register('past_communication_methods')} />
               </Field>
@@ -571,6 +772,74 @@ const Field: React.FC<{ label: string; error?: string; children: React.ReactNode
     {error && <p className="mt-1 text-sm text-red-400">{error}</p>}
   </div>
 );
+/** Type-and-add token list — chips toggle `active` on tap, X removes. */
+const TokenList: React.FC<{
+  label: string;
+  hint?: string;
+  placeholder: string;
+  tokens: { key: string; label: string; active?: boolean }[];
+  onAdd: (name: string) => void;
+  onToggle: (key: string) => void;
+  onRemove: (key: string) => void;
+}> = ({ label, hint, placeholder, tokens, onAdd, onToggle, onRemove }) => {
+  const [draft, setDraft] = useState('');
+  const add = () => {
+    const value = draft.trim();
+    if (value) {
+      onAdd(value);
+      setDraft('');
+    }
+  };
+  return (
+    <div>
+      <Label>{label}</Label>
+      {hint && <p className="mt-1 text-xs text-zinc-500">{hint}</p>}
+      <div className="mt-2 flex gap-2">
+        <Input
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              add();
+            }
+          }}
+          placeholder={placeholder}
+        />
+        <Button type="button" variant="outline" size="sm" onClick={add} disabled={!draft.trim()}>
+          <Plus className="h-4 w-4" />
+        </Button>
+      </div>
+      {tokens.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {tokens.map((t) => (
+            <span
+              key={t.key}
+              className={`inline-flex items-center rounded-md border text-sm font-medium ${
+                t.active
+                  ? 'border-amber-400 bg-amber-400/15 text-amber-300'
+                  : 'border-white/15 text-zinc-300'
+              }`}
+            >
+              <button type="button" onClick={() => onToggle(t.key)} className="px-3 py-1.5">
+                {t.label}
+              </button>
+              <button
+                type="button"
+                onClick={() => onRemove(t.key)}
+                aria-label={`Remove ${t.key}`}
+                className="pr-2 text-zinc-500 hover:text-white"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const ChipGroup: React.FC<{
   label: string;
   values: readonly (string | { value: string; label: string })[];

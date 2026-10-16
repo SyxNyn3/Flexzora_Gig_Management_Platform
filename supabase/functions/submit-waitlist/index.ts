@@ -109,10 +109,25 @@ serve(async (req) => {
       experience_years: requestData.experience_years,
       travel_availability: Array.isArray(requestData.travel_availability) ? requestData.travel_availability : [],
       union_affiliation: requestData.union_affiliation,
-      has_vehicle: requestData.has_vehicle === undefined ? null : Boolean(requestData.has_vehicle),
+      has_vehicle: requestData.has_vehicle === undefined
+        ? (Array.isArray(requestData.vehicles) && requestData.vehicles.length > 0 ? true : null)
+        : Boolean(requestData.has_vehicle),
       day_rate_min: Number(requestData.day_rate_min) || null,
       instagram_handle: requestData.instagram_handle,
       profile_completeness: Number(requestData.profile_completeness) || 0,
+      companies_worked: Array.isArray(requestData.companies_worked) ? requestData.companies_worked : [],
+      markets_worked: Array.isArray(requestData.markets_worked) ? requestData.markets_worked : [],
+      favorite_markets: Array.isArray(requestData.favorite_markets) ? requestData.favorite_markets : [],
+      preferred_regions: Array.isArray(requestData.preferred_regions) ? requestData.preferred_regions : [],
+      vehicles: Array.isArray(requestData.vehicles) ? requestData.vehicles : [],
+      farthest_travel: requestData.farthest_travel,
+      willing_farther: requestData.willing_farther === undefined ? null : Boolean(requestData.willing_farther),
+      has_passport: requestData.has_passport === undefined ? null : Boolean(requestData.has_passport),
+      overseas_willing: requestData.overseas_willing === undefined ? null : Boolean(requestData.overseas_willing),
+      departure_readiness: requestData.departure_readiness,
+      call_response_time: requestData.call_response_time,
+      payment_type: requestData.payment_type,
+      referred_crew: requestData.referred_crew,
     };
 
     const baseInsert = {

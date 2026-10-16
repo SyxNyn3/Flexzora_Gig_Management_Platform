@@ -19,6 +19,19 @@ ALTER TABLE waiting_list
   ADD COLUMN IF NOT EXISTS day_rate_min integer,
   ADD COLUMN IF NOT EXISTS instagram_handle text,
   ADD COLUMN IF NOT EXISTS company_name text,
-  ADD COLUMN IF NOT EXISTS profile_completeness integer NOT NULL DEFAULT 0;
+  ADD COLUMN IF NOT EXISTS profile_completeness integer NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS companies_worked jsonb NOT NULL DEFAULT '[]'::jsonb,
+  ADD COLUMN IF NOT EXISTS markets_worked text[] DEFAULT '{}',
+  ADD COLUMN IF NOT EXISTS favorite_markets text[] DEFAULT '{}',
+  ADD COLUMN IF NOT EXISTS preferred_regions text[] DEFAULT '{}',
+  ADD COLUMN IF NOT EXISTS vehicles text[] DEFAULT '{}',
+  ADD COLUMN IF NOT EXISTS farthest_travel text,
+  ADD COLUMN IF NOT EXISTS willing_farther boolean,
+  ADD COLUMN IF NOT EXISTS has_passport boolean,
+  ADD COLUMN IF NOT EXISTS overseas_willing boolean,
+  ADD COLUMN IF NOT EXISTS departure_readiness text,
+  ADD COLUMN IF NOT EXISTS call_response_time text,
+  ADD COLUMN IF NOT EXISTS payment_type text,
+  ADD COLUMN IF NOT EXISTS referred_crew text;
 
 CREATE INDEX IF NOT EXISTS idx_waiting_list_market ON waiting_list (market_city);

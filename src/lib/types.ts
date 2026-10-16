@@ -658,6 +658,19 @@ export interface WaitlistEntry {
   day_rate_min?: number | null;
   instagram_handle?: string;
   profile_completeness?: number;
+  companies_worked?: { name: string; current: boolean }[];
+  markets_worked?: string[];
+  favorite_markets?: string[];
+  preferred_regions?: string[];
+  vehicles?: string[];
+  farthest_travel?: string;
+  willing_farther?: boolean | null;
+  has_passport?: boolean | null;
+  overseas_willing?: boolean | null;
+  departure_readiness?: string;
+  call_response_time?: string;
+  payment_type?: string;
+  referred_crew?: string;
 }
 
 // API Response types

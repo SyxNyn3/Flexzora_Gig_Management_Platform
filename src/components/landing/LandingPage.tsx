@@ -73,30 +73,49 @@ const Crossfade: React.FC<{ images: CardImg[]; interval?: number; label: string 
   );
 };
 
-const painCards: { images: CardImg[]; alt: string; title: string; sub: string }[] = [
+const painCards: { images: CardImg[]; alt: string; title: string; sub: string; details: string[] }[] = [
   {
     images: [A(0, 0), A(2, 1)],
     alt: 'Phone showing a job feed with load-in, show call and load-out offers',
     title: "Every company's calls land in one feed.",
     sub: 'Tour Co, Festival Prod, Stadium Ops — one sheet, not ten threads.',
+    details: [
+      'Calls from every company you roll with land in one feed — no digging through ten text threads.',
+      'Rate, call time, venue and position are on the post. Tap to claim, confirmation texts itself.',
+      'Your crew card decides what you see first — calls matched to your skills, not broadcast spam.',
+    ],
   },
   {
     images: [A(1, 0), A(1, 1), P('/landing/pain-car.webp', '50% 42%', 'auto 124%')],
     alt: 'Crew member resting in a van between cities, crew carpool',
     title: 'Stop sleeping in the car alone.',
     sub: 'Split lodging and rides with crew already on the call.',
+    details: [
+      'Crew on the same call can flag a spare seat or an open hotel bed before anyone books solo.',
+      'Call sheets mark crew-safe parking — if you\'re crashing in the car, at least park with the crew around you.',
+      'Gas and lodging splits settle inside the call, so nobody chases IOUs at load-out.',
+    ],
   },
   {
     images: [A(2, 0), P('/landing/pain-food-v2.webp')],
     alt: 'Mixed crew of stagehands sharing pizza off a road case, hard hats nearby',
     title: 'One food run feeds the whole crew.',
     sub: 'Pool the run instead of $30 a head at the venue window.',
+    details: [
+      'One runner, one list — drop your order on the call sheet and chip in without the cash scramble.',
+      'Totals settle themselves in the app. The venue-window markup dies here.',
+    ],
   },
   {
     images: [A(0, 1), A(2, 1)],
     alt: 'Road case with an amber tape strip and steel latches',
     title: 'Pay is locked before you lift a case.',
     sub: 'Escrow-funded calls. Rate, hours and OT written down up front.',
+    details: [
+      'Rate, hours and OT terms are written on the call before you agree — no surprises at load-out.',
+      'Escrow-funded calls mean the money is already there — clock-out triggers payout, not an invoice chase.',
+      'GPS clock-in kills the paper timesheet. Your hours get approved, not argued.',
+    ],
   },
 ];
 
@@ -158,6 +177,13 @@ const railLoop = [...railItems, ...railItems, ...railItems, ...railItems];
 const LandingPage: React.FC = () => {
   const navigate = useNavigate();
   const { total: waitlistCount } = useWaitlistStats();
+  const [openPain, setOpenPain] = useState<number | null>(() => {
+    /* ?pain=N — debug: render a card pre-expanded for screenshot checks (dev only) */
+    if (!import.meta.env.DEV || typeof window === 'undefined') return null;
+    const p = new URLSearchParams(window.location.search).get('pain');
+    const n = p === null ? NaN : Number(p);
+    return Number.isInteger(n) && n >= 0 && n < painCards.length ? n : null;
+  });
   /* ?cards — debug: render only the card sections for screenshot checks (dev only) */
   const cardsOnly = import.meta.env.DEV && typeof window !== 'undefined'
     && new URLSearchParams(window.location.search).has('cards');
@@ -285,19 +311,54 @@ const LandingPage: React.FC = () => {
       {/* Real life. Solved. — option B pain cards */}
       <section className="py-20 border-t border-white/5">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="font-display font-bold uppercase text-white text-4xl sm:text-5xl mb-10">
-            Real life. <span className="text-amber-400">Solved.</span>
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {painCards.map((c) => (
-              <div key={c.title} className="group relative overflow-hidden rounded-xl border border-white/10 bg-zinc-900/40">
-                <div className="aspect-[4/3] overflow-hidden relative">
-                  <Crossfade images={c.images} interval={5200 + painCards.indexOf(c) * 800} label={c.alt} />
-                </div>
-                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#0A0A0B] via-[#0A0A0B]/85 to-transparent pt-14 pb-4 px-4">
-                  <h3 className="font-display font-semibold uppercase text-white text-lg leading-tight">{c.title}</h3>
-                  <p className="mt-1.5 text-xs text-zinc-400 leading-relaxed">{c.sub}</p>
-                </div>
+          <div className="flex flex-wrap items-end justify-between gap-4 mb-10">
+            <h2 className="font-display font-bold uppercase text-white text-4xl sm:text-5xl">
+              Real life. <span className="text-amber-400">Solved.</span>
+            </h2>
+            <p className="font-mono text-[11px] tracking-[0.2em] uppercase text-zinc-500">
+              Tap a card — here's how it actually works
+            </p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
+            {painCards.map((c, ci) => (
+              <div key={c.title} className="group overflow-hidden rounded-xl border border-white/10 bg-zinc-900/40">
+                <button
+                  type="button"
+                  onClick={() => setOpenPain(openPain === ci ? null : ci)}
+                  aria-expanded={openPain === ci}
+                  className="block w-full text-left"
+                >
+                  <div className="aspect-[4/3] overflow-hidden relative">
+                    <Crossfade images={c.images} interval={5200 + ci * 800} label={c.alt} />
+                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#0A0A0B] via-[#0A0A0B]/85 to-transparent pt-14 pb-4 px-4">
+                      <h3 className="font-display font-semibold uppercase text-white text-lg leading-tight">{c.title}</h3>
+                      <p className="mt-1.5 text-xs text-zinc-400 leading-relaxed">{c.sub}</p>
+                      <p className="mt-2.5 font-mono text-[10px] tracking-[0.2em] uppercase text-amber-400/80">
+                        {openPain === ci ? 'How it works −' : 'How it works +'}
+                      </p>
+                    </div>
+                  </div>
+                </button>
+                <AnimatePresence initial={false}>
+                  {openPain === ci && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3, ease: 'easeOut' }}
+                      className="overflow-hidden"
+                    >
+                      <ul className="space-y-2.5 border-t border-white/10 px-4 py-4">
+                        {c.details.map((d) => (
+                          <li key={d} className="flex gap-2.5 text-xs leading-relaxed text-zinc-300">
+                            <span className="shrink-0 text-amber-400">▸</span>
+                            {d}
+                          </li>
+                        ))}
+                      </ul>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             ))}
           </div>

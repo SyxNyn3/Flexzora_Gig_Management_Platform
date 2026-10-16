@@ -49,6 +49,7 @@ export const CREW_SKILLS = [
   'ETCP Theater Rigger',
   'CM chain hoist',
   'Forklift / Telehandler',
+  'Aerial lift (boom/scissor)',
   'OSHA 10',
   'OSHA 30',
   'Fall protection',
@@ -60,6 +61,7 @@ export const CREW_SKILLS = [
   'Console programming',
   'Networking / DMX',
   'Owns tools',
+  'Owns full PPE (hard hat / hi-vis / steel toe)',
 ] as const;
 
 export const TRAVEL_OPTIONS = [
@@ -76,6 +78,57 @@ export const EXPERIENCE_LEVELS = [
   '1–3 years',
   '4–9 years',
   '10+ years',
+] as const;
+
+export const REGIONS = [
+  'My home market',
+  'Northeast',
+  'Southeast',
+  'Midwest',
+  'Texas & Gulf',
+  'Southwest',
+  'Mountain West',
+  'West Coast',
+  'Pacific Northwest',
+  'Canada',
+  'UK / Europe',
+  "Anywhere there's a call",
+] as const;
+
+export const VEHICLE_TYPES = [
+  'Car / sedan',
+  'SUV / pickup',
+  'Cargo van',
+  'Box truck',
+  'Trailer rig',
+  'Motorcycle',
+] as const;
+
+export const FARTHEST_TRAVEL = [
+  'Stayed local (<50 mi)',
+  '100–300 mi',
+  '300–600 mi',
+  '600+ mi',
+  'Cross-country / flew for a call',
+] as const;
+
+export const DEPARTURE_NOTICE = [
+  'Wheels up within days',
+  'Need ~2 weeks to sort things',
+  'Need a month+ of notice',
+] as const;
+
+export const CALL_RESPONSE = [
+  'Same day — point me at it',
+  'Next day',
+  'A few days out',
+  'A week+ of notice',
+] as const;
+
+export const PAYMENT_TYPES = [
+  '1099 contractor — no problem',
+  'W2 preferred',
+  'Either works',
 ] as const;
 
 export const HEARD_FROM = [
