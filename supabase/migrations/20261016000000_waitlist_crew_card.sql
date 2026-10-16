@@ -170,3 +170,44 @@ $$;
 
 REVOKE ALL ON FUNCTION public.waitlist_fill_crew_card(text,text,text,boolean,text[],text,text[],text,text[],boolean,integer,text,text,integer,jsonb,text[],text[],text[],text[],text,boolean,boolean,boolean,text,text,text,text,boolean,text[],text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.waitlist_fill_crew_card(text,text,text,boolean,text[],text,text[],text,text[],boolean,integer,text,text,integer,jsonb,text[],text[],text[],text[],text,boolean,boolean,boolean,text,text,text,text,boolean,text[],text) TO anon, authenticated;
+
+/*
+  # waitlist_sanitize_anon_insert — column-writability wall
+
+  waiting_list's public INSERT policy is WITH CHECK (true) — RLS gates
+  rows, not columns, so a direct PostgREST insert could set server-owned
+  fields (status='verified', referral_count, verified_at, a chosen
+  verification_token). Anything not coming through the service role gets
+  those fields forced to safe pending defaults. The edge function path
+  (service_role) is untouched.
+*/
+CREATE OR REPLACE FUNCTION public.waitlist_sanitize_anon_insert()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF COALESCE(NULLIF(current_setting('request.jwt.claims', true), '')::jsonb ->> 'role', 'anon')
+     IS DISTINCT FROM 'service_role' THEN
+    NEW.status              := 'pending';
+    NEW.verified_at         := NULL;
+    NEW.verification_sent_at := NULL;
+    NEW.referral_count      := 0;
+    NEW.profile_completeness := 0;
+    NEW.signup_ip           := NULL;
+    NEW.created_at          := now();
+    NEW.referral_code       := gen_random_uuid()::text;
+    NEW.verification_token  := gen_random_uuid()::text;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_waitlist_sanitize_anon ON waiting_list;
+CREATE TRIGGER trg_waitlist_sanitize_anon
+  BEFORE INSERT ON waiting_list
+  FOR EACH ROW
+  EXECUTE FUNCTION public.waitlist_sanitize_anon_insert();
+
+REVOKE ALL ON FUNCTION public.waitlist_sanitize_anon_insert() FROM PUBLIC;
