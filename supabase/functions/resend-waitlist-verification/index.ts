@@ -46,10 +46,12 @@ serve(async (req) => {
       .single();
 
     if (lookupError || !existingEntry) {
+      // Generic success — a 404 tells an attacker whether an address is
+      // signed up (email enumeration). Say nothing either way.
       return new Response(
-        JSON.stringify({ error: "Email not found in waitlist" }),
+        JSON.stringify({ message: "If that email is on the waitlist, a new link is on its way" }),
         {
-          status: 404,
+          status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         }
       );

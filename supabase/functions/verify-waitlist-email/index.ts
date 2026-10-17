@@ -83,7 +83,8 @@ serve(async (req) => {
     const { data: updatedEntry, error: updateError } = await supabase
       .from("waiting_list")
       .update({
-        status: 'verified'
+        status: 'verified',
+        verified_at: new Date().toISOString()
       })
       .eq("id", waitlistEntry.id)
       .select()

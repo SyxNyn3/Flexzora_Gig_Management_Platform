@@ -39,6 +39,39 @@ serve(async (req) => {
       );
     }
 
+    // --- Abuse guards (public endpoint) ---
+
+    // Honeypot: real browsers never fill `_hp`. Bots get a shaped fake
+    // success — no write, and the downstream crew-card RPC finds no row.
+    if (requestData._hp) {
+      return new Response(
+        JSON.stringify({ message: "Successfully added to waitlist", referral_code: "thanks", verification_required: false, email: requestData.email }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Per-IP rate limit: 10 signups/minute via the shared hits table —
+    // a human can't legitimately submit twice in a minute.
+    const clientIp = (req.headers.get("x-forwarded-for") || "").split(",")[0].trim() || null;
+    if (clientIp) {
+      try {
+        const { count } = await supabase
+          .from("waitlist_rpc_hits")
+          .select("ts", { count: "exact", head: true })
+          .eq("ip", clientIp)
+          .gte("ts", new Date(Date.now() - 60_000).toISOString());
+        if ((count ?? 0) >= 10) {
+          return new Response(
+            JSON.stringify({ error: "Too many requests — please try again in a minute" }),
+            { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        await supabase.from("waitlist_rpc_hits").insert({ ip: clientIp });
+      } catch (e) {
+        console.error("rate limit check failed:", e);
+      }
+    }
+
     // Check if email already exists in the waiting list
     const { data: existingEntry, error: lookupError } = await supabase
       .from("waiting_list")
@@ -58,12 +91,15 @@ serve(async (req) => {
       );
     }
 
-    // If email already exists, return the existing referral code
+    // If email already exists, confirm they're in WITHOUT handing back the
+    // referral code — it's the bearer credential for referral_status, and
+    // returning it by email alone is an enumeration + status leak. The
+    // verification/resend path is how a legit owner recovers their link.
     if (existingEntry) {
       return new Response(
-        JSON.stringify({ 
-          message: "Email already on waitlist", 
-          referral_code: existingEntry.referral_code 
+        JSON.stringify({
+          message: "Email already on waitlist",
+          already_registered: true,
         }),
         {
           status: 200,

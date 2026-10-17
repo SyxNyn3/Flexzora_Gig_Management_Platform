@@ -97,6 +97,7 @@ const WaitlistForm: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [verificationSent, setVerificationSent] = useState(false);
+  const [alreadyOnList, setAlreadyOnList] = useState(false);
   const [userEmail, setUserEmail] = useState('');
   const [referralCode, setReferralCode] = useState<string | null>(null);
   const [referralStatus, setReferralStatus] = useState<ReferralStatus | null>(null);
@@ -179,6 +180,7 @@ const WaitlistForm: React.FC = () => {
     try {
       const payload = {
         ...data,
+        _hp: honeypot,
         referred_by_email: referredBy,
         utm_source: utmSource,
         profile_completeness: computeCompleteness(data),
@@ -197,6 +199,14 @@ const WaitlistForm: React.FC = () => {
         body: payload,
       });
       if (responseError || responseData?.error) throw new Error(responseError?.message || responseData.error);
+      /* duplicate signup — the function no longer hands the referral code
+         back (it's a bearer credential), so show the "already in" card */
+      if (responseData.already_registered) {
+        setAlreadyOnList(true);
+        setSuccess(true);
+        toast.success('That email is already on the list!');
+        return;
+      }
       /* the deployed function may lag the schema — the crew-card RPC completes
          the row it just inserted. First-write-wins: a no-op once the function
          persists these fields itself, and locked against anonymous overwrites. */
@@ -321,6 +331,31 @@ const WaitlistForm: React.FC = () => {
             </Button>
             <Button variant="ghost" onClick={() => navigate('/')}>
               Return to home
+            </Button>
+          </CardContent>
+        </Card>
+      </PageShell>
+    );
+  }
+
+  if (success && alreadyOnList) {
+    return (
+      <PageShell>
+        <Card className="rounded-none border-0 bg-zinc-900/70 shadow-2xl backdrop-blur sm:rounded-2xl sm:border sm:border-white/10">
+          <CardHeader className="text-center">
+            <CheckCircle className="mx-auto mb-3 h-14 w-14 text-amber-400" />
+            <CardTitle>You're already in the crew</CardTitle>
+            <CardDescription>
+              That email's already on the founding-crew list — no need to sign up twice.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <Button
+              onClick={() => navigate('/')}
+              className="w-full bg-amber-400 font-semibold text-zinc-950 hover:bg-amber-300"
+            >
+              Return to Home
+              <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </CardContent>
         </Card>

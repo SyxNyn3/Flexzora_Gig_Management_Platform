@@ -78,7 +78,55 @@ mass-assignment on ORMs.
 
 ---
 
-## 3. Internal functions must not assume their caller — MEDIUM
+## 3. Enumeration & credential leaks hide in "helpful" responses — MEDIUM
+
+Two found in the same codebase:
+
+- **404 on lookup:** `resend-waitlist-verification` returned
+  `"Email not found in waitlist"` — an oracle for "is this person signed
+  up?". Fix: always return generic success
+  (`"If that email is on the list, a new link is on its way"`).
+- **Duplicate-return:** `submit-waitlist` returned the existing row's
+  `referral_code` on repeat signup. The code is the bearer credential
+  for `waitlist_referral_status` → POST anyone's email, get their
+  position/referral data. Fix: `already_registered: true` and no code;
+  the owner recovers their link through the email-verified path.
+
+**Prevention rule:** before returning a record identifier from a public
+endpoint, ask: "does the caller prove ownership, or just know the lookup
+key?" Email alone proves nothing. Same for distinct error codes — "not
+found" vs "wrong password" is enumeration fuel.
+
+---
+
+## 4. Public edge functions need their own guards — not just the form
+
+Client-side honeypot/min-time stops casual bots, but nothing stops a
+script hitting the endpoint directly. Every `verify_jwt = false`
+function got audited:
+
+- `submit-waitlist` — added `_hp` honeypot + 10/min per-IP cap via
+  `waitlist_rpc_hits`.
+- `schedule-demo` — added `_hp` honeypot + 5/min per-IP cap + 24h
+  same-email dedup (it sends a notify email per request — without the
+  cap it was an inbox-flood/cost vector).
+- `resend-waitlist-verification` — already had 60s/email throttle.
+- `verify-waitlist-email` — nanoid(32) token + email pair; brute-force
+  infeasible, no cap needed.
+- `send-push`/`alert-digest` — `X-Push-Secret` internal credential.
+- `stripe-webhook` — Stripe signature, not a JWT (correct — Stripe
+  can't hold one).
+- `ics-feed` — unguessable `?token=` capability URL.
+- `lookup-user` — rejects `@` inputs (no email→account oracle).
+
+**Prevention rule:** for each public function ask: what does one call
+cost (row write? email send? SMS send?) and what stops a loop? Put the
+answer in the function — per-IP cap, per-identity throttle, dedup
+window — never rely on the frontend.
+
+---
+
+## 5. Internal functions must not assume their caller — MEDIUM
 
 The revoked-execute list existed because functions DO check
 `current_profile_id()`/`owns_shift()` internally. Both halves matter:
@@ -95,7 +143,7 @@ bug waiting for a writeup.
 
 ---
 
-## 4. Secrets hygiene verified
+## 6. Secrets hygiene verified
 
 - `.env.local` gitignored + untracked — confirmed via `git check-ignore`.
 - `VITE_*`-prefixed vars are bundled into the client → only

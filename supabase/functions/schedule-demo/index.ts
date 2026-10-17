@@ -68,6 +68,55 @@ serve(async (req) => {
       );
     }
 
+    // --- Abuse guards (public endpoint — mirrors the waitlist defenses) ---
+
+    // Honeypot: a real browser never fills `_hp`. Bots get a fake success —
+    // no write, no notify email, nothing to adapt to.
+    if (requestData._hp) {
+      return new Response(
+        JSON.stringify({ message: "Demo request successfully submitted", demo_id: "thanks", status: "new" }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Per-IP rate limit: 5 demo requests/minute via the shared hits table.
+    const clientIp = (req.headers.get("x-forwarded-for") || "").split(",")[0].trim() || null;
+    if (clientIp) {
+      try {
+        const { count } = await supabase
+          .from("waitlist_rpc_hits")
+          .select("ts", { count: "exact", head: true })
+          .eq("ip", clientIp)
+          .gte("ts", new Date(Date.now() - 60_000).toISOString());
+        if ((count ?? 0) >= 5) {
+          return new Response(
+            JSON.stringify({ error: "Too many requests — please try again in a minute" }),
+            { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        await supabase.from("waitlist_rpc_hits").insert({ ip: clientIp });
+      } catch (e) {
+        // rate-limit bookkeeping must never block a real submission
+        console.error("rate limit check failed:", e);
+      }
+    }
+
+    // Dedup: same contact email within 24h → silent success (no row, no
+    // notify email). Demo requests are rare enough that a repeat inside a
+    // day is spam or a double-submit, not a second request.
+    const { data: recent } = await supabase
+      .from("demo_requests")
+      .select("id")
+      .eq("contact_email", String(requestData.contact_email))
+      .gte("created_at", new Date(Date.now() - 86_400_000).toISOString())
+      .limit(1);
+    if (recent && recent.length > 0) {
+      return new Response(
+        JSON.stringify({ message: "Demo request successfully submitted", demo_id: recent[0].id, status: "new" }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Persist the demo request. preferred_date may arrive in any of a few
     // formats; reject anything that doesn't parse to a real date.
     const preferredDate = new Date(requestData.preferred_date);
