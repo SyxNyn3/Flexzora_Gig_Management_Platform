@@ -37,16 +37,19 @@ needs config · 🔧 blocked on human action.
 - ✅ Full E2E: edge-fn signup → RPC crew-card fill → all 54 columns
   persisted → overwrite rejected → cleanup
 
-## Needs human action (blocked — expired SUPABASE_ACCESS_TOKEN)
+## Deployed 2026-10-16 (PAT rotated)
 
-- 🔧 Rotate PAT in Supabase dashboard → Access Tokens
-- 🔧 `supabase functions deploy submit-waitlist resend-waitlist-verification verify-waitlist-email schedule-demo`
-  — deployed functions are older revisions (inserts fine, drop crew
-  fields; RPC covers it meanwhile). Hardened versions are in the repo —
-  deploy closes the function-level rate-limit/enumeration gaps
-- 🔧 Once deployed: set `WAITLIST_SKIP_EMAIL_VERIFICATION=false` —
-  verification emails currently never send; fake emails can't be
-  detected until this flips
+- ✅ `submit-waitlist` + `schedule-demo` + `resend-waitlist-verification`
+  + `verify-waitlist-email` deployed — hardened versions live: honeypot,
+  per-IP caps, dedup, no-code-leak duplicate path, `verified_at` stamp
+- ✅ `WAITLIST_SKIP_EMAIL_VERIFICATION=false` — verification emails send
+  via AgentMail. E2E: signup → `verification_required: true` → token →
+  `send-waitlist-verification` 200 through AgentMail
+- ✅ `schema_migrations` synced — all four manually-applied versions
+  recorded; `db push` won't re-run them
+
+## Remaining human action
+
 - 🔧 Dashboard → Auth: enable leaked-password protection (WARN lint)
 
 ## Accepted risk (documented, intentional)
