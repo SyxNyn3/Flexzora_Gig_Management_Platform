@@ -263,3 +263,30 @@ GRANT EXECUTE ON FUNCTION public.send_broadcast(p_broadcast_id uuid) TO authenti
 REVOKE EXECUTE ON FUNCTION public.send_broadcast(p_broadcast_id uuid) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.worker_travel_conflicts(p_worker_ids uuid[], p_start timestamp with time zone, p_end timestamp with time zone, p_venue_lat double precision, p_venue_lng double precision) TO authenticated, service_role;
 REVOKE EXECUTE ON FUNCTION public.worker_travel_conflicts(p_worker_ids uuid[], p_start timestamp with time zone, p_end timestamp with time zone, p_venue_lat double precision, p_venue_lng double precision) FROM PUBLIC, anon;
+-- Trigger handlers are invoked BY triggers, never called directly — no
+-- API role should hold EXECUTE on them at all. (PostgREST can't call
+-- trigger-returning functions regardless; this removes the privilege.)
+DO $$
+DECLARE
+  f record;
+BEGIN
+  FOR f IN
+    SELECT p.oid, p.proname, pg_get_function_identity_arguments(p.oid) AS args
+    FROM pg_proc p
+    JOIN pg_namespace n ON p.pronamespace = n.oid
+    WHERE n.nspname = 'public'
+      AND p.prorettype = 'trigger'::regtype
+      AND NOT EXISTS (
+        SELECT 1 FROM pg_depend d
+        JOIN pg_extension e ON d.refobjid = e.oid
+        WHERE d.objid = p.oid
+      )
+      AND p.proname NOT IN ('checkauthtrigger', 'postgis_cache_bbox')
+  LOOP
+    EXECUTE format(
+      'REVOKE ALL ON FUNCTION public.%I(%s) FROM PUBLIC, anon, authenticated',
+      f.proname, f.args
+    );
+  END LOOP;
+END;
+$$;

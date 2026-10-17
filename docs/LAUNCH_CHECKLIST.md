@@ -15,10 +15,17 @@ needs config · 🔧 blocked on human action.
 - ✅ `anon` role: **zero table privileges** on user tables — privilege
   layer + RLS = defense in depth. Verified: direct REST read/insert on
   `waiting_list` → `42501 permission denied`
+- ✅ Trigger-handler functions: EXECUTE revoked from all API roles (72
+  fns; platform internals excluded). No API role can invoke them
+- ✅ RPC rate limiter **burst-tested live**: calls 1–8 pass, 9+ rejected
+- ✅ `waitlist_rpc_hits` self-cleans (10-min window delete in RPC)
 - ✅ `waitlist_sanitize_anon_insert` trigger — direct inserts can't
   smuggle `status`/`verified_at`/`referral_count`/`profile_completeness`/
   `created_at`; `referral_code`+`verification_token` regenerated
   server-side. Attack-tested live.
+- ✅ Public edge functions audited; repo hardened (deploy pending):
+  `submit-waitlist` + `schedule-demo` get `_hp` honeypot + per-IP caps
+  + dedup; `resend` enumeration-404 closed; `verify` writes `verified_at`
 - ✅ `waitlist_fill_crew_card` — first-write-wins, 30-min claim window,
   8/min per-IP cap, server-side `signup_ip` capture
 - ✅ All 51 function `search_path` warnings pinned (`public, pg_temp`)
@@ -33,9 +40,10 @@ needs config · 🔧 blocked on human action.
 ## Needs human action (blocked — expired SUPABASE_ACCESS_TOKEN)
 
 - 🔧 Rotate PAT in Supabase dashboard → Access Tokens
-- 🔧 `supabase functions deploy submit-waitlist resend-waitlist-verification verify-waitlist-email`
-  — deployed function is an older revision (inserts fine, drops crew
-  fields; RPC covers it meanwhile)
+- 🔧 `supabase functions deploy submit-waitlist resend-waitlist-verification verify-waitlist-email schedule-demo`
+  — deployed functions are older revisions (inserts fine, drop crew
+  fields; RPC covers it meanwhile). Hardened versions are in the repo —
+  deploy closes the function-level rate-limit/enumeration gaps
 - 🔧 Once deployed: set `WAITLIST_SKIP_EMAIL_VERIFICATION=false` —
   verification emails currently never send; fake emails can't be
   detected until this flips
