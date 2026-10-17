@@ -47,7 +47,46 @@ that need it>`. Maintain an explicit public-API whitelist (ours:
 
 ---
 
-## 2. Role-mutable search_path on functions — MEDIUM (51 findings)
+## 2. anon holds full table privileges — RLS is the only wall — HIGH
+
+**What:** Supabase's default privileges grant `anon` (and `authenticated`)
+SELECT/INSERT/UPDATE/DELETE/**TRUNCATE**/REFERENCES/TRIGGER on every
+table in `public` — `payments`, `payouts`, `worker_sensitive`,
+`fraud_signals`, all 70+. Row-Level Security is the single boundary
+between the public API key and every row in the database.
+
+**Why it happens:** "RLS is enabled" feels like a complete answer, but
+privileges and policies are different layers. Privilege says *may touch
+this table at all*; the policy says *which rows*. One permissive future
+policy (or a forgotten `WITH CHECK`) exposes the whole table because the
+privilege was always there.
+
+**Detection:**
+```sql
+select table_name, privilege_type
+from information_schema.role_table_grants
+where grantee='anon' and table_schema='public'
+  and privilege_type in ('SELECT','INSERT','UPDATE','DELETE','TRUNCATE');
+```
+
+**Fix applied:** blanket `REVOKE ALL ON TABLE public.<t> FROM anon` for
+every user table (migration
+`supabase/migrations/20261018000000_revoke_anon_table_privileges.sql`).
+The anon surface is now exactly 4 SECURITY DEFINER RPCs + the edge
+functions — verified: `GET /rest/v1/waiting_list` returns
+`42501 permission denied`, `rpc/waitlist_public_stats` still works.
+PostGIS system tables (`spatial_ref_sys`, `geometry_columns`,
+`geography_columns`) excluded — engine internals. PostgREST cannot emit
+TRUNCATE regardless, so that grant was latent, not exploitable via REST.
+
+**Prevention rule:** anon should hold table privileges ONLY on tables an
+unauthenticated client must touch directly (usually: none). Public
+reads/writes belong behind SECURITY DEFINER RPCs with curated fields —
+treat `SELECT *` on a raw table as never acceptable for anon.
+
+---
+
+## 3. Role-mutable search_path on functions — MEDIUM (51 findings)
 
 **What:** functions created without `SET search_path` resolve unqualified
 object names against the *caller's* search path. A malicious user can create
@@ -75,7 +114,7 @@ was 944 including PostGIS/vector; only 51 were ours).
 
 ---
 
-## 3. Anonymous SECURITY DEFINER RPC needs abuse guards — designed-in
+## 4. Anonymous SECURITY DEFINER RPC needs abuse guards — designed-in
 
 `waitlist_fill_crew_card` is intentionally public (fills a just-created
 waitlist row pre-auth). Defenses built in, worth reusing as a pattern:
@@ -101,7 +140,7 @@ return value.
 
 ---
 
-## 4. RLS posture verified — but verify per-table, not by vibes
+## 5. RLS posture verified — but verify per-table, not by vibes
 
 **Method that worked:** query `pg_policies` for `qual`/`with_check`
 clauses; any policy where both are null/true is unscoped. Finding: catalog
@@ -114,14 +153,15 @@ query. `INSERT` policies live in `with_check`, not `qual` — check both.
 
 ---
 
-## 5. Remaining known items (accepted or pending)
+## 6. Remaining known items (accepted or pending)
 
 - `spatial_ref_sys` lacks RLS (ERROR lint) — PostGIS internal table;
   enabling RLS breaks geo queries. Accepted; standard practice leaves it.
 - `vector`, `pg_trgm`, `postgis` installed in `public` schema (WARN) —
   moving extensions is riskier than the exposure. Accepted.
 - `rl_experiences`, `training_data` — RLS enabled, zero policies =
-  deny-all. Safe; confirm whether tables are still needed.
+  deny-all, zero rows, zero code references. Dead scaffolding —
+  candidates for removal, safe until then.
 - Deployed `submit-waitlist` edge function is an older revision (silently
   drops crew-card fields). Data path is covered by the RPC fill; deploy
   the updated function when a fresh `SUPABASE_ACCESS_TOKEN` exists.

@@ -147,6 +147,18 @@ const WaitlistForm: React.FC = () => {
   useEffect(() => {
     setReferredBy(searchParams.get('ref'));
     setUtmSource(searchParams.get('utm_source'));
+    /* returning visitor — pull their waitlist spot back up instead of a
+       blank form. ?code= deep-links to status (verification emails);
+       ?ref= skips it (new signup via referral); ?new=1 is the escape
+       hatch for shared devices / second signups. */
+    const codeParam = searchParams.get('code');
+    if (codeParam) localStorage.setItem('fz_waitlist_code', codeParam);
+    const storedCode = codeParam || localStorage.getItem('fz_waitlist_code');
+    if (storedCode && !searchParams.get('new') && !searchParams.get('ref')) {
+      setReferralCode(storedCode);
+      loadReferralStatus(storedCode);
+      setSuccess(true);
+    }
   }, [searchParams]);
 
   const loadReferralStatus = async (code: string) => {
@@ -223,6 +235,7 @@ const WaitlistForm: React.FC = () => {
       if (fillError) console.warn('crew card fill failed — fields will sync once the function deploys', fillError);
       const code = responseData.referral_code as string;
       setReferralCode(code);
+      localStorage.setItem('fz_waitlist_code', code);
       if (responseData.verification_required) {
         setUserEmail(data.email);
         setVerificationSent(true);
@@ -364,6 +377,18 @@ const WaitlistForm: React.FC = () => {
               Return to Home
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
+            <button
+              type="button"
+              onClick={() => {
+                localStorage.removeItem('fz_waitlist_code');
+                setSuccess(false);
+                setReferralCode(null);
+                setReferralStatus(null);
+              }}
+              className="w-full text-center text-xs text-zinc-500 underline-offset-2 hover:text-zinc-400 hover:underline"
+            >
+              Not you? Start a new signup
+            </button>
           </CardContent>
         </Card>
       </PageShell>
