@@ -37,8 +37,11 @@ serve(async (req) => {
       );
     }
 
-    // Create verification link
-    const verificationLink = `${req.headers.get('origin') || 'http://localhost:3000'}/waitlist/verify?token=${verification_token}&email=${encodeURIComponent(email)}`;
+    // Verification link — always the production site URL. The Origin
+    // header is not trusted here: server-side calls have none and a
+    // forged origin would send users to an attacker domain.
+    const siteUrl = Deno.env.get("PUBLIC_SITE_URL") || "https://flexzora.pro";
+    const verificationLink = `${siteUrl}/waitlist/verify?token=${verification_token}&email=${encodeURIComponent(email)}`;
 
     const emailContent = {
       to: email,
@@ -68,7 +71,7 @@ serve(async (req) => {
           </div>
           <div style="background: #f8f9fa; padding: 20px; text-align: center; border-top: 1px solid #e9ecef;">
             <p style="color: #666; font-size: 12px; margin: 0;">
-              © 2024 FlexZora. All rights reserved.
+              © 2026 FlexZora · <a href="https://flexzora.pro" style="color: #2474e5; text-decoration: none;">flexzora.pro</a>
             </p>
           </div>
         </div>
