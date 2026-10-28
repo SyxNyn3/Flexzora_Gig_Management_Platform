@@ -34,7 +34,13 @@ const demoFormSchema = z.object({
   contact_name: z.string().min(2, 'Contact name is required'),
   contact_email: z.string().email('Please enter a valid email address'),
   contact_phone: z.string().min(10, 'Please enter a valid phone number'),
-  company_website: z.string().url('Please enter a valid URL').optional().or(z.literal('')),
+  // Accept bare domains too — users type "acme.com", not "https://acme.com".
+  // Prepend the scheme before validating so either form passes.
+  company_website: z.preprocess(
+    (v) => (typeof v === 'string' && v.trim() !== '' && !/^https?:\/\//i.test(v.trim())
+      ? `https://${v.trim()}` : v),
+    z.string().url('Please enter a valid URL').optional().or(z.literal('')),
+  ),
   company_size: z.string().min(1, 'Please select company size'),
   industry_focus: z.string().min(1, 'Please select primary industry focus'),
   num_workers_managed: z.string().min(1, 'Please select number of workers managed'),
@@ -331,7 +337,7 @@ const ScheduleDemoForm: React.FC = () => {
                     <div>
                       <Label htmlFor="company_size" className="text-base">Company Size*</Label>
                       <Select
-                        onValueChange={(value) => setValue('company_size', value)}
+                        onValueChange={(value) => setValue('company_size', value, { shouldValidate: true })}
                       >
                         <SelectTrigger className="h-12 mt-1">
                           <SelectValue placeholder="Select company size" />
@@ -352,7 +358,7 @@ const ScheduleDemoForm: React.FC = () => {
                     <div>
                       <Label htmlFor="industry_focus" className="text-base">Primary Industry Focus*</Label>
                       <Select
-                        onValueChange={(value) => setValue('industry_focus', value)}
+                        onValueChange={(value) => setValue('industry_focus', value, { shouldValidate: true })}
                       >
                         <SelectTrigger className="h-12 mt-1">
                           <SelectValue placeholder="Select industry focus" />
@@ -436,7 +442,7 @@ const ScheduleDemoForm: React.FC = () => {
                     <div>
                       <Label htmlFor="num_workers_managed" className="text-base">Number of Workers Managed*</Label>
                       <Select
-                        onValueChange={(value) => setValue('num_workers_managed', value)}
+                        onValueChange={(value) => setValue('num_workers_managed', value, { shouldValidate: true })}
                       >
                         <SelectTrigger className="h-12 mt-1">
                           <SelectValue placeholder="Select number of workers" />
@@ -457,7 +463,7 @@ const ScheduleDemoForm: React.FC = () => {
                     <div>
                       <Label htmlFor="annual_gigs" className="text-base">Annual Number of Gigs*</Label>
                       <Select
-                        onValueChange={(value) => setValue('annual_gigs', value)}
+                        onValueChange={(value) => setValue('annual_gigs', value, { shouldValidate: true })}
                       >
                         <SelectTrigger className="h-12 mt-1">
                           <SelectValue placeholder="Select annual gigs" />
@@ -598,7 +604,7 @@ const ScheduleDemoForm: React.FC = () => {
                     <div>
                       <Label htmlFor="preferred_date" className="text-base">Preferred Date*</Label>
                       <Select
-                        onValueChange={(value) => setValue('preferred_date', value)}
+                        onValueChange={(value) => setValue('preferred_date', value, { shouldValidate: true })}
                       >
                         <SelectTrigger className="h-12 mt-1">
                           <SelectValue placeholder="Select a date" />
@@ -619,7 +625,7 @@ const ScheduleDemoForm: React.FC = () => {
                     <div>
                       <Label htmlFor="preferred_time" className="text-base">Preferred Time*</Label>
                       <Select
-                        onValueChange={(value) => setValue('preferred_time', value)}
+                        onValueChange={(value) => setValue('preferred_time', value, { shouldValidate: true })}
                       >
                         <SelectTrigger className="h-12 mt-1">
                           <SelectValue placeholder="Select a time" />
