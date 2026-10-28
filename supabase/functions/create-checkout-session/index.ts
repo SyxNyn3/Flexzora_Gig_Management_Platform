@@ -104,7 +104,7 @@ serve(async (req) => {
       .single();
     if (eventError) throw eventError;
 
-    const origin = req.headers.get("origin") || new URL(req.url).origin;
+    const origin = Deno.env.get("APP_BASE_URL") || "https://flexzora.pro";
     const returnTo = `${origin}/events/${deposit.event_id}`;
     const currency = String(deposit.currency || "usd").toLowerCase();
     const unitAmount = Math.round(Number(deposit.amount) * 100);

@@ -300,7 +300,7 @@ const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ gigId }) => {
 
               <div>
                 <Label htmlFor="category">Category</Label>
-                <Select onValueChange={(value) => form.setValue('category', value as ExpenseCategory)}>
+                <Select onValueChange={(value) => form.setValue('category', value as ExpenseCategory, { shouldValidate: true })}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
@@ -341,7 +341,7 @@ const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ gigId }) => {
 
               <div>
                 <Label htmlFor="gig_id">Related Gig (Optional)</Label>
-                <Select onValueChange={(value) => form.setValue('gig_id', value)}>
+                <Select onValueChange={(value) => form.setValue('gig_id', value, { shouldValidate: true })}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select gig" />
                   </SelectTrigger>

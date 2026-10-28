@@ -323,7 +323,7 @@ const PortfolioSection: React.FC<PortfolioSectionProps> = ({
               <div>
                 <Label htmlFor="category">Category</Label>
                 <Select 
-                  onValueChange={(value) => form.setValue('category', value)}
+                  onValueChange={(value) => form.setValue('category', value, { shouldValidate: true })}
                   defaultValue={form.getValues('category')}
                 >
                   <SelectTrigger>

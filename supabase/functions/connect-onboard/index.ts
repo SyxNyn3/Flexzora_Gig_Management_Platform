@@ -76,8 +76,9 @@ serve(async (req) => {
 
     // Onboarding link: base URL comes from env, falling back to the caller's
     // Origin — it's only ever used for that user's own redirect.
-    const origin = req.headers.get("Origin");
-    const base = (Deno.env.get("APP_BASE_URL") || origin || "").replace(/\/$/, "") || "http://localhost:5173";
+    // Never trust request Origin for redirect returns — a forged header
+    // sends Stripe's return link to an attacker domain. Site URL only.
+    const base = (Deno.env.get("APP_BASE_URL") || "https://flexzora.pro").replace(/\/$/, "");
     const link = await stripe.accountLinks.create({
       account: accountId,
       refresh_url: `${base}/payouts?connect=refresh`,

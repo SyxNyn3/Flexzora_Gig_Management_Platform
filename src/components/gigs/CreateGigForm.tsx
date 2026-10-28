@@ -447,7 +447,7 @@ const CreateGigForm: React.FC = () => {
                             key={company.id}
                             value={company.id}
                             onSelect={(value) => {
-                              form.setValue('company_id', value);
+                              form.setValue('company_id', value, { shouldValidate: true });
                               setOpenCompanyCombobox(false);
                             }}
                           >

@@ -952,7 +952,7 @@ const ProfilePage: React.FC = () => {
 
             <div>
               <Label htmlFor="proficiency_level">Proficiency Level</Label>
-              <Select onValueChange={(value) => skillForm.setValue('proficiency_level', parseInt(value))}>
+              <Select onValueChange={(value) => skillForm.setValue('proficiency_level', parseInt(value), { shouldValidate: true })}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select proficiency level" />
                 </SelectTrigger>
@@ -1014,7 +1014,7 @@ const ProfilePage: React.FC = () => {
               <Select
                 value={certForm.watch('cert_type_code') || undefined}
                 onValueChange={(value) => {
-                  certForm.setValue('cert_type_code', value);
+                  certForm.setValue('cert_type_code', value, { shouldValidate: true });
                   const type = certTypes.data.find((t) => t.code === value);
                   if (type) {
                     certForm.setValue('name', type.name);
