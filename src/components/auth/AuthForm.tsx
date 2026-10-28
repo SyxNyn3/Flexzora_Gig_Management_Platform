@@ -506,7 +506,7 @@ const AuthForm: React.FC = () => {
 
                 <div>
                   <Label htmlFor="role" className="text-sm font-medium text-foreground">I am a...</Label>
-                  <Select onValueChange={(value) => signUpForm.setValue('role', value as 'worker' | 'company')}>
+                  <Select onValueChange={(value) => signUpForm.setValue('role', value as 'worker' | 'company', { shouldValidate: true })}>
                     <SelectTrigger className="mt-1.5 h-11 transition-all duration-200 focus:ring-2 focus:ring-primary">
                       <SelectValue placeholder="Select your role" />
                     </SelectTrigger>
