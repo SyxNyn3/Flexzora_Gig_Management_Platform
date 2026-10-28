@@ -51,6 +51,20 @@ needs config · 🔧 blocked on human action.
 ## Remaining human action
 
 - 🔧 Dashboard → Auth: enable leaked-password protection (WARN lint)
+- ✅ Domain secured: `flexzora.pro` (owned). Deploy target: Vercel —
+  import `SyxNyn3/Flexzora_Gig_Management_Platform`, set the `VITE_*`
+  vars for Production, add `flexzora.pro` + `www`, paste the two DNS
+  records at the registrar. Replaces the flexzoraos.com plan and the
+  Pages artifact workflow (private repo, no Pages on free tier).
+- 🔧 Supabase dashboard → Auth → URL Configuration: Site URL =
+  `https://flexzora.pro`, add redirect URLs for `https://flexzora.pro/**`
+  (and `https://www.flexzora.pro/**` if www is served).
+- 🔧 Stripe: confirm live vs test keys before real money moves
+  (`VITE_STRIPE_PUBLISHABLE_KEY` build-time + function secrets).
+- 🔧 OAuth providers (if enabled): Google/Apple redirect URLs must
+  include `https://qgjtrosadftjrplubjaw.supabase.co/auth/v1/callback`
+  — that part doesn't change with the domain; the app-side redirect
+  does.
 
 ## Accepted risk (documented, intentional)
 

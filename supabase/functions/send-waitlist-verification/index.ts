@@ -12,7 +12,7 @@ const corsHeaders = {
 const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+const _supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -25,7 +25,7 @@ serve(async (req) => {
 
   try {
     // Parse the request body
-    const { email, verification_token, referral_code } = await req.json();
+    const { email, verification_token, referral_code: _referral_code } = await req.json();
     
     if (!email || !verification_token) {
       return new Response(
