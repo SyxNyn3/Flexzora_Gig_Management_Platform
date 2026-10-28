@@ -37,7 +37,7 @@ jobs:
         continue-on-error: true   # informational until threshold is tuned
 
       - name: Upload coverage
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v7
         continue-on-error: true
         with:
           files: ./coverage/lcov.info
