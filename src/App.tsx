@@ -1,5 +1,5 @@
 import React, { useState, useEffect, lazy, Suspense } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { validateSession } from '@/lib/auth';
@@ -155,6 +155,17 @@ const RoleRoute: React.FC<{ role: 'worker' | 'company'; children: React.ReactNod
   return <>{children}</>;
 };
 
+// Scroll restoration: React Router keeps scroll position across
+// navigations, so a link clicked mid-page landed the new page
+// scrolled down. Reset to top on every route change.
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+  return null;
+}
+
 const AppRoutes: React.FC = () => {
   const { profile } = useAuth();
 
@@ -165,6 +176,7 @@ const AppRoutes: React.FC = () => {
 
   return (
     <Router basename={import.meta.env.BASE_URL}>
+      <ScrollToTop />
       <Suspense fallback={<LoadingSpinner />}>
       <Routes>
         <Route path="/" element={<LandingPage />} />
