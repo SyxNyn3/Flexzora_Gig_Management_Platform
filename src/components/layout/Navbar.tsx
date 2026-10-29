@@ -64,7 +64,7 @@ const Navbar: React.FC = () => {
 
   return (
     <>
-      <nav className="bg-card border-b border-border sticky top-0 z-50">
+      <nav className="bg-card/70 border-b border-border/60 backdrop-blur-xl sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
@@ -134,7 +134,7 @@ const Navbar: React.FC = () => {
                     onClick={() => setShowNotifications(true)}
                   >
                     <Bell className="w-5 h-5" />
-                    <Badge className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 text-xs bg-red-500">
+                    <Badge className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 text-xs bg-primary">
                       3
                     </Badge>
                   </Button>

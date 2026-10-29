@@ -179,7 +179,7 @@ const OpsBoardPage: React.FC = () => {
             The office board — urgent cards for unfilled calls appear here on their own and resolve when the call fills.
           </p>
         </div>
-        <Button onClick={() => setAddOpen(true)} className="bg-gradient-to-r from-blue-600 to-green-500">
+        <Button onClick={() => setAddOpen(true)}>
           <Plus className="w-4 h-4 mr-1" /> Add task
         </Button>
       </div>

@@ -263,7 +263,7 @@ const BroadcastPage: React.FC = () => {
                     : 'Nobody matches that audience yet.'}
               </p>
             )}
-            <Button className="w-full bg-gradient-to-r from-blue-600 to-green-500" onClick={send} disabled={!canSend}>
+            <Button className="w-full" onClick={send} disabled={!canSend}>
               {sending ? 'Sending…' : (
                 <>
                   <Send className="w-4 h-4 mr-2" /> Send broadcast

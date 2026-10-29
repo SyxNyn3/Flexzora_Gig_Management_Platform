@@ -121,7 +121,7 @@ const StaffPage: React.FC = () => {
             .
           </p>
         </div>
-        <Button onClick={() => openEdit()} className="bg-gradient-to-r from-blue-600 to-green-500">
+        <Button onClick={() => openEdit()}>
           <Plus className="w-4 h-4 mr-1" /> Add staff
         </Button>
       </div>
