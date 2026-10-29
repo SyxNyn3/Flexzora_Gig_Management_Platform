@@ -319,7 +319,7 @@ const LandingPage: React.FC = () => {
               Tap a card — here's how it actually works
             </p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
+          <div id="features" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
             {painCards.map((c, ci) => (
               <div key={c.title} className="group overflow-hidden rounded-xl border border-white/10 bg-zinc-900/40">
                 <button
@@ -499,19 +499,19 @@ const LandingPage: React.FC = () => {
               <h3 className="font-semibold text-white mb-4 text-sm uppercase tracking-wider">Product</h3>
               <ul className="space-y-2 text-zinc-500 text-sm">
                 <li>
-                  <a href="#" className="hover:text-white transition-colors">
+                  <a href="#features" className="hover:text-white transition-colors">
                     Features
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-white transition-colors">
-                    Pricing
-                  </a>
+                  <Link to="/waitlist" className="hover:text-white transition-colors">
+                    Join Waitlist
+                  </Link>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-white transition-colors">
-                    Integrations
-                  </a>
+                  <Link to="/schedule-demo" className="hover:text-white transition-colors">
+                    Schedule a Demo
+                  </Link>
                 </li>
               </ul>
             </div>
