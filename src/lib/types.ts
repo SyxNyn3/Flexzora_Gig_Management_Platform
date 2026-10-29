@@ -333,6 +333,7 @@ export interface Profile {
   day_rate?: number;
   average_rating?: number;
   review_count?: number;
+  beta_approved?: boolean;
   created_at: string;
   updated_at: string;
 }

@@ -69,7 +69,7 @@ const LoadingSpinner: React.FC = () => (
 );
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, loading } = useAuth();
+  const { user, profile, loading, signOut } = useAuth();
   const [validating, setValidating] = useState(true);
   const navigate = useNavigate();
 
@@ -98,6 +98,29 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 
   if (!user) {
     return <Navigate to="/auth" replace />;
+  }
+
+  // Closed-beta gate: accounts exist but the app stays locked until the
+  // profile is approved (profiles.beta_approved). Signups still succeed —
+  // they land here instead of inside, and become leads we can invite later.
+  if (profile && profile.beta_approved === false) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center px-4">
+        <div className="max-w-md text-center space-y-4">
+          <h1 className="text-2xl font-bold text-foreground">You're on the list.</h1>
+          <p className="text-muted-foreground">
+            Flexzora is in closed beta right now — we'll email you the moment your
+            invite is ready. Keep an eye on your inbox.
+          </p>
+          <button
+            onClick={() => signOut()}
+            className="text-sm text-primary underline"
+          >
+            Sign out
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return <>{children}</>;
