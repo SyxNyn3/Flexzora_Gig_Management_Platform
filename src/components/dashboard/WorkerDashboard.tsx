@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
+import SetupChecklist from '@/components/onboarding/SetupChecklist';
 import { useGigs, useApplications, usePayments, useExpenses, useRealtimeNotifications } from '@/hooks/useSupabaseQuery';
 import ReviewStars from '@/components/reviews/ReviewStars';
 import {
@@ -160,6 +161,10 @@ const WorkerDashboard: React.FC = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* First-run setup checklist — hides itself once done */}
+        <div className="mb-8">
+          <SetupChecklist />
+        </div>
         {/* Quick Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white">

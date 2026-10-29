@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
+import SetupChecklist from '@/components/onboarding/SetupChecklist';
 import { useGigs, useApplications, usePayments, useRealtimeNotifications } from '@/hooks/useSupabaseQuery';
 import { 
   Calendar, 
@@ -130,6 +131,11 @@ const Dashboard: React.FC = () => {
         <p className="text-muted-foreground mt-2">
           Here's what's happening with your gigs today.
         </p>
+      </div>
+
+      {/* First-run setup checklist — hides itself once every step is done */}
+      <div className="mb-8">
+        <SetupChecklist />
       </div>
 
       {/* Stats Grid */}
