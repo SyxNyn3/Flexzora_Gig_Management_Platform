@@ -57,9 +57,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         ]);
         if (!mounted) return;
         if (!sessionResult) {
-          clearAuthData();
-          setSession(null);
-          setUser(null);
+          // Timed out — the client's refresh may still land via
+          // onAuthStateChange (a cold Supabase can take >8s to wake).
+          // Do NOT clear auth here: wiping a valid-but-slow session is
+          // what bounced deep links /auth → /dashboard. Stop spinning
+          // and let the auth event deliver the session when it arrives.
           setLoading(false);
           return;
         }
@@ -148,6 +150,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         ]);
         if (!result) {
           console.warn('Profile fetch timed out; continuing without profile');
+          setLoading(false);
           return;
         }
         profileData = result.data;
