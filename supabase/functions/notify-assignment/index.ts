@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.39.0";
+import { logOutbound } from "../_shared/logOutbound.ts";
 
 // SMS notifications on shift-assignment lifecycle changes.
 //
@@ -199,9 +200,20 @@ serve(async (req) => {
     if (!twilioResp.ok) {
       const detail = await twilioResp.text();
       console.error(`Twilio send failed (${twilioResp.status}):`, detail);
+      await logOutbound(supabaseAdmin, {
+        recipient_contact: to, channel: "sms", template: kind,
+        body_preview: body, status: "failed",
+        error: `twilio ${twilioResp.status}`,
+        ref_type: "shift_assignment", ref_id: assignment?.id ?? null,
+      });
       return json({ sent: false, reason: "twilio send failed" }, 502);
     }
 
+    await logOutbound(supabaseAdmin, {
+      recipient_contact: to, channel: "sms", template: kind,
+      body_preview: body,
+      ref_type: "shift_assignment", ref_id: assignment?.id ?? null,
+    });
     return json({ sent: true });
   } catch (error) {
     console.error("notify-assignment error:", error);

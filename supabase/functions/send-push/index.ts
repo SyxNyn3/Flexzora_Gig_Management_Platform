@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import webpush from "npm:web-push@3.6.7";
 import { createClient } from "npm:@supabase/supabase-js@2.39.0";
+import { logOutbound } from "../_shared/logOutbound.ts";
 
 // Internal push dispatcher. Called by the crew_alert_push trigger through
 // pg_net — authenticated by the X-Push-Secret shared secret, NOT a user JWT
@@ -77,6 +78,10 @@ serve(async (req) => {
       await supabaseAdmin.from("push_subscriptions").delete().in("endpoint", dead);
     }
 
+    await logOutbound(supabaseAdmin, {
+      recipient_profile_id: workerId, channel: "push",
+      template: title, body_preview: body,
+    });
     return json({ sent, pruned: dead.length });
   } catch (error) {
     console.error("send-push error:", error);
