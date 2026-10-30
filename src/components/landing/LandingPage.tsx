@@ -109,12 +109,12 @@ const painCards: { images: CardImg[]; alt: string; title: string; sub: string; d
   {
     images: [A(0, 1), A(2, 1)],
     alt: 'Road case with an amber tape strip and steel latches',
-    title: 'Pay is locked before you lift a case.',
+    title: 'Your pay is on paper before you lift a case.',
     sub: 'Escrow-funded calls. Rate, hours and OT written down up front.',
     details: [
       'Rate, hours and OT terms are written on the call before you agree — no surprises at load-out.',
-      'Escrow-funded calls mean the money is already there — clock-out triggers payout, not an invoice chase.',
-      'GPS clock-in kills the paper timesheet. Your hours get approved, not argued.',
+      'On escrow-funded calls the money is committed up front — clock-out starts payout, not an invoice chase.',
+      'GPS clock-in kills the paper timesheet — and the pay rules for your state are right there with it.',
     ],
   },
 ];
@@ -506,6 +506,11 @@ const LandingPage: React.FC = () => {
                 <li>
                   <Link to="/waitlist" className="hover:text-white transition-colors">
                     Join Waitlist
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/pay-rules" className="hover:text-white transition-colors">
+                    Pay Rules by State
                   </Link>
                 </li>
                 <li>

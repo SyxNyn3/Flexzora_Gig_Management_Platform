@@ -44,7 +44,11 @@ const TERMS = [
   },
   {
     h: 'Payments and escrow',
-    body: `Confirmed bookings may require the company to pre-fund an escrow. Approved timesheets release labor amounts to the worker; platform fees are itemized on invoices. Disputes are handled per the dispute section below.`,
+    body: `Confirmed bookings may require the company to pre-fund an escrow. Approved timesheets release labor amounts to the worker; platform fees are itemized on invoices. Flexzora is not the employer of record and does not guarantee payment beyond funds actually held in platform escrow — the engaging company owns its wage obligations under law. Disputes are handled per the dispute section below.`,
+  },
+  {
+    h: 'Pay records and wage rules',
+    body: `Flexzora provides documentation of agreed rates, verified hours, and timesheets, plus pay-rule references for informational purposes only — not legal advice. Wage claims are governed by federal and state labor law; your state labor department is the definitive source.`,
   },
   {
     h: 'Disputes',

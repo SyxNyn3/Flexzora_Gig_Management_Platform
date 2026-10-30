@@ -5,6 +5,7 @@ import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { validateSession } from '@/lib/auth';
 import LandingPage from '@/components/landing/LandingPage';
 import LegalPage from '@/pages/LegalPage';
+import PayRulesPage from '@/pages/PayRulesPage';
 import WaitlistForm from '@/components/waitlist/WaitlistForm';
 import ScheduleDemoForm from '@/components/demo/ScheduleDemoForm';
 import Layout from '@/components/layout/Layout';
@@ -219,6 +220,7 @@ const AppRoutes: React.FC = () => {
         <Route path="/schedule-demo" element={<ScheduleDemoForm />} />
         <Route path="/privacy" element={<LegalPage doc="privacy" />} />
         <Route path="/terms" element={<LegalPage doc="terms" />} />
+        <Route path="/pay-rules" element={<PayRulesPage />} />
         <Route
           path="/auth"
           element={
