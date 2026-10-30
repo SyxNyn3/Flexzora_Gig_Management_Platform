@@ -79,7 +79,16 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
     const checkSession = async () => {
       if (!user && !loading) {
         // Try to validate and refresh the session
-        const isValid = await validateSession();
+        let isValid = await validateSession();
+        if (!isValid) {
+          // Hydration race: supabase-js can report "no session" while
+          // it's still rehydrating tokens from storage on a hard load.
+          // A false negative here bounces the user /auth → /dashboard
+          // and eats their destination. Retry once after a short beat
+          // before declaring the session dead.
+          await new Promise((r) => setTimeout(r, 700));
+          isValid = await validateSession();
+        }
         setValidating(false);
 
         if (!isValid) {
