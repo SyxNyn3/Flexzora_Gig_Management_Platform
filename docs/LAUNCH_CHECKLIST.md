@@ -93,3 +93,35 @@ business · markets worked (unlimited) + top-3 favorites · preferred
 regions + granular areas · farthest travel / willing farther · passport
 → overseas → wheels-up readiness · call-response time · 1099/W2 ·
 crew-you-roll-with · pain points · SMS consent · completeness score
+
+## Frontend verification pass — 2026-10-30 (screenshot-proven)
+
+Verified live on flexzora.pro via Playwright (real sign-in as test
+worker + company accounts, screenshots in `.diffui/screenshots/`):
+
+- ✅ Auth boot + closed-beta gate: new accounts land on "you're on the
+  list"; approved profiles pass through. Sign-in → dashboard ~1s
+- ✅ 25 routes resolve to their own URLs — public
+  (`/ /waitlist /pay-rules /schedule-demo /privacy /terms`), company
+  (`/dashboard /feed /events /timesheets /broadcast /staff /ops
+  /alerts /finances /roster /gigs`), worker (`/dashboard /feed /gigs
+  /applications /schedule /payouts /profile /finances`)
+- ✅ `/feed` (unified notification stream) live for both roles;
+  `outbound_messages` table live + RLS'd; notify-assignment + send-push
+  write send-proof rows
+- ✅ Fixed this pass — deployed and re-verified:
+  - `TS6133` unused `React` imports had failed 6 prod deploys; site was
+    serving a stale bundle for ~a day
+  - Session-restore timeout wiped valid auth → every deep link
+    redirected to /dashboard (see
+    `docs/agent-knowledge/auth-session-races.md`)
+  - Dual-store refresh-token race → invalid_grant churn; removed the
+    manual refresh path
+  - `SetupChecklist` queried wrong columns/enums (400s); now queries
+    real schema
+- ⚠️ First load after idle can take >8s while the paused free-tier
+  project wakes — app now survives it (no more bounce/spinner), but
+  cold-start UX is just a spinner. Worth a "waking up…" state or a
+  paid-tier project when traffic starts.
+- 🔧 Email sender still `onboarding@resend.dev` — needs verified
+  flexzora.pro domain + DNS records before real notifications matter
