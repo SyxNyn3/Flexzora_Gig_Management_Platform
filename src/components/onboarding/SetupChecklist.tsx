@@ -20,32 +20,39 @@ export default function SetupChecklist() {
     if (!user || !profile) return;
     (async () => {
       if (profile.role === 'company') {
+        // companies.created_by holds the profile id, not the auth uid.
         const { data: company } = await supabase
-          .from('companies').select('id, stripe_account_id')
-          .eq('created_by', user.id).maybeSingle();
-        const { count: events } = await supabase
-          .from('events').select('id', { count: 'exact', head: true })
-          .eq('company_id', company?.id ?? 'none');
-        const { count: shifts } = await supabase
-          .from('shifts').select('id', { count: 'exact', head: true })
-          .eq('status', 'published');
+          .from('companies').select('id')
+          .eq('created_by', profile.id).maybeSingle();
+        let events = 0, shifts = 0;
+        if (company) {
+          const { data: evs } = await supabase
+            .from('events').select('id').eq('company_id', company.id);
+          events = evs?.length ?? 0;
+          const ids = (evs ?? []).map((x) => x.id);
+          if (ids.length) {
+            const { count: s } = await supabase
+              .from('shifts').select('id', { count: 'exact', head: true })
+              .in('event_id', ids).eq('status', 'open');
+            shifts = s ?? 0;
+          }
+        }
         setSteps([
           { label: 'Create your company profile', to: '/profile', done: !!company },
-          { label: 'Connect Stripe for payouts', to: '/settings/integrations', done: !!company?.stripe_account_id },
-          { label: 'Post your first event', to: '/events', done: (events ?? 0) > 0 },
-          { label: 'Publish your first call', to: '/broadcast', done: (shifts ?? 0) > 0 },
+          { label: 'Post your first event', to: '/events', done: events > 0 },
+          { label: 'Open your first call for crew', to: '/broadcast', done: shifts > 0 },
         ]);
       } else {
-        const { data: apps } = await supabase
+        const { count: apps } = await supabase
           .from('gig_applications').select('id', { count: 'exact', head: true })
-          .eq('worker_id', user.id);
+          .eq('worker_id', profile.id);
         const { count: skills } = await supabase
-          .from('profile_skills').select('id', { count: 'exact', head: true })
-          .eq('profile_id', profile.id);
+          .from('worker_skills').select('id', { count: 'exact', head: true })
+          .eq('worker_id', profile.id);
         setSteps([
           { label: 'Fill out your crew card (skills, markets)', to: '/profile', done: (skills ?? 0) > 0 },
           { label: 'Add a phone number for call texts', to: '/profile', done: !!profile.phone },
-          { label: 'Apply to your first gig', to: '/gigs', done: (apps?.length ?? 0) > 0 },
+          { label: 'Apply to your first gig', to: '/gigs', done: (apps ?? 0) > 0 },
         ]);
       }
     })();

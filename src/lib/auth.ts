@@ -82,28 +82,24 @@ export const getStoredAuthData = () => {
  */
 export const refreshAuthToken = async (): Promise<boolean> => {
   try {
-    const { refreshToken } = getStoredAuthData();
-    
-    if (!refreshToken) {
-      return false;
-    }
-    
-    const { data, error } = await supabase.auth.refreshSession({
-      refresh_token: refreshToken,
-    });
-    
+    // No-arg refreshSession(): supabase-js owns the authoritative
+    // session in its sb-* storage and rotates refresh tokens on use.
+    // Passing a separately-stored refresh_token here raced the client's
+    // own auto-refresh — the loser presented a stale token, got
+    // invalid_grant, and wiped the session (deep links bounced to
+    // /dashboard). Single-store refresh removes the drift entirely.
+    const { data, error } = await supabase.auth.refreshSession();
+
     if (error || !data.session) {
       console.error('Error refreshing token:', error);
-      clearAuthData();
       return false;
     }
-    
-    // Store the new tokens
+
+    // Mirror the fresh session into the flexzora-* cache keys
     storeAuthData(data.session, data.user, null);
     return true;
   } catch (error) {
     console.error('Error in refreshAuthToken:', error);
-    clearAuthData();
     return false;
   }
 };
@@ -113,18 +109,14 @@ export const refreshAuthToken = async (): Promise<boolean> => {
  */
 export const validateSession = async (): Promise<boolean> => {
   try {
+    // getSession() transparently refreshes an expired access token via
+    // the client's own store — no manual refresh path needed.
     const { data: { session }, error } = await supabase.auth.getSession();
-    
     if (error) {
       console.error('Error validating session:', error);
-      return await refreshAuthToken();
+      return false;
     }
-    
-    if (!session) {
-      return await refreshAuthToken();
-    }
-    
-    return true;
+    return !!session;
   } catch (error) {
     console.error('Error in validateSession:', error);
     return false;
