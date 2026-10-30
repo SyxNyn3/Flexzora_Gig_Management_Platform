@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
-import { Bell, Calendar, DollarSign, LogOut, User, Briefcase, Plus, MessageSquare, Building2, Users, Link as LinkIcon, CalendarDays, Mail, Upload, Sparkles, Megaphone, KanbanSquare, FileDown, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { Bell, Calendar, DollarSign, LogOut, User, Briefcase, Plus, MessageSquare, Building2, Users, Link as LinkIcon, CalendarDays, Mail, Upload, Sparkles, Megaphone, KanbanSquare, FileDown, AlertTriangle, ShieldCheck, Inbox } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import NotificationCenter from '@/components/notifications/NotificationCenter';
 import { COPILOT_ENABLED } from '@/lib/copilot/service';
@@ -29,6 +29,7 @@ const Navbar: React.FC = () => {
 
   const workerNavItems = [
     { path: '/dashboard', label: 'Dashboard', icon: Briefcase },
+    { path: '/feed', label: 'Feed', icon: Inbox },
     { path: '/shifts', label: 'Shifts', icon: Calendar },
     { path: '/payouts', label: 'Payouts', icon: DollarSign },
     { path: '/gigs', label: 'Gigs', icon: Briefcase },
@@ -40,6 +41,7 @@ const Navbar: React.FC = () => {
 
   const companyNavItems = [
     { path: '/dashboard', label: 'Dashboard', icon: Briefcase },
+    { path: '/feed', label: 'Feed', icon: Inbox },
     { path: '/events', label: 'Events', icon: CalendarDays },
     { path: '/timesheets', label: 'Timesheets', icon: Calendar },
     { path: '/roster', label: 'Roster', icon: Users },

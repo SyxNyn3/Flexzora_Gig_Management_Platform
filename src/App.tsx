@@ -6,6 +6,7 @@ import { validateSession } from '@/lib/auth';
 import LandingPage from '@/components/landing/LandingPage';
 import LegalPage from '@/pages/LegalPage';
 import PayRulesPage from '@/pages/PayRulesPage';
+import FeedPage from '@/pages/FeedPage';
 import WaitlistForm from '@/components/waitlist/WaitlistForm';
 import ScheduleDemoForm from '@/components/demo/ScheduleDemoForm';
 import Layout from '@/components/layout/Layout';
@@ -491,6 +492,16 @@ const AppRoutes: React.FC = () => {
                 <AlertsPage />
               </Layout>
             </RoleRoute></ProtectedRoute>
+          }
+        />
+        <Route
+          path="/feed"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <FeedPage />
+              </Layout>
+            </ProtectedRoute>
           }
         />
         <Route
