@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
-import { Bell, Calendar, DollarSign, LogOut, User, Briefcase, Plus, MessageSquare, Building2, Users, Link as LinkIcon, CalendarDays, Mail, Upload, Sparkles, Megaphone, KanbanSquare, FileDown, AlertTriangle, ShieldCheck, Inbox } from 'lucide-react';
+import { Bell, Calendar, DollarSign, LogOut, User, Briefcase, Plus, MessageSquare, Building2, Users, Link as LinkIcon, CalendarDays, Mail, Upload, Sparkles, Megaphone, KanbanSquare, FileDown, AlertTriangle, ShieldCheck, Inbox, Clock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import NotificationCenter from '@/components/notifications/NotificationCenter';
 import { COPILOT_ENABLED } from '@/lib/copilot/service';
@@ -36,6 +36,7 @@ const Navbar: React.FC = () => {
     { path: '/applications', label: 'Applications', icon: MessageSquare },
     { path: '/integrations', label: 'Integrations', icon: LinkIcon },
     { path: '/schedule', label: 'Schedule', icon: CalendarDays },
+    { path: '/availability', label: 'Availability', icon: Clock },
     { path: '/finances', label: 'Finances', icon: DollarSign },
   ];
 
