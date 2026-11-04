@@ -1,9 +1,20 @@
+// Role tiers follow industry call-sheets — an A1 mixes FOH, an A2
+// patches stage; an LD designs, LX1 runs the dept, LX2 runs cable.
+// Different positions, different rates — they are not interchangeable.
 export const CREW_ROLES = [
   'Stagehand',
-  'Rigger (ETCP)',
-  'Audio / A1-A2',
-  'Lighting / LD-L2',
-  'Video / LED',
+  'Rigger (ETCP Arena)',
+  'Rigger (ETCP Theater)',
+  'Audio — A1 (Lead Engineer / FOH-Monitors)',
+  'Audio — A2 (Stage Patch / RF / Mics)',
+  'Audio — Monitor Engineer',
+  'Lighting — LD (Designer / Programmer)',
+  'Lighting — LX1 (Master Electrician)',
+  'Lighting — LX2 (Electrician)',
+  'Lighting — Followspot Op',
+  'Video — V1 (Lead Engineer / Vision)',
+  'Video — V2 / LED Tech',
+  'Video — Camera Op',
   'Backline',
   'Carpenter / Scenic',
   'Forklift / Lift Operator',
