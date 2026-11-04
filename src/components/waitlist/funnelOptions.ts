@@ -3,8 +3,11 @@
 // Different positions, different rates — they are not interchangeable.
 export const CREW_ROLES = [
   'Stagehand',
-  'Rigger (ETCP Arena)',
-  'Rigger (ETCP Theater)',
+  // Up vs down is the real rigging split: high riggers climb the grid,
+  // ground riggers work the deck — different certs AND different bodies
+  // of work. Plenty of ground riggers never go up, and vice versa.
+  'Rigger — Upstage / High (ETCP)',
+  'Rigger — Downstage / Ground',
   'Audio — A1 (Lead Engineer / FOH-Monitors)',
   'Audio — A2 (Stage Patch / RF / Mics)',
   'Audio — Monitor Engineer',
