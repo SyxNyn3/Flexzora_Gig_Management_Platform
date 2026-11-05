@@ -3,7 +3,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowRight, CheckCircle, Copy, Mail, MessageSquare, Plus, Share2, Users, X } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { ArrowRight, CheckCircle, ChevronDown, Copy, Mail, MessageSquare, Plus, Share2, Users, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -17,7 +18,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useWaitlistStats } from '@/hooks/useWaitlistStats';
 import { supabase } from '@/lib/supabase';
 import { WaitlistRoleInterest } from '@/lib/types';
-import { BUSINESS_ARRANGEMENTS, CALL_RESPONSE, COMPANY_TYPES, CREW_ROLES, CREW_SKILLS, DEPARTURE_NOTICE, EXPERIENCE_LEVELS, FARTHEST_TRAVEL, HEARD_FROM, PAIN_POINTS, PAYMENT_TYPES, REGIONS, TRAVEL_OPTIONS, VEHICLE_TYPES, WORKER_PAIN_POINTS } from './funnelOptions';
+import { BUSINESS_ARRANGEMENTS, CALL_RESPONSE, COMPANY_TYPES, CREW_ROLE_GROUPS, CREW_ROLE_SINGLES, CREW_SKILLS, DEPARTURE_NOTICE, EXPERIENCE_LEVELS, FARTHEST_TRAVEL, HEARD_FROM, PAIN_POINTS, PAYMENT_TYPES, REGIONS, TRAVEL_OPTIONS, VEHICLE_TYPES, WORKER_PAIN_POINTS } from './funnelOptions';
 
 const waitlistSchema = z.object({
   // zod 4: top-level z.email() replaces the deprecated z.string().email()
@@ -306,6 +307,18 @@ const WaitlistForm: React.FC = () => {
     });
   };
 
+  /* group toggle for the role picker (rigging's "Both"): if every seat is
+     already on, clear them all; otherwise add whichever seats are missing */
+  const toggleRoleSeats = (values: string[]) => {
+    const current = (watch('crew_roles') as string[] | undefined) || [];
+    const allOn = values.every((value) => current.includes(value));
+    setValue(
+      'crew_roles',
+      allOn ? current.filter((item) => !values.includes(item)) : [...new Set([...current, ...values])],
+      { shouldDirty: true },
+    );
+  };
+
   /* tap a worked-market chip to flag it top-3; tap again to release it */
   const toggleFavoriteMarket = (market: string) => {
     if (favoriteMarkets.includes(market)) {
@@ -573,11 +586,11 @@ const WaitlistForm: React.FC = () => {
                     Card {completeness}% complete{completeness >= 70 ? ' — top of the pile' : ' — fill it out, move up the list'}
                   </p>
                 </div>
-                <ChipGroup
+                <CrewRolePicker
                   label="Roles you work"
-                  values={CREW_ROLES}
                   selected={crewRoles}
                   onToggle={(value) => toggleValue('crew_roles', value)}
+                  onToggleAll={toggleRoleSeats}
                 />
                 <ChipGroup
                   label="Skills & certifications"
@@ -1030,6 +1043,132 @@ const TokenList: React.FC<{
           ))}
         </div>
       )}
+    </div>
+  );
+};
+
+/* Two-level role picker: tiered departments collapse into cards that
+   expand to seat chips (landing-card motion), single-seat roles stay as
+   plain chips. Only one department is open at a time — keeps the list
+   scannable on mobile. */
+const CrewRolePicker: React.FC<{
+  label: string;
+  selected: string[];
+  onToggle: (value: string) => void;
+  onToggleAll: (values: string[]) => void;
+}> = ({ label, selected, onToggle, onToggleAll }) => {
+  const [openDept, setOpenDept] = useState<string | null>(null);
+
+  /* one chip style shared by seats, "all" toggles, and single roles —
+     mirrors ChipGroup: amber fill when on, ghost outline when off */
+  const chipClass = (on: boolean) =>
+    on
+      ? 'bg-amber-400 font-medium text-zinc-950 hover:bg-amber-300'
+      : 'border-white/15 text-zinc-300 hover:bg-card/5 hover:text-white';
+
+  return (
+    <div>
+      <Label>{label}</Label>
+      <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
+        {CREW_ROLE_GROUPS.map((group) => {
+          const open = openDept === group.label;
+          const picked = group.seats.filter((seat) => selected.includes(seat.value));
+          return (
+            <div
+              key={group.label}
+              className={`overflow-hidden rounded-xl border bg-zinc-900/40 transition-colors ${
+                open ? 'border-amber-400/40' : 'border-white/10'
+              }`}
+            >
+              <button
+                type="button"
+                onClick={() => setOpenDept(open ? null : group.label)}
+                aria-expanded={open}
+                className="flex w-full items-start justify-between gap-3 px-4 py-3 text-left"
+              >
+                <div className="min-w-0">
+                  <span className="font-display text-sm font-semibold uppercase tracking-wide text-white">
+                    {group.label}
+                  </span>
+                  {picked.length > 0 ? (
+                    <span className="mt-1.5 flex flex-wrap gap-1.5">
+                      {picked.map((seat) => (
+                        <span
+                          key={seat.value}
+                          className="rounded-full bg-amber-400/15 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-amber-300"
+                        >
+                          {seat.label}
+                        </span>
+                      ))}
+                    </span>
+                  ) : (
+                    <span className="mt-1 block font-mono text-[10px] uppercase tracking-[0.18em] text-zinc-500">
+                      Tap to pick seats
+                    </span>
+                  )}
+                </div>
+                <ChevronDown
+                  className={`mt-0.5 h-4 w-4 shrink-0 text-amber-400/80 transition-transform duration-300 ${
+                    open ? 'rotate-180' : ''
+                  }`}
+                />
+              </button>
+              <AnimatePresence initial={false}>
+                {open && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3, ease: 'easeOut' }}
+                    className="overflow-hidden"
+                  >
+                    <div className="flex flex-wrap gap-2 border-t border-white/10 px-4 py-3">
+                      {'allLabel' in group && (
+                        <Button
+                          type="button"
+                          variant={group.seats.every((seat) => selected.includes(seat.value)) ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => onToggleAll(group.seats.map((seat) => seat.value))}
+                          className={chipClass(group.seats.every((seat) => selected.includes(seat.value)))}
+                        >
+                          {group.allLabel}
+                        </Button>
+                      )}
+                      {group.seats.map((seat) => (
+                        <Button
+                          key={seat.value}
+                          type="button"
+                          variant={selected.includes(seat.value) ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => onToggle(seat.value)}
+                          className={chipClass(selected.includes(seat.value))}
+                        >
+                          {seat.label}
+                        </Button>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          );
+        })}
+      </div>
+      {/* single-seat roles — no second level, toggle straight from the list */}
+      <div className="mt-3 flex flex-wrap gap-2">
+        {CREW_ROLE_SINGLES.map((role) => (
+          <Button
+            key={role}
+            type="button"
+            variant={selected.includes(role) ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => onToggle(role)}
+            className={chipClass(selected.includes(role))}
+          >
+            {role}
+          </Button>
+        ))}
+      </div>
     </div>
   );
 };

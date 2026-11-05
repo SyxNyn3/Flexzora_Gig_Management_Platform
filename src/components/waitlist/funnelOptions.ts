@@ -1,23 +1,48 @@
 // Role tiers follow industry call-sheets — an A1 mixes FOH, an A2
 // patches stage; an LD designs, LX1 runs the dept, LX2 runs cable.
 // Different positions, different rates — they are not interchangeable.
-export const CREW_ROLES = [
+//
+// Tiered departments group into cards for the two-level picker — the
+// stored `value` stays the canonical full string, `label` is just the
+// seat name shown inside the expanded card. `allLabel` adds a chip
+// that toggles every seat in the group at once (rigging's "Both").
+const AUDIO_SEATS = [
+  { label: 'A1 — Lead Engineer / FOH-Monitors', value: 'Audio — A1 (Lead Engineer / FOH-Monitors)' },
+  { label: 'A2 — Stage Patch / RF / Mics', value: 'Audio — A2 (Stage Patch / RF / Mics)' },
+  { label: 'Monitor Engineer', value: 'Audio — Monitor Engineer' },
+] as const;
+
+// Up vs down is the real rigging split: high riggers climb the grid,
+// ground riggers work the deck — different certs AND different bodies
+// of work. Plenty of ground riggers never go up, and vice versa.
+const RIGGING_SEATS = [
+  { label: 'Upstage / High (ETCP)', value: 'Rigger — Upstage / High (ETCP)' },
+  { label: 'Downstage / Ground', value: 'Rigger — Downstage / Ground' },
+] as const;
+
+const LIGHTING_SEATS = [
+  { label: 'LD — Designer / Programmer', value: 'Lighting — LD (Designer / Programmer)' },
+  { label: 'LX1 — Master Electrician', value: 'Lighting — LX1 (Master Electrician)' },
+  { label: 'LX2 — Electrician', value: 'Lighting — LX2 (Electrician)' },
+  { label: 'Followspot Op', value: 'Lighting — Followspot Op' },
+] as const;
+
+const VIDEO_SEATS = [
+  { label: 'V1 — Lead Engineer / Vision', value: 'Video — V1 (Lead Engineer / Vision)' },
+  { label: 'V2 / LED Tech', value: 'Video — V2 / LED Tech' },
+  { label: 'Camera Op', value: 'Video — Camera Op' },
+] as const;
+
+export const CREW_ROLE_GROUPS = [
+  { label: 'Audio', seats: AUDIO_SEATS },
+  { label: 'Rigging', allLabel: 'Both — Up + Down', seats: RIGGING_SEATS },
+  { label: 'Lighting', seats: LIGHTING_SEATS },
+  { label: 'Video', seats: VIDEO_SEATS },
+] as const;
+
+// Single-seat roles stay directly tappable — no second level to open.
+export const CREW_ROLE_SINGLES = [
   'Stagehand',
-  // Up vs down is the real rigging split: high riggers climb the grid,
-  // ground riggers work the deck — different certs AND different bodies
-  // of work. Plenty of ground riggers never go up, and vice versa.
-  'Rigger — Upstage / High (ETCP)',
-  'Rigger — Downstage / Ground',
-  'Audio — A1 (Lead Engineer / FOH-Monitors)',
-  'Audio — A2 (Stage Patch / RF / Mics)',
-  'Audio — Monitor Engineer',
-  'Lighting — LD (Designer / Programmer)',
-  'Lighting — LX1 (Master Electrician)',
-  'Lighting — LX2 (Electrician)',
-  'Lighting — Followspot Op',
-  'Video — V1 (Lead Engineer / Vision)',
-  'Video — V2 / LED Tech',
-  'Video — Camera Op',
   'Backline',
   'Carpenter / Scenic',
   'Forklift / Lift Operator',
@@ -25,6 +50,17 @@ export const CREW_ROLES = [
   'Production Assistant',
   'Crew Chief / Lead',
 ] as const;
+
+// Flat canonical list in the original order — derived from the groups so
+// the strings can never drift between presentation and storage.
+export const CREW_ROLES = [
+  CREW_ROLE_SINGLES[0],
+  ...RIGGING_SEATS.map((s) => s.value),
+  ...AUDIO_SEATS.map((s) => s.value),
+  ...LIGHTING_SEATS.map((s) => s.value),
+  ...VIDEO_SEATS.map((s) => s.value),
+  ...CREW_ROLE_SINGLES.slice(1),
+];
 
 export const COMPANY_TYPES = [
   'Concert promoter',
