@@ -78,13 +78,37 @@ serve(async (req) => {
       `
     };
 
-    // Send via AgentMail (primary) or Resend when keys exist; log otherwise.
+    // Send via Resend (primary — branded flexzora.pro sender, verified
+    // domain) with AgentMail as fallback when it exists; log otherwise.
+    // Resend failure falls through to AgentMail instead of erroring —
+    // a verification email lost to a provider hiccup is a lost signup.
     const amKey = Deno.env.get("AGENTMAIL_API_KEY");
     const amInbox = Deno.env.get("AGENTMAIL_INBOX") || "syxnyn3@agentmail.to";
     const resendKey = Deno.env.get("RESEND_API_KEY");
     const fromAddr = Deno.env.get("RESEND_FROM_EMAIL") || "Flexzora <onboarding@resend.dev>";
     const textBody = `Welcome to FlexZora! Verify your email to complete waitlist registration:\n\n${verificationLink}\n\nIf you didn't request this, ignore this email.`;
-    if (amKey) {
+    let sent = false;
+    if (resendKey) {
+      const res = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${resendKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: fromAddr,
+          to: [email],
+          subject: emailContent.subject,
+          html: emailContent.html,
+        }),
+      });
+      if (!res.ok) {
+        console.error("Resend send failed, falling back to AgentMail:", await res.text());
+      } else {
+        sent = true;
+      }
+    }
+    if (!sent && amKey) {
       const res = await fetch(`https://api.agentmail.to/v0/inboxes/${encodeURIComponent(amInbox)}/messages/send`, {
         method: "POST",
         headers: {
@@ -105,28 +129,9 @@ serve(async (req) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-    } else if (resendKey) {
-      const res = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${resendKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          from: fromAddr,
-          to: [email],
-          subject: emailContent.subject,
-          html: emailContent.html,
-        }),
-      });
-      if (!res.ok) {
-        console.error("Resend send failed:", await res.text());
-        return new Response(JSON.stringify({ error: "Failed to send verification email" }), {
-          status: 502,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-    } else {
+      sent = true;
+    }
+    if (!sent) {
       console.log(`Verification email would be sent to: ${email}`);
       console.log(`Verification link: ${verificationLink}`);
     }

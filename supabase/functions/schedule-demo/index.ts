@@ -171,11 +171,12 @@ serve(async (req) => {
     // Notify the founder when email is configured. Without a mail key +
     // DEMO_NOTIFY_EMAIL the request still lands in demo_requests and the
     // admin triage tab — this is additive, never blocks the submission.
-    // Providers: AgentMail (primary) → Resend.
+    // Providers: Resend (primary — branded verified sender) → AgentMail.
     const amKey = Deno.env.get("AGENTMAIL_API_KEY");
     const amInbox = Deno.env.get("AGENTMAIL_INBOX") || "syxnyn3@agentmail.to";
     const resendKey = Deno.env.get("RESEND_API_KEY");
     const notifyTo = Deno.env.get("DEMO_NOTIFY_EMAIL") || "syxnyn3@agentmail.to";
+    const notifyFrom = Deno.env.get("RESEND_FROM_EMAIL") || "Flexzora <onboarding@resend.dev>";
     const notifySubject = `Demo request: ${requestData.company_name}`;
     const notifyHtml = `<h2>New demo request</h2>
       <p><b>${requestData.company_name}</b> — ${requestData.contact_name}<br>
@@ -186,7 +187,26 @@ serve(async (req) => {
       <p>Pain: ${requestData.pain_points}</p>
       ${requestData.additional_notes ? `<p>Notes: ${requestData.additional_notes}</p>` : ""}`;
     const notifyText = `New demo request\n${requestData.company_name} — ${requestData.contact_name}\n${requestData.contact_email} · ${requestData.contact_phone}\nPreferred: ${requestData.preferred_date} ${requestData.preferred_time}\nPain: ${requestData.pain_points}`;
-    if (amKey && notifyTo) {
+    if (resendKey && notifyTo) {
+      try {
+        const notify = await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${resendKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            from: notifyFrom,
+            to: [notifyTo],
+            subject: notifySubject,
+            html: notifyHtml,
+          }),
+        });
+        if (!notify.ok) console.error("Resend notify failed:", await notify.text());
+      } catch (e) {
+        console.error("Resend notify error:", e);
+      }
+    } else if (amKey && notifyTo) {
       try {
         const notify = await fetch(`https://api.agentmail.to/v0/inboxes/${encodeURIComponent(amInbox)}/messages/send`, {
           method: "POST",
@@ -204,25 +224,6 @@ serve(async (req) => {
         if (!notify.ok) console.error("AgentMail notify failed:", await notify.text());
       } catch (e) {
         console.error("AgentMail notify error:", e);
-      }
-    } else if (resendKey && notifyTo) {
-      try {
-        const notify = await fetch("https://api.resend.com/emails", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${resendKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            from: "Flexzora <onboarding@resend.dev>",
-            to: [notifyTo],
-            subject: notifySubject,
-            html: notifyHtml,
-          }),
-        });
-        if (!notify.ok) console.error("Resend notify failed:", await notify.text());
-      } catch (e) {
-        console.error("Resend notify error:", e);
       }
     } else {
       console.log(`Demo request stored (notify skipped — no email config): ${requestData.company_name} <${requestData.contact_email}>`);
