@@ -123,7 +123,7 @@ const painCards: { images: CardImg[]; alt: string; title: string; sub: string; d
 
 /* `dept` links a card to a CREW_ROLE_GROUPS entry — tiered departments
    expand in place to seat picks instead of navigating straight away */
-const roleCards: { images: CardImg[]; alt: string; title: string; sub: string; dept?: string }[] = [
+const roleCards: { images: CardImg[]; alt: string; title: string; sub: string; dept?: string; seat?: string }[] = [
   { images: [B(0, 0), P('/landing/role-rigger.webp')], alt: 'Rigger in a harness climbing box truss', title: 'Rigging', sub: 'Heights pay different', dept: 'Rigging' },
   { images: [B(1, 0), P('/landing/role-audio.webp')], alt: 'A1 audio engineer at the FOH console', title: 'Audio', sub: 'Make it hit', dept: 'Audio' },
   { images: [B(2, 0), P('/landing/role-lighting.webp')], alt: 'Lighting tech focusing a moving head in haze', title: 'Lighting', sub: 'Shape the moment', dept: 'Lighting' },
@@ -133,6 +133,8 @@ const roleCards: { images: CardImg[]; alt: string; title: string; sub: string; d
   { images: [B(0, 2), P('/landing/closer-badge.webp')], alt: 'Stage manager with headset and clipboard', title: 'Stage Managers', sub: 'You call it, they move' },
   { images: [B(1, 2)], alt: 'Wardrobe hand sorting jackets on a rack', title: 'Wardrobe', sub: 'Look sharp, stay warm' },
   { images: [B(2, 2), P('/landing/pain-car.webp', '50% 40%', 'auto 118%')], alt: 'Crew driver at the wheel of a production van at night', title: 'Drivers', sub: 'Get the crew there' },
+  { images: [B(1, 1), P('/landing/pain-case.webp', '50% 75%', 'auto 150%')], alt: 'Loading dock with road cases rolling toward the truck', title: 'Loaders', sub: 'Every truck is a puzzle', seat: 'Truck Loader' },
+  { images: [B(0, 1), P('/landing/role-stagehand.webp', '30% 80%', 'auto 140%')], alt: 'Forklift moving heavy road cases during load-in', title: 'Forklift Ops', sub: 'The heavy half of load-in', seat: 'Forklift / Lift Operator' },
 ];
 
 const heroPhotos: CardImg[] = [
@@ -402,7 +404,7 @@ const LandingPage: React.FC = () => {
                 >
                   <button
                     type="button"
-                    onClick={() => (group ? setOpenDept(open ? null : group.label) : navigate('/waitlist?role=worker'))}
+                    onClick={() => (group ? setOpenDept(open ? null : group.label) : navigate(r.seat ? seatsLink([r.seat]) : '/waitlist?role=worker'))}
                     aria-expanded={group ? open : undefined}
                     className="group relative block w-full text-left"
                   >
