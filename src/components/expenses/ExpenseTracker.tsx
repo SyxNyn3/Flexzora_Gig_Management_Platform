@@ -52,7 +52,9 @@ const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ gigId }) => {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  const form = useForm<ExpenseForm>({
+  // zod 4: .default() splits input vs output types — fields are z.input,
+  // the submitted data is the z.infer output type.
+  const form = useForm<z.input<typeof expenseSchema>, unknown, ExpenseForm>({
     resolver: zodResolver(expenseSchema),
     defaultValues: {
       amount: '',

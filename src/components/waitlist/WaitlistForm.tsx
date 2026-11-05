@@ -20,12 +20,14 @@ import { WaitlistRoleInterest } from '@/lib/types';
 import { BUSINESS_ARRANGEMENTS, CALL_RESPONSE, COMPANY_TYPES, CREW_ROLES, CREW_SKILLS, DEPARTURE_NOTICE, EXPERIENCE_LEVELS, FARTHEST_TRAVEL, HEARD_FROM, PAIN_POINTS, PAYMENT_TYPES, REGIONS, TRAVEL_OPTIONS, VEHICLE_TYPES, WORKER_PAIN_POINTS } from './funnelOptions';
 
 const waitlistSchema = z.object({
-  email: z.string().email('Please enter a valid email address'),
+  // zod 4: top-level z.email() replaces the deprecated z.string().email()
+  email: z.email('Please enter a valid email address'),
   confirm_email: z.string(),
   full_name: z.string().min(2, 'Tell us your name'),
   phone: z.string().optional(),
   sms_consent: z.boolean().optional(),
-  role_interest: z.enum(['worker', 'company'], { required_error: 'Please select your role' }),
+  // zod 4 dropped `required_error`; `error` is the unified message param
+  role_interest: z.enum(['worker', 'company'], { error: 'Please select your role' }),
   market_city: z.string().optional(),
   crew_roles: z.array(z.string()).optional(),
   skills: z.array(z.string()).optional(),
@@ -69,7 +71,9 @@ const waitlistSchema = z.object({
 });
 
 /* rough completeness score — feeds the "get ahead" ordering on the backend */
-const computeCompleteness = (d: WaitlistFormData) =>
+// accepts the raw input shape too (watch() returns z.input where the
+// coerced number fields are still `unknown` — only truthiness is checked)
+const computeCompleteness = (d: z.input<typeof waitlistSchema>) =>
   Math.round(
     ([
       d.full_name, d.phone, d.market_city, d.crew_roles?.length, d.skills?.length,
@@ -117,7 +121,9 @@ const WaitlistForm: React.FC = () => {
     setValue,
     watch,
     formState: { errors },
-  } = useForm<WaitlistFormData>({
+  // zod 4: z.coerce.number() fields accept unknown input but output
+  // number — field values are z.input, submit data is the z.infer output.
+  } = useForm<z.input<typeof waitlistSchema>, unknown, WaitlistFormData>({
     resolver: zodResolver(waitlistSchema),
     defaultValues: {
       role_interest: roleParam === 'worker' || roleParam === 'company' ? roleParam : undefined,

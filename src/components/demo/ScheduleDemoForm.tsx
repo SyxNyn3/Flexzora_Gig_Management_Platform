@@ -32,14 +32,15 @@ import { toast } from 'sonner';
 const demoFormSchema = z.object({
   company_name: z.string().min(2, 'Company name is required'),
   contact_name: z.string().min(2, 'Contact name is required'),
-  contact_email: z.string().email('Please enter a valid email address'),
+  // zod 4: top-level z.email() replaces the deprecated z.string().email()
+  contact_email: z.email('Please enter a valid email address'),
   contact_phone: z.string().min(10, 'Please enter a valid phone number'),
   // Accept bare domains too — users type "acme.com", not "https://acme.com".
   // Prepend the scheme before validating so either form passes.
   company_website: z.preprocess(
     (v) => (typeof v === 'string' && v.trim() !== '' && !/^https?:\/\//i.test(v.trim())
       ? `https://${v.trim()}` : v),
-    z.string().url('Please enter a valid URL').optional().or(z.literal('')),
+    z.url('Please enter a valid URL').optional().or(z.literal('')),
   ),
   company_size: z.string().min(1, 'Please select company size'),
   industry_focus: z.string().min(1, 'Please select primary industry focus'),
@@ -74,7 +75,9 @@ const ScheduleDemoForm: React.FC = () => {
     setValue,
     watch,
     formState: { errors },
-  } = useForm<DemoFormData>({
+  // zod 4: .default() makes input fields optional, so field values use
+  // z.input while submit handlers receive the z.infer output type.
+  } = useForm<z.input<typeof demoFormSchema>, unknown, DemoFormData>({
     resolver: zodResolver(demoFormSchema),
     defaultValues: {
       company_name: '',

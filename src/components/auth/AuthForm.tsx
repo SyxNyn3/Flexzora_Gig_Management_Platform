@@ -22,7 +22,8 @@ const APPLE_AUTH_ENABLED = import.meta.env.VITE_ENABLE_APPLE_AUTH === 'true';
 type AuthView = 'signin' | 'signup' | 'forgot' | 'check-email';
 
 const forgotSchema = z.object({
-  email: z.string().email('Invalid email address'),
+  // zod 4: top-level z.email() replaces the deprecated z.string().email()
+  email: z.email('Invalid email address'),
 });
 type ForgotForm = z.infer<typeof forgotSchema>;
 
@@ -61,7 +62,7 @@ const signInSchema = z.object({
 });
 
 const signUpSchema = z.object({
-  email: z.string().email('Invalid email address'),
+  email: z.email('Invalid email address'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
   confirmPassword: z.string(),
   fullName: z.string().min(2, 'Full name must be at least 2 characters'),
@@ -69,7 +70,8 @@ const signUpSchema = z.object({
     .min(3, 'Username must be at least 3 characters')
     .max(20, 'Username must be less than 20 characters')
     .regex(/^[a-zA-Z0-9_-]+$/, 'Username can only contain letters, numbers, underscores, and hyphens'),
-  role: z.enum(['worker', 'company'], { required_error: 'Please select a role' }),
+  // zod 4 dropped `required_error`; `error` is the unified message param
+  role: z.enum(['worker', 'company'], { error: 'Please select a role' }),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],

@@ -27,8 +27,9 @@ import { z } from 'zod';
 const portfolioItemSchema = z.object({
   title: z.string().min(2, 'Title must be at least 2 characters'),
   description: z.string().optional(),
-  url: z.string().url('Please enter a valid URL').optional().or(z.literal('')),
-  image_url: z.string().url('Please enter a valid URL').optional().or(z.literal('')),
+  // zod 4: top-level z.url() replaces the deprecated z.string().url()
+  url: z.url('Please enter a valid URL').optional().or(z.literal('')),
+  image_url: z.url('Please enter a valid URL').optional().or(z.literal('')),
   category: z.string().optional(),
   date_completed: z.string().optional(),
   client: z.string().optional(),
@@ -54,7 +55,9 @@ const PortfolioSection: React.FC<PortfolioSectionProps> = ({
   const [editingItem, setEditingItem] = useState<PortfolioItem | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const form = useForm<PortfolioItemForm>({
+  // zod 4: .default() makes is_featured optional on input but required on
+  // output — field values are z.input, submit data is the z.infer output.
+  const form = useForm<z.input<typeof portfolioItemSchema>, unknown, PortfolioItemForm>({
     resolver: zodResolver(portfolioItemSchema),
     defaultValues: {
       title: '',

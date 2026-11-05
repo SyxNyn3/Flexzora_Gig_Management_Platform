@@ -55,8 +55,9 @@ type GigForm = z.infer<typeof gigSchema>;
 const companySchema = z.object({
   name: z.string().min(2, 'Company name is required'),
   description: z.string().optional(),
-  website_url: z.string().url('Please enter a valid URL').optional().or(z.literal('')),
-  contact_email: z.string().email('Please enter a valid email').optional().or(z.literal('')),
+  // zod 4: top-level z.url()/z.email() replace the deprecated z.string() variants
+  website_url: z.url('Please enter a valid URL').optional().or(z.literal('')),
+  contact_email: z.email('Please enter a valid email').optional().or(z.literal('')),
   contact_phone: z.string().optional(),
   address: z.string().optional(),
 });
@@ -85,7 +86,9 @@ const CreateGigForm: React.FC = () => {
   const [newSkillName, setNewSkillName] = useState('');
   const [newSkillCategory, setNewSkillCategory] = useState('');
 
-  const form = useForm<GigForm>({
+  // zod 4: .default() makes is_remote optional on input but required on
+  // output — field values are z.input, submit data is the z.infer output.
+  const form = useForm<z.input<typeof gigSchema>, unknown, GigForm>({
     resolver: zodResolver(gigSchema),
     defaultValues: {
       title: '',
