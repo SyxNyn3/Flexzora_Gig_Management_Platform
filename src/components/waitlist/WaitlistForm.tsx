@@ -18,7 +18,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useWaitlistStats } from '@/hooks/useWaitlistStats';
 import { supabase } from '@/lib/supabase';
 import { WaitlistRoleInterest } from '@/lib/types';
-import { BUSINESS_ARRANGEMENTS, CALL_RESPONSE, COMPANY_TYPES, CREW_ROLE_GROUPS, CREW_ROLE_SINGLES, CREW_SKILLS, DEPARTURE_NOTICE, EXPERIENCE_LEVELS, FARTHEST_TRAVEL, HEARD_FROM, PAIN_POINTS, PAYMENT_TYPES, REGIONS, TRAVEL_OPTIONS, VEHICLE_TYPES, WORKER_PAIN_POINTS } from './funnelOptions';
+import { BUSINESS_ARRANGEMENTS, CALL_RESPONSE, COMPANY_TYPES, CREW_ROLE_GROUPS, CREW_ROLE_SINGLES, CREW_ROLES, CREW_SKILLS, DEPARTURE_NOTICE, EXPERIENCE_LEVELS, FARTHEST_TRAVEL, HEARD_FROM, PAIN_POINTS, PAYMENT_TYPES, REGIONS, TRAVEL_OPTIONS, VEHICLE_TYPES, WORKER_PAIN_POINTS } from './funnelOptions';
 
 const waitlistSchema = z.object({
   // zod 4: top-level z.email() replaces the deprecated z.string().email()
@@ -116,6 +116,12 @@ const WaitlistForm: React.FC = () => {
   const [mountedAt] = useState(() => Date.now());
   /* ?role=worker|company — deep links like "join as crew" preselect the track */
   const roleParam = searchParams.get('role');
+  /* ?seats=a|b — landing role cards deep-link a seat pick. Pipe-separated
+     canonical crew-role strings; anything not on the list drops silently. */
+  const seatsParam = searchParams.get('seats');
+  const preselectedSeats = seatsParam
+    ? seatsParam.split('|').filter((s) => (CREW_ROLES as readonly string[]).includes(s))
+    : [];
   const {
     register,
     handleSubmit,
@@ -128,7 +134,7 @@ const WaitlistForm: React.FC = () => {
     resolver: zodResolver(waitlistSchema),
     defaultValues: {
       role_interest: roleParam === 'worker' || roleParam === 'company' ? roleParam : undefined,
-      crew_roles: [], skills: [], travel_availability: [], pain_points: [],
+      crew_roles: preselectedSeats, skills: [], travel_availability: [], pain_points: [],
       companies_worked: [], markets_worked: [], favorite_markets: [],
       preferred_regions: [], preferred_areas: [], vehicles: [], business_names: [],
       beta_tester: false, sms_consent: false,
@@ -467,7 +473,8 @@ const WaitlistForm: React.FC = () => {
             and text groups. Get early access and help shape it.
           </p>
           <div className="mt-6 flex flex-wrap justify-center gap-2 lg:justify-start">
-            {['A1 Audio Engineer', 'L2 Lighting Tech', 'Video Wall Lead', 'Stagehand', 'ETCP Arena Rigger'].map(
+            {/* department-level chips — convey breadth, not an exclusive list of seats */}
+            {['Audio', 'Lighting', 'Video', 'Rigging', 'Stagehand', 'Backline', 'Carpenters', 'Drivers', '+ every seat on the call sheet'].map(
               (role) => (
                 <span
                   key={role}

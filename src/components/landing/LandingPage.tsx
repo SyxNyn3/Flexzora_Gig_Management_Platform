@@ -5,11 +5,13 @@ import { Button } from '@/components/ui/button';
 import { StageBuild } from './StageBuild';
 import {
   ArrowRight,
+  ChevronDown,
   ShieldCheck,
   Zap,
   MessagesSquare,
 } from 'lucide-react';
 import { useWaitlistStats } from '@/hooks/useWaitlistStats';
+import { CREW_ROLE_GROUPS } from '@/components/waitlist/funnelOptions';
 
 /* ------------------------------------------------------------------ */
 /* LandingPage v2 — Diffui direction: option A top half (cinematic     */
@@ -119,11 +121,13 @@ const painCards: { images: CardImg[]; alt: string; title: string; sub: string; d
   },
 ];
 
-const roleCards: { images: CardImg[]; alt: string; title: string; sub: string }[] = [
-  { images: [B(0, 0), P('/landing/role-rigger.webp')], alt: 'Rigger in a harness climbing box truss', title: 'Riggers', sub: 'Heights pay different' },
-  { images: [B(1, 0), P('/landing/role-audio.webp')], alt: 'A1 audio engineer at the FOH console', title: 'A1 Audio', sub: 'Make it hit' },
-  { images: [B(2, 0), P('/landing/role-lighting.webp')], alt: 'Lighting tech focusing a moving head in haze', title: 'Lighting Tech', sub: 'Shape the moment' },
-  { images: [B(0, 1), P('/landing/role-video.webp')], alt: 'Video tech building a massive LED wall', title: 'Video Wall', sub: 'Big picture people' },
+/* `dept` links a card to a CREW_ROLE_GROUPS entry — tiered departments
+   expand in place to seat picks instead of navigating straight away */
+const roleCards: { images: CardImg[]; alt: string; title: string; sub: string; dept?: string }[] = [
+  { images: [B(0, 0), P('/landing/role-rigger.webp')], alt: 'Rigger in a harness climbing box truss', title: 'Rigging', sub: 'Heights pay different', dept: 'Rigging' },
+  { images: [B(1, 0), P('/landing/role-audio.webp')], alt: 'A1 audio engineer at the FOH console', title: 'Audio', sub: 'Make it hit', dept: 'Audio' },
+  { images: [B(2, 0), P('/landing/role-lighting.webp')], alt: 'Lighting tech focusing a moving head in haze', title: 'Lighting', sub: 'Shape the moment', dept: 'Lighting' },
+  { images: [B(0, 1), P('/landing/role-video.webp')], alt: 'Video tech building a massive LED wall', title: 'Video', sub: 'Big picture people', dept: 'Video' },
   { images: [B(1, 1), P('/landing/role-stagehand.webp')], alt: 'Stagehands pushing road cases up a ramp', title: 'Stagehands', sub: 'The show moves because of you' },
   { images: [B(2, 1), P('/landing/pain-case.webp', '32% 55%', 'auto 142%')], alt: 'Backline tech beside amps and guitar cases', title: 'Backline', sub: 'The boxes wait for you' },
   { images: [B(0, 2), P('/landing/closer-badge.webp')], alt: 'Stage manager with headset and clipboard', title: 'Stage Managers', sub: 'You call it, they move' },
@@ -184,6 +188,9 @@ const LandingPage: React.FC = () => {
     const n = p === null ? NaN : Number(p);
     return Number.isInteger(n) && n >= 0 && n < painCards.length ? n : null;
   });
+  /* tiered department card flipped open to seat level — one at a time.
+     Non-tiered cards never set this; they navigate on first tap. */
+  const [openDept, setOpenDept] = useState<string | null>(null);
   /* ?cards — debug: render only the card sections for screenshot checks (dev only) */
   const cardsOnly = import.meta.env.DEV && typeof window !== 'undefined'
     && new URLSearchParams(window.location.search).has('cards');
@@ -376,26 +383,91 @@ const LandingPage: React.FC = () => {
               Different skills. Same crew.
             </p>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {roleCards.map((r, ri) => (
-              <button
-                key={r.title}
-                onClick={() => navigate('/waitlist')}
-                className="group relative overflow-hidden rounded-xl border border-white/10 text-left"
-              >
-                <div className="aspect-[4/5] overflow-hidden relative">
-                  <Crossfade images={r.images} interval={4600 + ri * 550} label={r.alt} />
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 items-start">
+            {roleCards.map((r, ri) => {
+              /* tiered departments match a CREW_ROLE_GROUPS entry — the card
+                 expands to seat picks over the same crossfading imagery */
+              const group = r.dept ? CREW_ROLE_GROUPS.find((g) => g.label === r.dept) : undefined;
+              const open = group !== undefined && openDept === group.label;
+              /* seats deep-link: canonical values pipe-separated so the
+                 waitlist form can preselect them off ?seats= */
+              const seatsLink = (values: readonly string[]) =>
+                `/waitlist?role=worker&seats=${encodeURIComponent(values.join('|'))}`;
+              return (
+                <div
+                  key={r.title}
+                  className={`overflow-hidden rounded-xl border transition-colors ${
+                    open ? 'border-amber-400/40' : 'border-white/10'
+                  }`}
+                >
+                  <button
+                    type="button"
+                    onClick={() => (group ? setOpenDept(open ? null : group.label) : navigate('/waitlist?role=worker'))}
+                    aria-expanded={group ? open : undefined}
+                    className="group relative block w-full text-left"
+                  >
+                    <div className="aspect-[4/5] overflow-hidden relative">
+                      <Crossfade images={r.images} interval={4600 + ri * 550} label={r.alt} />
+                    </div>
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0B] via-[#0A0A0B]/30 to-transparent" />
+                    <div className="absolute inset-x-0 bottom-0 p-4 flex items-end justify-between gap-2">
+                      <div>
+                        <h3 className="font-display font-semibold uppercase text-white text-base leading-tight">{r.title}</h3>
+                        <p className="text-[11px] text-zinc-400 mt-0.5">{r.sub}</p>
+                        {group && (
+                          <p className="mt-1.5 font-mono text-[10px] tracking-[0.18em] uppercase text-amber-400/80">
+                            {open ? 'Back to departments −' : 'Pick a seat +'}
+                          </p>
+                        )}
+                      </div>
+                      {group ? (
+                        <ChevronDown
+                          className={`w-4 h-4 text-amber-400 shrink-0 transition-transform duration-300 ${open ? 'rotate-180' : ''}`}
+                        />
+                      ) : (
+                        <ArrowRight className="w-4 h-4 text-amber-400 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      )}
+                    </div>
+                  </button>
+                  {group && (
+                    <AnimatePresence initial={false}>
+                      {open && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.3, ease: 'easeOut' }}
+                          className="overflow-hidden"
+                        >
+                          <div className="flex flex-wrap gap-2 border-t border-white/10 bg-zinc-900/60 px-3 py-3">
+                            {/* "all" chip (rigging's Both) selects every seat at once */}
+                            {'allLabel' in group && (
+                              <button
+                                type="button"
+                                onClick={() => navigate(seatsLink(group.seats.map((s) => s.value)))}
+                                className="rounded-full border border-amber-400/50 bg-amber-400/15 px-3 py-1.5 text-xs font-medium text-amber-300 hover:bg-amber-400/25"
+                              >
+                                {group.allLabel}
+                              </button>
+                            )}
+                            {group.seats.map((seat) => (
+                              <button
+                                key={seat.value}
+                                type="button"
+                                onClick={() => navigate(seatsLink([seat.value]))}
+                                className="rounded-full border border-white/15 px-3 py-1.5 text-xs font-medium text-zinc-300 hover:bg-white/5 hover:text-white"
+                              >
+                                {seat.label}
+                              </button>
+                            ))}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  )}
                 </div>
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0B] via-[#0A0A0B]/30 to-transparent" />
-                <div className="absolute inset-x-0 bottom-0 p-4 flex items-end justify-between gap-2">
-                  <div>
-                    <h3 className="font-display font-semibold uppercase text-white text-base leading-tight">{r.title}</h3>
-                    <p className="text-[11px] text-zinc-400 mt-0.5">{r.sub}</p>
-                  </div>
-                  <ArrowRight className="w-4 h-4 text-amber-400 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
-                </div>
-              </button>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>
