@@ -121,6 +121,7 @@ export const CREW_SKILLS = [
 export const TRAVEL_OPTIONS = [
   'Local calls only',
   'Regional drive (2–4 hrs)',
+  'Drive anywhere',
   'Fly anywhere',
   'Tour-ready (weeks out)',
   'Overnights OK',

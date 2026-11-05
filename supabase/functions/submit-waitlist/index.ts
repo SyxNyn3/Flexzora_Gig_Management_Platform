@@ -178,6 +178,7 @@ serve(async (req) => {
       production_companies_worked_with: requestData.production_companies_worked_with,
       past_communication_methods: requestData.past_communication_methods,
       desired_features: requestData.desired_features,
+      signup_feedback: requestData.signup_feedback,
       challenges: requestData.challenges,
       referred_by_email: referredByEmail,
       referral_code: referralCode,

@@ -52,7 +52,7 @@ const waitlistSchema = z.object({
   departure_readiness: z.string().optional(),
   call_response_time: z.string().optional(),
   payment_type: z.string().optional(),
-  referred_crew: z.string().optional(),
+  referred_crew: z.array(z.string()).optional(),
   day_rate_min: z.coerce.number().optional(),
   instagram_handle: z.string().optional(),
   company_name: z.string().optional(),
@@ -65,6 +65,7 @@ const waitlistSchema = z.object({
   production_companies_worked_with: z.string().optional(),
   past_communication_methods: z.string().optional(),
   desired_features: z.string().optional(),
+  signup_feedback: z.string().optional(),
   challenges: z.string().optional(),
 }).refine((data) => data.email.trim().toLowerCase() === data.confirm_email.trim().toLowerCase(), {
   message: 'Email addresses do not match',
@@ -142,6 +143,7 @@ const WaitlistForm: React.FC = () => {
   });
   const role = watch('role_interest');
   const crewRoles = watch('crew_roles') || [];
+  const referredCrew = watch('referred_crew');
   const skills = watch('skills') || [];
   const travelAvailability = watch('travel_availability') || [];
   const painPoints = watch('pain_points') || [];
@@ -250,7 +252,7 @@ const WaitlistForm: React.FC = () => {
         p_departure_readiness: payload.departure_readiness,
         p_call_response_time: payload.call_response_time,
         p_payment_type: payload.payment_type,
-        p_referred_crew: payload.referred_crew,
+        p_referred_crew: payload.referred_crew?.join(', '),
         p_has_own_business: payload.has_own_business,
         p_business_names: payload.business_names,
         p_business_arrangement: payload.business_arrangement,
@@ -765,6 +767,13 @@ const WaitlistForm: React.FC = () => {
                         ))}
                       </SelectContent>
                     </Select>
+                    <label className="mt-2 flex items-center gap-2.5 rounded-md border border-white/10 bg-card/[0.03] px-3 py-2.5">
+                      <Checkbox
+                        checked={watch('willing_farther')}
+                        onCheckedChange={(checked) => setValue('willing_farther', checked === true)}
+                      />
+                      <span className="text-xs text-zinc-300">I'd go farther for the right call</span>
+                    </label>
                   </div>
                   <div>
                     <Label>How fast can you take a call?</Label>
@@ -792,13 +801,6 @@ const WaitlistForm: React.FC = () => {
                       </SelectContent>
                     </Select>
                   </div>
-                  <label className="flex items-center gap-3 self-end rounded-lg border border-white/10 bg-card/[0.03] p-3.5">
-                    <Checkbox
-                      checked={watch('willing_farther')}
-                      onCheckedChange={(checked) => setValue('willing_farther', checked === true)}
-                    />
-                    <span className="text-sm text-zinc-300">I'd go farther for the right call</span>
-                  </label>
                 </div>
                 <div className="space-y-3 rounded-lg border border-white/10 bg-card/[0.03] p-4">
                   <label className="flex items-start gap-3">
@@ -842,12 +844,19 @@ const WaitlistForm: React.FC = () => {
                     </div>
                   )}
                 </div>
-                <Field label="Who do you usually roll with? (optional)">
-                  <Input
-                    placeholder="Names or crew name — we'll fast-track your people"
-                    {...register('referred_crew')}
-                  />
-                </Field>
+                <TokenList
+                  label="Crewmates you roll with (optional)"
+                  hint="The people you ride, room and work calls with — one name at a time, hit Enter or + to add. Not companies."
+                  placeholder="e.g. Marcus, Tee, Big Rob"
+                  tokens={(referredCrew ?? []).map((n) => ({ key: n, label: n }))}
+                  onAdd={(name) =>
+                    !(referredCrew ?? []).some((n) => n.toLowerCase() === name.toLowerCase()) &&
+                    setValue('referred_crew', [...(referredCrew ?? []), name], { shouldDirty: true })
+                  }
+                  onRemove={(key) =>
+                    setValue('referred_crew', (referredCrew ?? []).filter((n) => n !== key), { shouldDirty: true })
+                  }
+                />
               </div>
             )}
             {role === 'company' && (
@@ -919,6 +928,13 @@ const WaitlistForm: React.FC = () => {
             </label>
             <div className="space-y-4 border-t border-white/10 pt-5">
               <h3 className="text-lg font-semibold text-white">Help us build a better platform</h3>
+              <Field label="How did this signup feel?">
+                <Textarea
+                  rows={3}
+                  placeholder="Was the flow easy to follow? Anything confusing or that made you stop and think? What would you change or add?"
+                  {...register('signup_feedback')}
+                />
+              </Field>
               {role !== 'worker' && (
                 <Field label="What production companies have you worked for or do you currently work with?">
                   <Textarea rows={3} {...register('production_companies_worked_with')} />
