@@ -9,7 +9,11 @@
 const AUDIO_SEATS = [
   { label: 'A1 — Lead Engineer / FOH-Monitors', value: 'Audio — A1 (Lead Engineer / FOH-Monitors)' },
   { label: 'A2 — Stage Patch / RF / Mics', value: 'Audio — A2 (Stage Patch / RF / Mics)' },
+  { label: 'A3 — Systems / Comms / Playback', value: 'Audio — A3 (Systems / Comms / Playback)' },
   { label: 'Monitor Engineer', value: 'Audio — Monitor Engineer' },
+  // RF is its own seat, not an A2 sub-skill — on any real show the wireless
+  // coordinator owns freqs, packs and scans while the A2 owns the patch.
+  { label: 'RF Tech — Wireless Coordinator', value: 'Audio — RF Tech (Wireless Coordinator)' },
 ] as const;
 
 // Up vs down is the real rigging split: high riggers climb the grid,
