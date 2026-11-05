@@ -43,8 +43,15 @@ needs config · 🔧 blocked on human action.
   + `verify-waitlist-email` deployed — hardened versions live: honeypot,
   per-IP caps, dedup, no-code-leak duplicate path, `verified_at` stamp
 - ✅ `WAITLIST_SKIP_EMAIL_VERIFICATION=false` — verification emails send
-  via AgentMail. E2E: signup → `verification_required: true` → token →
-  `send-waitlist-verification` 200 through AgentMail
+  through the shared provider chain: Resend primary on the verified
+  flexzora.pro domain, AgentMail fallback. Production-triggered resend
+  verified delivered from `Flexzora Crew <crew@flexzora.pro>`
+- ✅ Internal mail sender locked down: `send-waitlist-verification`
+  requires the service-role bearer, so public users cannot spend branded
+  email quota; bearer verification links are no longer logged or returned
+- ✅ Worker first-run checklist now exposes payout setup status with
+  honest hints. Stripe `payoutsEnabled` completes only that step — it does
+  not claim tax, agreement, or overall payment readiness
 - ✅ `schema_migrations` synced — all four manually-applied versions
   recorded; `db push` won't re-run them
 
@@ -123,5 +130,5 @@ worker + company accounts, screenshots in `.diffui/screenshots/`):
   project wakes — app now survives it (no more bounce/spinner), but
   cold-start UX is just a spinner. Worth a "waking up…" state or a
   paid-tier project when traffic starts.
-- 🔧 Email sender still `onboarding@resend.dev` — needs verified
-  flexzora.pro domain + DNS records before real notifications matter
+- ✅ Email sender verified: production-triggered waitlist mail delivered
+  from `Flexzora Crew <crew@flexzora.pro>`; AgentMail is fallback only

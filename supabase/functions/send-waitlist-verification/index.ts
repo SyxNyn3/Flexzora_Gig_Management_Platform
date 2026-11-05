@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.39.0";
+import { sendMail } from "../_shared/mail.ts";
 
 // CORS headers for browser requests
 const corsHeaders = {
@@ -24,6 +25,22 @@ serve(async (req) => {
   }
 
   try {
+    // Internal sender only: submit-waitlist / resend-waitlist-verification
+    // invoke this through the service-role client. verify_jwt=true at the
+    // gateway still lets any valid user session through, so re-check the
+    // bearer here — otherwise anyone could spend our email quota sending
+    // branded mail to arbitrary recipients.
+    const authHeader = req.headers.get("authorization") || "";
+    if (!supabaseServiceKey || authHeader !== `Bearer ${supabaseServiceKey}`) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
     // Parse the request body
     const { email, verification_token, referral_code: _referral_code } = await req.json();
     
@@ -78,62 +95,31 @@ serve(async (req) => {
       `
     };
 
-    // Send via Resend (primary — branded flexzora.pro sender, verified
-    // domain) with AgentMail as fallback when it exists; log otherwise.
-    // Resend failure falls through to AgentMail instead of erroring —
-    // a verification email lost to a provider hiccup is a lost signup.
-    const amKey = Deno.env.get("AGENTMAIL_API_KEY");
-    const amInbox = Deno.env.get("AGENTMAIL_INBOX") || "syxnyn3@agentmail.to";
-    const resendKey = Deno.env.get("RESEND_API_KEY");
-    const fromAddr = Deno.env.get("RESEND_FROM_EMAIL") || "Flexzora <onboarding@resend.dev>";
+    // Send via the shared provider chain — Resend primary (branded
+    // flexzora.pro sender, verified domain), AgentMail fallback on explicit
+    // failure. A verification email lost to a provider hiccup is a lost
+    // signup; with no working provider we fail loudly instead of claiming
+    // success. The bearer link is never logged or returned.
     const textBody = `Welcome to FlexZora! Verify your email to complete waitlist registration:\n\n${verificationLink}\n\nIf you didn't request this, ignore this email.`;
-    let sent = false;
-    if (resendKey) {
-      const res = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${resendKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          from: fromAddr,
-          to: [email],
-          subject: emailContent.subject,
-          html: emailContent.html,
-        }),
-      });
-      if (!res.ok) {
-        console.error("Resend send failed, falling back to AgentMail:", await res.text());
-      } else {
-        sent = true;
-      }
-    }
-    if (!sent && amKey) {
-      const res = await fetch(`https://api.agentmail.to/v0/inboxes/${encodeURIComponent(amInbox)}/messages/send`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${amKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          to: [email],
-          subject: emailContent.subject,
-          text: textBody,
-          html: emailContent.html,
-        }),
-      });
-      if (!res.ok) {
-        console.error("AgentMail send failed:", await res.text());
-        return new Response(JSON.stringify({ error: "Failed to send verification email" }), {
-          status: 502,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      sent = true;
-    }
+    const { sent } = await sendMail(
+      {
+        to: [email],
+        subject: emailContent.subject,
+        html: emailContent.html,
+        text: textBody,
+      },
+      {
+        RESEND_API_KEY: Deno.env.get("RESEND_API_KEY"),
+        RESEND_FROM_EMAIL: Deno.env.get("RESEND_FROM_EMAIL"),
+        AGENTMAIL_API_KEY: Deno.env.get("AGENTMAIL_API_KEY"),
+        AGENTMAIL_INBOX: Deno.env.get("AGENTMAIL_INBOX"),
+      },
+    );
     if (!sent) {
-      console.log(`Verification email would be sent to: ${email}`);
-      console.log(`Verification link: ${verificationLink}`);
+      return new Response(JSON.stringify({ error: "Failed to send verification email" }), {
+        status: 502,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
     // Return success response. Never return the verification link — it is a
     // bearer token; handing it to the HTTP caller defeats email verification.

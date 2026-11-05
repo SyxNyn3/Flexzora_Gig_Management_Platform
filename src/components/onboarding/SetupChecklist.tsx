@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/lib/supabase';
+import { getConnectStatus, payoutSetupStep } from '@/lib/connect';
 import { useAuth } from '@/contexts/AuthContext';
 
 /**
@@ -10,7 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
  * a real signal (a row that exists), never a flag the user set themselves.
  */
 
-interface Step { label: string; to: string; done: boolean }
+interface Step { label: string; to: string; done: boolean; hint?: string }
 
 export default function SetupChecklist() {
   const { profile, user } = useAuth();
@@ -18,6 +19,8 @@ export default function SetupChecklist() {
 
   useEffect(() => {
     if (!user || !profile) return;
+    let cancelled = false;
+    setSteps(null);
     (async () => {
       if (profile.role === 'company') {
         // companies.created_by holds the profile id, not the auth uid.
@@ -37,6 +40,7 @@ export default function SetupChecklist() {
             shifts = s ?? 0;
           }
         }
+        if (cancelled) return;
         setSteps([
           { label: 'Create your company profile', to: '/profile', done: !!company },
           { label: 'Post your first event', to: '/events', done: events > 0 },
@@ -49,13 +53,18 @@ export default function SetupChecklist() {
         const { count: skills } = await supabase
           .from('worker_skills').select('id', { count: 'exact', head: true })
           .eq('worker_id', profile.id);
+        const connect = await getConnectStatus();
+        if (cancelled) return;
+        const payout = payoutSetupStep(connect.data, connect.error != null);
         setSteps([
           { label: 'Fill out your crew card (skills, markets)', to: '/profile', done: (skills ?? 0) > 0 },
           { label: 'Add a phone number for call texts', to: '/profile', done: !!profile.phone },
           { label: 'Apply to your first gig', to: '/gigs', done: (apps ?? 0) > 0 },
+          { label: 'Set up payouts to get paid', to: '/payouts', done: payout.done, hint: payout.hint },
         ]);
       }
     })();
+    return () => { cancelled = true; };
   }, [user, profile]);
 
   if (!steps || steps.every((s) => s.done)) return null;
@@ -78,7 +87,10 @@ export default function SetupChecklist() {
             <span className={`inline-block h-4 w-4 rounded-full border text-center text-xs leading-4 ${s.done ? 'border-emerald-500 text-emerald-500' : 'border-muted-foreground'}`}>
               {s.done ? '✓' : ''}
             </span>
-            {s.label}
+            <span>
+              {s.label}
+              {s.hint && <span className="block text-xs text-muted-foreground">{s.hint}</span>}
+            </span>
           </Link>
         ))}
       </CardContent>

@@ -29,6 +29,21 @@ export async function onboardToConnect(): Promise<Result<{ url: string | null; a
   }
 }
 
+export interface PayoutStepState {
+  done: boolean;
+  hint: string;
+}
+
+export function payoutSetupStep(status: ConnectStatus | null, failed: boolean): PayoutStepState {
+  if (failed) return { done: false, hint: 'Payout status unavailable — open Payouts to retry' };
+  if (!status) return { done: false, hint: 'Checking payout status…' };
+  if (!status.available) return { done: false, hint: 'Transfers not enabled on this deployment' };
+  if (status.payoutsEnabled) return { done: true, hint: 'Payout account enabled' };
+  if (status.detailsSubmitted) return { done: false, hint: 'Stripe is verifying your details — transfers not on yet' };
+  if (status.connected) return { done: false, hint: 'Finish Stripe onboarding' };
+  return { done: false, hint: 'Connect a bank account' };
+}
+
 export async function getConnectStatus(): Promise<Result<ConnectStatus>> {
   try {
     const { data, error } = await supabase.functions.invoke('connect-status', { body: {} });
