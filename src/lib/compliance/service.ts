@@ -3,7 +3,7 @@
 // review; an approved W-9 is the gate claim_payout_for_release checks before
 // any money moves to that worker.
 import { supabase } from '@/lib/supabase';
-import type { ComplianceDoc, ComplianceDocType } from '@/lib/types';
+import type { ComplianceDoc, ComplianceDocType, PayoutReadiness } from '@/lib/types';
 
 type Result<T> = { data: T | null; error: string | null };
 const ok = <T,>(data: T): Result<T> => ({ data, error: null });
@@ -117,6 +117,27 @@ export class ComplianceService {
       if (error) throw error;
       const cleared = new Set((data ?? []).map((d) => d.worker_id));
       return ok(new Map(workerIds.map((id) => [id, cleared.has(id)])));
+    } catch (e) {
+      return fail(e);
+    }
+  }
+
+  /**
+   * Batch payout readiness for workers related to this company, keyed by
+   * worker_id. Goes through the worker_payout_readiness SECURITY DEFINER RPC —
+   * API roles can't read worker_sensitive directly. Workers with no company
+   * relationship are omitted from the map (no oracle), so a missing key means
+   * "unknown", not "not ready".
+   */
+  static async payoutReadiness(companyId: string, workerIds: string[]): Promise<Result<Map<string, PayoutReadiness>>> {
+    try {
+      if (!workerIds.length) return ok(new Map());
+      const { data, error } = await supabase.rpc('worker_payout_readiness', {
+        p_company_id: companyId,
+        p_worker_ids: workerIds,
+      });
+      if (error) throw error;
+      return ok(new Map(((data ?? []) as PayoutReadiness[]).map((r) => [r.worker_id, r])));
     } catch (e) {
       return fail(e);
     }
