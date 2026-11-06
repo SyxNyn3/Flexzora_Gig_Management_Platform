@@ -723,6 +723,10 @@ export interface WaitlistEntry {
   has_own_business?: boolean | null;
   business_names?: string[];
   business_arrangement?: string;
+  // Set when a verified waitlist signup claims their spot into a real
+  // account (claim_waitlist_spot RPC). Null until claimed.
+  claimed_by_profile_id?: string | null;
+  claimed_at?: string | null;
 }
 
 // API Response types

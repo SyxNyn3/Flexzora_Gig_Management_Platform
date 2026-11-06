@@ -28,6 +28,10 @@ needs config · 🔧 blocked on human action.
   + dedup; `resend` enumeration-404 closed; `verify` writes `verified_at`
 - ✅ `waitlist_fill_crew_card` — first-write-wins, 30-min claim window,
   8/min per-IP cap, server-side `signup_ip` capture
+- ✅ `claim_waitlist_spot` RPC (20261206000000) — verified waitlist row →
+  account claim on confirmed-email match only; idempotent, fills empty
+  profile fields, claimant-only RLS read of own claimed row. Live-tested
+  in rolled-back txn (claim + idempotent re-claim + prefill verified)
 - ✅ All 51 function `search_path` warnings pinned (`public, pg_temp`)
 - ✅ Form bot friction: honeypot + <2s submit gate, silent fake success
 - ✅ `lookup-user` rejects email identifiers (no account enumeration)

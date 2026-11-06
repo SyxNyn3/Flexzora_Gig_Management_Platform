@@ -4,12 +4,22 @@ import { supabase, DatabaseService } from '@/lib/supabase';
 import { storeAuthData, getStoredAuthData, clearAuthData, setupTokenRefresh } from '@/lib/auth';
 import { lookupUserByIdentifier } from '@/lib/auth';
 import { Profile, Database } from '@/lib/types';
+import { toast } from 'sonner';
+
+// Result shape of the claim_waitlist_spot RPC — kept loose because the
+// Database type doesn't model RPC return payloads.
+export interface WaitlistClaimResult {
+  claimed: boolean;
+  already_claimed?: boolean;
+  role_interest?: string;
+}
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   profile: Profile | null;
   loading: boolean;
+  waitlistClaim: WaitlistClaimResult | null;
   signUp: (email: string, password: string, userData: { full_name: string; role: string; [key: string]: unknown }) => Promise<{ data: { user: User | null; session: Session | null } | null; error: { message: string } | null }>;
   signIn: (email: string, password: string) => Promise<{ data: { user: User | null; session: Session | null } | null; error: { message: string } | null }>;
   signOut: () => Promise<{ error: { message: string } | null }>;
@@ -33,6 +43,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true); 
   const [refreshInterval, setRefreshInterval] = useState<number | null>(null);
+  const [waitlistClaim, setWaitlistClaim] = useState<WaitlistClaimResult | null>(null);
+  // One claim attempt per user per page load — the RPC is idempotent but
+  // there's no reason to call it on every profile refresh.
+  const claimAttemptedFor = React.useRef<Set<string>>(new Set());
 
   useEffect(() => {
     let mounted = true;
@@ -188,6 +202,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await fetchProfile(user.id);
   };
 
+  // Waitlist claim: when a signed-in user's CONFIRMED email matches a
+  // verified waitlist row, claim_waitlist_spot() links the row to their
+  // profile and prefills empty profile fields. Runs silently for accounts
+  // with no waitlist row ({claimed:false}) — the RPC never reveals
+  // waitlist membership beyond the caller's own email.
+  useEffect(() => {
+    if (!user?.email_confirmed_at) return;
+    if (claimAttemptedFor.current.has(user.id)) return;
+    claimAttemptedFor.current.add(user.id);
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data, error } = await supabase.rpc('claim_waitlist_spot');
+        if (cancelled || error || !data) return;
+        const result = data as WaitlistClaimResult;
+        setWaitlistClaim(result);
+        if (result.claimed && !result.already_claimed) {
+          toast.success('Founding crew spot claimed', {
+            description: 'Your waitlist details carried over to your new account.',
+          });
+          // The claim may have prefilled phone/location/day_rate — refetch
+          // so the UI reflects them immediately.
+          await fetchProfile(user.id);
+        }
+      } catch (err) {
+        // Claim failure must never block sign-in — log and move on.
+        console.warn('Waitlist claim check failed:', err);
+      }
+    })();
+    return () => { cancelled = true; };
+    // fetchProfile is recreated each render; the claimAttemptedFor ref makes
+    // repeat runs harmless, so [user] alone is the right dependency here.
+  }, [user]);
+
   const signUp = async (email: string, password: string, userData: { full_name: string; role: string; [key: string]: unknown }) => {
     try {
       // Validate input data
@@ -333,6 +382,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     session,
     profile,
     loading,
+    waitlistClaim,
     signUp,
     signIn,
     signOut,
