@@ -95,12 +95,13 @@ SELECT is(
   (SELECT (public.claim_waitlist_spot())->>'claimed')::boolean,
   false, 'pending (unverified) waitlist row is not claimable');
 
--- anon has no EXECUTE grant — the function isn't even reachable
+-- anonymous callers get a generic negative, never an exception or reason
+-- code that could probe waitlist membership (by design — see the function)
 RESET ROLE;
 SELECT set_config('request.jwt.claims', '{"role":"anon"}', true);
-SELECT throws_ok(
-  $$ SELECT public.claim_waitlist_spot() $$,
-  '42501', NULL, 'anonymous callers cannot execute claim_waitlist_spot');
+SELECT is(
+  (SELECT (public.claim_waitlist_spot())->>'claimed')::boolean,
+  false, 'anonymous callers get claimed:false, not an error');
 
 SELECT * FROM finish();
 ROLLBACK;
