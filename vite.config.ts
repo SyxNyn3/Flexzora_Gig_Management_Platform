@@ -21,12 +21,34 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        manualChunks: {
-          react: ['react', 'react-dom', 'react-router-dom'],
-          supabase: ['@supabase/supabase-js'],
-          charts: ['recharts', 'date-fns'],
-          ui: ['framer-motion', 'sonner', 'lucide-react'],
-          forms: ['react-hook-form', 'zod', '@hookform/resolvers'],
+        // Vite 8 is rolldown-based: the Rollup object form of `manualChunks`
+        // is gone, so vendor splitting is expressed as `codeSplitting` groups.
+        // Each `test` regex is anchored to the package directory inside
+        // node_modules so e.g. `react` doesn't also swallow `react-dom` or
+        // `@radix-ui/react-*` — matching the old per-package manualChunks map.
+        codeSplitting: {
+          groups: [
+            {
+              name: 'react',
+              test: /node_modules[\\/](react|react-dom|react-router-dom|react-router|scheduler)[\\/]/,
+            },
+            {
+              name: 'supabase',
+              test: /node_modules[\\/]@supabase[\\/]/,
+            },
+            {
+              name: 'charts',
+              test: /node_modules[\\/](recharts|date-fns)[\\/]/,
+            },
+            {
+              name: 'ui',
+              test: /node_modules[\\/](framer-motion|sonner|lucide-react)[\\/]/,
+            },
+            {
+              name: 'forms',
+              test: /node_modules[\\/](react-hook-form|zod|@hookform[\\/]resolvers)[\\/]/,
+            },
+          ],
         },
       },
     },
