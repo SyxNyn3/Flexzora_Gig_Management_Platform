@@ -62,14 +62,30 @@ const queryClient = new QueryClient({
   },
 });
 
-const LoadingSpinner: React.FC = () => (
-  <div className="flex items-center justify-center min-h-screen bg-muted/50">
-    <div className="text-center">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-      <p className="mt-4 text-muted-foreground">Loading Flexzora...</p>
+const LoadingSpinner: React.FC = () => {
+  // Free-tier Supabase pauses when idle; the first request after a quiet
+  // period blocks 5-15s while the project wakes. A bare spinner reads as a
+  // hang, so escalate the message instead of faking progress.
+  const [slow, setSlow] = useState(false);
+  const [verySlow, setVerySlow] = useState(false);
+  useEffect(() => {
+    const t1 = setTimeout(() => setSlow(true), 4000);
+    const t2 = setTimeout(() => setVerySlow(true), 12000);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, []);
+  return (
+    <div className="flex items-center justify-center min-h-screen bg-muted/50">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+        <p className="mt-4 text-muted-foreground">
+          {verySlow ? 'Still waking up — the office computer is booting. Usually under 15 seconds.'
+            : slow ? 'Waking up the crew office…'
+            : 'Loading Flexzora...'}
+        </p>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, profile, loading, signOut } = useAuth();
