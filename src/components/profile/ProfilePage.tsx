@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,6 +29,7 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import { CertService } from '@/lib/certs/service';
+import { AvatarService } from '@/lib/avatar';
 import { toast } from 'sonner';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -91,6 +92,8 @@ const ProfilePage: React.FC = () => {
   const [showCertDialog, setShowCertDialog] = useState(false);
   const [editingCert, setEditingCert] = useState<Certification | null>(null);
   const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>([]);
+  const [avatarBusy, setAvatarBusy] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch data using custom hooks 
   const { data: skills } = useSkills();
@@ -475,10 +478,35 @@ const ProfilePage: React.FC = () => {
                     {profile.full_name.split(' ').map(n => n[0]).join('')}
                   </AvatarFallback>
                 </Avatar>
+                <input
+                  ref={avatarInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  className="hidden"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    e.target.value = '';
+                    if (!file || !profile?.id) return;
+                    setAvatarBusy(true);
+                    const { data: url, error } = await AvatarService.upload(profile.id, file);
+                    if (error || !url) {
+                      toast.error(error || 'Upload failed');
+                    } else {
+                      const { error: saveError } = await updateProfile({ avatar_url: url });
+                      if (saveError) toast.error(saveError || 'Could not save photo');
+                      else {
+                        toast.success('Profile photo updated');
+                        refreshProfile();
+                      }
+                    }
+                    setAvatarBusy(false);
+                  }}
+                />
                 <Button
                   size="sm"
                   className="absolute bottom-0 right-0 rounded-full w-8 h-8 p-0"
-                  onClick={() => toast.info('Photo upload coming soon!')}
+                  disabled={avatarBusy}
+                  onClick={() => avatarInputRef.current?.click()}
                 >
                   <Camera className="w-4 h-4" />
                 </Button>
