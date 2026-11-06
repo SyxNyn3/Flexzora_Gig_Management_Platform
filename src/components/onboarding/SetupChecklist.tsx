@@ -39,7 +39,7 @@ export default function SetupChecklist() {
             .eq('created_by', profile.id).maybeSingle();
           resolvedCompanyId = legacy?.id ?? null;
         }
-        let events = 0, shifts = 0;
+        let events = 0, shifts = 0, escrowed = 0;
         if (resolvedCompanyId) {
           const { data: evs } = await supabase
             .from('events').select('id').eq('company_id', resolvedCompanyId);
@@ -51,12 +51,26 @@ export default function SetupChecklist() {
               .in('event_id', ids).eq('status', 'open');
             shifts = s ?? 0;
           }
+          // escrow_deposits is company-readable via owns_company (membership-
+          // aware); any funded/partially_released deposit means money is
+          // actually staged for payroll, not just a Stripe account existing.
+          const { count: e } = await supabase
+            .from('escrow_deposits').select('id', { count: 'exact', head: true })
+            .eq('company_id', resolvedCompanyId)
+            .in('status', ['funded', 'partially_released']);
+          escrowed = e ?? 0;
         }
         if (cancelled) return;
         setSteps([
           { label: 'Create your company profile', to: '/profile', done: resolvedCompanyId !== null },
           { label: 'Post your first event', to: '/events', done: events > 0 },
           { label: 'Open your first call for crew', to: '/broadcast', done: shifts > 0 },
+          {
+            label: 'Fund your first event escrow',
+            to: '/events',
+            done: escrowed > 0,
+            hint: 'Payroll releases from escrow — an unfunded call pays nobody.',
+          },
         ]);
       } else {
         const { count: apps } = await supabase
