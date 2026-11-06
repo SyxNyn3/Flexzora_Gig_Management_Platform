@@ -1,14 +1,16 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Shift, ShiftAssignment, Profile } from '@/lib/types';
+import { Shift, ShiftAssignment, Profile, PayoutReadiness } from '@/lib/types';
 import { MarketplaceService } from '@/lib/marketplace/service';
+import { ComplianceService } from '@/lib/compliance/service';
 import { MatchResult } from '@/lib/marketplace/matchScore';
 import MatchScoreBadge from '../MatchScoreBadge';
+import PaymentReadyBadge from '../PaymentReadyBadge';
 import { confirmedCount, shiftWindow } from '../format';
 import { Radio, Globe, Star, UserCheck, UserX, Send, Pencil } from 'lucide-react';
 
@@ -28,8 +30,14 @@ const CandidatesPanel: React.FC<Props> = ({ shift, companyId, managerId, onChang
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
+  // worker_id → payout readiness. The RPC only returns rows for workers the
+  // company is already related to, so candidates may be absent until they
+  // apply/book — a missing key renders the muted "unknown" badge.
+  const [readiness, setReadiness] = useState<Map<string, PayoutReadiness>>(new Map());
 
-  const assignments = shift.assignments ?? [];
+  // Memoized so the readiness effect below doesn't refire on every render —
+  // `shift.assignments ?? []` would otherwise hand back a fresh [] each time.
+  const assignments = useMemo(() => shift.assignments ?? [], [shift.assignments]);
   const confirmed = confirmedCount(shift);
   const applicants = assignments.filter((a) => a.status === 'applied');
   const offered = assignments.filter((a) => a.status === 'offered');
@@ -50,6 +58,19 @@ const CandidatesPanel: React.FC<Props> = ({ shift, companyId, managerId, onChang
     };
   }, [shift.id, shift.updated_at, companyId, shift]);
 
+  // Payout readiness for everyone visible in the panel: smart-match candidates
+  // plus every assignment on the shift (applicants, offers, crew).
+  useEffect(() => {
+    let cancelled = false;
+    const ids = [...new Set([...candidates.map((c) => c.worker.id), ...assignments.map((a) => a.worker_id)])];
+    ComplianceService.payoutReadiness(companyId, ids).then(({ data }) => {
+      if (!cancelled && data) setReadiness(data);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [companyId, candidates, assignments]);
+
   const run = async (key: string, fn: () => Promise<{ error: string | null }>, success: string) => {
     setBusy(key);
     const { error } = await fn();
@@ -61,10 +82,28 @@ const CandidatesPanel: React.FC<Props> = ({ shift, companyId, managerId, onChang
     }
   };
 
-  const decide = (a: ShiftAssignment, decision: 'confirmed' | 'rejected') =>
-    run(a.id, () => MarketplaceService.decideApplication(a.id, decision), decision === 'confirmed' ? 'Crew confirmed' : 'Application declined');
+  // Non-blocking warning before committing crew: the downstream hold at
+  // claim_payout_for_release stays authoritative — this just tells the manager
+  // up front that pay will sit until payout setup / W-9 clears.
+  const confirmPayoutReady = (name: string, workerId: string) => {
+    const r = readiness.get(workerId);
+    if (r && !(r.payouts_enabled && r.w9_status === 'approved')) {
+      return window.confirm(
+        `${name} isn't payout-ready — payout setup or W-9 incomplete; their pay will be held at release. Continue anyway?`,
+      );
+    }
+    return true;
+  };
 
-  const book = (c: Candidate) => run(c.worker.id, () => MarketplaceService.directBook(shift.id, c.worker.id, c), `Offer sent to ${c.worker.full_name}`);
+  const decide = (a: ShiftAssignment, decision: 'confirmed' | 'rejected') => {
+    if (decision === 'confirmed' && !confirmPayoutReady(a.worker?.full_name ?? 'This worker', a.worker_id)) return;
+    return run(a.id, () => MarketplaceService.decideApplication(a.id, decision), decision === 'confirmed' ? 'Crew confirmed' : 'Application declined');
+  };
+
+  const book = (c: Candidate) => {
+    if (!confirmPayoutReady(c.worker.full_name, c.worker.id)) return;
+    return run(c.worker.id, () => MarketplaceService.directBook(shift.id, c.worker.id, c), `Offer sent to ${c.worker.full_name}`);
+  };
 
   const addToRoster = (workerId: string) =>
     run(`roster-${workerId}`, () => MarketplaceService.setRosterTier(companyId, workerId, 'preferred', managerId), 'Added to trusted roster');
@@ -129,6 +168,7 @@ const CandidatesPanel: React.FC<Props> = ({ shift, companyId, managerId, onChang
                     </div>
                     <div className="flex items-center gap-2 mt-0.5">
                       <MatchScoreBadge score={c.score} breakdown={c.breakdown} reasons={c.reasons} size="sm" />
+                      <PaymentReadyBadge readiness={readiness.get(c.worker.id)} size="sm" />
                       {c.breakdown.distanceKm != null && <span className="text-xs text-muted-foreground">{c.breakdown.distanceKm} km</span>}
                     </div>
                   </div>
@@ -159,6 +199,7 @@ const CandidatesPanel: React.FC<Props> = ({ shift, companyId, managerId, onChang
                 <p className="text-sm font-medium truncate">{a.worker?.full_name}</p>
                 <div className="flex items-center gap-2 mt-0.5">
                   {a.match_score != null && <MatchScoreBadge score={a.match_score} breakdown={a.match_breakdown} size="sm" />}
+                  <PaymentReadyBadge readiness={readiness.get(a.worker_id)} size="sm" />
                   <span className="text-xs text-muted-foreground">via {a.source.replace(/_/g, ' ')}</span>
                 </div>
               </div>
@@ -186,7 +227,10 @@ const CandidatesPanel: React.FC<Props> = ({ shift, companyId, managerId, onChang
                 <p className="text-sm font-medium truncate">{a.worker?.full_name}</p>
                 <p className="text-xs text-muted-foreground">{a.worker?.phone ?? a.worker?.email}</p>
               </div>
-              <Badge variant={a.status === 'offered' ? 'outline' : 'default'}>{a.status === 'offered' ? 'Awaiting reply' : a.status}</Badge>
+              <div className="flex items-center gap-1.5">
+                <PaymentReadyBadge readiness={readiness.get(a.worker_id)} size="sm" />
+                <Badge variant={a.status === 'offered' ? 'outline' : 'default'}>{a.status === 'offered' ? 'Awaiting reply' : a.status}</Badge>
+              </div>
             </div>
           ))}
         </TabsContent>

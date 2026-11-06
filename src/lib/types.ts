@@ -421,6 +421,18 @@ export interface RateGuidance {
 export type ComplianceDocType = 'w9' | 'i9' | 'other';
 export type ComplianceDocStatus = 'pending' | 'approved' | 'rejected';
 
+/** worker_payout_readiness RPC: Stripe Connect state for one worker. */
+export type PayoutConnectState = 'ready' | 'verifying' | 'onboarding' | 'none';
+export type PayoutW9Status = 'approved' | 'pending' | 'rejected' | 'missing';
+
+export interface PayoutReadiness {
+  worker_id: string;
+  connect_state: PayoutConnectState;
+  payouts_enabled: boolean;
+  details_submitted: boolean;
+  w9_status: PayoutW9Status;
+}
+
 export interface ComplianceDoc {
   id: string;
   worker_id: string;

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -9,7 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useAuth } from '@/contexts/AuthContext';
 import { useMyCompany, useRoster } from '@/hooks/useMarketplace';
 import { MarketplaceService } from '@/lib/marketplace/service';
-import { RosterTier } from '@/lib/types';
+import { ComplianceService } from '@/lib/compliance/service';
+import PaymentReadyBadge from '@/components/marketplace/PaymentReadyBadge';
+import { PayoutReadiness, RosterTier } from '@/lib/types';
 import { Star, Trash2 } from 'lucide-react';
 
 const tierTone: Record<RosterTier, string> = {
@@ -24,6 +26,20 @@ const RosterPage: React.FC = () => {
   const { company } = useMyCompany();
   const roster = useRoster(company?.id);
   const [busy, setBusy] = useState<string | null>(null);
+  // worker_id → payout readiness; roster members are always company-related so
+  // every row should resolve (missing keys render the muted "unknown" badge).
+  const [readiness, setReadiness] = useState<Map<string, PayoutReadiness>>(new Map());
+
+  useEffect(() => {
+    if (!company || !roster.data.length) return;
+    let cancelled = false;
+    ComplianceService.payoutReadiness(company.id, roster.data.map((e) => e.worker_id)).then(({ data }) => {
+      if (!cancelled && data) setReadiness(data);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [company, roster.data]);
 
   const setTier = async (workerId: string, tier: RosterTier, standbyRate?: number | null) => {
     if (!company || !profile) return;
@@ -68,6 +84,7 @@ const RosterPage: React.FC = () => {
                 <p className="text-xs text-muted-foreground truncate">{entry.worker?.location ?? entry.worker?.email}</p>
               </div>
               <Badge variant="outline" className={tierTone[entry.tier]}>{entry.tier}</Badge>
+              <PaymentReadyBadge readiness={readiness.get(entry.worker_id)} size="sm" />
               {entry.tier === 'standby' && (
                 <label className="flex items-center gap-1 text-xs text-muted-foreground">
                   $
