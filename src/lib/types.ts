@@ -402,6 +402,15 @@ export interface CompanyMembership {
   created_at: string;
 }
 
+/** Row returned by the company_members_list() RPC — roster with profile fields joined. */
+export interface CompanyMemberEntry {
+  profile_id: string;
+  full_name: string;
+  email: string;
+  member_role: CompanyMemberRole;
+  created_at: string;
+}
+
 export interface Company {
   id: string;
   name: string;
