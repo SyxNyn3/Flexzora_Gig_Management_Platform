@@ -87,13 +87,16 @@ serve(async (req) => {
       return json({ error: "Escrow deposit is not pending funding" }, 409);
     }
 
-    const { data: company, error: companyError } = await supabaseAdmin
-      .from("companies")
-      .select("id, name, created_by")
-      .eq("id", deposit.company_id)
-      .single();
-    if (companyError) throw companyError;
-    if (company.created_by !== profile.id) {
+    // Membership check (service role bypasses RLS): funding escrow moves
+    // money, so restrict to owner/admin members — 'staff' operates the
+    // company but cannot spend funds.
+    const { data: membership } = await supabaseAdmin
+      .from("company_members")
+      .select("member_role")
+      .eq("company_id", deposit.company_id)
+      .eq("profile_id", profile.id)
+      .maybeSingle();
+    if (!membership || (membership.member_role !== "owner" && membership.member_role !== "admin")) {
       return json({ error: "Only the company that opened this deposit can fund it" }, 403);
     }
 

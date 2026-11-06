@@ -132,3 +132,17 @@ worker + company accounts, screenshots in `.diffui/screenshots/`):
   paid-tier project when traffic starts.
 - ✅ Email sender verified: production-triggered waitlist mail delivered
   from `Flexzora Crew <crew@flexzora.pro>`; AgentMail is fallback only
+
+## Dual-role company membership — 2026-12-03
+
+- ✅ `company_members` table (RLS, SELECT-only for API roles) + backfill;
+  `owns_company()` now resolves through membership, upgrading every
+  company-gated policy/RPC. `create_company()` RPC is the only API creation
+  path (direct INSERT closed); `my_company_memberships()` feeds the UI.
+  Verified live via pooler as real users: worker creates company → owner
+  member row + `owns_company`=true, `profiles.role` stays `worker`.
+- ⚠️ Edge functions (`release-payout`, `create-checkout-session`,
+  `retrieve-payment-intent`, `notify-assignment`) still run the PREVIOUS
+  code until `supabase functions deploy` — they check `company_members`
+  in the new revision but the old revision checks `created_by`. Deploy
+  before/with the frontend release.

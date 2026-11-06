@@ -22,6 +22,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
+import { invalidateCompanyMemberships } from '@/hooks/useMarketplace';
 import { Company, Skill } from '@/lib/types';
 import { 
   Plus, 
@@ -199,28 +200,32 @@ const CreateGigForm: React.FC = () => {
       }
       
       setLoading(true);
-      
-      const companyData = {
-        name: formData.name,
-        description: formData.description || null,
-        website_url: formData.website_url || null,
-        contact_email: formData.contact_email || null,
-        contact_phone: formData.contact_phone || null,
-        address: formData.address || null,
-        created_by: profile?.id,
-      };
-      
+
+      // Company creation goes through the create_company RPC — it writes the
+      // company row AND the owner company_members row atomically. Direct
+      // INSERT on companies is closed by RLS, and profiles.role is never
+      // mutated (a worker can run a company under the same login).
       const { data: newCompany, error } = await supabase
-        .from('companies')
-        .insert(companyData)
-        .select()
+        .rpc('create_company', {
+          p_name: formData.name,
+          p_description: formData.description || null,
+          p_website_url: formData.website_url || null,
+          p_contact_email: formData.contact_email || null,
+          p_contact_phone: formData.contact_phone || null,
+          p_address: formData.address || null,
+        })
         .single();
-      
+
       if (error) throw error;
-      
+      invalidateCompanyMemberships();
+
+      // rpc() is untyped — the function returns the created companies row.
+      if (!newCompany) throw new Error('Company creation returned no row');
+      const createdCompany = newCompany as Company;
+
       // Add the new company to the list and select it
-      setCompanies(prev => [...prev, newCompany]);
-      form.setValue('company_id', newCompany.id);
+      setCompanies(prev => [...prev, createdCompany]);
+      form.setValue('company_id', createdCompany.id);
       
       // Close dialog and reset form
       setShowAddCompanyDialog(false);

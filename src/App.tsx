@@ -2,6 +2,7 @@ import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import { useCompanyMemberships } from '@/hooks/useMarketplace';
 import { validateSession } from '@/lib/auth';
 import LandingPage from '@/components/landing/LandingPage';
 import LegalPage from '@/pages/LegalPage';
@@ -180,10 +181,28 @@ const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return <>{children}</>;
 };
 
+// Company surfaces are gated by MEMBERSHIP (public.company_members), not
+// profiles.role: a worker-profile account that owns/runs a company must reach
+// these pages under the same login. Rendered only for profiles whose role is
+// neither 'company' nor 'admin' — everyone else is decided synchronously by
+// RoleRoute, so this gate (and its RPC) never mounts for them.
+const CompanyMembershipGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { memberships, loading } = useCompanyMemberships();
+  if (loading) return <LoadingSpinner />;
+  // No membership → same destination non-company roles always got.
+  if (memberships.length === 0) return <Navigate to="/dashboard" replace />;
+  return <>{children}</>;
+};
+
 const RoleRoute: React.FC<{ role: 'worker' | 'company'; children: React.ReactNode }> = ({ role, children }) => {
   const { profile, loading } = useAuth();
   if (loading) return <LoadingSpinner />;
-  if (profile && profile.role !== role && profile.role !== 'admin') {
+  const roleOk = !profile || profile.role === role || profile.role === 'admin';
+  if (role === 'company' && profile && !roleOk) {
+    // Worker (or any non-company role): membership may still grant access.
+    return <CompanyMembershipGate>{children}</CompanyMembershipGate>;
+  }
+  if (profile && !roleOk) {
     return <Navigate to="/dashboard" replace />;
   }
   return <>{children}</>;

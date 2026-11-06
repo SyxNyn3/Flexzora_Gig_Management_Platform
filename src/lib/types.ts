@@ -20,6 +20,13 @@ export interface Database {
         Insert: Omit<Company, 'id' | 'created_at' | 'updated_at'>;
         Update: Partial<Omit<Company, 'id' | 'created_at' | 'updated_at'>>;
       };
+      company_members: {
+        Row: CompanyMember;
+        Insert: Omit<CompanyMember, 'created_at'>;
+        // Membership is written only by SECURITY DEFINER RPCs — there is no
+        // legitimate client-side update path.
+        Update: never;
+      };
       skills: {
         Row: Skill;
         Insert: Omit<Skill, 'id' | 'created_at'>;
@@ -374,6 +381,25 @@ export interface Review {
   comment?: string;
   created_at: string;
   updated_at: string;
+}
+
+/** Role a profile holds inside a company — independent of profiles.role. */
+export type CompanyMemberRole = 'owner' | 'admin' | 'staff';
+
+/** Row of public.company_members: who operates which company. */
+export interface CompanyMember {
+  company_id: string;
+  profile_id: string;
+  member_role: CompanyMemberRole;
+  created_at: string;
+}
+
+/** Row returned by the my_company_memberships() RPC. */
+export interface CompanyMembership {
+  company_id: string;
+  company_name: string;
+  member_role: CompanyMemberRole;
+  created_at: string;
 }
 
 export interface Company {
