@@ -28,6 +28,10 @@ SELECT
   (SELECT id FROM profiles WHERE user_id = '00000000-0000-0000-0000-000000009a03') AS staff_pid,
   (SELECT id FROM companies WHERE name = 'Member Mgmt Co') AS company_id;
 
+-- Temp tables are owned by the creating role; after SET LOCAL ROLE
+-- authenticated the assertions below still need to read fixture ids.
+GRANT SELECT ON ids TO authenticated;
+
 -- become the owner through the API role
 SET LOCAL ROLE authenticated;
 SELECT set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000009a01","role":"authenticated"}', true);
