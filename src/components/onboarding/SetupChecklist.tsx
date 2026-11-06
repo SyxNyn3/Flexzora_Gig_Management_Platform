@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/lib/supabase';
 import { getConnectStatus, payoutSetupStep } from '@/lib/connect';
 import { useAuth } from '@/contexts/AuthContext';
+import { useCompanyMemberships } from '@/hooks/useMarketplace';
 
 /**
  * First-run setup checklist. Shown on the dashboard until every step is
@@ -15,6 +16,7 @@ interface Step { label: string; to: string; done: boolean; hint?: string }
 
 export default function SetupChecklist() {
   const { profile, user } = useAuth();
+  const { memberships } = useCompanyMemberships();
   const [steps, setSteps] = useState<Step[] | null>(null);
 
   useEffect(() => {
@@ -22,15 +24,25 @@ export default function SetupChecklist() {
     let cancelled = false;
     setSteps(null);
     (async () => {
-      if (profile.role === 'company') {
-        // companies.created_by holds the profile id, not the auth uid.
-        const { data: company } = await supabase
-          .from('companies').select('id')
-          .eq('created_by', profile.id).maybeSingle();
+      // Company-side checklist shows for company-role profiles AND for any
+      // profile holding a company membership (dual-role workers).
+      const companyId = memberships[0]?.company_id ?? null;
+      const isCompanySide = profile.role === 'company' || companyId !== null;
+      if (isCompanySide) {
+        // Membership is the source of truth; fall back to the legacy
+        // created_by lookup only for company-role profiles with no member row
+        // (pre-membership data that somehow escaped the backfill).
+        let resolvedCompanyId = companyId;
+        if (!resolvedCompanyId && profile.role === 'company') {
+          const { data: legacy } = await supabase
+            .from('companies').select('id')
+            .eq('created_by', profile.id).maybeSingle();
+          resolvedCompanyId = legacy?.id ?? null;
+        }
         let events = 0, shifts = 0;
-        if (company) {
+        if (resolvedCompanyId) {
           const { data: evs } = await supabase
-            .from('events').select('id').eq('company_id', company.id);
+            .from('events').select('id').eq('company_id', resolvedCompanyId);
           events = evs?.length ?? 0;
           const ids = (evs ?? []).map((x) => x.id);
           if (ids.length) {
@@ -42,7 +54,7 @@ export default function SetupChecklist() {
         }
         if (cancelled) return;
         setSteps([
-          { label: 'Create your company profile', to: '/profile', done: !!company },
+          { label: 'Create your company profile', to: '/profile', done: resolvedCompanyId !== null },
           { label: 'Post your first event', to: '/events', done: events > 0 },
           { label: 'Open your first call for crew', to: '/broadcast', done: shifts > 0 },
         ]);
@@ -65,7 +77,9 @@ export default function SetupChecklist() {
       }
     })();
     return () => { cancelled = true; };
-  }, [user, profile]);
+    // memberships is a stable reference (NO_MEMBERSHIPS until loaded) so this
+    // re-runs exactly when the RPC resolves, not on every render.
+  }, [user, profile, memberships]);
 
   if (!steps || steps.every((s) => s.done)) return null;
   const doneCount = steps.filter((s) => s.done).length;

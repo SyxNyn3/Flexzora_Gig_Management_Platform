@@ -5,7 +5,9 @@ import { createClient } from "npm:@supabase/supabase-js@2.39.0";
 // Releases a queued payout: company-side "send the money" that creates the
 // Stripe Connect transfer to the worker's onboarded account and marks the
 // payout paid. Flag-gated: {available:false} without STRIPE_SECRET_KEY.
-// Ownership: only the company that owns the payout's invoice may release it.
+// Authorization: company membership (public.company_members), restricted to
+// owner/admin — releasing a payout moves real money, so 'staff' members are
+// deliberately excluded even though owns_company() would admit them.
 
 const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY") ?? "";
 const stripe = stripeSecretKey
@@ -57,17 +59,28 @@ serve(async (req) => {
       .maybeSingle();
     if (!profile) return json({ error: "Payout not found" }, 404);
 
-    // Resolve the payout + owning company; non-owners get a 404 — no oracle.
+    // Resolve the payout + owning company id; non-members get a 404 — no oracle.
     const { data: payout } = await supabaseAdmin
       .from("payouts")
-      .select("id, worker_id, amount, currency, status, invoice:invoices(company_id, companies(created_by))")
+      .select("id, worker_id, amount, currency, status, invoice:invoices(id, company_id)")
       .eq("id", payoutId)
       .maybeSingle();
     if (!payout) return json({ error: "Payout not found" }, 404);
 
     const invoice = Array.isArray(payout.invoice) ? payout.invoice[0] : payout.invoice;
-    const company = invoice && (Array.isArray(invoice.companies) ? invoice.companies[0] : invoice.companies);
-    if (company?.created_by !== profile.id) {
+    const companyId = invoice?.company_id as string | undefined;
+    if (!companyId) return json({ error: "Payout not found" }, 404);
+
+    // Membership check via service role (bypasses RLS): only owner/admin
+    // members may release funds. 'staff' operates the company but cannot move
+    // money — see header comment.
+    const { data: membership } = await supabaseAdmin
+      .from("company_members")
+      .select("member_role")
+      .eq("company_id", companyId)
+      .eq("profile_id", profile.id)
+      .maybeSingle();
+    if (!membership || (membership.member_role !== "owner" && membership.member_role !== "admin")) {
       return json({ error: "Payout not found" }, 404);
     }
 

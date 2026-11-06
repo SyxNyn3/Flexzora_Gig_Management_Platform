@@ -834,10 +834,19 @@ export class DatabaseService {
 
   static async createCompany(companyData: Database['public']['Tables']['companies']['Insert']) {
     try {
+      // Direct INSERT on companies is closed by RLS — creation goes through
+      // the create_company RPC, which also writes the owner membership row.
+      // created_by is set server-side from the caller's profile; callers
+      // cannot choose it.
       const { data, error } = await supabase
-        .from('companies')
-        .insert(companyData)
-        .select()
+        .rpc('create_company', {
+          p_name: companyData.name,
+          p_contact_email: companyData.contact_email ?? null,
+          p_description: companyData.description ?? null,
+          p_website_url: companyData.website_url ?? null,
+          p_contact_phone: companyData.contact_phone ?? null,
+          p_address: companyData.address ?? null,
+        })
         .single();
 
       if (error) {

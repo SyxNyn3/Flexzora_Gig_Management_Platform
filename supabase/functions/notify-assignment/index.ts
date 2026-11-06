@@ -115,7 +115,7 @@ serve(async (req) => {
           id, role_name, starts_at,
           event:events!inner(
             id, name, company_id,
-            company:companies!inner(id, name, created_by, contact_phone)
+            company:companies!inner(id, name, contact_phone)
           )
         )
       `)
@@ -135,13 +135,21 @@ serve(async (req) => {
     const worker = assignment.worker as { full_name: string; phone: string | null; user_id: string };
     const shift = assignment.shift as {
       role_name: string; starts_at: string;
-      event: { name: string; company: { name: string; created_by: string; contact_phone: string | null } };
+      event: { name: string; company: { name: string; contact_phone: string | null } };
     };
     const company = shift.event.company;
 
-    // Authorization: caller is the assigned worker or the company owner.
+    // Authorization: caller is the assigned worker or a member of the company.
     const isWorker = assignment.worker_id === callerProfile.id;
-    const isCompany = company.created_by === callerProfile.id;
+    // Membership (any role) makes the caller a party — this endpoint only
+    // sends notifications, it moves no money.
+    const { data: membership } = await supabaseAdmin
+      .from("company_members")
+      .select("member_role")
+      .eq("company_id", company.id)
+      .eq("profile_id", callerProfile.id)
+      .maybeSingle();
+    const isCompany = !!membership;
     if (!isWorker && !isCompany) {
       return json({ error: "Not a party to this assignment" }, 403);
     }

@@ -82,12 +82,15 @@ serve(async (req) => {
 
     let authorized = false;
     if (deposit) {
-      const { data: company } = await supabaseAdmin
-        .from("companies")
-        .select("created_by")
-        .eq("id", deposit.company_id)
+      // Company membership (any role) authorizes reading the intent status —
+      // this is a read, not a money movement, so 'staff' members qualify too.
+      const { data: membership } = await supabaseAdmin
+        .from("company_members")
+        .select("member_role")
+        .eq("company_id", deposit.company_id)
+        .eq("profile_id", profile.id)
         .maybeSingle();
-      authorized = company?.created_by === profile.id;
+      authorized = !!membership;
     }
     if (!authorized) {
       // Indistinguishable from "does not exist" — no oracle.

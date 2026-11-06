@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
+import { useHasCompanyMembership } from '@/hooks/useMarketplace';
 import { Bell, Calendar, DollarSign, LogOut, User, Briefcase, Plus, MessageSquare, Building2, Users, Link as LinkIcon, CalendarDays, Mail, Upload, Sparkles, Megaphone, KanbanSquare, FileDown, AlertTriangle, ShieldCheck, Inbox, Clock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import NotificationCenter from '@/components/notifications/NotificationCenter';
@@ -59,10 +60,16 @@ const Navbar: React.FC = () => {
     { path: '/finances', label: 'Finances', icon: DollarSign },
   ];
 
-  const navItems = profile?.role === 'company'
-    ? companyNavItems
-    : profile?.role === 'admin'
-      ? [...workerNavItems, { path: '/admin/waitlist', label: 'Waitlist', icon: Users }]
+  // A worker-profile account with a company_members row operates a company
+  // under the same login — show the union of both nav sets (deduped by path).
+  const hasCompanyMembership = useHasCompanyMembership();
+  const isCompanySide = profile?.role === 'company' || hasCompanyMembership;
+  const navItems = profile?.role === 'admin'
+    ? [...workerNavItems, { path: '/admin/waitlist', label: 'Waitlist', icon: Users }]
+    : isCompanySide
+      ? (profile?.role === 'company'
+          ? companyNavItems
+          : [...workerNavItems, ...companyNavItems.filter((c) => !workerNavItems.some((w) => w.path === c.path))])
       : workerNavItems;
 
   return (
@@ -105,8 +112,8 @@ const Navbar: React.FC = () => {
             <div className="flex items-center space-x-4">
               {user ? (
                 <>
-                  {/* Create Gig Button for Companies */}
-                  {profile?.role === 'company' && (
+                  {/* Create Gig Button for Companies (and worker-members) */}
+                  {isCompanySide && (
                     <Button 
                       size="sm" 
                       onClick={() => navigate('/gigs/create')}

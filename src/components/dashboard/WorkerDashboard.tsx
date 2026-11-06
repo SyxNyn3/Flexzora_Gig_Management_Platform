@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
 import SetupChecklist from '@/components/onboarding/SetupChecklist';
+import CompanyAccessCard from '@/components/dashboard/CompanyAccessCard';
 import { useGigs, useApplications, usePayments, useExpenses, useRealtimeNotifications } from '@/hooks/useSupabaseQuery';
 import ReviewStars from '@/components/reviews/ReviewStars';
 import {
@@ -364,6 +365,9 @@ const WorkerDashboard: React.FC = () => {
 
           {/* Sidebar */}
           <div className="space-y-6">
+            {/* Dual-role: workers can run a production company under the same login */}
+            <CompanyAccessCard />
+
             {/* Quick Actions */}
             <Card>
               <CardHeader className="pb-4">
