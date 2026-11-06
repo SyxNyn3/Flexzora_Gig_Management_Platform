@@ -141,8 +141,30 @@ worker + company accounts, screenshots in `.diffui/screenshots/`):
   path (direct INSERT closed); `my_company_memberships()` feeds the UI.
   Verified live via pooler as real users: worker creates company → owner
   member row + `owns_company`=true, `profiles.role` stays `worker`.
-- ⚠️ Edge functions (`release-payout`, `create-checkout-session`,
-  `retrieve-payment-intent`, `notify-assignment`) still run the PREVIOUS
-  code until `supabase functions deploy` — they check `company_members`
-  in the new revision but the old revision checks `created_by`. Deploy
-  before/with the frontend release.
+- ✅ Edge functions deployed 2026-11-06 and verified live (401 to
+  anonymous callers): `release-payout` + `create-checkout-session`
+  require owner/admin membership; `retrieve-payment-intent` +
+  `notify-assignment` accept any member.
+
+## Ops & onboarding automation — 2026-11-06
+
+- ✅ Company-side notifications fan out to ALL `company_members`, not just
+  `companies.created_by` (auto_backfill_shift, detect_no_shows,
+  notify_on_application_status_change, open_timesheet_dispute,
+  sync_swap_claim). `company_member_ids()` is definer-only so it can't be
+  used as a membership oracle. Migration `20261204000000`, applied +
+  recorded remotely.
+- ✅ Company setup checklist gained "Fund your first event escrow" —
+  checks a real funded/partially_released `escrow_deposits` row so new
+  companies learn payroll releases from escrow before the first
+  timesheet approval hits "escrow is short".
+- ✅ Daily onboarding nudge sweep (`send_onboarding_nudges`, pg_cron
+  15:00 UTC): in-app reminders for workers >24h without crew-card skills
+  and company owners/admins whose company has zero events. 72h dedup,
+  3-nudge cap, staff not nagged. Verified live in a rolled-back
+  transaction. Migration `20261206000000`.
+- 🔧 Member management (add/remove/role-change RPCs + /team page) built
+  and live-verified on branch `feat/member-management`, pending merge.
+- 🔧 Waitlist→account claim flow in progress on `feat/waitlist-claim`.
+- 🔧 vite/vitest toolchain upgrades in progress on
+  `chore/tooling-upgrades` (Dependabot dev-tooling criticals).
