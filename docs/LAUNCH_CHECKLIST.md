@@ -198,4 +198,28 @@ worker + company accounts, screenshots in `.diffui/screenshots/`):
   speed; prompts carry only intent catalog + operational metadata,
   never PII, per the copilot_query design.
 - 🔧 Authenticated end-to-end copilot query not yet smoke-tested
-  (needs a real user session).
+  (needs a real user session) — UPDATE 2026-12-10: verified live via
+  pooler + REST; returns correct intent JSON through the full chain.
+
+## PostGIS moved out of public — 2026-12-10
+
+- ✅ Security Advisor PostGIS findings cleared: extension moved from
+  `public` to `extensions` via backup → `DROP EXTENSION postgis
+  CASCADE` → `CREATE EXTENSION postgis WITH SCHEMA extensions` in one
+  transaction (Supabase KB path; the `postgres` role cannot run the
+  relocatable `pg_extension` script — superuser-only).
+- ✅ Prep: 5 functions with pinned `search_path` gained `extensions`
+  (`nearby_shifts`, `sync_profile_geo`, `sync_venue_geo`,
+  `worker_distances`, `worker_sensitive_sync_geo`) — migration
+  `20261210000000`. All 155 public functions verified intact post-move.
+- ✅ Restored: `venues.geo` + `worker_sensitive.geo`
+  (`geography(Point,4326)`, trigger-derived — both tables were empty,
+  zero data loss) + `venues_geo_idx` gist index — migration
+  `20261211000000`.
+- ✅ Verified: `extensions.spatial_ref_sys` (8500 rows restored),
+  `ST_Distance` resolves, geo trigger populates on insert (rolled-back
+  test), PostgREST schema reloaded, advisor re-run shows no PostGIS
+  findings.
+- ⚠️ Remaining advisor WARNs (separate, lower risk): `vector` and
+  `pg_trgm` extensions also sit in `public` — no exposed tables, same
+  drop/recreate fix applies if we want them gone too.
