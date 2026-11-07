@@ -89,6 +89,12 @@ verify_jwt = true
 [functions.save-push-subscription]
 verify_jwt = true
 
+# LLM proxy for Copilot intent routing + import column mapping. Authenticated
+# users only — the function also calls auth.getUser() itself and enforces a
+# per-user daily call cap because each call can spend upstream tokens.
+[functions.llm-proxy]
+verify_jwt = true
+
 # Internal dispatcher called by the crew_alert_push DB trigger via pg_net —
 # carries X-Push-Secret (PUSH_INTERNAL_SECRET), not a user JWT.
 [functions.send-push]
