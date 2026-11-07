@@ -30,7 +30,7 @@
     - RLS on every table; companies manage their own events, workers manage their own bookings/timesheets
 */
 
-CREATE EXTENSION IF NOT EXISTS postgis;
+CREATE EXTENSION IF NOT EXISTS postgis WITH SCHEMA extensions;
 
 -- ---------------------------------------------------------------------------
 -- Enums
