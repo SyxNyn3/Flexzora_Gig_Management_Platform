@@ -167,8 +167,35 @@ worker + company accounts, screenshots in `.diffui/screenshots/`):
   and company owners/admins whose company has zero events. 72h dedup,
   3-nudge cap, staff not nagged. Verified live in a rolled-back
   transaction. Migration `20261206000000`.
-- 🔧 Member management (add/remove/role-change RPCs + /team page) built
-  and live-verified on branch `feat/member-management`, pending merge.
-- 🔧 Waitlist→account claim flow in progress on `feat/waitlist-claim`.
-- 🔧 vite/vitest toolchain upgrades in progress on
-  `chore/tooling-upgrades` (Dependabot dev-tooling criticals).
+- ✅ Member management, waitlist claim, and toolchain upgrades merged
+  (PRs #159-#163).
+
+## Worker tax & payout tooling — 2026-12-09
+
+- ✅ Guided W-9 wizard (PR #166): 3-step form → facsimile Form W-9 PDF
+  (jsPDF) → typed-name e-sign under Part II certification → same
+  `compliance_docs` pending/review/approved flow. SSN/EIN exist only
+  inside the PDF in the private bucket. Manual upload kept as fallback.
+- ✅ Worker payouts page already had: invoice PDF, CSV export,
+  year-end 1099-ready earnings statement. W-2s are NOT issuable —
+  Flexzora is not the employer; workers are 1099 contractors and the
+  payer (production company) issues 1099-NEC/W-2 as applicable.
+
+## Self-hosted LLM path — 2026-12-09
+
+- ✅ `llm-proxy` edge function (PR #165): authenticated, per-user
+  60 calls/day cap (`llm_proxy_hits`), forwards to `LLM_BASE_URL`
+  secret. `omniChat` now calls it by default; `VITE_OMNIROUTE_URL`
+  remains a dev override.
+- ✅ Upstream = self-hosted Ollama `qwen2.5:3b-instruct` on the Contabo
+  VPS behind an nginx bearer-token gateway (`flexzora-llm-gw`,
+  port 11435; raw Ollama has no auth and stays unpublished). Secrets
+  set: `LLM_BASE_URL`, `LLM_MODEL`, `LLM_API_KEY`.
+- ⚠️ Latency: CPU-only inference on 3 pinned cores ≈ 40-70s per call.
+  Timeouts raised to match (PR #167: client 90s, upstream 120s).
+  Works but slow — swap `LLM_BASE_URL`/`LLM_MODEL`/`LLM_API_KEY` to a
+  hosted OpenAI-compatible provider (Groq/Gemini) for interactive
+  speed; prompts carry only intent catalog + operational metadata,
+  never PII, per the copilot_query design.
+- 🔧 Authenticated end-to-end copilot query not yet smoke-tested
+  (needs a real user session).
