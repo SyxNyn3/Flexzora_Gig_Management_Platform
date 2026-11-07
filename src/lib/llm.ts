@@ -25,7 +25,7 @@ export interface ChatMessage {
 // proxy, which expects a bare POST (it appends /chat/completions upstream).
 const OMNIROUTE_URL: string | undefined = import.meta.env.VITE_OMNIROUTE_URL as string | undefined;
 const PROXY_URL = `${import.meta.env.VITE_SUPABASE_URL || ''}/functions/v1/llm-proxy`;
-const DEFAULT_TIMEOUT_MS = 8000;
+const DEFAULT_TIMEOUT_MS = 90_000;
 
 export async function omniChat(messages: ChatMessage[], timeoutMs = DEFAULT_TIMEOUT_MS): Promise<string | null> {
   const controller = new AbortController();
