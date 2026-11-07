@@ -48,7 +48,7 @@ const LLM_BASE_URL = (Deno.env.get("LLM_BASE_URL") || "").replace(/\/+$/, "");
 const LLM_API_KEY = Deno.env.get("LLM_API_KEY") || "";
 const LLM_MODEL = Deno.env.get("LLM_MODEL") || "";
 
-const UPSTREAM_TIMEOUT_MS = 15_000;
+const UPSTREAM_TIMEOUT_MS = 120_000;
 const MAX_BODY_BYTES = 64 * 1024;
 const MAX_MESSAGES = 20;
 const DAILY_CALL_LIMIT = 60;
@@ -167,7 +167,7 @@ serve(async (req) => {
         signal: controller.signal,
       });
     } catch (e) {
-      // Network failure or the 15s abort — log the reason, never the key.
+      // Network failure or the upstream-timeout abort — log the reason, never the key.
       console.error("llm-proxy upstream fetch failed:", e instanceof Error ? e.message : e);
       return emptyCompletion();
     } finally {
