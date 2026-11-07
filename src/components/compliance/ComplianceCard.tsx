@@ -3,9 +3,10 @@ import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { FileCheck2, Loader2, Upload } from 'lucide-react';
+import { FileCheck2, FilePenLine, Loader2, Upload } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { ComplianceService, DOC_TYPE_LABELS } from '@/lib/compliance/service';
+import W9Wizard from '@/components/compliance/W9Wizard';
 import type { ComplianceDoc, ComplianceDocStatus, ComplianceDocType } from '@/lib/types';
 
 const statusTone: Record<ComplianceDocStatus, string> = {
@@ -21,6 +22,7 @@ const ComplianceCard: React.FC = () => {
   const { profile } = useAuth();
   const [docs, setDocs] = useState<ComplianceDoc[]>([]);
   const [busy, setBusy] = useState<ComplianceDocType | null>(null);
+  const [w9WizardOpen, setW9WizardOpen] = useState(false);
   const inputFor = useRef<ComplianceDocType>('w9');
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -88,15 +90,23 @@ const ComplianceCard: React.FC = () => {
                 )}
               </div>
               {doc && <Badge variant="outline" className={statusTone[doc.status]}>{doc.status}</Badge>}
-              <Button size="sm" variant={doc ? 'outline' : 'default'} className="h-7 text-xs" disabled={busy !== null} onClick={() => pick(type)}>
+              {type === 'w9' && (
+                <Button size="sm" className="h-7 text-xs" disabled={busy !== null} onClick={() => setW9WizardOpen(true)}>
+                  <FilePenLine className="w-3 h-3 mr-1" />
+                  {doc ? (doc.status === 'rejected' ? 'Fill again' : 'Replace') : 'Fill out W-9'}
+                </Button>
+              )}
+              <Button size="sm" variant={type === 'w9' ? 'ghost' : doc ? 'outline' : 'default'} className="h-7 text-xs" disabled={busy !== null} onClick={() => pick(type)} title={type === 'w9' ? 'Upload a W-9 PDF you already have' : undefined}>
                 {busy === type ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Upload className="w-3 h-3 mr-1" />}
-                {doc ? (doc.status === 'rejected' ? 'Resubmit' : 'Replace') : 'Upload'}
+                {doc ? (type === 'w9' ? 'Upload file' : doc.status === 'rejected' ? 'Resubmit' : 'Replace') : 'Upload'}
               </Button>
             </div>
           );
         })}
 
         <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,application/pdf" className="hidden" onChange={onFile} />
+
+        <W9Wizard open={w9WizardOpen} onOpenChange={setW9WizardOpen} onSubmitted={load} />
       </CardContent>
     </Card>
   );
