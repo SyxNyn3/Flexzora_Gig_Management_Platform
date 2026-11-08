@@ -586,14 +586,24 @@ const LandingPage: React.FC = () => {
                 Running a production? Your crew is already here — post calls, manage paperwork and payouts in one place.
               </p>
             </div>
-            <Button
-              size="lg"
-              onClick={() => navigate('/schedule-demo')}
-              className="bg-amber-400 text-zinc-950 hover:bg-amber-300 font-semibold px-8 shrink-0"
-            >
-              Book a production demo
-              <ArrowRight className="ml-2 w-5 h-5" />
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-3 shrink-0">
+              <Button
+                size="lg"
+                onClick={() => navigate('/auth')}
+                className="bg-amber-400 text-zinc-950 hover:bg-amber-300 font-semibold px-8"
+              >
+                Create your company account
+                <ArrowRight className="ml-2 w-5 h-5" />
+              </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                onClick={() => navigate('/schedule-demo')}
+                className="border-white/20 text-zinc-200 hover:bg-white/5 px-8"
+              >
+                Book a walkthrough
+              </Button>
+            </div>
           </div>
         </div>
       </section>
