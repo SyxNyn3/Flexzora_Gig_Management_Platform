@@ -5,6 +5,14 @@ import { supabase } from '@/lib/supabase';
 // to or spent by the worker across ALL productions (platform + off-platform).
 // Backed by public.worker_ledger_entries + the ledger_* / onboarding_* RPCs
 // (migration 20261213000000_worker_ledger_startpack.sql).
+//
+// Why this exists: docs/research/crew-worker-tools-landscape.md — chasing
+// pay across employers is the top crew complaint, and payroll incumbents
+// can't host a cross-employer worker ledger without hosting competitors'
+// workers. docs/research/1099-crew-compliance.md — 1099 crew have no
+// wage-hour protections, so records and contract evidence are the leverage.
+// Rules honored here: no money custody, no SSN/bank collection, money in
+// integer cents, worker-reported claims labeled as such.
 // ---------------------------------------------------------------------------
 
 export type LedgerKind =

@@ -1,14 +1,33 @@
 -- Worker ledger core + per-company start-pack checklist.
 --
--- Design (see docs/research/crew-worker-tools-landscape.md):
+-- Design (see docs/research/crew-worker-tools-landscape.md and
+-- docs/research/1099-crew-compliance.md for the findings behind each call):
+--
 -- * The ledger is WORKER-OWNED and employer-agnostic. It aggregates the
 --   worker's whole career — platform work (timesheets/invoices/expenses)
 --   plus off-platform gigs entered manually. Companies get read access to
 --   entries tagged with their company_id for reconciliation; entries are
 --   worker-reported claims, not verified truth.
--- * We never custody money and never collect SSNs here. The start-pack
---   checklist TRACKS document status per production; actual sensitive
---   files stay in compliance_docs behind the existing review flow.
+--   Research basis: the #1 crew complaint across Reddit/app reviews is
+--   chasing pay across employers; payroll incumbents (Wrapbook, GreenSlate)
+--   structurally cannot host a cross-employer worker ledger without
+--   hosting competitors' workers — that gap is the moat.
+--
+-- * We never custody money and never collect SSNs here. Axium collapsed in
+--   2008 holding $28M in frozen payroll funds and Synapse froze fintech
+--   accounts in 2024 — workers are primed to distrust any app touching
+--   money or identity documents. The start-pack checklist TRACKS document
+--   status per production; actual sensitive files stay in compliance_docs
+--   behind the existing review flow, collected by the payroll company
+--   that actually needs them.
+--
+-- * Education honesty: 1099 crew have no FLSA wage-hour protections
+--   (no overtime, meal penalties, waiting-time penalties). The product
+--   must never imply otherwise; the worker's leverage is contract +
+--   records + tax position. See 1099-crew-compliance.md.
+--
+-- * All money is integer cents. Platform tables store numeric dollars;
+--   ledger_summary converts with ROUND(x*100) so the API never mixes units.
 
 -- ---------------------------------------------------------------------------
 -- 1) Expand compliance_docs.doc_type so start-pack documents (W-4, deal memo,

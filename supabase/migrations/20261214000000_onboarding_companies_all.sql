@@ -2,10 +2,13 @@
 -- relationship with — including ones whose checklist already exists.
 -- The 20261213 version excluded companies with a gig_onboarding row, so a
 -- company vanished from the start-pack UI the moment its checklist was
--- created. Return checklist status alongside so the UI can badge progress.
+-- created (found in self-review before merge, not by a user). Return
+-- checklist status alongside so the UI can badge progress.
 --
 -- Also include expense-only relationships (expenses -> gigs.company_id),
--- matching the relationship test inside onboarding_get().
+-- matching the relationship test inside onboarding_get() — the original
+-- list and the get-gate disagreed, which would have hidden companies the
+-- worker could legitimately request a checklist for.
 
 DROP FUNCTION IF EXISTS onboarding_companies();
 
