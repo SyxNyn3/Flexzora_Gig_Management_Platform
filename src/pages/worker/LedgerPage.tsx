@@ -1,3 +1,9 @@
+// Work ledger — the worker's portable record of everything owed to them
+// across every production, platform and off-platform. Manual entries
+// (mileage, per diem, off-platform income, payments received) live in
+// worker_ledger_entries; platform earnings come from timesheets/invoices
+// via ledger_summary. See src/lib/ledger.ts for the data layer and
+// docs/research/crew-worker-tools-landscape.md for why this exists.
 import React, { useMemo, useState } from 'react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -16,6 +22,8 @@ import {
 } from '@/lib/ledger';
 import { Car, FileText, Loader2, Minus, Plus, Receipt, Wallet } from 'lucide-react';
 
+// All ledger money is integer cents in the DB; the shared money() helper
+// formats dollars, so divide once here and never again downstream.
 const cents = (n: number | null | undefined) => money((n ?? 0) / 100);
 
 // IRS standard mileage rate by drive date (dollars/mile). Verify against the
@@ -28,6 +36,10 @@ const MILEAGE_RATES: [string, number][] = [
   ['2024-01-01', 0.67],
 ];
 const mileageRateFor = (isoDate: string): number => {
+  // Table is ordered newest-first; first entry whose start date is <= the
+  // trip date wins. Dates before 2024 fall through to the oldest rate —
+  // acceptable because the IRS only allows amended-rate claims within the
+  // filing window anyway.
   for (const [from, rate] of MILEAGE_RATES) if (isoDate >= from) return rate;
   return MILEAGE_RATES[MILEAGE_RATES.length - 1][1];
 };
@@ -43,6 +55,11 @@ const KIND_ICONS: Record<LedgerKind, React.ReactNode> = {
 
 const entryDate = (e: LedgerEntry) => format(new Date(e.entry_date + 'T12:00:00'), 'MMM d, yyyy');
 
+// One form handles all six kinds. Amount semantics differ per kind:
+// mileage/per_diem derive their cents from quantity × rate (the user never
+// types a dollar amount for those), expense_extra is stored negative so
+// expense totals subtract cleanly in ledger_summary, and 'adjustment' exists
+// for corrections the worker shouldn't have to delete-and-reenter.
 const AddEntryForm: React.FC<{ onDone: () => void }> = ({ onDone }) => {
   const [kind, setKind] = useState<LedgerKind>('manual_income');
   const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'));
@@ -62,6 +79,10 @@ const AddEntryForm: React.FC<{ onDone: () => void }> = ({ onDone }) => {
   const [reference, setReference] = useState('');
   const [busy, setBusy] = useState(false);
 
+  // Company options come from onboarding_companies() — every company the
+  // worker has a real relationship with. Deliberately NOT a free-text
+  // company field: company_id is a real FK, and limiting choices to known
+  // relationships keeps per-company summaries meaningful.
   const companies = useSupabaseQuery(fetchOnboardingCompanies, []);
   const companyOptions = useMemo(() => {
     const map = new Map<string, string>();
@@ -69,6 +90,8 @@ const AddEntryForm: React.FC<{ onDone: () => void }> = ({ onDone }) => {
     return Array.from(map.entries());
   }, [companies.data]);
 
+  // Drives the note placeholder wording only — income-side entries answer
+  // "what was this for", expenses answer "what did you spend on".
   const isIncomeSide = ['manual_income', 'payment_received', 'mileage', 'per_diem'].includes(kind);
 
   const submit = async () => {
@@ -77,6 +100,9 @@ const AddEntryForm: React.FC<{ onDone: () => void }> = ({ onDone }) => {
     let amountCents = Math.round(dollars * 100);
     const details: Record<string, unknown> = {};
 
+    // Kind-specific validation + details payload. For mileage and per_diem
+    // the entered quantity×rate REPLACES the typed amount — that's why the
+    // amount field is hidden for those kinds in the form below.
     if (kind === 'mileage') {
       const m = parseFloat(miles);
       const r = parseFloat(rate) || mileageRateFor(date);
@@ -105,6 +131,10 @@ const AddEntryForm: React.FC<{ onDone: () => void }> = ({ onDone }) => {
     setBusy(true);
     const { error } = await addLedgerEntry({
       kind,
+      // expense_extra stores negative cents so ledger_summary's expense
+      // totals come out right without a sign flip at read time. The RPC
+      // accepts negative expense_extra/adjustment but rejects negative
+      // income-side kinds.
       amount_cents: kind === 'expense_extra' ? -amountCents : amountCents,
       entry_date: date,
       company_id: companyId || null,
@@ -201,6 +231,9 @@ const LedgerPage: React.FC = () => {
   const thisYear = new Date().getFullYear();
   const [year, setYear] = useState(thisYear);
   const [showForm, setShowForm] = useState(false);
+  // nonce bumps to force both queries to refetch after a new entry is saved —
+  // useSupabaseQuery keys on the deps array, so incrementing a counter in it
+  // is the simplest invalidation without a query-client cache layer.
   const [nonce, setNonce] = useState(0);
 
   const summary = useSupabaseQuery(() => fetchLedgerSummary(year), [year, nonce]);
@@ -229,6 +262,9 @@ const LedgerPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Summary cards — all values are cents from ledger_summary, rendered
+          through cents(). "Still owed" is the retention hook: it's the
+          number a worker checks when deciding whether to chase a payment. */}
       {summary.loading ? <Skeleton className="h-28 w-full" /> : s && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Earned ({year})</p><p className="text-xl font-semibold">{cents(s.earned_cents)}</p><p className="text-xs text-muted-foreground">platform + off-platform</p></CardContent></Card>
@@ -262,6 +298,11 @@ const LedgerPage: React.FC = () => {
                     {LEDGER_KIND_LABELS[e.kind]}
                     {e.description ? <span className="text-muted-foreground font-normal"> — {e.description}</span> : null}
                   </p>
+                  {/* details payload rendered per-kind: mileage shows
+                      miles @ rate, per_diem shows nights + locality. The
+                      rate_cents stored at entry time is what displays, so
+                      historical entries keep the rate that was actually
+                      used even after MILEAGE_RATES updates. */}
                   <p className="text-xs text-muted-foreground">
                     {entryDate(e)}
                     {e.kind === 'mileage' && e.details?.miles ? ` · ${e.details.miles} mi${e.details.rate_cents ? ` @ ${cents(e.details.rate_cents)}/mi` : ''}` : ''}

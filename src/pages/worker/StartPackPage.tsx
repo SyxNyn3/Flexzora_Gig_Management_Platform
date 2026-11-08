@@ -1,3 +1,8 @@
+// Start packs — the per-company document checklist every production runs
+// differently (deal memo, W-4, state forms, I-9, union card, COI...).
+// Workers mark items submitted here; companies confirm or waive them.
+// Actual document files live in Payouts → Compliance (compliance_docs) —
+// this page tracks status only, never stores sensitive files itself.
 import React, { useState } from 'react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
@@ -12,6 +17,10 @@ import {
 } from '@/lib/ledger';
 import { CheckCircle2, Clock, FileWarning, Loader2 } from 'lucide-react';
 
+// Badge colors encode who owns the next move: gray = worker hasn't acted,
+// blue = waiting on the company, green = done, amber = company waived it.
+// The worker UI only ever produces missing/submitted — confirmed/waived
+// come from the company side (see guard_onboarding_items trigger).
 const stateTone: Record<OnboardingItemState, string> = {
   missing: 'bg-muted text-muted-foreground border-border',
   submitted: 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/30',
@@ -26,9 +35,15 @@ const stateLabel: Record<OnboardingItemState, string> = {
   waived: 'Waived',
 };
 
+// Per-company checklist. Note: fetchOnboarding calls onboarding_get, which
+// LAZILY CREATES the gig_onboarding row on first open (gated on a real work
+// relationship). That's intentional — viewing a checklist is the natural
+// moment to materialize it — but it means expanding a card is a write.
 const Checklist: React.FC<{ companyId: string; companyName: string; onChanged: () => void }> = ({ companyId, companyName, onChanged }) => {
   const q = useSupabaseQuery(() => fetchOnboarding(companyId), [companyId]);
   const row: GigOnboarding | null = q.data;
+  // busyKey tracks which single item is mid-transition so its button can
+  // show a spinner without disabling the whole list.
   const [busyKey, setBusyKey] = useState<string | null>(null);
 
   const setState = async (item: string, state: OnboardingItemState) => {
@@ -36,13 +51,19 @@ const Checklist: React.FC<{ companyId: string; companyName: string; onChanged: (
     const { error } = await updateOnboardingItem(companyId, item, state);
     setBusyKey(null);
     if (error) return toast.error(error);
+    // Parent bumps its nonce so the company list re-fetches progress badges.
     onChanged();
   };
 
   if (q.loading) return <Skeleton className="h-40 w-full" />;
   if (!row) return <p className="text-sm text-muted-foreground py-4">Checklist unavailable.</p>;
 
+  // Render every standard item in canonical order; items absent from the
+  // jsonb map default to 'missing' so newly added checklist keys appear
+  // automatically without a backfill.
   const items = ONBOARDING_ITEM_ORDER.map((k) => ({ key: k, state: row.items?.[k] ?? 'missing' }));
+  // Progress counts only company-resolved states — 'submitted' is the
+  // worker's claim, not the company's verification, so it doesn't count.
   const done = items.filter((i) => i.state === 'confirmed' || i.state === 'waived').length;
 
   return (
@@ -76,7 +97,8 @@ const Checklist: React.FC<{ companyId: string; companyName: string; onChanged: (
                 Undo
               </Button>
             )}
-            {state === 'missing' && row.items?.[key] !== undefined && null}
+            {/* confirmed/waived states render no worker action — only the
+                company side can move an item into those states. */}
           </div>
         </div>
       ))}
@@ -101,6 +123,11 @@ const StartPackPage: React.FC = () => {
         </p>
       </div>
 
+      {/* The amber banner is deliberate product positioning, not decoration:
+          1099 crew have no FLSA wage-hour protections, and the research
+          (docs/research/1099-crew-compliance.md) shows workers don't know
+          this. Saying it plainly is what makes the checklist feel like
+          protection rather than paperwork. */}
       <Card className="border-amber-500/30 bg-amber-500/5">
         <CardContent className="p-4 flex gap-3">
           <FileWarning className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
@@ -118,6 +145,9 @@ const StartPackPage: React.FC = () => {
         </CardContent></Card>
       )}
 
+      {/* Companies with no checklist yet show no badge — checklist_status
+          is null until onboarding_get materializes the row. The button
+          label reflects that: "Set up" vs "Update". */}
       {(companies.data ?? []).map((c) => (
         <Card key={c.company_id}>
           <CardContent className="p-4">
