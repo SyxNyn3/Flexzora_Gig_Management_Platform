@@ -26,7 +26,8 @@ import { toast } from 'sonner';
 
 const expenseSchema = z.object({
   amount: z.string().min(1, 'Amount is required'),
-  category: z.enum(['travel', 'equipment', 'meals', 'accommodation', 'fuel', 'parking', 'other']),
+  category: z.enum(['travel', 'equipment', 'meals', 'accommodation', 'fuel', 'parking', 'insurance', 'dues', 'software', 'other']),
+  is_capital_expense: z.boolean().default(false),
   description: z.string().min(3, 'Description must be at least 3 characters'),
   expense_date: z.string().min(1, 'Date is required'),
   gig_id: z.string().optional(),
@@ -69,6 +70,7 @@ const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ gigId }) => {
       gig_id: gigId || '',
       is_reimbursable: false,
       is_tax_deductible: true,
+      is_capital_expense: false,
       notes: '',
     },
   });
@@ -129,6 +131,7 @@ const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ gigId }) => {
         gig_id: data.gig_id || undefined,
         is_reimbursable: data.is_reimbursable,
         is_tax_deductible: data.is_tax_deductible,
+        is_capital_expense: data.is_capital_expense,
         notes: data.notes || undefined,
         currency: 'USD',
         receipt_url: receiptPath,
@@ -159,6 +162,9 @@ const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ gigId }) => {
       case 'accommodation': return 'bg-primary/15 text-indigo-800';
       case 'fuel': return 'bg-amber-500/15 text-amber-800';
       case 'parking': return 'bg-primary/15 text-blue-800';
+      case 'insurance': return 'bg-primary/15 text-emerald-800';
+      case 'dues': return 'bg-primary/15 text-violet-800';
+      case 'software': return 'bg-primary/15 text-cyan-800';
       default: return 'bg-muted text-foreground/90';
     }
   };
@@ -279,6 +285,11 @@ const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ gigId }) => {
                             Tax Deductible
                           </Badge>
                         )}
+                        {expense.is_capital_expense && (
+                          <Badge variant="outline" className="text-xs">
+                            Section 179
+                          </Badge>
+                        )}
                       </div>
                       <div className="flex items-center space-x-4 mt-2 text-sm text-muted-foreground">
                         <span>{format(new Date(expense.expense_date), 'MMM d, yyyy')}</span>
@@ -357,6 +368,9 @@ const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ gigId }) => {
                     <SelectItem value="accommodation">Accommodation</SelectItem>
                     <SelectItem value="fuel">Fuel</SelectItem>
                     <SelectItem value="parking">Parking</SelectItem>
+                    <SelectItem value="insurance">Insurance</SelectItem>
+                    <SelectItem value="dues">Union / assoc dues</SelectItem>
+                    <SelectItem value="software">Software / apps</SelectItem>
                     <SelectItem value="other">Other</SelectItem>
                   </SelectContent>
                 </Select>
@@ -459,6 +473,19 @@ const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ gigId }) => {
                   onCheckedChange={(checked) => form.setValue('is_tax_deductible', checked)}
                 />
                 <Label htmlFor="is_tax_deductible">Tax Deductible</Label>
+              </div>
+
+              {/* Big-ticket flag: cameras, consoles, vehicles are capital
+                  items — Section 179 or depreciation, not routine supplies.
+                  The flag separates them at tax time; it doesn't compute
+                  the deduction (see /tax-playbook). */}
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="is_capital_expense"
+                  checked={form.watch('is_capital_expense')}
+                  onCheckedChange={(checked) => form.setValue('is_capital_expense', checked)}
+                />
+                <Label htmlFor="is_capital_expense">Big-ticket item (Section 179)</Label>
               </div>
             </div>
 

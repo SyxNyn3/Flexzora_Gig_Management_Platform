@@ -2,7 +2,7 @@ export type UserRole = 'admin' | 'worker' | 'company';
 export type GigStatus = 'draft' | 'published' | 'in_progress' | 'completed' | 'cancelled';
 export type ApplicationStatus = 'pending' | 'accepted' | 'rejected' | 'withdrawn';
 export type PaymentStatus = 'pending' | 'paid' | 'overdue' | 'cancelled';
-export type ExpenseCategory = 'travel' | 'equipment' | 'meals' | 'accommodation' | 'fuel' | 'parking' | 'other';
+export type ExpenseCategory = 'travel' | 'equipment' | 'meals' | 'accommodation' | 'fuel' | 'parking' | 'insurance' | 'dues' | 'software' | 'other';
 export type IntegrationStatus = 'connected' | 'pending' | 'error' | 'disconnected';
 export type WaitlistRoleInterest = 'worker' | 'company';
 export type WaitlistStatus = 'pending' | 'whitelisted' | 'invited' | 'verified';
@@ -625,6 +625,9 @@ export interface Expense {
   receipt_url?: string;
   is_reimbursable: boolean;
   is_tax_deductible: boolean;
+  /** Capital item (camera, console, vehicle) — Section 179/depreciation
+   *  candidate rather than routine supplies. Flag only, no deduction math. */
+  is_capital_expense?: boolean;
   notes?: string;
   created_at: string;
   updated_at: string;
