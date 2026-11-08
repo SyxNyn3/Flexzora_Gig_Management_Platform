@@ -350,7 +350,7 @@ const BEATS = [
   { tag: '10 — SHOWTIME',       line: 'Every fixture burning. This is what the calls build.' },
 ];
 
-export function StageBuild() {
+export function StageBuild({ overlay }: { overlay?: React.ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end end'] });
   const spring = useSpring(scrollYProgress, { stiffness: 90, damping: 24, mass: 0.4 });
@@ -845,6 +845,17 @@ export function StageBuild() {
             <ProgressDot key={i} p={p} i={i} n={BEATS.length} />
           ))}
         </div>
+
+        {/* Optional overlay layer — the founding-crew closer renders its
+            waitlist content here so the build animation plays *behind*
+            the ask instead of occupying its own mid-page slot. z-20 sits
+            above the SVG/labels (z-10); pointer-events stay on so the
+            CTA remains clickable. */}
+        {overlay && (
+          <div className="absolute inset-0 z-20 pointer-events-none">
+            {overlay}
+          </div>
+        )}
       </div>
     </div>
   );
