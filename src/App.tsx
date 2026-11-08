@@ -55,6 +55,11 @@ const LedgerPage = lazy(() => import('@/pages/worker/LedgerPage'));
 const StartPackPage = lazy(() => import('@/pages/worker/StartPackPage'));
 const DealMemosPage = lazy(() => import('@/pages/worker/DealMemosPage'));
 const CompanyDealMemosPage = lazy(() => import('@/pages/company/CompanyDealMemosPage'));
+const MarketBrowsePage = lazy(() => import('@/pages/market/MarketBrowsePage'));
+const ListingDetailPage = lazy(() => import('@/pages/market/ListingDetailPage'));
+const SellListingPage = lazy(() => import('@/pages/market/SellListingPage'));
+const MyListingsPage = lazy(() => import('@/pages/market/MyListingsPage'));
+const MarketOrdersPage = lazy(() => import('@/pages/market/MarketOrdersPage'));
 const TaxPlaybookPage = lazy(() => import('@/pages/worker/TaxPlaybookPage'));
 const PublicProfilePage = lazy(() => import('@/pages/PublicProfilePage'));
 const WaitlistAdminPage = lazy(() => import('@/pages/admin/WaitlistAdminPage'));
@@ -662,6 +667,59 @@ const AppRoutes: React.FC = () => {
             <ProtectedRoute><RoleRoute role="worker">
               <Layout>
                 <StartPackPage />
+              </Layout>
+            </RoleRoute></ProtectedRoute>
+          }
+        />
+        {/* Flexzora Market — crew-to-crew gear sales. Worker-scoped like the
+            rest of the crew surfaces; static segments must precede :id so
+            /market/sell etc. don't get captured as a listing id. */}
+        <Route
+          path="/market"
+          element={
+            <ProtectedRoute><RoleRoute role="worker">
+              <Layout>
+                <MarketBrowsePage />
+              </Layout>
+            </RoleRoute></ProtectedRoute>
+          }
+        />
+        <Route
+          path="/market/sell"
+          element={
+            <ProtectedRoute><RoleRoute role="worker">
+              <Layout>
+                <SellListingPage />
+              </Layout>
+            </RoleRoute></ProtectedRoute>
+          }
+        />
+        <Route
+          path="/market/mine"
+          element={
+            <ProtectedRoute><RoleRoute role="worker">
+              <Layout>
+                <MyListingsPage />
+              </Layout>
+            </RoleRoute></ProtectedRoute>
+          }
+        />
+        <Route
+          path="/market/orders"
+          element={
+            <ProtectedRoute><RoleRoute role="worker">
+              <Layout>
+                <MarketOrdersPage />
+              </Layout>
+            </RoleRoute></ProtectedRoute>
+          }
+        />
+        <Route
+          path="/market/:id"
+          element={
+            <ProtectedRoute><RoleRoute role="worker">
+              <Layout>
+                <ListingDetailPage />
               </Layout>
             </RoleRoute></ProtectedRoute>
           }
