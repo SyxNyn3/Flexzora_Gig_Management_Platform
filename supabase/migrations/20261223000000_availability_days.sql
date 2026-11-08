@@ -38,10 +38,12 @@ CREATE INDEX worker_availability_days_worker_day_idx
 ALTER TABLE worker_availability_days ENABLE ROW LEVEL SECURITY;
 
 -- Workers manage their own rows; nothing else reads them yet.
+-- profiles.id is NOT auth.uid() — profiles.user_id is. Same join pattern as
+-- the original `availability` policies.
 CREATE POLICY "workers manage own availability days"
   ON worker_availability_days FOR ALL TO authenticated
-  USING (worker_id = auth.uid())
-  WITH CHECK (worker_id = auth.uid());
+  USING (EXISTS (SELECT 1 FROM profiles p WHERE p.id = worker_availability_days.worker_id AND p.user_id = auth.uid()))
+  WITH CHECK (EXISTS (SELECT 1 FROM profiles p WHERE p.id = worker_availability_days.worker_id AND p.user_id = auth.uid()));
 
 -- Server-owned fields: worker_id must equal the caller, and status/note are
 -- free text the worker owns — nothing server-owned to guard beyond auth.uid().
