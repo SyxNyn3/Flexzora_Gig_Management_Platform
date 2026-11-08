@@ -59,6 +59,25 @@ needs config · 🔧 blocked on human action.
 - ✅ `schema_migrations` synced — all four manually-applied versions
   recorded; `db push` won't re-run them
 
+## Applied live 2026-11-08 (worker core pack, pending PR merge)
+
+- ✅ `worker_ledger_entries` + `gig_onboarding` tables, RLS enabled,
+  worker-owned write / company read-only policies
+- ✅ 8 RPCs live: `ledger_add_entry`, `ledger_entries`, `ledger_summary`,
+  `onboarding_get`, `onboarding_update_item`, `onboarding_companies`,
+  `onboarding_item_keys`, `guard_onboarding_items` — all `SECURITY DEFINER`
+  with `search_path` pinned, EXECUTE revoked from PUBLIC, granted to
+  `authenticated` only
+- ✅ Live smoke under real worker JWT: `ledger_summary` returns integer
+  cents ($360 earned → 36000¢, fees separate), `onboarding_companies`
+  returns invoice-linked company with null checklist status
+- ✅ Guard trigger verified by pgTAP design: worker self-confirm reverts,
+  company owner/admin confirm persists (CI db-tests pending on PR)
+- ✅ `compliance_docs.doc_type` expanded (W-4, deal memo, state form, COI,
+  union card, direct deposit, NDA, safety cert) — status tracking only
+- ⚠️ pgTAP `102_worker_ledger.test.sql` not yet executed locally (no
+  Docker on this machine) — first real run is CI on the PR
+
 ## Remaining human action
 
 - 🔧 Dashboard → Auth: enable leaked-password protection (WARN lint)
