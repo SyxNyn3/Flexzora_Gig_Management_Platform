@@ -26,7 +26,7 @@ import { toast } from 'sonner';
 
 const expenseSchema = z.object({
   amount: z.string().min(1, 'Amount is required'),
-  category: z.enum(['travel', 'equipment', 'meals', 'accommodation', 'other']),
+  category: z.enum(['travel', 'equipment', 'meals', 'accommodation', 'fuel', 'parking', 'other']),
   description: z.string().min(3, 'Description must be at least 3 characters'),
   expense_date: z.string().min(1, 'Date is required'),
   gig_id: z.string().optional(),
@@ -51,6 +51,11 @@ const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ gigId }) => {
   const [gigs, setGigs] = useState<Gig[]>([]);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  // Receipt photo/PDF for the expense being added. Uploaded to the private
+  // expense-receipts bucket under the worker's own folder; the storage path
+  // lands in expenses.receipt_url.
+  const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const receiptInputRef = React.useRef<HTMLInputElement>(null);
 
   // zod 4: .default() splits input vs output types — fields are z.input,
   // the submitted data is the z.infer output type.
@@ -103,6 +108,18 @@ const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ gigId }) => {
 
     setSubmitting(true);
     try {
+      // Upload the receipt first so the expense row can reference its path.
+      // The bucket is private — the path alone is useless without a signed URL.
+      let receiptPath: string | undefined;
+      if (receiptFile) {
+        const ext = (receiptFile.name.split('.').pop() || 'jpg').toLowerCase();
+        receiptPath = `${profile.id}/${crypto.randomUUID()}.${ext}`;
+        const { error: upErr } = await supabase.storage
+          .from('expense-receipts')
+          .upload(receiptPath, receiptFile, { upsert: false });
+        if (upErr) throw new Error(`Receipt upload failed: ${upErr.message}`);
+      }
+
       const expenseData = {
         worker_id: profile.id || '',
         amount: parseFloat(data.amount),
@@ -114,6 +131,7 @@ const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ gigId }) => {
         is_tax_deductible: data.is_tax_deductible,
         notes: data.notes || undefined,
         currency: 'USD',
+        receipt_url: receiptPath,
       };
 
       const { error } = await DatabaseService.addExpense(expenseData);
@@ -122,6 +140,8 @@ const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ gigId }) => {
 
       toast.success('Expense added successfully!');
       setShowAddDialog(false);
+      setReceiptFile(null);
+      if (receiptInputRef.current) receiptInputRef.current.value = '';
       form.reset();
       await refetchExpenses();
     } catch (error) {
@@ -137,8 +157,23 @@ const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ gigId }) => {
       case 'equipment': return 'bg-secondary/15 text-purple-800';
       case 'meals': return 'bg-amber-500/15 text-orange-800';
       case 'accommodation': return 'bg-primary/15 text-indigo-800';
+      case 'fuel': return 'bg-amber-500/15 text-amber-800';
+      case 'parking': return 'bg-primary/15 text-blue-800';
       default: return 'bg-muted text-foreground/90';
     }
+  };
+
+  // Receipts live in a private bucket — mint a short-lived signed URL on
+  // demand rather than storing an expiring URL on the row.
+  const viewReceipt = async (path: string) => {
+    const { data, error } = await supabase.storage
+      .from('expense-receipts')
+      .createSignedUrl(path, 300);
+    if (error || !data?.signedUrl) {
+      toast.error('Could not open receipt');
+      return;
+    }
+    window.open(data.signedUrl, '_blank', 'noopener');
   };
 
   const totalExpenses = (expenses || []).reduce((sum, expense) => sum + expense.amount, 0);
@@ -250,6 +285,15 @@ const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ gigId }) => {
                         {expense.gig && (
                           <span>• {expense.gig?.title || 'Unknown Gig'}</span>
                         )}
+                        {expense.receipt_url && (
+                          <button
+                            type="button"
+                            onClick={() => viewReceipt(expense.receipt_url!)}
+                            className="text-primary hover:underline inline-flex items-center gap-1"
+                          >
+                            <Receipt className="h-3 w-3" /> Receipt
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -311,6 +355,8 @@ const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ gigId }) => {
                     <SelectItem value="equipment">Equipment</SelectItem>
                     <SelectItem value="meals">Meals</SelectItem>
                     <SelectItem value="accommodation">Accommodation</SelectItem>
+                    <SelectItem value="fuel">Fuel</SelectItem>
+                    <SelectItem value="parking">Parking</SelectItem>
                     <SelectItem value="other">Other</SelectItem>
                   </SelectContent>
                 </Select>
@@ -358,6 +404,33 @@ const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ gigId }) => {
                 </Select>
               </div>
             </div>
+
+            <div>
+              <Label htmlFor="receipt">Receipt photo or PDF (optional)</Label>
+              <Input
+                id="receipt"
+                ref={receiptInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/heic,application/pdf"
+                onChange={(e) => setReceiptFile(e.target.files?.[0] ?? null)}
+              />
+              {receiptFile && (
+                <p className="text-xs text-muted-foreground mt-1">{receiptFile.name}</p>
+              )}
+            </div>
+
+            {/* Honest tax note: for a personal vehicle the IRS allows EITHER
+                the standard mileage rate OR actual expenses (fuel, parking,
+                etc.) — not both for the same miles. Workers who log mileage in
+                the ledger should not double-claim the same trips here. */}
+            {(form.watch('category') === 'fuel' || form.watch('category') === 'parking') && (
+              <p className="text-xs text-muted-foreground bg-muted/50 rounded-md p-2">
+                Tip: if you claim the IRS standard mileage rate for these miles in
+                your ledger, don't also deduct the same trips as actual expenses —
+                the IRS doesn't allow both. Actual-expense claims fit a dedicated
+                work vehicle or trips you didn't mileage-log.
+              </p>
+            )}
 
             <div>
               <Label htmlFor="notes">Notes (Optional)</Label>
