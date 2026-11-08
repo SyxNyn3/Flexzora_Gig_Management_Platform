@@ -185,10 +185,12 @@ const AuthForm: React.FC = () => {
         setError(friendlyAuthError(error.message));
       } else if (signUpData?.session) {
         // Email confirmation disabled on the project — session exists, go in.
+        // Company signups land on company setup (create_company is self-serve);
+        // workers go to the dashboard as before.
         toast.success('Account created successfully!', {
           description: 'Welcome to FlexZora! Your account has been created.',
         });
-        navigate('/dashboard', { replace: true });
+        navigate(data.role === 'company' ? '/company-setup' : '/dashboard', { replace: true });
       } else {
         // Email verification is ON: no session until the link in their inbox
         // is clicked. Show the check-email state instead of dumping them on a
