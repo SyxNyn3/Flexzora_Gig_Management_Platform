@@ -78,6 +78,19 @@ needs config · 🔧 blocked on human action.
 - ⚠️ pgTAP `102_worker_ledger.test.sql` not yet executed locally (no
   Docker on this machine) — first real run is CI on the PR
 
+## Applied live 2026-12-17 (push/SMS dispatch fix)
+
+- ✅ `crew_alert_push` + `send_alert_sms_digests` rewired from never-set
+  `app.*` GUCs to `internal_config` + Vault — dispatch was silently
+  dead since 2026-10-25, push/SMS never fired in prod
+- ✅ Verified live: test `crew_alerts` inserts produced HTTP 200 from
+  `send-push` via `net._http_response` (sent:0 — test worker has no
+  subscriptions, expected)
+- ✅ `push_fn_url`, `sms_digest_fn_url`, vault `push_internal_secret`,
+  `PUSH_INTERNAL_SECRET` function secret all configured
+- ⚠️ SMS digest not live-fired (needs aged alert + phone + sms pref);
+  same config path as push, cron runs every 30min
+
 ## Remaining human action
 
 - 🔧 Dashboard → Auth: enable leaked-password protection (WARN lint)
