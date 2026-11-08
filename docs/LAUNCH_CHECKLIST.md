@@ -91,6 +91,20 @@ needs config · 🔧 blocked on human action.
 - ⚠️ SMS digest not live-fired (needs aged alert + phone + sms pref);
   same config path as push, cron runs every 30min
 
+## Applied live 2026-12-17 (welcome-to-beta email)
+
+- ✅ `send-welcome-email` edge function deployed (verify_jwt=false,
+  X-Internal-Secret gate); 401 without secret verified
+- ✅ `waiting_list_claim_email` trigger live — fires on the claim
+  transition only, pg_net → edge fn, fail-open if unconfigured
+- ✅ `internal_config` table (deny-all RLS) + Vault secret
+  `internal_shared_secret` + `INTERNAL_SHARED_SECRET` function secret —
+  all verified readable/decrypting on remote
+- ⚠️ Actual email send untested end-to-end — no waitlist row has been
+  claimed yet; first real signup is the live test
+- ⚠️ Found dormant: `app.push_fn_url` never configured → push dispatch
+  has silently no-op'd since it shipped. Separate fix needed.
+
 ## Remaining human action
 
 - 🔧 Dashboard → Auth: enable leaked-password protection (WARN lint)
