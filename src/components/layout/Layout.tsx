@@ -18,9 +18,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         }}
       />
       <div className="pointer-events-none absolute -top-32 left-1/2 h-[300px] w-[600px] -translate-x-1/2 rounded-full bg-amber-400/[0.07] blur-[120px]" />
-      <div className="relative">
+      <div className="relative flex min-h-screen">
         <Navbar />
-        <main className="flex-1">
+        <main className="flex-1 min-w-0 pt-14 md:pt-0">
           {children}
         </main>
       </div>
