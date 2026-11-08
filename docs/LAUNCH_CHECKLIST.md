@@ -78,6 +78,30 @@ needs config · 🔧 blocked on human action.
 - ⚠️ pgTAP `102_worker_ledger.test.sql` not yet executed locally (no
   Docker on this machine) — first real run is CI on the PR
 
+## Applied live 2026-12-17 (crew marketplace / Flexzora Market)
+
+- ✅ `marketplace_listings` + `marketplace_orders` tables, RLS enabled;
+  orders have NO direct write policies — all writes via guarded RPCs
+- ✅ RPCs live + verified: `market_create_order` (server-side price + 5%
+  fee snapshot, fulfillment + shipping-address validation),
+  `mark_market_order_paid` (service-role only), `market_mark_shipped`,
+  `market_mark_delivered`, `market_cancel_order`
+- ✅ One-open-order-per-listing partial unique index live
+  (`marketplace_orders_one_open_per_listing`)
+- ✅ `market-photos` public bucket + folder-scoped storage policies
+  (`{seller_profile_id}/…`)
+- ✅ Edge functions deployed: `market-checkout` (destination charge,
+  5% application fee, reuses open Stripe session per order) and updated
+  `stripe-webhook` (market branch + duplicate-payment auto-refund)
+- ✅ Unauthenticated `market-checkout` call returns 401 (JWT enforced)
+- ✅ pgTAP `103_crew_marketplace.test.sql` written (19 asserts) — first
+  real run is CI on the PR
+- ⚠️ End-to-end Stripe purchase NOT yet exercised — needs a real listing,
+  Connect-onboarded seller, and test-mode card. Blocked on a live smoke
+  account, not code.
+- ⚠️ Refunds for paid orders are manual (Stripe dashboard) — documented
+  decision, no self-serve refund RPC in v1.
+
 ## Remaining human action
 
 - 🔧 Dashboard → Auth: enable leaked-password protection (WARN lint)
