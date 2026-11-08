@@ -110,9 +110,14 @@ SELECT throws_ok(
   'signed memo cannot be voided');
 
 RESET ROLE;
--- second confirmed assignment for the void path
+-- second confirmed assignment for the void path — needs its own shift:
+-- shift_assignments is UNIQUE(shift_id, worker_id) and f103 already holds
+-- the 'offered' fa02 row on fd01.
+INSERT INTO shifts (id, event_id, title, role_name, headcount, starts_at, ends_at, hourly_rate, status)
+VALUES ('00000000-0000-0000-0000-00000000fd02', '00000000-0000-0000-0000-00000000fe01',
+        'Call B', 'Stagehand', 1, '2027-04-01 18:00+00', '2027-04-02 02:00+00', 32.00, 'filled');
 INSERT INTO shift_assignments (id, shift_id, worker_id, status, source, offered_rate)
-SELECT '00000000-0000-0000-0000-00000000fa03', '00000000-0000-0000-0000-00000000fd01', p.id, 'confirmed', 'direct_book', 32.00
+SELECT '00000000-0000-0000-0000-00000000fa03', '00000000-0000-0000-0000-00000000fd02', p.id, 'confirmed', 'direct_book', 32.00
 FROM profiles p WHERE p.user_id = '00000000-0000-0000-0000-00000000f103';
 
 SET LOCAL ROLE authenticated;
