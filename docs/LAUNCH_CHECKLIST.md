@@ -101,6 +101,32 @@ needs config · 🔧 blocked on human action.
   account, not code.
 - ⚠️ Refunds for paid orders are manual (Stripe dashboard) — documented
   decision, no self-serve refund RPC in v1.
+## Applied live 2026-12-17 (push/SMS dispatch fix)
+
+- ✅ `crew_alert_push` + `send_alert_sms_digests` rewired from never-set
+  `app.*` GUCs to `internal_config` + Vault — dispatch was silently
+  dead since 2026-10-25, push/SMS never fired in prod
+- ✅ Verified live: test `crew_alerts` inserts produced HTTP 200 from
+  `send-push` via `net._http_response` (sent:0 — test worker has no
+  subscriptions, expected)
+- ✅ `push_fn_url`, `sms_digest_fn_url`, vault `push_internal_secret`,
+  `PUSH_INTERNAL_SECRET` function secret all configured
+- ⚠️ SMS digest not live-fired (needs aged alert + phone + sms pref);
+  same config path as push, cron runs every 30min
+
+## Applied live 2026-12-17 (welcome-to-beta email)
+
+- ✅ `send-welcome-email` edge function deployed (verify_jwt=false,
+  X-Internal-Secret gate); 401 without secret verified
+- ✅ `waiting_list_claim_email` trigger live — fires on the claim
+  transition only, pg_net → edge fn, fail-open if unconfigured
+- ✅ `internal_config` table (deny-all RLS) + Vault secret
+  `internal_shared_secret` + `INTERNAL_SHARED_SECRET` function secret —
+  all verified readable/decrypting on remote
+- ⚠️ Actual email send untested end-to-end — no waitlist row has been
+  claimed yet; first real signup is the live test
+- ⚠️ Found dormant: `app.push_fn_url` never configured → push dispatch
+  has silently no-op'd since it shipped. Separate fix needed.
 
 ## Remaining human action
 

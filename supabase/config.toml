@@ -104,3 +104,8 @@ verify_jwt = false
 # carries X-Push-Secret (PUSH_INTERNAL_SECRET), not a user JWT.
 [functions.alert-digest]
 verify_jwt = false
+
+# Welcome-to-beta mailer called by the waiting_list claim trigger via pg_net —
+# carries X-Internal-Secret (INTERNAL_SHARED_SECRET), not a user JWT.
+[functions.send-welcome-email]
+verify_jwt = false
