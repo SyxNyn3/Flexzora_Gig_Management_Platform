@@ -73,6 +73,52 @@ serve(async (req) => {
           // Stripe retries on non-2xx; an already-funded deposit is not an error worth retrying.
           if (error && !/already funded/.test(error.message)) throw error;
         }
+
+        // Crew-marketplace branch: sessions created by market-checkout carry
+        // market_order_id metadata. Same verification discipline as escrow —
+        // the order row is the source of truth, the session must have paid
+        // at least the order amount in the right currency.
+        const orderId = session.metadata?.market_order_id;
+        if (orderId && session.payment_status === "paid") {
+          const { data: order, error: orderLookupError } = await supabase
+            .from("marketplace_orders")
+            .select("id, amount_cents, currency, status")
+            .eq("id", orderId)
+            .maybeSingle();
+          if (orderLookupError) throw orderLookupError;
+          if (!order) {
+            console.warn(`checkout session ${session.id} references unknown order ${orderId}`);
+            break;
+          }
+          const paidCents = session.amount_total ?? 0;
+          if (paidCents < order.amount_cents
+              || (session.currency ?? "").toLowerCase() !== order.currency) {
+            console.warn(`order ${orderId} needs ${order.amount_cents} ${order.currency}, session paid ${paidCents} ${session.currency}`);
+            break;
+          }
+          const paymentRef = typeof session.payment_intent === "string" ? session.payment_intent : session.id;
+          const { error } = await supabase.rpc("mark_market_order_paid", {
+            p_order_id: orderId,
+            p_session_id: session.id,
+            p_payment_intent: paymentRef,
+          });
+          if (error) {
+            // Duplicate-payment guard: if the order was already paid (a
+            // buyer somehow completed two checkout sessions), the second
+            // charge must not silently sit there — refund it automatically
+            // and acknowledge the event so Stripe stops retrying.
+            if (/cannot mark paid/.test(error.message)) {
+              const pi = typeof session.payment_intent === "string" ? session.payment_intent : null;
+              if (pi) {
+                await stripe.refunds.create({ payment_intent: pi }).catch((e) =>
+                  console.error(`duplicate order ${orderId} refund failed:`, e));
+                console.warn(`order ${orderId} already paid — refunded duplicate payment ${pi}`);
+              }
+            } else {
+              throw error;
+            }
+          }
+        }
         break;
       }
       default:
