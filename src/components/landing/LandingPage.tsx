@@ -13,7 +13,6 @@ import {
   FolderLock,
   MapPin,
   Scale,
-  ShieldCheck,
 } from 'lucide-react';
 import { useWaitlistStats } from '@/hooks/useWaitlistStats';
 import { CREW_ROLE_GROUPS } from '@/components/waitlist/funnelOptions';
@@ -62,8 +61,12 @@ function useMediaQuery(query: string) {
   return matches;
 }
 
-/** Crossfading stack of card images — collage panels and photos alike. */
-const Crossfade: React.FC<{ images: CardImg[]; interval?: number; label: string }> = ({ images, interval = 5200, label }) => {
+/** Crossfading stack of card images — collage panels and photos alike.
+    `captions` (optional, hero only) shows a mono call-sheet line that
+    swaps with the active image so rotating pictures always arrive with
+    a word about what they are — a silent photo carousel tells a first
+    -time visitor nothing about the product. */
+const Crossfade: React.FC<{ images: CardImg[]; captions?: string[]; interval?: number; label: string }> = ({ images, captions, interval = 5200, label }) => {
   const [i, setI] = useState(0);
   useEffect(() => {
     setI(0);
@@ -86,6 +89,22 @@ const Crossfade: React.FC<{ images: CardImg[]; interval?: number; label: string 
           }}
         />
       ))}
+      {captions && captions.length > 0 && (
+        <div className="absolute inset-x-0 bottom-14 sm:bottom-16 z-10 px-4 sm:px-6 lg:px-8 pointer-events-none">
+          <AnimatePresence mode="wait">
+            <motion.p
+              key={i}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.4, ease: 'easeOut' }}
+              className="font-mono text-[10px] sm:text-xs tracking-[0.3em] uppercase text-amber-300/90 drop-shadow-[0_1px_4px_rgba(0,0,0,0.9)]"
+            >
+              {captions[i % captions.length]}
+            </motion.p>
+          </AnimatePresence>
+        </div>
+      )}
     </div>
   );
 };
@@ -127,10 +146,10 @@ const painCards: { images: CardImg[]; alt: string; title: string; sub: string; d
     images: [A(0, 1), A(2, 1)],
     alt: 'Road case with an amber tape strip and steel latches',
     title: 'Your pay is on paper before you lift a case.',
-    sub: 'Escrow-funded calls. Rate, hours and OT written down up front.',
+    sub: 'Rate, hours and OT written down up front — before you lift a case.',
     details: [
       'Rate, hours and OT terms are written on the call before you agree — no surprises at load-out.',
-      'On escrow-funded calls the money is committed up front — clock-out starts payout, not an invoice chase.',
+      'Payment terms are on the post up front — you know what you are owed before the call sheet goes out.',
       'GPS clock-in kills the paper timesheet — and the pay rules for your state are right there with it.',
     ],
   },
@@ -138,12 +157,13 @@ const painCards: { images: CardImg[]; alt: string; title: string; sub: string; d
 
 /* "Free for crew" grid — every line item is a shipped feature, not a
    promise. Copy rules: no "no fees" claim (invoices carry a platform
-   fee), escrow is qualified to funded calls, ledger/start-pack shipped
-   in PR #171. */
+   fee), ledger/start-pack shipped in PR #171. Escrow-backed calls was
+   removed 2026-11-08: we don't control the escrow provider yet, so the
+   page can't claim it (same reason the pain-card and company-band copy
+   below no longer promise escrow). */
 const crewFeatures: { icon: React.ComponentType<{ className?: string }>; title: string; sub: string }[] = [
   { icon: CalendarDays, title: 'One feed for every call', sub: 'Calls from every company you roll with — rate, call time and venue on the post. Tap to claim.' },
   { icon: MapPin, title: 'GPS clock-in/out', sub: 'Digital timesheets tied to the shift. No paper sheet, no "I forgot to write it down".' },
-  { icon: ShieldCheck, title: 'Escrow-backed calls', sub: 'On funded calls the money is committed before you clock in — payout starts at clock-out.' },
   { icon: Car, title: 'Crew splits that settle', sub: 'Rides, bunks and food runs pool on the call sheet. IOUs settle in-app, not in cash at load-out.' },
   { icon: FileText, title: 'Invoices & exports', sub: 'Invoice companies directly. Earnings statements, CSV and PDF — your records stay portable.' },
   { icon: FolderLock, title: 'Paperwork vault', sub: 'W-9 wizard, I-9 and compliance docs in one place. Start-pack checklists track what each production needs.' },
@@ -174,36 +194,26 @@ const heroPhotos: CardImg[] = [
   P('/landing/pain-car.webp', '50% 40%', 'auto 118%'),
 ];
 
-const HEADLINES: [string, string][] = [
-  ['Same people.', 'Different cities.'],
-  ['Same crew.', 'Different rig.'],
-  ['Same call.', 'Different stage.'],
-  ['Same hands.', 'Different show.'],
+/* Hero crossfade captions — one line per active image, in the same
+   order as the `images` array below (wideHero variant first, then the
+   portrait fallback). Written from each asset's known content (see the
+   pain/role card alts) in call-sheet mono so the rotating pictures
+   always arrive with a word about what they show. */
+const heroCaptionsWide = [
+  'Show call — harness up',
+  'Between calls — the crew',
+  'Food run — whole crew eats',
+  'Every call — one feed',
+  'LED wall — video crew',
+  'Backstage — the build',
+  'Load-in — cases roll',
 ];
-
-function RotatingHeadline() {
-  const [i, setI] = useState(0);
-  useEffect(() => {
-    const t = setInterval(() => setI((v) => (v + 1) % HEADLINES.length), 3600);
-    return () => clearInterval(t);
-  }, []);
-  return (
-    <h2 className="font-display font-bold uppercase leading-[0.95] text-white text-5xl sm:text-6xl h-[1.98em] relative overflow-hidden">
-      <AnimatePresence mode="wait">
-        <motion.span
-          key={i}
-          className="block"
-          initial={{ opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -14 }}
-          transition={{ duration: 0.35, ease: 'easeOut' }}
-        >
-          {HEADLINES[i][0]}<br />{HEADLINES[i][1]}
-        </motion.span>
-      </AnimatePresence>
-    </h2>
-  );
-}
+const heroCaptionsPortrait = [
+  'Show call — harness up',
+  'Food run — whole crew eats',
+  'LED wall — video crew',
+  'Between cities — crew van',
+];
 
 const railItems = ['Stagehands', 'Riggers', 'Audio', 'Lighting', 'Video', 'Load In', 'Show Call', 'Load Out'];
 /* one copy must be wider than the widest viewport or the loop dead-ends —
@@ -229,6 +239,45 @@ const LandingPage: React.FC = () => {
   /* collage panels are 4:3 — only safe to sprite-crop into the hero when the
      hero box itself is landscape; portrait falls back to cover-fit photos */
   const wideHero = useMediaQuery('(min-aspect-ratio: 5/4)');
+
+  /* Founding-crew content — shared by the static ?cards fallback and the
+     StageBuild overlay version so both render identical copy. */
+  const foundingCrewInner = (
+    <>
+      <h2 className="font-display font-bold uppercase text-white text-5xl sm:text-6xl leading-[0.95]">
+        Join the<br />founding crew.
+      </h2>
+      <p className="mt-4 font-mono text-xs tracking-[0.3em] uppercase text-zinc-400">
+        Real crews. Real opportunity.
+      </p>
+      <div className="mt-8 flex items-center justify-center gap-3 font-mono">
+        <span className="text-4xl sm:text-5xl font-semibold text-amber-400 tabular-nums tracking-tight">
+          {workerCount.toLocaleString()}
+        </span>
+        <span className="text-left text-[11px] tracking-[0.2em] uppercase text-zinc-400 leading-tight">
+          Crew already<br />signed up
+        </span>
+      </div>
+      {companyCount > 0 && (
+        <p className="mt-3 font-mono text-[10px] tracking-[0.25em] uppercase text-zinc-500">
+          {companyCount.toLocaleString()} production {companyCount === 1 ? 'company' : 'companies'} on the list
+        </p>
+      )}
+      <div className="mt-8">
+        <Button
+          size="lg"
+          onClick={() => navigate('/waitlist')}
+          className="bg-amber-400 text-zinc-950 hover:bg-amber-300 font-semibold text-base px-10 h-12"
+        >
+          Join the Crew
+          <ArrowRight className="ml-2 w-5 h-5" />
+        </Button>
+        <p className="mt-4 font-mono text-[10px] tracking-[0.25em] uppercase text-zinc-500">
+          Be first in line.
+        </p>
+      </div>
+    </>
+  );
 
   return (
     <div className="min-h-screen bg-[#0A0A0B] text-zinc-100 antialiased">
@@ -272,6 +321,7 @@ const LandingPage: React.FC = () => {
           images={wideHero
             ? [heroPhotos[0], HA(1, 1), heroPhotos[1], HA(0, 0), heroPhotos[2], HA(2, 0), HA(1, 0)]
             : heroPhotos}
+          captions={wideHero ? heroCaptionsWide : heroCaptionsPortrait}
           interval={6500}
           label="Crew member in a harness looking out over a packed arena"
         />
@@ -417,34 +467,6 @@ const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* Blueprint build moment — animated dead-hang roof raise. Demoted
-          below the explanation sections: it's the brand moment, but the
-          product has to be understood before the light show pays off.
-          Guarded by !cardsOnly like the hero so ?cards debug still renders
-          only card sections. */}
-      {!cardsOnly && (
-        <>
-          <section className="relative border-t border-white/5">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-2 flex flex-wrap items-end justify-between gap-6">
-              <div>
-                <RotatingHeadline />
-                <div className="mt-4 h-0.5 w-16 bg-amber-400" />
-              </div>
-              <div className="font-mono text-[11px] tracking-[0.2em] uppercase text-zinc-500 space-y-1 pb-1">
-                <p>Truss · Towers · Chain Motors</p>
-                <p>LED Wall · Audio Hang · Lighting Grid</p>
-                <p className="text-amber-400/80">Stage deck — all together</p>
-              </div>
-            </div>
-            {/* mobile spec strip — fills the dead air above the scene */}
-            <div className="sm:hidden px-4 pb-3 font-mono text-[9px] tracking-[0.18em] uppercase text-amber-400/70">
-              6 towers · 18 hoists · wall 32'×16' · trim 26'
-            </div>
-          </section>
-          <StageBuild />
-        </>
-      )}
-
       {/* Find your role — option B role photo cards */}
       <section className="py-20 border-t border-white/5">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -456,7 +478,10 @@ const LandingPage: React.FC = () => {
               Different skills. Same crew.
             </p>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 items-start">
+          {/* 5-across on full screens per user direction — 11 cards land
+              as 5+5+1. Cards stay aspect-[4/5] so they shrink rather than
+              stretch; lg breakpoint is where 5 columns stay readable. */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 items-start">
             {roleCards.map((r, ri) => {
               /* tiered departments match a CREW_ROLE_GROUPS entry — the card
                  expands to seat picks over the same crossfading imagery */
@@ -558,7 +583,7 @@ const LandingPage: React.FC = () => {
                 For production companies
               </p>
               <p className="text-zinc-300 text-sm leading-relaxed max-w-xl">
-                Running a production? Your crew is already here — post calls, fund escrow, manage paperwork and payouts in one place.
+                Running a production? Your crew is already here — post calls, manage paperwork and payouts in one place.
               </p>
             </div>
             <Button
@@ -573,49 +598,40 @@ const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* Founding crew closer — option B */}
-      <section className="relative py-24 border-t border-white/5 overflow-hidden">
-        <img
-          src="/landing/closer-badge.webp"
-          alt=""
-          aria-hidden="true"
-          className="absolute inset-0 w-full h-full object-cover opacity-25"
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-[#0A0A0B] via-[#0A0A0B]/80 to-[#0A0A0B]" />
-        <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="font-display font-bold uppercase text-white text-5xl sm:text-6xl leading-[0.95]">
-            Join the<br />founding crew.
-          </h2>
-          <p className="mt-4 font-mono text-xs tracking-[0.3em] uppercase text-zinc-400">
-            Real crews. Real opportunity.
-          </p>
-          <div className="mt-8 flex items-center justify-center gap-3 font-mono">
-            <span className="text-4xl sm:text-5xl font-semibold text-amber-400 tabular-nums tracking-tight">
-              {workerCount.toLocaleString()}
-            </span>
-            <span className="text-left text-[11px] tracking-[0.2em] uppercase text-zinc-400 leading-tight">
-              Crew already<br />signed up
-            </span>
+      {/* Founding crew closer — the StageBuild scroll moment now lives
+          here (user direction 2026-11-08): the dead-hang build animation
+          plays *behind* the waitlist ask as the page's finish line,
+          instead of occupying a mid-page slot of its own. StageBuild's
+          `overlay` prop renders inside its sticky viewport; the dim
+          gradient keeps the waitlist numbers readable over the linework.
+          ?cards debug keeps the old static closer (no 300vh scroll). */}
+      <section className="relative border-t border-white/5">
+        {cardsOnly ? (
+          <div className="relative py-24 overflow-hidden">
+            <img
+              src="/landing/closer-badge.webp"
+              alt=""
+              aria-hidden="true"
+              className="absolute inset-0 w-full h-full object-cover opacity-25"
+            />
+            <div className="absolute inset-0 bg-gradient-to-b from-[#0A0A0B] via-[#0A0A0B]/80 to-[#0A0A0B]" />
+            <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+              {foundingCrewInner}
+            </div>
           </div>
-          {companyCount > 0 && (
-            <p className="mt-3 font-mono text-[10px] tracking-[0.25em] uppercase text-zinc-500">
-              {companyCount.toLocaleString()} production {companyCount === 1 ? 'company' : 'companies'} on the list
-            </p>
-          )}
-          <div className="mt-8">
-            <Button
-              size="lg"
-              onClick={() => navigate('/waitlist')}
-              className="bg-amber-400 text-zinc-950 hover:bg-amber-300 font-semibold text-base px-10 h-12"
-            >
-              Join the Crew
-              <ArrowRight className="ml-2 w-5 h-5" />
-            </Button>
-            <p className="mt-4 font-mono text-[10px] tracking-[0.25em] uppercase text-zinc-500">
-              Be first in line.
-            </p>
-          </div>
-        </div>
+        ) : (
+          <StageBuild overlay={
+            <div className="absolute inset-0 flex items-center justify-center">
+              {/* readability scrim — the amber linework stays visible but
+                  the waitlist copy needs contrast to stay legible */}
+              <div className="absolute inset-0 bg-[#0A0A0B]/55" />
+              <div className="absolute inset-0 bg-gradient-to-b from-[#0A0A0B]/70 via-transparent to-[#0A0A0B]/80" />
+              <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center pointer-events-auto">
+                {foundingCrewInner}
+              </div>
+            </div>
+          } />
+        )}
       </section>
 
       {/* Footer */}
