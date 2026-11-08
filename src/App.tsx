@@ -53,6 +53,8 @@ const CrewBoardPage = lazy(() => import('@/pages/worker/CrewBoardPage'));
 const PayoutsPage = lazy(() => import('@/pages/worker/PayoutsPage'));
 const LedgerPage = lazy(() => import('@/pages/worker/LedgerPage'));
 const StartPackPage = lazy(() => import('@/pages/worker/StartPackPage'));
+const DealMemosPage = lazy(() => import('@/pages/worker/DealMemosPage'));
+const CompanyDealMemosPage = lazy(() => import('@/pages/company/CompanyDealMemosPage'));
 const MarketBrowsePage = lazy(() => import('@/pages/market/MarketBrowsePage'));
 const ListingDetailPage = lazy(() => import('@/pages/market/ListingDetailPage'));
 const SellListingPage = lazy(() => import('@/pages/market/SellListingPage'));
@@ -718,6 +720,26 @@ const AppRoutes: React.FC = () => {
             <ProtectedRoute><RoleRoute role="worker">
               <Layout>
                 <ListingDetailPage />
+              </Layout>
+            </RoleRoute></ProtectedRoute>
+          }
+        />
+        <Route
+          path="/deal-memos"
+          element={
+            <ProtectedRoute><RoleRoute role="worker">
+              <Layout>
+                <DealMemosPage />
+              </Layout>
+            </RoleRoute></ProtectedRoute>
+          }
+        />
+        <Route
+          path="/deal-memos/manage"
+          element={
+            <ProtectedRoute><RoleRoute role="company">
+              <Layout>
+                <CompanyDealMemosPage />
               </Layout>
             </RoleRoute></ProtectedRoute>
           }

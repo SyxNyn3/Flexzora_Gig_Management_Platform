@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
 import { useHasCompanyMembership } from '@/hooks/useMarketplace';
-import { Bell, Calendar, DollarSign, LogOut, User, Briefcase, Plus, MessageSquare, Building2, Users, Link as LinkIcon, CalendarDays, Mail, Upload, Sparkles, Megaphone, KanbanSquare, FileDown, AlertTriangle, ShieldCheck, Inbox, Clock, UserCog, Wallet, FileCheck, Menu, X, Landmark, Store } from 'lucide-react';
+import { Bell, Calendar, DollarSign, LogOut, User, Briefcase, Plus, MessageSquare, Building2, Users, Link as LinkIcon, CalendarDays, Mail, Upload, Sparkles, Megaphone, KanbanSquare, FileDown, AlertTriangle, ShieldCheck, Inbox, Clock, UserCog, Wallet, FileCheck, Menu, X, Landmark, Store, FileSignature } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import NotificationCenter from '@/components/notifications/NotificationCenter';
 import { COPILOT_ENABLED } from '@/lib/copilot/service';
@@ -48,6 +48,7 @@ const Navbar: React.FC = () => {
     { path: '/ledger', label: 'Ledger', icon: Wallet },
     { path: '/tax-playbook', label: 'Tax playbook', icon: Landmark },
     { path: '/start-pack', label: 'Start pack', icon: FileCheck },
+    { path: '/deal-memos', label: 'Deal memos', icon: FileSignature },
     { path: '/market', label: 'Market', icon: Store },
     { path: '/gigs', label: 'Gigs', icon: Briefcase },
     { path: '/applications', label: 'Applications', icon: MessageSquare },
@@ -69,6 +70,7 @@ const Navbar: React.FC = () => {
     { path: '/broadcast', label: 'Broadcast', icon: Megaphone },
     { path: '/ops', label: 'Ops', icon: KanbanSquare },
     { path: '/exports', label: 'Exports', icon: FileDown },
+    { path: '/deal-memos/manage', label: 'Deal memos', icon: FileSignature },
     { path: '/alerts', label: 'Alerts', icon: AlertTriangle },
     { path: '/cert-reviews', label: 'Cert reviews', icon: ShieldCheck },
     ...(COPILOT_ENABLED ? [{ path: '/copilot', label: 'Copilot', icon: Sparkles }] : []),
