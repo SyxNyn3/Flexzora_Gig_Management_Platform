@@ -2,7 +2,7 @@
 -- Covers: worker CRUD on own rows, bystander blind under RLS, (worker,day)
 -- uniqueness for upsert-flip, enum validation, and no anon access.
 BEGIN;
-SELECT plan(8);
+SELECT plan(7);
 
 INSERT INTO auth.users (id, instance_id, aud, role, email, encrypted_password, raw_user_meta_data, created_at, updated_at)
 VALUES
