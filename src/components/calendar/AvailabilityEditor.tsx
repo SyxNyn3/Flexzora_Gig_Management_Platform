@@ -15,6 +15,7 @@ import { useAvailability } from '@/hooks/useSupabaseQuery';
 import { DatabaseService } from '@/lib/supabase';
 import { CalendarImportService } from '@/lib/calendar/service';
 import { CalendarImport } from '@/lib/types';
+import AvailabilityCalendar from '@/components/calendar/AvailabilityCalendar';
 
 const AvailabilityEditor: React.FC = () => {
   const { profile } = useAuth();
@@ -131,6 +132,8 @@ const AvailabilityEditor: React.FC = () => {
           Mark when you can work and when you're blocked — companies and the conflict checker use these windows when booking you.
         </p>
       </div>
+
+      <AvailabilityCalendar />
 
       <Card>
         <CardHeader>
