@@ -133,7 +133,7 @@ SELECT throws_ok(
       'cs_test_fake2', 'pi_fake2')$$,
   -- EXECUTE is revoked from API roles, so the gate fires as a permission
   -- error before the function body's 'service role only' raise is reached.
-  'permission denied',
+  'permission denied for function mark_market_order_paid',
   'buyer cannot self-serve mark paid');
 
 -- ---- fulfilment flow: seller ships, buyer confirms ------------------------
@@ -175,10 +175,13 @@ SELECT is(
   (SELECT status FROM marketplace_orders WHERE buyer_id = (SELECT buyer_pid FROM mk_ids)),
   'delivered', 'order ends delivered');
 
--- new orders on the sold listing are rejected
+-- new orders on the sold listing are rejected. Resolve the listing through
+-- the buyer's own order row: sold listings are RLS-hidden from buyers, so a
+-- direct title lookup returns NULL ('listing not found') before the RPC's
+-- availability check can fire.
 SELECT throws_ok(
   $$SELECT market_create_order(
-      (SELECT id FROM marketplace_listings WHERE title = 'Aputure 300d Light'),
+      (SELECT listing_id FROM marketplace_orders WHERE buyer_id = (SELECT buyer_pid FROM mk_ids)),
       'pickup')$$,
   'listing is not available',
   'sold listing rejects new orders');
