@@ -78,7 +78,6 @@ needs config · 🔧 blocked on human action.
 - ⚠️ pgTAP `102_worker_ledger.test.sql` not yet executed locally (no
   Docker on this machine) — first real run is CI on the PR
 
-<<<<<<< HEAD
 ## Applied live 2026-12-17 (push/SMS dispatch fix)
 
 - ✅ `crew_alert_push` + `send_alert_sms_digests` rewired from never-set
@@ -91,7 +90,7 @@ needs config · 🔧 blocked on human action.
   `PUSH_INTERNAL_SECRET` function secret all configured
 - ⚠️ SMS digest not live-fired (needs aged alert + phone + sms pref);
   same config path as push, cron runs every 30min
-=======
+
 ## Applied live 2026-12-17 (welcome-to-beta email)
 
 - ✅ `send-welcome-email` edge function deployed (verify_jwt=false,
@@ -105,7 +104,6 @@ needs config · 🔧 blocked on human action.
   claimed yet; first real signup is the live test
 - ⚠️ Found dormant: `app.push_fn_url` never configured → push dispatch
   has silently no-op'd since it shipped. Separate fix needed.
->>>>>>> origin/main
 
 ## Remaining human action
 
