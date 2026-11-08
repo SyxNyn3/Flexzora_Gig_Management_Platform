@@ -5,10 +5,15 @@ import { Button } from '@/components/ui/button';
 import { StageBuild } from './StageBuild';
 import {
   ArrowRight,
+  BookOpen,
+  CalendarDays,
+  Car,
   ChevronDown,
+  FileText,
+  FolderLock,
+  MapPin,
+  Scale,
   ShieldCheck,
-  Zap,
-  MessagesSquare,
 } from 'lucide-react';
 import { useWaitlistStats } from '@/hooks/useWaitlistStats';
 import { CREW_ROLE_GROUPS } from '@/components/waitlist/funnelOptions';
@@ -131,6 +136,21 @@ const painCards: { images: CardImg[]; alt: string; title: string; sub: string; d
   },
 ];
 
+/* "Free for crew" grid — every line item is a shipped feature, not a
+   promise. Copy rules: no "no fees" claim (invoices carry a platform
+   fee), escrow is qualified to funded calls, ledger/start-pack shipped
+   in PR #171. */
+const crewFeatures: { icon: React.ComponentType<{ className?: string }>; title: string; sub: string }[] = [
+  { icon: CalendarDays, title: 'One feed for every call', sub: 'Calls from every company you roll with — rate, call time and venue on the post. Tap to claim.' },
+  { icon: MapPin, title: 'GPS clock-in/out', sub: 'Digital timesheets tied to the shift. No paper sheet, no "I forgot to write it down".' },
+  { icon: ShieldCheck, title: 'Escrow-backed calls', sub: 'On funded calls the money is committed before you clock in — payout starts at clock-out.' },
+  { icon: Car, title: 'Crew splits that settle', sub: 'Rides, bunks and food runs pool on the call sheet. IOUs settle in-app, not in cash at load-out.' },
+  { icon: FileText, title: 'Invoices & exports', sub: 'Invoice companies directly. Earnings statements, CSV and PDF — your records stay portable.' },
+  { icon: FolderLock, title: 'Paperwork vault', sub: 'W-9 wizard, I-9 and compliance docs in one place. Start-pack checklists track what each production needs.' },
+  { icon: BookOpen, title: 'Work ledger', sub: 'Mileage, per diem and off-platform income in one ledger — always know what every company owes you.' },
+  { icon: Scale, title: 'Pay rules by state', sub: 'Payday law, overtime triggers and break rules for every state. Free reference, no signup.' },
+];
+
 /* `dept` links a card to a CREW_ROLE_GROUPS entry — tiered departments
    expand in place to seat picks instead of navigating straight away */
 const roleCards: { images: CardImg[]; alt: string; title: string; sub: string; dept?: string; seat?: string }[] = [
@@ -192,7 +212,7 @@ const railLoop = [...railItems, ...railItems, ...railItems, ...railItems];
 
 const LandingPage: React.FC = () => {
   const navigate = useNavigate();
-  const { total: waitlistCount } = useWaitlistStats();
+  const { total: waitlistCount, workers: workerCount, companies: companyCount } = useWaitlistStats();
   const [openPain, setOpenPain] = useState<number | null>(() => {
     /* ?pain=N — debug: render a card pre-expanded for screenshot checks (dev only) */
     if (!import.meta.env.DEV || typeof window === 'undefined') return null;
@@ -266,7 +286,7 @@ const LandingPage: React.FC = () => {
             Build<br />the Show.
           </h1>
           <p className="mt-4 sm:mt-5 font-mono text-xs sm:text-sm tracking-[0.3em] uppercase text-amber-300/90">
-            Real work. Real people. All in one place.
+            Free crew tools — every call, paycheck &amp; paper in one place.
           </p>
           <div className="mt-7 sm:mt-8 flex flex-wrap items-center gap-4">
             <Button
@@ -304,30 +324,12 @@ const LandingPage: React.FC = () => {
           </div>
         </div>
       </section>
-
-      {/* Blueprint build moment — animated dead-hang roof raise */}
-      <section className="relative border-t border-white/5">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-2 flex flex-wrap items-end justify-between gap-6">
-          <div>
-            <RotatingHeadline />
-            <div className="mt-4 h-0.5 w-16 bg-amber-400" />
-          </div>
-          <div className="font-mono text-[11px] tracking-[0.2em] uppercase text-zinc-500 space-y-1 pb-1">
-            <p>Truss · Towers · Chain Motors</p>
-            <p>LED Wall · Audio Hang · Lighting Grid</p>
-            <p className="text-amber-400/80">Stage deck — all together</p>
-          </div>
-        </div>
-        {/* mobile spec strip — fills the dead air above the scene */}
-        <div className="sm:hidden px-4 pb-3 font-mono text-[9px] tracking-[0.18em] uppercase text-amber-400/70">
-          6 towers · 18 hoists · wall 32'×16' · trim 26'
-        </div>
-      </section>
-      <StageBuild />
       </>
       )}
 
-      {/* Real life. Solved. — option B pain cards */}
+      {/* Real life. Solved. — option B pain cards. Sits directly under the
+          hero: this is the "here's what Flexzora actually does" section,
+          so it must come before the StageBuild brand moment, not after. */}
       <section className="py-20 border-t border-white/5">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-wrap items-end justify-between gap-4 mb-10">
@@ -383,6 +385,65 @@ const LandingPage: React.FC = () => {
           </div>
         </div>
       </section>
+
+      {/* Free for crew — concrete feature list. Every item here is shipped
+          or shipping in this release; nothing on this grid is vaporware.
+          Deliberately no "no fees" claim — invoice processing carries a
+          platform fee, so the copy stays at "free tools". */}
+      <section className="py-20 border-t border-white/5">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-wrap items-end justify-between gap-4 mb-10">
+            <div>
+              <p className="font-mono text-[11px] tracking-[0.25em] uppercase text-amber-400/90 mb-3">
+                What's in the app
+              </p>
+              <h2 className="font-display font-bold uppercase text-white text-4xl sm:text-5xl">
+                Free for <span className="text-amber-400">crew.</span>
+              </h2>
+            </div>
+            <p className="font-mono text-[11px] tracking-[0.2em] uppercase text-zinc-500">
+              The tools other platforms charge for — yours free
+            </p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {crewFeatures.map((f) => (
+              <div key={f.title} className="rounded-xl border border-white/10 bg-zinc-900/40 p-5">
+                <f.icon className="w-5 h-5 text-amber-400 mb-3" />
+                <h3 className="font-display font-semibold uppercase text-white text-sm leading-tight">{f.title}</h3>
+                <p className="mt-1.5 text-xs text-zinc-400 leading-relaxed">{f.sub}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Blueprint build moment — animated dead-hang roof raise. Demoted
+          below the explanation sections: it's the brand moment, but the
+          product has to be understood before the light show pays off.
+          Guarded by !cardsOnly like the hero so ?cards debug still renders
+          only card sections. */}
+      {!cardsOnly && (
+        <>
+          <section className="relative border-t border-white/5">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-2 flex flex-wrap items-end justify-between gap-6">
+              <div>
+                <RotatingHeadline />
+                <div className="mt-4 h-0.5 w-16 bg-amber-400" />
+              </div>
+              <div className="font-mono text-[11px] tracking-[0.2em] uppercase text-zinc-500 space-y-1 pb-1">
+                <p>Truss · Towers · Chain Motors</p>
+                <p>LED Wall · Audio Hang · Lighting Grid</p>
+                <p className="text-amber-400/80">Stage deck — all together</p>
+              </div>
+            </div>
+            {/* mobile spec strip — fills the dead air above the scene */}
+            <div className="sm:hidden px-4 pb-3 font-mono text-[9px] tracking-[0.18em] uppercase text-amber-400/70">
+              6 towers · 18 hoists · wall 32'×16' · trim 26'
+            </div>
+          </section>
+          <StageBuild />
+        </>
+      )}
 
       {/* Find your role — option B role photo cards */}
       <section className="py-20 border-t border-white/5">
@@ -484,42 +545,30 @@ const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* Production companies door — option B */}
-      <section className="py-20 border-t border-white/5">
+      {/* Production companies — compact band, deliberately secondary.
+          Crew is the primary audience (marketplace cold-start: pick one
+          side, serve it in single-player mode first). Companies still get
+          a path in via the demo CTA, but the section no longer competes
+          with the crew pitch for attention. */}
+      <section className="py-14 border-t border-white/5">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-zinc-900/50 px-6 py-12 sm:px-12">
-            <div className="absolute -right-10 top-1/2 -translate-y-1/2 w-72 h-72 bg-amber-400/10 blur-[100px] rounded-full pointer-events-none" />
-            <div className="relative grid lg:grid-cols-2 gap-8 items-center">
-              <div>
-                <p className="font-mono text-[11px] tracking-[0.25em] uppercase text-amber-400/90 mb-3">
-                  For production companies
-                </p>
-                <h2 className="font-display font-bold uppercase text-white text-4xl sm:text-5xl leading-[0.95]">
-                  Get the right crew.<br />Right now.
-                </h2>
-              </div>
-              <div>
-                <ul className="space-y-3 mb-8">
-                  <li className="flex items-center gap-3 text-zinc-300 text-sm">
-                    <ShieldCheck className="w-4 h-4 text-amber-400 shrink-0" /> Verified professionals
-                  </li>
-                  <li className="flex items-center gap-3 text-zinc-300 text-sm">
-                    <Zap className="w-4 h-4 text-amber-400 shrink-0" /> Fill crews fast
-                  </li>
-                  <li className="flex items-center gap-3 text-zinc-300 text-sm">
-                    <MessagesSquare className="w-4 h-4 text-amber-400 shrink-0" /> No more group texts
-                  </li>
-                </ul>
-                <Button
-                  size="lg"
-                  onClick={() => navigate('/schedule-demo')}
-                  className="bg-amber-400 text-zinc-950 hover:bg-amber-300 font-semibold px-8"
-                >
-                  Book a Demo
-                  <ArrowRight className="ml-2 w-5 h-5" />
-                </Button>
-              </div>
+          <div className="flex flex-wrap items-center justify-between gap-6 rounded-xl border border-white/10 bg-zinc-900/40 px-6 py-6 sm:px-8">
+            <div>
+              <p className="font-mono text-[11px] tracking-[0.25em] uppercase text-amber-400/90 mb-1.5">
+                For production companies
+              </p>
+              <p className="text-zinc-300 text-sm leading-relaxed max-w-xl">
+                Running a production? Your crew is already here — post calls, fund escrow, manage paperwork and payouts in one place.
+              </p>
             </div>
+            <Button
+              size="lg"
+              onClick={() => navigate('/schedule-demo')}
+              className="bg-amber-400 text-zinc-950 hover:bg-amber-300 font-semibold px-8 shrink-0"
+            >
+              Book a production demo
+              <ArrowRight className="ml-2 w-5 h-5" />
+            </Button>
           </div>
         </div>
       </section>
@@ -542,12 +591,17 @@ const LandingPage: React.FC = () => {
           </p>
           <div className="mt-8 flex items-center justify-center gap-3 font-mono">
             <span className="text-4xl sm:text-5xl font-semibold text-amber-400 tabular-nums tracking-tight">
-              {waitlistCount.toLocaleString()}
+              {workerCount.toLocaleString()}
             </span>
             <span className="text-left text-[11px] tracking-[0.2em] uppercase text-zinc-400 leading-tight">
               Crew already<br />signed up
             </span>
           </div>
+          {companyCount > 0 && (
+            <p className="mt-3 font-mono text-[10px] tracking-[0.25em] uppercase text-zinc-500">
+              {companyCount.toLocaleString()} production {companyCount === 1 ? 'company' : 'companies'} on the list
+            </p>
+          )}
           <div className="mt-8">
             <Button
               size="lg"
