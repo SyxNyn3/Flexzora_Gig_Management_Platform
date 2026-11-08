@@ -50,6 +50,8 @@ const TeamPage = lazy(() => import('@/pages/company/TeamPage'));
 const ShiftMarketplacePage = lazy(() => import('@/pages/worker/ShiftMarketplacePage'));
 const CrewBoardPage = lazy(() => import('@/pages/worker/CrewBoardPage'));
 const PayoutsPage = lazy(() => import('@/pages/worker/PayoutsPage'));
+const LedgerPage = lazy(() => import('@/pages/worker/LedgerPage'));
+const StartPackPage = lazy(() => import('@/pages/worker/StartPackPage'));
 const PublicProfilePage = lazy(() => import('@/pages/PublicProfilePage'));
 const WaitlistAdminPage = lazy(() => import('@/pages/admin/WaitlistAdminPage'));
 const ResetPasswordPage = lazy(() => import('@/components/auth/ResetPasswordPage'));
@@ -605,6 +607,26 @@ const AppRoutes: React.FC = () => {
             <ProtectedRoute><RoleRoute role="worker">
               <Layout>
                 <PayoutsPage />
+              </Layout>
+            </RoleRoute></ProtectedRoute>
+          }
+        />
+        <Route
+          path="/ledger"
+          element={
+            <ProtectedRoute><RoleRoute role="worker">
+              <Layout>
+                <LedgerPage />
+              </Layout>
+            </RoleRoute></ProtectedRoute>
+          }
+        />
+        <Route
+          path="/start-pack"
+          element={
+            <ProtectedRoute><RoleRoute role="worker">
+              <Layout>
+                <StartPackPage />
               </Layout>
             </RoleRoute></ProtectedRoute>
           }
