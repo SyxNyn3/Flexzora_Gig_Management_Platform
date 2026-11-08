@@ -22,6 +22,9 @@ SELECT
   (SELECT id FROM profiles WHERE user_id = '00000000-0000-0000-0000-00000000e002') AS buyer_pid,
   (SELECT id FROM profiles WHERE user_id = '00000000-0000-0000-0000-00000000e003') AS bystander_pid;
 GRANT SELECT ON mk_ids TO authenticated;
+-- service_role runs the payment-path assertions below and reads mk_ids too —
+-- temp-table privileges are per-role, so it needs its own grant.
+GRANT SELECT ON mk_ids TO service_role;
 
 -- fixed listing + order ids so later assertions can reference them
 -- (created via RPC/direct insert below; capture with temp vars isn't possible
@@ -49,7 +52,7 @@ SELECT is(
 SELECT throws_ok(
   $$INSERT INTO marketplace_listings (seller_id, title, category, price_cents)
     SELECT seller_pid, 'Fake listing', 'tools', 100 FROM mk_ids$$,
-  'new row violates row-level security policy',
+  'new row violates row-level security policy for table "marketplace_listings"',
   'bystander cannot insert a listing under another seller');
 
 -- bystander cannot see orders at all (none exist yet, but policy must hold)
