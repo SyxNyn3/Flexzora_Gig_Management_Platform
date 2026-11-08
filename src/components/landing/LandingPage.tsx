@@ -33,8 +33,18 @@ const A = (c: number, r: number): CardImg => ({ src: COL_LIFE, size: '300% 200%'
 const B = (c: number, r: number): CardImg => ({ src: COL_ROLE, size: '300% 300%', pos: `${c * 50}% ${r * 50}%` });
 const P = (src: string, pos = '50% 50%', size = 'cover'): CardImg => ({ src, pos, size });
 /* hero variant — aspect-preserving panel crop (hero is wider than 4:3, so
-   fixing both axes would stretch faces; '300% auto' crops top/bottom instead) */
-const HA = (c: number, _r: number): CardImg => ({ src: COL_LIFE, size: '300% auto', pos: `${c * 50}% 50%` });
+   fixing both axes would stretch faces; '300% auto' crops top/bottom instead).
+   Row matters here: the sprite is 3 cols x 2 rows and '300% auto' renders it
+   3x container width x 1.5x container width tall, so each row band is 0.75x
+   container-width tall. background-position-y must land the viewport inside
+   the right band — 50% sits exactly on the seam and shows half of each row
+   (the "cut in half, bottom on top" bug). ~12.5%/87.5% keeps the window
+   inside row 0/row 1 across wide viewport aspects. */
+const HA = (c: number, r: number): CardImg => ({
+  src: COL_LIFE,
+  size: '300% auto',
+  pos: `${c * 50}% ${r === 0 ? '12.5%' : '87.5%'}`,
+});
 
 function useMediaQuery(query: string) {
   const [matches, setMatches] = useState(() => window.matchMedia(query).matches);
