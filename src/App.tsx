@@ -35,6 +35,7 @@ const PaymentSuccess = lazy(() => import('@/components/payments/PaymentSuccess')
 const SchedulingInterface = lazy(() => import('@/components/scheduling/SchedulingInterface'));
 const WaitlistVerification = lazy(() => import('@/components/waitlist/WaitlistVerification'));
 const EventsPage = lazy(() => import('@/pages/company/EventsPage'));
+const CompanySetupPage = lazy(() => import('@/pages/company/CompanySetupPage'));
 const EventDetailPage = lazy(() => import('@/pages/company/EventDetailPage'));
 const TimesheetApprovalPage = lazy(() => import('@/pages/company/TimesheetApprovalPage'));
 const RosterPage = lazy(() => import('@/pages/company/RosterPage'));
@@ -206,11 +207,26 @@ const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 // these pages under the same login. Rendered only for profiles whose role is
 // neither 'company' nor 'admin' — everyone else is decided synchronously by
 // RoleRoute, so this gate (and its RPC) never mounts for them.
+// Empty memberships now route to /company-setup — the open self-serve
+// onboarding — instead of dead-ending on the dashboard.
 const CompanyMembershipGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { memberships, loading } = useCompanyMemberships();
   if (loading) return <LoadingSpinner />;
-  // No membership → same destination non-company roles always got.
-  if (memberships.length === 0) return <Navigate to="/dashboard" replace />;
+  if (memberships.length === 0) return <Navigate to="/company-setup" replace />;
+  return <>{children}</>;
+};
+
+// /dashboard is not a RoleRoute company route, so company-role users with no
+// company_members row would land on a dashboard that can't do anything for
+// them. Bounce them to setup instead — same destination the membership gate
+// uses. Worker-role users are untouched (they can still create a company
+// later via /company-setup without losing worker access).
+const CompanySetupRedirect: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { profile } = useAuth();
+  const { memberships, loading } = useCompanyMemberships();
+  if (profile?.role === 'company' && !loading && memberships.length === 0) {
+    return <Navigate to="/company-setup" replace />;
+  }
   return <>{children}</>;
 };
 
@@ -218,8 +234,12 @@ const RoleRoute: React.FC<{ role: 'worker' | 'company'; children: React.ReactNod
   const { profile, loading } = useAuth();
   if (loading) return <LoadingSpinner />;
   const roleOk = !profile || profile.role === role || profile.role === 'admin';
-  if (role === 'company' && profile && !roleOk) {
-    // Worker (or any non-company role): membership may still grant access.
+  if (role === 'company' && profile && profile.role !== 'admin') {
+    // EVERY non-admin user on a company surface goes through the membership
+    // gate — not just non-company roles. A company-role account with zero
+    // company_members rows (fresh signup) used to sail through and land on
+    // pages that couldn't function; the gate now sends them to
+    // /company-setup, which is also the dual-role path for workers.
     return <CompanyMembershipGate>{children}</CompanyMembershipGate>;
   }
   if (profile && !roleOk) {
@@ -287,7 +307,9 @@ const AppRoutes: React.FC = () => {
           element={
             <ProtectedRoute>
               <Layout>
-                <DashboardComponent />
+                <CompanySetupRedirect>
+                  <DashboardComponent />
+                </CompanySetupRedirect>
               </Layout>
             </ProtectedRoute>
           }
@@ -298,6 +320,16 @@ const AppRoutes: React.FC = () => {
             <ProtectedRoute>
               <Layout>
                 <GigListComponent />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/company-setup"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <CompanySetupPage />
               </Layout>
             </ProtectedRoute>
           }

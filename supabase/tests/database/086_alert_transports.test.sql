@@ -44,16 +44,18 @@ SELECT lives_ok(
 
 RESET ROLE;
 
--- 3: digest no-ops while the fn_url flag is unset — nothing marked
-SELECT set_config('app.sms_digest_fn_url', '', false);
+-- 3: digest no-ops while unconfigured — dispatch config lives in
+-- internal_config + Vault now (20261219000000), not app.* GUCs.
+DELETE FROM internal_config WHERE key = 'sms_digest_fn_url';
 SELECT is(send_alert_sms_digests(), 0, 'digest returns 0 unconfigured');
 SELECT is(
   (SELECT count(*) FROM crew_alerts WHERE sms_sent_at IS NOT NULL),
   0::bigint, 'unconfigured digest marks nothing');
 
 -- 4: configured → only a1 collected (enabled kind + aged + has phone)
-SELECT set_config('app.sms_digest_fn_url', 'https://fn.test/alert-digest', false);
-SELECT set_config('app.push_internal_secret', 's3cret', false);
+INSERT INTO internal_config (key, value) VALUES ('sms_digest_fn_url', 'https://fn.test/alert-digest')
+  ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
+SELECT vault.create_secret('s3cret', 'push_internal_secret');
 SELECT is(send_alert_sms_digests(), 1, 'one worker batch dispatched');
 
 SELECT results_eq(
