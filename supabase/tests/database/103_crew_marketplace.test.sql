@@ -131,7 +131,9 @@ SELECT throws_ok(
   $$SELECT mark_market_order_paid(
       (SELECT id FROM marketplace_orders WHERE buyer_id = (SELECT buyer_pid FROM mk_ids)),
       'cs_test_fake2', 'pi_fake2')$$,
-  'service role only',
+  -- EXECUTE is revoked from API roles, so the gate fires as a permission
+  -- error before the function body's 'service role only' raise is reached.
+  'permission denied',
   'buyer cannot self-serve mark paid');
 
 -- ---- fulfilment flow: seller ships, buyer confirms ------------------------
@@ -157,7 +159,7 @@ SELECT lives_ok(
 -- seller cannot mark their own order delivered (buyer-only RPC)
 SELECT throws_ok(
   $$SELECT market_mark_delivered(
-      (SELECT id FROM marketplace_orders WHERE buyer_id = (SELECT buyer_pid FROM mk_ids))$$,
+      (SELECT id FROM marketplace_orders WHERE buyer_id = (SELECT buyer_pid FROM mk_ids)))$$,
   'order not found',
   'seller cannot confirm their own sale delivered');
 
@@ -166,7 +168,7 @@ SELECT set_config('request.jwt.claims',
   '{"sub":"00000000-0000-0000-0000-00000000e002","role":"authenticated"}', true);
 SELECT lives_ok(
   $$SELECT market_mark_delivered(
-      (SELECT id FROM marketplace_orders WHERE buyer_id = (SELECT buyer_pid FROM mk_ids))$$,
+      (SELECT id FROM marketplace_orders WHERE buyer_id = (SELECT buyer_pid FROM mk_ids)))$$,
   'buyer can confirm delivered');
 
 SELECT is(
