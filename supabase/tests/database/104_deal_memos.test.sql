@@ -33,6 +33,8 @@ SELECT '00000000-0000-0000-0000-00000000fa02', '00000000-0000-0000-0000-00000000
 FROM profiles p WHERE p.user_id = '00000000-0000-0000-0000-00000000f103';
 
 CREATE TEMP TABLE memo_ids (memo1 uuid, memo2 uuid) ON COMMIT DROP;
+-- Authenticated-role assertions read memo_ids — temp tables need a per-role grant.
+GRANT SELECT ON memo_ids TO authenticated;
 
 -- ---- send gates ------------------------------------------------------------
 SET LOCAL ROLE authenticated;
