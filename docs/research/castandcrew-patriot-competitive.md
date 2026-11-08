@@ -1,8 +1,9 @@
-# Competitive teardown: Cast & Crew + Patriot Software
+# Competitive teardown: Cast & Crew + Patriot Software + Found
 
-Date: 2026-12-17. Sources: castandcrew.com product pages, Cast & Crew support
+Date: 2026-12-17 (Found added same day). Sources: castandcrew.com product pages, Cast & Crew support
 KB (Live Entertainment Onboarding FAQ, New Experience FAQ), patriotsoftware.com
-payroll + Time & Attendance pages, help center articles. Every claim below is
+payroll + Time & Attendance pages, help center articles, found.com product
+pages. Every claim below is
 from their public marketing/docs — feature *existence* is verified, depth is
 not (we can't see inside the product).
 
@@ -19,6 +20,14 @@ is free to workers because the money is in payroll.
 (per-employee pricing, usage-based). Not live-event-specific, but its timecard,
 per-diem, mileage, and reimbursement features map directly onto what crew
 workers deal with — worth stealing the *patterns*, not the positioning.
+
+**Found (found.com)** is different again: it's a **fintech back-office for
+1099 small-business owners** — business checking, bookkeeping, invoicing,
+contractor payments, and tax tooling in one app. 750K+ users, 4.8★ app store.
+Critically for us: its target customer is *exactly* our worker — the
+independent contractor who gets 1099'd and has no employer handling taxes.
+Where C&C sells to companies and Patriot sells to employers, Found sells to
+the worker directly. That's the closest competitor to our worker-side wedge.
 
 ## Feature matrix vs Flexzora today
 
@@ -46,6 +55,14 @@ workers deal with — worth stealing the *patterns*, not the positioning.
 | Worker-owned portable record | ❌ portal-tied | ❌ | ✅ ledger + vault = the differentiator |
 | Crew-to-crew marketplace | ❌ | ❌ | ✅ just shipped |
 | Escrow-backed calls | ❌ | ❌ | ✅ funded deposits |
+| Tax set-aside (auto reserve for quarterly taxes) | ❌ | ❌ | ❌ |
+| Quarterly estimated-tax reminders/calculator | ❌ | ❌ | ❌ |
+| 1099-NEC generation + e-file (payer side) | partial | ❌ | ❌ |
+| W-9 collection | status tracking only | — | ⚠️ status tracking, no collection |
+| Mileage tracking | ✅ | ✅ | ⚠️ manual ledger entry only |
+| Receipt scanning → expense categorization | ✅ | — | ❌ |
+| Business banking / bookkeeping | ❌ | payroll-adjacent | ❌ deliberately |
+| AI finance assistant | ❌ | ❌ | ⚠️ copilot is company-side ops |
 
 ## The strategic read
 
@@ -54,6 +71,17 @@ workers comp, tax docs, e-signed union paperwork. Those require either being a
 payroll company (licenses, bonds, liability) or integrating one. We will not
 out-Cast&Crew at EOR payroll — and shouldn't try; it's a different business
 with different risk.
+
+Found is the mirror image: it owns the **worker's financial life** — banking,
+bookkeeping, tax set-asides, 1099 paperwork. It has no concept of shifts,
+crews, call times, or production. It can't tell a worker "you're owed $340
+for Tuesday's call and the company hasn't paid" because it never sees the
+work. **That gap is us.** Our ledger knows what crew are owed per job;
+Found knows how to keep taxes set aside and paperwork filed. The two products
+interlock more than they compete — but every quarter-tax feature we ship is
+a feature Found already does well for generic 1099s, so we have to do it
+*with production context* (per-diem rates by locality, union scale
+anchors, per-job earnings) or not at all.
 
 Our wedge stays what the landscape doc already found: **worker-owned
 portable records + crew-to-crew liquidity + honest pay transparency**. The
@@ -117,6 +145,37 @@ gaps below are ranked by (worker value × our architecture fit × effort).
 14. **Expense/reimbursement workflow** (see #2) and **receipt OCR** later
     via the Rust service the user wants — receipt → line items.
 
+### Tier 4 — the Found gap: worker tax readiness (1099 crew's real pain)
+
+Found's whole product is "the 1099 worker's back office." Crew are the
+the purest 1099s — no employer, irregular income, per diem + mileage +
+reimbursements all mixed together. What they do that we don't:
+
+15. **Tax set-aside tracking.** Worker sets aside X% of each payment
+    (Found auto-moves it to a "tax pocket"; we can't move money, but we CAN
+    show the set-aside balance per payment — ledger entry type
+    `tax_setaside`, auto-suggested rate, running balance). No custody,
+    just visibility — fits our no-money rules.
+16. **Quarterly estimated-tax reminders + safe-harbor calculator.**
+    Jan/Apr/Jun/Sep deadlines, "you've earned $X YTD, set aside $Y,
+    estimated payment ~$Z" using the 100%-of-prior-year / 90%-of-current
+    safe harbor rules. Every figure cites IRS pub; this is the "teach
+    workers what companies don't tell them" play at its best.
+17. **1099-NEC payer-side data export.** Companies must file 1099-NEC for
+    crew paid ≥$600. We hold the payment records — generate the CSV/PDF
+    in the format their accountant or e-file provider wants. Doesn't file
+    for them; hands them clean data. Big company-side value, cheap to build.
+18. **W-9 collection decision.** Found collects actual W-9s. We currently
+    track status only (deliberate — SSN custody risk). Middle path: let
+    workers upload their own W-9 to the private compliance vault (they
+    already can for other docs?) — worker-owned copy, company sees "W-9 on
+    file" status only. Keeps custody with the worker, satisfies the
+    company's need-to-know. Needs a product decision, not just code.
+19. **Mileage + per diem auto-calc** (already Tier 1 #3/#4) — Found does
+    generic mileage; ours should know IRS business rate AND GSA
+    locality per diem AND union per-diem overrides. Production context is
+    the differentiator.
+
 ### Explicitly NOT copying
 
 - **Employer-of-record payroll / W-2 / tax filing** — different business,
@@ -125,6 +184,11 @@ gaps below are ranked by (worker value × our architecture fit × effort).
 - **SSN/bank-account collection** — stays out (custody risk finding).
 - **Union reporting submissions** — we export data; the local union's own
   portal or the signatory company files. Don't become a filing agent.
+- **Business banking / bookkeeping** — Found's core. We're a ledger, not a
+  bank; integrating with Found/QuickBooks exports beats building it.
+- **Generic tax filing** — we calculate and remind; the worker's accountant
+  or TurboTax files. Never give specific tax advice, always cite the IRS
+  source and tell them to verify.
 
 ## Recommended next slice
 
