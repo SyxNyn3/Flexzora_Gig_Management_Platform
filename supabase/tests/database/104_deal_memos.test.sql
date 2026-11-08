@@ -3,7 +3,7 @@
 -- snapshot + immutability trigger, worker-only one-shot signature, void rules,
 -- RLS boundaries (bystander blind), and direct-write denial.
 BEGIN;
-SELECT plan(13);
+SELECT plan(15);
 
 INSERT INTO auth.users (id, instance_id, aud, role, email, encrypted_password, raw_user_meta_data, created_at, updated_at)
 VALUES
@@ -41,19 +41,19 @@ SET LOCAL ROLE authenticated;
 SELECT set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000f102","role":"authenticated"}', true);
 SELECT throws_ok(
   $$SELECT deal_memo_send('00000000-0000-0000-0000-00000000fa01')$$,
-  'worker cannot send a deal memo');
+  'only the hiring company can send a deal memo');
 
 SELECT set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000f103","role":"authenticated"}', true);
 SELECT throws_ok(
   $$SELECT deal_memo_send('00000000-0000-0000-0000-00000000fa01')$$,
-  'bystander cannot send a deal memo');
+  'only the hiring company can send a deal memo');
 
 -- worker's own assignment is 'confirmed' but sender isn't company -> still denied above.
 -- bystander has an 'offered' assignment: even the company can't memo unconfirmed work.
 SELECT set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000f101","role":"authenticated"}', true);
 SELECT throws_ok(
   $$SELECT deal_memo_send('00000000-0000-0000-0000-00000000fa02')$$,
-  'cannot send memo for an unconfirmed assignment');
+  'assignment is offered — deal memos require a confirmed booking');
 
 SELECT lives_ok(
   $$SELECT deal_memo_send('00000000-0000-0000-0000-00000000fa01', 'Call 7am sharp')$$,
@@ -70,7 +70,7 @@ SET LOCAL ROLE authenticated;
 SELECT set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000f101","role":"authenticated"}', true);
 SELECT throws_ok(
   $$SELECT deal_memo_send('00000000-0000-0000-0000-00000000fa01')$$,
-  'second send for same assignment rejected');
+  'a deal memo already exists for this assignment');
 
 -- ---- visibility ------------------------------------------------------------
 SELECT set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000f102","role":"authenticated"}', true);
@@ -87,7 +87,7 @@ SELECT is(
 SELECT set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000f102","role":"authenticated"}', true);
 SELECT throws_ok(
   $$SELECT deal_memo_sign((SELECT memo1 FROM memo_ids), 'X')$$,
-  'signature requires a real name');
+  'typed full legal name is required');
 
 SELECT lives_ok(
   $$SELECT deal_memo_sign((SELECT memo1 FROM memo_ids), 'DM Worker', NULL)$$,
@@ -95,19 +95,19 @@ SELECT lives_ok(
 
 SELECT throws_ok(
   $$SELECT deal_memo_sign((SELECT memo1 FROM memo_ids), 'DM Worker Again')$$,
-  'signed memo cannot be re-signed');
+  'memo is signed — only sent memos can be signed');
 
 -- ---- immutability + void ----------------------------------------------------
 RESET ROLE;
 SELECT throws_ok(
   $$UPDATE deal_memos SET terms = '{"hourly_rate":1}'::jsonb WHERE id = (SELECT memo1 FROM memo_ids)$$,
-  'terms snapshot is immutable even for superuser path');
+  'Deal memo terms and parties are immutable');
 
 SET LOCAL ROLE authenticated;
 SELECT set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000f101","role":"authenticated"}', true);
 SELECT throws_ok(
   $$SELECT deal_memo_void((SELECT memo1 FROM memo_ids))$$,
-  'signed memo cannot be voided');
+  'memo is signed — only unsent-signed memos can be voided');
 
 RESET ROLE;
 -- second confirmed assignment for the void path — needs its own shift:
@@ -125,8 +125,16 @@ SELECT set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000
 SELECT lives_ok(
   $$SELECT deal_memo_send('00000000-0000-0000-0000-00000000fa03')$$,
   'company sends second memo');
+
+-- Capture memo2 as superuser: the void assertion below resolves the id
+-- through memo_ids instead of an RLS-scoped subquery, keeping the test
+-- deterministic regardless of read-policy visibility timing.
+RESET ROLE;
+UPDATE memo_ids SET memo2 = (SELECT id FROM deal_memos WHERE assignment_id = '00000000-0000-0000-0000-00000000fa03');
+SET LOCAL ROLE authenticated;
+SELECT set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000f101","role":"authenticated"}', true);
 SELECT lives_ok(
-  $$SELECT deal_memo_void((SELECT id FROM deal_memos WHERE assignment_id = '00000000-0000-0000-0000-00000000fa03'))$$,
+  $$SELECT deal_memo_void((SELECT memo2 FROM memo_ids))$$,
   'company voids an unsigned memo');
 
 -- direct table write must be denied (no grants)
@@ -138,7 +146,7 @@ SELECT throws_ok(
             (SELECT id FROM profiles WHERE user_id='00000000-0000-0000-0000-00000000f102'),
             '00000000-0000-0000-0000-00000000fc01','{}',
             (SELECT id FROM profiles WHERE user_id='00000000-0000-0000-0000-00000000f101'))$$,
-  'direct INSERT into deal_memos denied');
+  'permission denied for table deal_memos');
 
 SELECT * FROM finish();
 ROLLBACK;
