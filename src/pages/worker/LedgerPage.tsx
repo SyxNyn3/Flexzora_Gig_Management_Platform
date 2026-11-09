@@ -237,7 +237,11 @@ const LedgerPage: React.FC = () => {
   const [nonce, setNonce] = useState(0);
 
   const summary = useSupabaseQuery(() => fetchLedgerSummary(year), [year, nonce]);
-  const entries = useSupabaseQuery(() => fetchLedgerEntries({ limit: 200 }), [nonce]);
+  // Entries honor the same year window as the summary cards.
+  const entries = useSupabaseQuery(
+    () => fetchLedgerEntries({ from: `${year}-01-01`, to: `${year}-12-31`, limit: 500 }),
+    [year, nonce]
+  );
   const s: LedgerSummary | null = summary.data;
 
   const yearOptions = [thisYear, thisYear - 1, thisYear - 2];

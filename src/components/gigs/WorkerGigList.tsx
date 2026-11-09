@@ -8,7 +8,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useGigs } from '@/hooks/useSupabaseQuery';
 import { 
   Search,
-  Filter,
   MapPin,
   Calendar,
   DollarSign,
@@ -31,7 +30,18 @@ const WorkerGigList: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [savedGigs, setSavedGigs] = useState<string[]>([]);
+  const [sortBy, setSortBy] = useState<'recent' | 'pay' | 'date' | 'urgent'>('recent');
+  const [showSavedOnly, setShowSavedOnly] = useState(false);
+  // Saved gigs persist per-worker in localStorage — a client-side bookmark,
+  // honest about not being a server-side saved list.
+  const [savedGigs, setSavedGigs] = useState<string[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem(`flexzora:saved-gigs:${profile?.id ?? 'anon'}`) ?? '[]');
+    } catch { return []; }
+  });
+  useEffect(() => {
+    localStorage.setItem(`flexzora:saved-gigs:${profile?.id ?? 'anon'}`, JSON.stringify(savedGigs));
+  }, [savedGigs, profile?.id]);
 
   // Fetch gigs
   const { data: gigsData, loading: gigsLoading } = useGigs({ status: 'published' });
@@ -118,7 +128,15 @@ const WorkerGigList: React.FC = () => {
                          gig.company.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          gig.location.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === 'all' || gig.category === selectedCategory;
-    return matchesSearch && matchesCategory;
+    const matchesSaved = !showSavedOnly || savedGigs.includes(gig.id);
+    return matchesSearch && matchesCategory && matchesSaved;
+  }).sort((a, b) => {
+    switch (sortBy) {
+      case 'pay': return (b.hourly_rate ?? 0) - (a.hourly_rate ?? 0);
+      case 'date': return new Date(a.start_date ?? 0).getTime() - new Date(b.start_date ?? 0).getTime();
+      case 'urgent': return (a.urgency === 'high' ? 0 : a.urgency === 'medium' ? 1 : 2) - (b.urgency === 'high' ? 0 : b.urgency === 'medium' ? 1 : 2);
+      default: return 0; // 'recent' — gigs arrive newest-first from the query
+    }
   });
 
   const toggleSaveGig = (gigId: string) => {
@@ -208,11 +226,13 @@ const WorkerGigList: React.FC = () => {
               </p>
             </div>
             <div className="mt-4 sm:mt-0 flex items-center space-x-3">
-              <Button variant="outline" size="sm">
-                <Filter className="h-4 w-4 mr-2" />
-                Filters
-              </Button>
-              <Button variant="outline" size="sm">
+              {/* Category tabs below already filter by trade — no separate
+                  Filters panel exists, so no dead button. */}
+              <Button
+                variant={showSavedOnly ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setShowSavedOnly((v) => !v)}
+              >
                 <Bookmark className="h-4 w-4 mr-2" />
                 Saved ({savedGigs.length})
               </Button>
@@ -307,11 +327,15 @@ const WorkerGigList: React.FC = () => {
               </div>
               <div className="flex items-center space-x-2">
                 <span className="text-sm text-muted-foreground">Sort by:</span>
-                <select className="text-sm border border-border rounded-md px-3 py-1">
-                  <option>Most Recent</option>
-                  <option>Highest Pay</option>
-                  <option>Closest Date</option>
-                  <option>Most Urgent</option>
+                <select
+                  className="text-sm border border-border rounded-md px-3 py-1 bg-background"
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+                >
+                  <option value="recent">Most Recent</option>
+                  <option value="pay">Highest Pay</option>
+                  <option value="date">Closest Date</option>
+                  <option value="urgent">Most Urgent</option>
                 </select>
               </div>
             </div>

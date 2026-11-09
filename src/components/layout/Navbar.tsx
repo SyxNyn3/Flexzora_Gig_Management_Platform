@@ -57,7 +57,6 @@ const Navbar: React.FC = () => {
     { path: '/market', label: 'Market', icon: Store },
     { path: '/gigs', label: 'Gigs', icon: Briefcase },
     { path: '/applications', label: 'Applications', icon: MessageSquare },
-    { path: '/schedule', label: 'Schedule', icon: CalendarDays },
     { path: '/calendar', label: 'Calendar', icon: CalendarDays },
     { path: '/availability', label: 'Availability', icon: Clock },
     { path: '/finances', label: 'Finances', icon: DollarSign },

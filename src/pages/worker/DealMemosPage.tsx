@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import SignaturePad from '@/components/dealMemos/SignaturePad';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   myDealMemos, signDealMemo, downloadDealMemoPdf,
   DealMemo,
@@ -72,7 +73,10 @@ const DealMemoCard: React.FC<{ memo: DealMemo; onChanged: () => void }> = ({ mem
                 <FileSignature className="w-4 h-4 mr-1" />Review &amp; sign
               </Button>
             )}
-            <Button size="sm" variant="outline" onClick={() => downloadDealMemoPdf(memo)}>
+            <Button size="sm" variant="outline" onClick={async () => {
+              try { await downloadDealMemoPdf(memo); }
+              catch { toast.error('Could not generate the PDF'); }
+            }}>
               <FileDown className="w-4 h-4 mr-1" />PDF
             </Button>
           </div>
@@ -117,12 +121,13 @@ const DealMemoCard: React.FC<{ memo: DealMemo; onChanged: () => void }> = ({ mem
 };
 
 const DealMemosPage: React.FC = () => {
+  const { profile } = useAuth();
   const [memos, setMemos] = useState<DealMemo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const load = async () => {
-    const { data, error: err } = await myDealMemos();
+    const { data, error: err } = await myDealMemos(profile?.id);
     if (err) setError(err); else { setError(null); setMemos(data ?? []); }
     setLoading(false);
   };

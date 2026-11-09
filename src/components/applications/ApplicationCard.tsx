@@ -82,7 +82,7 @@ const ApplicationCard: React.FC<ApplicationCardProps> = ({
                 </div>
                 <div className="flex items-center text-sm text-muted-foreground">
                   <Eye className="h-4 w-4 mr-2" />
-                  {application.views || 0} views
+                  {application.views ? `${application.views} views` : ''}
                 </div>
               </div>
 

@@ -63,6 +63,10 @@ export interface MarketOrder {
   paid_at: string | null;
   shipped_at: string | null;
   delivered_at: string | null;
+  // Snapshotted at order creation — the listing row becomes RLS-invisible
+  // to the buyer once sold, so the embed alone can't describe the order.
+  listing_title?: string | null;
+  listing_photo?: string | null;
 }
 
 export interface MarketOrderWithListing extends MarketOrder {

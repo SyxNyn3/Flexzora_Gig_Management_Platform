@@ -53,12 +53,18 @@ export interface DealMemo {
 // ---------------------------------------------------------------------------
 // Reads — plain table SELECT; RLS scopes to the two parties.
 // ---------------------------------------------------------------------------
-export async function myDealMemos(): Promise<{ data: DealMemo[] | null; error: string | null }> {
+export async function myDealMemos(workerId?: string): Promise<{ data: DealMemo[] | null; error: string | null }> {
   try {
-    const { data, error } = await supabase
+    let query = supabase
       .from('deal_memos')
       .select('*')
       .order('created_at', { ascending: false });
+    // Dual-role accounts (worker + company member) get BOTH sides back from
+    // RLS. The worker page passes its profile id so it only lists memos it
+    // can actually sign — otherwise "Review & sign" appears on memos the
+    // user sent as a company and fails server-side every time.
+    if (workerId) query = query.eq('worker_id', workerId);
+    const { data, error } = await query;
     if (error) throw error;
     return { data: (data ?? []) as DealMemo[], error: null };
   } catch (e) {

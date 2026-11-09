@@ -47,7 +47,10 @@ const OrderCard: React.FC<{
   const [trackingUrl, setTrackingUrl] = useState(order.tracking_url ?? '');
 
   const listing = order.listing;
-  const cover = listing?.photo_paths?.[0];
+  // Prefer the order's snapshot — the listing embed is NULL for buyers once
+  // the listing flips to 'sold' (RLS hides it).
+  const cover = listing?.photo_paths?.[0] ?? order.listing_photo ?? undefined;
+  const title = listing?.title ?? order.listing_title ?? 'Listing';
 
   const run = async (fn: () => Promise<{ error: string | null }>, okMsg: string) => {
     if (busy) return;
@@ -79,7 +82,7 @@ const OrderCard: React.FC<{
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <p className="font-semibold truncate">{listing?.title ?? 'Deleted listing'}</p>
+              <p className="font-semibold truncate">{title}</p>
               <Badge variant="outline" className={statusTone[order.status]}>
                 {orderStatusLabel(order.status)}
               </Badge>

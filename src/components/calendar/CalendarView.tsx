@@ -113,19 +113,19 @@ const CalendarView: React.FC = () => {
 
   // Convert database events to calendar events
   useEffect(() => {
-    if (dbEvents && dbEvents.length > 0) {
-      const formattedEvents: CalendarEvent[] = dbEvents.map(event => ({
-        id: event.id,
-        title: event.title,
-        start: new Date(event.start_time),
-        end: event.end_time ? new Date(event.end_time) : new Date(event.start_time),
-        resource: event,
-        status: event.event_type === 'gig' ? 'confirmed' : 'note',
-        type: event.event_type as 'gig' | 'note' | 'reminder',
-      }));
-      
-      setCalendarEvents(formattedEvents);
-    }
+    // Always rebuild — guarding on length>0 left the last-deleted event
+    // rendered until a full reload.
+    const formattedEvents: CalendarEvent[] = (dbEvents || []).map(event => ({
+      id: event.id,
+      title: event.title,
+      start: new Date(event.start_time),
+      end: event.end_time ? new Date(event.end_time) : new Date(event.start_time),
+      resource: event,
+      // Gig status lives in metadata.status, not a top-level field.
+      status: (event.metadata as { status?: string } | null)?.status ?? (event.event_type === 'gig' ? 'confirmed' : 'note'),
+      type: event.event_type as 'gig' | 'note' | 'reminder',
+    }));
+    setCalendarEvents(formattedEvents);
   }, [dbEvents]);
 
   const handleSelectEvent = (event: CalendarEvent) => {
@@ -305,8 +305,10 @@ const CalendarView: React.FC = () => {
     if (event.type === 'note') {
       backgroundColor = (event.resource as CalendarNote).color;
     } else if (event.type === 'reminder') {
-      const reminder = event.resource as CalendarReminder;
-      if (reminder.completed) {
+      const reminder = event.resource as CalendarReminder & { metadata?: { completed?: boolean } };
+      // Completion is stored in metadata.completed — the top-level field
+      // never existed, so completed reminders never rendered gray.
+      if (reminder.metadata?.completed) {
         backgroundColor = '#6B7280'; // Gray for completed
       } else {
         switch (reminder.priority) {
@@ -522,7 +524,14 @@ const CalendarView: React.FC = () => {
                 )}
               </div>
 
-              {selectedEvent.type === 'gig' && (
+              {selectedEvent.type === 'gig' && (() => {
+                // resource is the raw calendar_events row — gig details live
+                // in metadata jsonb (written by the gig→calendar trigger).
+                const meta = ((selectedEvent.resource as { metadata?: Record<string, unknown> | null }).metadata ?? {}) as {
+                  location?: string; hourly_rate?: number; required_workers?: number; workers_needed?: number;
+                  description?: string; gig_id?: string;
+                };
+                return (
                 <div className="space-y-3">
                   <div className="flex items-center text-sm">
                     <Clock className="h-4 w-4 mr-2 text-muted-foreground/70" />
@@ -532,33 +541,38 @@ const CalendarView: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="flex items-center text-sm">
-                    <MapPin className="h-4 w-4 mr-2 text-muted-foreground/70" />
-                    <span>{(selectedEvent.resource as Gig).location}</span>
-                  </div>
-
-                  {(selectedEvent.resource as Gig).hourly_rate && (
+                  {meta.location && (
                     <div className="flex items-center text-sm">
-                      <DollarSign className="h-4 w-4 mr-2 text-muted-foreground/70" />
-                      <span>${(selectedEvent.resource as Gig).hourly_rate}/hour</span>
+                      <MapPin className="h-4 w-4 mr-2 text-muted-foreground/70" />
+                      <span>{meta.location}</span>
                     </div>
                   )}
 
-                  <div className="flex items-center text-sm">
-                    <Users className="h-4 w-4 mr-2 text-muted-foreground/70" />
-                    <span>{(selectedEvent.resource as Gig).required_workers} worker{(selectedEvent.resource as Gig).required_workers !== 1 ? 's' : ''} needed</span>
-                  </div>
+                  {meta.hourly_rate != null && (
+                    <div className="flex items-center text-sm">
+                      <DollarSign className="h-4 w-4 mr-2 text-muted-foreground/70" />
+                      <span>${meta.hourly_rate}/hour</span>
+                    </div>
+                  )}
 
-                  {(selectedEvent.resource as Gig).description && (
+                  {(meta.required_workers ?? meta.workers_needed) != null && (
+                    <div className="flex items-center text-sm">
+                      <Users className="h-4 w-4 mr-2 text-muted-foreground/70" />
+                      <span>{meta.required_workers ?? meta.workers_needed} worker{(meta.required_workers ?? meta.workers_needed) !== 1 ? 's' : ''} needed</span>
+                    </div>
+                  )}
+
+                  {meta.description && (
                     <div>
                       <h4 className="font-medium mb-2">Description</h4>
                       <p className="text-sm text-foreground/80 bg-muted/50 p-3 rounded-lg">
-                        {(selectedEvent.resource as Gig).description}
+                        {meta.description}
                       </p>
                     </div>
                   )}
                 </div>
-              )}
+                );
+              })()}
 
               {selectedEvent.type === 'note' && (
                 <div className="space-y-3">
@@ -611,7 +625,9 @@ const CalendarView: React.FC = () => {
                 {selectedEvent.type === 'gig' && (
                   <Button
                     onClick={() => {
-                      navigate(`/gigs/${selectedEvent.id}`);
+                      // calendar_events.id ≠ gig id — the real gig id lives in metadata.
+                      const gigId = ((selectedEvent.resource as { metadata?: { gig_id?: string } | null }).metadata?.gig_id) ?? selectedEvent.id;
+                      navigate(`/gigs/${gigId}`);
                       setShowEventDialog(false);
                     }}
                   >

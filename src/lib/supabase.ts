@@ -438,11 +438,16 @@ export class DatabaseService {
         .eq('user_id', userId)
         .order('start_time');
 
-      if (startDate) {
+      // Overlap window, not start-in-window: a multi-week gig must stay
+      // visible all tour long, so match events that START before the range
+      // ends AND END after it starts (or have no end).
+      if (startDate && endDate) {
+        query = query
+          .lte('start_time', endDate)
+          .or(`end_time.gte.${startDate},end_time.is.null`);
+      } else if (startDate) {
         query = query.gte('start_time', startDate);
-      }
-
-      if (endDate) {
+      } else if (endDate) {
         query = query.lte('start_time', endDate);
       }
 

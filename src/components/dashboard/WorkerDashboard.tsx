@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
 import SetupChecklist from '@/components/onboarding/SetupChecklist';
 import CompanyAccessCard from '@/components/dashboard/CompanyAccessCard';
-import { useGigs, useApplications, usePayments, useExpenses, useRealtimeNotifications } from '@/hooks/useSupabaseQuery';
+import { useGigs, useApplications, usePayments, useExpenses, useRealtimeNotifications, useNotifications } from '@/hooks/useSupabaseQuery';
 import ReviewStars from '@/components/reviews/ReviewStars';
 import {
   Calendar,
@@ -39,6 +39,8 @@ const WorkerDashboard: React.FC = () => {
   const { data: paymentsRaw } = usePayments({ workerId: profile?.id });
   const payments = paymentsRaw || [];
   useExpenses({ workerId: profile?.id });
+  const { data: notifications } = useNotifications(profile?.id);
+  const unreadNotifications = (notifications || []).filter((n) => !n.read).length;
   
   // Set up real-time notifications
   useRealtimeNotifications(profile?.id, (notification) => {
@@ -61,8 +63,10 @@ const WorkerDashboard: React.FC = () => {
   const one = <T,>(v: T | T[] | null | undefined): T | undefined =>
     Array.isArray(v) ? v[0] : (v ?? undefined);
 
-  // Schedule from real accepted applications
+  // Schedule from real ACCEPTED applications only — pending/rejected apps
+  // are pipeline, not schedule.
   const upcomingGigs = myApplications
+    .filter(a => a.status === 'accepted')
     .map(a => ({ a, gig: one(a.gig) }))
     .filter(({ gig }) => !!gig?.start_date && new Date(gig.start_date) >= new Date(new Date().toDateString()))
     .map(({ a, gig }) => ({
@@ -106,7 +110,7 @@ const WorkerDashboard: React.FC = () => {
   const stats = {
     totalEarnings: totalEarnings || 0,
     thisMonth: thisMonth || 0,
-    pendingApplications: (recentApplications || []).filter(app => app.status === 'pending').length,
+    pendingApplications: myApplications.filter(app => app.status === 'pending').length,
     upcomingGigs: upcomingGigs.length,
     completedGigs: payments.filter(p => p.status === 'paid').length,
     rating: profile?.average_rating || 0
@@ -146,9 +150,9 @@ const WorkerDashboard: React.FC = () => {
               </p>
             </div>
             <div className="flex items-center space-x-3">
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={() => navigate('/feed')}>
                 <Bell className="h-4 w-4 mr-2" />
-                3
+                {unreadNotifications > 0 ? unreadNotifications : ''}
               </Button>
               <Avatar className="h-10 w-10">
                 <AvatarImage src={profile?.avatar_url} />
@@ -476,15 +480,11 @@ const WorkerDashboard: React.FC = () => {
                   <span className="font-semibold">{stats.completedGigs}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Hours Worked</span>
-                  <span className="font-semibold">{stats.completedGigs * 8}</span>
-                </div>
-                <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Avg. Rating</span>
                   <div className="flex items-center">
                     <span className="font-semibold mr-1">{stats.rating}</span>
                     <Star className="h-4 w-4 text-yellow-500 fill-current" />
-                    <ReviewStars rating={profile?.average_rating || 4.8} size="sm" className="ml-1" />
+                    <ReviewStars rating={stats.rating} size="sm" className="ml-1" />
                   </div>
                 </div>
                 <div className="flex items-center justify-between">

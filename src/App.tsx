@@ -30,7 +30,9 @@ const ProfilePage = lazy(() => import('@/components/profile/ProfilePage'));
 const IntegrationsPage = lazy(() => import('@/components/integrations/IntegrationsPage'));
 const CompanyDashboard = lazy(() => import('@/components/integrations/CompanyDashboard'));
 const PaymentSuccess = lazy(() => import('@/components/payments/PaymentSuccess'));
-const SchedulingInterface = lazy(() => import('@/components/scheduling/SchedulingInterface'));
+// SchedulingInterface was a 100% mock demo (fake coworkers, fake 2024
+// events, fake integration buttons) — removed. /schedule redirects to the
+// real /calendar surface.
 const WaitlistVerification = lazy(() => import('@/components/waitlist/WaitlistVerification'));
 const EventsPage = lazy(() => import('@/pages/company/EventsPage'));
 const CompanySetupPage = lazy(() => import('@/pages/company/CompanySetupPage'));
@@ -401,13 +403,7 @@ const AppRoutes: React.FC = () => {
         />
         <Route
           path="/schedule"
-          element={
-            <ProtectedRoute><RoleRoute role="worker">
-              <Layout>
-                <SchedulingInterface />
-              </Layout>
-            </RoleRoute></ProtectedRoute>
-          }
+          element={<Navigate to="/calendar" replace />}
         />
         <Route
           path="/finances"

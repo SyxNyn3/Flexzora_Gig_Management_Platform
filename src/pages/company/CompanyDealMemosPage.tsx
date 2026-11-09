@@ -201,7 +201,10 @@ const CompanyDealMemosPage: React.FC = () => {
                         <Ban className="w-4 h-4 mr-1" />Void
                       </Button>
                     )}
-                    <Button size="sm" variant="outline" onClick={() => downloadDealMemoPdf(m)}>
+                    <Button size="sm" variant="outline" onClick={async () => {
+                      try { await downloadDealMemoPdf(m); }
+                      catch { toast.error('Could not generate the PDF'); }
+                    }}>
                       <FileDown className="w-4 h-4 mr-1" />PDF
                     </Button>
                   </div>

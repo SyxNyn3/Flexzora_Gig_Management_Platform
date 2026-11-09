@@ -403,12 +403,14 @@ const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ gigId }) => {
 
               <div>
                 <Label htmlFor="gig_id">Related Gig (Optional)</Label>
-                <Select onValueChange={(value) => form.setValue('gig_id', value, { shouldValidate: true })}>
+                {/* Radix Select.Item throws on empty-string values — use a
+                    sentinel and translate it back to undefined on submit. */}
+                <Select onValueChange={(value) => form.setValue('gig_id', value === '__none' ? '' : value, { shouldValidate: true })}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select gig" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">No gig</SelectItem>
+                    <SelectItem value="__none">No gig</SelectItem>
                     {gigs.map((gig) => (
                       <SelectItem key={gig.id} value={gig.id}>
                         {gig.title}

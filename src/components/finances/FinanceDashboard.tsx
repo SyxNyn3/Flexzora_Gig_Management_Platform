@@ -12,7 +12,8 @@ import { DatabaseService } from '@/lib/supabase';
 import { Payment, Expense } from '@/lib/types';
 import ExpenseTracker from '@/components/expenses/ExpenseTracker';
 import { usePayments, useExpenses } from '@/hooks/useSupabaseQuery';
-import { DollarSign, TrendingUp, Download, CircleAlert as AlertCircle, CreditCard } from 'lucide-react';
+import { IS_PAYMENTS_SANDBOX } from '@/lib/payments';
+import { DollarSign, TrendingUp, CircleAlert as AlertCircle, CreditCard } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 import { toast } from 'sonner';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
@@ -138,7 +139,13 @@ const FinanceDashboard: React.FC = () => {
   };
 
   const handlePaymentSuccess = async () => {
-    // Update payment status in the database
+    // Sandbox "payments" never touched Stripe — marking the row paid here
+    // would fabricate a completed payment. Only real Stripe-confirmed
+    // payments may flip status (live mode only).
+    if (IS_PAYMENTS_SANDBOX) {
+      toast.info('Sandbox mode — no payment was processed.');
+      return;
+    }
     try {
       if (selectedPayment) {
         await DatabaseService.updatePaymentStatus(
@@ -217,10 +224,6 @@ const FinanceDashboard: React.FC = () => {
         </div>
         <div className="flex space-x-2">
           <InvoiceGenerator />
-          <Button variant="outline">
-            <Download className="h-4 w-4 mr-2" />
-            Export Report
-          </Button>
         </div>
       </div>
 

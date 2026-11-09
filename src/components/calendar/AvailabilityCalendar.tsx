@@ -71,13 +71,13 @@ const AvailabilityCalendar: React.FC = () => {
     if (!profile?.id) return;
     setSaving(true);
     try {
-      await setAvailabilityDay(profile.id, day, status, dayNote);
+      const rowId = await setAvailabilityDay(profile.id, day, status, dayNote);
       // Optimistic local update — refetch would flicker the whole grid.
       setDays((prev) => {
         const next = new Map(prev);
         const existing = next.get(day);
         next.set(day, {
-          id: existing?.id ?? `local-${day}`,
+          id: rowId,
           worker_id: profile.id,
           day,
           status,

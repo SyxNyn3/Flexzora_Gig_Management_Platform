@@ -43,14 +43,20 @@ export async function setAvailabilityDay(
   day: string,
   status: AvailabilityDayStatus,
   note?: string | null,
-): Promise<void> {
-  const { error } = await supabase
+): Promise<string> {
+  // select('id') matters: callers track rows by id for Clear, and without
+  // the returned id a freshly painted day stored a 'local-' placeholder
+  // that deleted nothing — the row silently came back on reload.
+  const { data, error } = await supabase
     .from(TABLE)
     .upsert(
       { worker_id: workerId, day, status, note: note ?? null },
       { onConflict: 'worker_id,day' },
-    );
+    )
+    .select('id')
+    .single();
   if (error) throw error;
+  return data.id as string;
 }
 
 export async function clearAvailabilityDay(id: string): Promise<void> {

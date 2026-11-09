@@ -154,17 +154,20 @@ const PayoutsPage: React.FC = () => {
     window.location.href = data.url;
   };
 
+  // Void invoices are cancelled paperwork — exclude them from every total
+  // and export, matching ledger_summary's treatment.
+  const liveInvoices = invoices.data.filter((i) => i.status !== 'void');
   const upcoming = payouts.data.filter((p) => p.status === 'queued' || p.status === 'processing');
   const upcomingTotal = upcoming.reduce((n, p) => n + Number(p.amount), 0);
-  const paidThisYear = invoices.data.filter((i) => i.status === 'paid').reduce((n, i) => n + Number(i.total), 0);
-  const grossThisYear = invoices.data.reduce((n, i) => n + Number(i.subtotal), 0);
-  const feesThisYear = invoices.data.reduce((n, i) => n + Number(i.platform_fee), 0);
+  const paidThisYear = liveInvoices.filter((i) => i.status === 'paid').reduce((n, i) => n + Number(i.total), 0);
+  const grossThisYear = liveInvoices.reduce((n, i) => n + Number(i.subtotal), 0);
+  const feesThisYear = liveInvoices.reduce((n, i) => n + Number(i.platform_fee), 0);
 
   const byCompany = useMemo(() => {
     const m = new Map<string, number>();
-    invoices.data.forEach((i) => m.set(i.company?.name ?? 'Unknown', (m.get(i.company?.name ?? 'Unknown') ?? 0) + Number(i.total)));
+    liveInvoices.forEach((i) => m.set(i.company?.name ?? 'Unknown', (m.get(i.company?.name ?? 'Unknown') ?? 0) + Number(i.total)));
     return Array.from(m.entries()).sort((a, b) => b[1] - a[1]);
-  }, [invoices.data]);
+  }, [liveInvoices]);
 
   return (
     <div className="max-w-5xl mx-auto p-6 space-y-6">

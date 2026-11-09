@@ -13,6 +13,10 @@ const SignaturePad: React.FC<Props> = ({ onChange, height = 140 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawing = useRef(false);
   const [empty, setEmpty] = useState(true);
+  // Mirror of `empty` for pointer handlers — React state can lag a render
+  // behind the pointerup that follows the last pointermove.
+  const emptyRef = useRef(true);
+  const markDrawn = () => { emptyRef.current = false; setEmpty(false); };
 
   useEffect(() => {
     const c = canvasRef.current;
@@ -53,14 +57,16 @@ const SignaturePad: React.FC<Props> = ({ onChange, height = 140 }) => {
     const { x, y } = pos(e);
     ctx.lineTo(x, y);
     ctx.stroke();
-    if (empty) setEmpty(false);
+    if (emptyRef.current) markDrawn();
   };
 
   const end = () => {
     if (!drawing.current) return;
     drawing.current = false;
     const c = canvasRef.current;
-    if (c) onChange(c.toDataURL('image/png'));
+    // Don't emit a data URL for a blank canvas (single click, cleared pad) —
+    // callers treat non-null as "signature captured".
+    if (c && !emptyRef.current) onChange(c.toDataURL('image/png'));
   };
 
   const clear = () => {
@@ -68,6 +74,7 @@ const SignaturePad: React.FC<Props> = ({ onChange, height = 140 }) => {
     const ctx = c?.getContext('2d');
     if (!c || !ctx) return;
     ctx.clearRect(0, 0, c.width, c.height);
+    emptyRef.current = true;
     setEmpty(true);
     onChange(null);
   };
@@ -82,6 +89,7 @@ const SignaturePad: React.FC<Props> = ({ onChange, height = 140 }) => {
         onPointerMove={move}
         onPointerUp={end}
         onPointerLeave={end}
+        onPointerCancel={end}
       />
       <div className="flex justify-between items-center mt-1">
         <p className="text-xs text-muted-foreground">{empty ? 'Draw your signature (optional)' : 'Signature captured'}</p>

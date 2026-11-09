@@ -61,7 +61,7 @@ const WorkerApplications: React.FC = () => {
           avatar
         }
       },
-      views: Math.floor(Math.random() * 20) + 1, // Random view count for UI
+      // No view tracking exists — omit rather than fabricate a number.
       response_time: responseTime
     };
   });
