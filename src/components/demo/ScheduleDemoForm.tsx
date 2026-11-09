@@ -271,7 +271,7 @@ const ScheduleDemoForm: React.FC = () => {
                 <p className="text-muted-foreground mb-4">
                   We've sent a calendar invitation to your email. You'll also receive a confirmation email with details about the demo.
                 </p>
-                <Button onClick={() => navigate('/')} className="bg-gradient-to-r from-primary to-green-500">
+                <Button onClick={() => navigate('/')} className="bg-gradient-to-r from-blue-600 to-amber-400">
                   Return to Home
                 </Button>
               </div>
@@ -280,7 +280,7 @@ const ScheduleDemoForm: React.FC = () => {
         ) : (
           <Card className="shadow-xl border-0 animate-fade-in">
             <CardHeader className="text-center pb-6">
-              <div className="w-16 h-16 bg-gradient-to-r from-primary to-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 bg-gradient-to-r from-blue-600 to-amber-400 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Calendar className="w-8 h-8 text-white" />
               </div>
               <CardTitle className="text-2xl font-bold">Schedule a Demo</CardTitle>
@@ -678,7 +678,7 @@ const ScheduleDemoForm: React.FC = () => {
                 <div className="pt-4">
                   <Button
                     type="submit"
-                    className="w-full h-12 bg-gradient-to-r from-primary to-green-500 hover:from-blue-700 hover:to-green-600 text-lg"
+                    className="w-full h-12 bg-gradient-to-r from-blue-600 to-amber-400 hover:from-blue-700 hover:to-amber-500 text-lg"
                     disabled={loading}
                   >
                     {loading ? (

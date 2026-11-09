@@ -223,7 +223,7 @@ const WaitlistVerification: React.FC = () => {
               <p className="text-muted-foreground mb-4">
                 Keep an eye on your inbox for exclusive updates and be ready for early access!
               </p>
-              <Button onClick={() => navigate('/')} className="bg-gradient-to-r from-primary to-green-500">
+              <Button onClick={() => navigate('/')} className="bg-gradient-to-r from-blue-600 to-amber-400">
                 Return to Home
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
