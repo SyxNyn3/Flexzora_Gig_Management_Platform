@@ -197,7 +197,7 @@ const Navbar: React.FC = () => {
               <Menu className="w-5 h-5" />
             </Button>
             <Link to="/dashboard" className="flex items-center space-x-2">
-              <div className="w-7 h-7 bg-gradient-to-r from-blue-600 to-amber-400 rounded-lg flex items-center justify-center">
+              <div className="w-7 h-7 bg-gradient-to-br from-zinc-500 to-zinc-900 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-sm">F</span>
               </div>
               <span className="text-lg font-bold text-foreground">Flex<span className="text-amber-400">zora</span></span>
@@ -232,7 +232,7 @@ const Navbar: React.FC = () => {
           >
             <div className="flex items-center justify-between h-14 px-4 border-b border-border/60">
               <Link to="/dashboard" className="flex items-center space-x-2" onClick={() => setMobileOpen(false)}>
-                <div className="w-7 h-7 bg-gradient-to-r from-blue-600 to-amber-400 rounded-lg flex items-center justify-center">
+                <div className="w-7 h-7 bg-gradient-to-br from-zinc-500 to-zinc-900 rounded-lg flex items-center justify-center">
                   <span className="text-white font-bold text-sm">F</span>
                 </div>
                 <span className="text-lg font-bold">Flex<span className="text-amber-400">zora</span></span>
@@ -260,7 +260,7 @@ const Navbar: React.FC = () => {
       <aside className="hidden md:flex flex-col w-60 shrink-0 border-r border-border/60 bg-card/40 backdrop-blur-xl sticky top-0 h-screen">
         <div className="flex items-center justify-between h-16 px-4 border-b border-border/60">
           <Link to="/dashboard" className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-amber-400 rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 bg-gradient-to-br from-zinc-500 to-zinc-900 rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-lg">F</span>
             </div>
             <span className="text-xl font-bold text-foreground">Flex<span className="text-amber-400">zora</span></span>
