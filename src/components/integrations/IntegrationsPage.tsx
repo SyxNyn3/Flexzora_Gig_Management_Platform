@@ -1,6 +1,7 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plug, Mail, CalendarDays, Building2 } from 'lucide-react';
+import { AuthKitButton } from './AuthKitButton';
 
 /**
  * Honest placeholder for the old demo integrations surface. The previous
@@ -44,6 +45,19 @@ const IntegrationsPage: React.FC = () => {
           so most "integrations" other apps need, you already have here.
         </p>
       </div>
+
+      <Card className="mb-6 border-primary/30">
+        <CardHeader>
+          <CardTitle>Connect your tools</CardTitle>
+          <CardDescription>
+            Link Google Calendar, Gmail, or other services through Pica AuthKit.
+            Connections are private to your account — Flexzora never sees your passwords.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <AuthKitButton label="Connect an integration" title="Connect your tools" />
+        </CardContent>
+      </Card>
 
       <Card className="mb-6">
         <CardHeader>
