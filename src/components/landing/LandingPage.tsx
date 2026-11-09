@@ -291,19 +291,14 @@ const LandingPage: React.FC = () => {
               <div className="w-8 h-8 bg-amber-400 rounded-md flex items-center justify-center">
                 <span className="text-zinc-950 font-black text-lg">F</span>
               </div>
-              <span className="text-xl font-bold tracking-tight text-white">FlexZora</span>
+              <span className="text-xl font-bold tracking-tight text-white">Flex<span className="text-amber-400">zora</span></span>
               <span className="hidden sm:inline text-[11px] font-medium tracking-[0.2em] uppercase text-zinc-500 mt-1">
                 Crew Marketplace
               </span>
             </div>
             <div className="flex items-center space-x-2 sm:space-x-4">
-              <Button
-                variant="ghost"
-                onClick={() => navigate('/auth')}
-                className="hidden sm:inline-flex text-zinc-300 hover:text-white hover:bg-white/5"
-              >
-                Sign In
-              </Button>
+              {/* No public Sign In — accounts are waitlist-gated. Approved
+                  users reach /auth directly; everyone else joins via waitlist. */}
               <Button
                 onClick={() => navigate('/waitlist')}
                 className="bg-amber-400 text-zinc-950 hover:bg-amber-300 font-semibold"
@@ -653,7 +648,7 @@ const LandingPage: React.FC = () => {
                 <div className="w-8 h-8 bg-amber-400 rounded-md flex items-center justify-center">
                   <span className="text-zinc-950 font-black text-lg">F</span>
                 </div>
-                <span className="text-xl font-bold text-white">FlexZora</span>
+                <span className="text-xl font-bold text-white">Flex<span className="text-amber-400">zora</span></span>
               </div>
               <p className="text-zinc-500 mb-4 max-w-md text-sm">
                 Built by crew. For crew. The gig marketplace for concert and corporate event production.

@@ -166,56 +166,57 @@ const WorkerDashboard: React.FC = () => {
         <div className="mb-8">
           <SetupChecklist />
         </div>
-        {/* Quick Stats */}
+        {/* Quick Stats — neutral surfaces; color is reserved for meaning
+            (status, alerts), not decoration. */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white">
+          <Card>
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-blue-100 text-sm">Total Earnings</p>
+                  <p className="text-sm text-muted-foreground">Total Earnings</p>
                   <p className="text-2xl font-bold">${stats.totalEarnings.toLocaleString()}</p>
                 </div>
-                <DollarSign className="h-8 w-8 text-blue-200" />
+                <DollarSign className="h-8 w-8 text-muted-foreground/60" />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white">
+          <Card>
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-green-100 text-sm">This Month</p>
+                  <p className="text-sm text-muted-foreground">This Month</p>
                   <p className="text-2xl font-bold">${stats.thisMonth.toLocaleString()}</p>
                 </div>
-                <TrendingUp className="h-8 w-8 text-green-200" />
+                <TrendingUp className="h-8 w-8 text-muted-foreground/60" />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white">
+          <Card>
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-purple-100 text-sm">Completed</p>
+                  <p className="text-sm text-muted-foreground">Completed</p>
                   <p className="text-2xl font-bold">{stats.completedGigs}</p>
                 </div>
-                <Briefcase className="h-8 w-8 text-purple-200" />
+                <Briefcase className="h-8 w-8 text-muted-foreground/60" />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-orange-500 to-orange-600 text-white">
+          <Card>
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-orange-100 text-sm">Rating</p>
+                  <p className="text-sm text-muted-foreground">Rating</p>
                   <div className="flex items-center">
                     <p className="text-2xl font-bold">{stats.rating}</p>
-                    <Star className="h-5 w-5 text-orange-200 ml-1 fill-current" />
+                    <Star className="h-5 w-5 text-muted-foreground ml-1" />
                     <ReviewStars rating={stats.rating} size="sm" className="ml-1" />
                   </div>
                 </div>
-                <Users className="h-8 w-8 text-orange-200" />
+                <Users className="h-8 w-8 text-muted-foreground/60" />
               </div>
             </CardContent>
           </Card>
@@ -439,9 +440,6 @@ const WorkerDashboard: React.FC = () => {
                     <Building2 className="h-5 w-5 mr-2" />
                     Connected Companies
                   </CardTitle>
-                  <Button variant="ghost" size="sm" onClick={() => navigate('/integrations')}>
-                    Manage
-                  </Button>
                 </div>
               </CardHeader>
               <CardContent>

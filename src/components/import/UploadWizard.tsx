@@ -309,7 +309,7 @@ const UploadWizard: React.FC<Props> = ({ openJobId, onCloseJob, onJobsChanged })
             }}
           />
           <div className="flex justify-end">
-            <Button onClick={startReview} disabled={creatingJob || Object.keys(mapping).length === 0} className="bg-gradient-to-r from-blue-600 to-green-500">
+            <Button onClick={startReview} disabled={creatingJob || Object.keys(mapping).length === 0} className="bg-gradient-to-r from-blue-600 to-amber-400">
               {creatingJob ? 'Preparing…' : `Review ${parsed.rows.length} rows`}
             </Button>
           </div>

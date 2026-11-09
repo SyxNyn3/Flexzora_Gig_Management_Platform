@@ -111,7 +111,7 @@ const ReviewGrid: React.FC<Props> = ({ target, rows, committed, committing, onRo
             {!committed && (
               <Button
                 size="sm"
-                className="h-8 gap-1.5 bg-gradient-to-r from-blue-600 to-green-500"
+                className="h-8 gap-1.5 bg-gradient-to-r from-blue-600 to-amber-400"
                 disabled={importable + warnings === 0 || committing}
                 onClick={onCommit}
               >

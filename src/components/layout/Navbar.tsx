@@ -12,9 +12,10 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
 import { useHasCompanyMembership } from '@/hooks/useMarketplace';
-import { Bell, Calendar, DollarSign, LogOut, User, Briefcase, Plus, MessageSquare, Building2, Users, Link as LinkIcon, CalendarDays, Mail, Upload, Sparkles, Megaphone, KanbanSquare, FileDown, AlertTriangle, ShieldCheck, Inbox, Clock, UserCog, Wallet, FileCheck, Menu, X, Landmark, Store, FileSignature } from 'lucide-react';
+import { Bell, Calendar, DollarSign, LogOut, User, Briefcase, Plus, MessageSquare, Users, CalendarDays, Upload, Sparkles, Megaphone, KanbanSquare, FileDown, AlertTriangle, ShieldCheck, Inbox, Clock, UserCog, Wallet, FileCheck, Menu, X, Landmark, Store, FileSignature } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import NotificationCenter from '@/components/notifications/NotificationCenter';
+import { useNotifications } from '@/hooks/useSupabaseQuery';
 import { COPILOT_ENABLED } from '@/lib/copilot/service';
 
 // Left-sidebar navigation for the logged-in app (was a top navbar).
@@ -34,6 +35,10 @@ const Navbar: React.FC = () => {
   const navigate = useNavigate();
   const [showNotifications, setShowNotifications] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  // Real unread count for the badge — was hardcoded to 3, which showed a
+  // phantom count whenever the panel was actually empty.
+  const { data: notifications } = useNotifications(profile?.id);
+  const unreadCount = (notifications || []).filter((n) => !n.read).length;
 
   const handleSignOut = async () => {
     await signOut();
@@ -52,8 +57,8 @@ const Navbar: React.FC = () => {
     { path: '/market', label: 'Market', icon: Store },
     { path: '/gigs', label: 'Gigs', icon: Briefcase },
     { path: '/applications', label: 'Applications', icon: MessageSquare },
-    { path: '/integrations', label: 'Integrations', icon: LinkIcon },
     { path: '/schedule', label: 'Schedule', icon: CalendarDays },
+    { path: '/calendar', label: 'Calendar', icon: CalendarDays },
     { path: '/availability', label: 'Availability', icon: Clock },
     { path: '/finances', label: 'Finances', icon: DollarSign },
   ];
@@ -130,7 +135,11 @@ const Navbar: React.FC = () => {
         >
           <Bell className="w-4 h-4 mr-2" />
           Notifications
-          <Badge className="ml-auto h-5 w-5 rounded-full p-0 text-xs bg-primary">3</Badge>
+          {unreadCount > 0 && (
+            <Badge className="ml-auto h-5 min-w-5 rounded-full px-1 text-xs bg-primary">
+              {unreadCount > 99 ? '99+' : unreadCount}
+            </Badge>
+          )}
         </Button>
       </div>
       <DropdownMenu>
@@ -163,18 +172,6 @@ const Navbar: React.FC = () => {
             <User className="mr-2 h-4 w-4" />
             <span>Profile</span>
           </DropdownMenuItem>
-          {profile?.role === 'worker' && (
-            <>
-              <DropdownMenuItem onClick={() => navigate('/integrations')}>
-                <Building2 className="mr-2 h-4 w-4" />
-                <span>Company Integrations</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate('/integrations/gmail')}>
-                <Mail className="mr-2 h-4 w-4" />
-                <span>Gmail Integration</span>
-              </DropdownMenuItem>
-            </>
-          )}
           <DropdownMenuItem onClick={() => navigate('/calendar')}>
             <Calendar className="mr-2 h-4 w-4" />
             <span>Calendar</span>
@@ -200,22 +197,26 @@ const Navbar: React.FC = () => {
               <Menu className="w-5 h-5" />
             </Button>
             <Link to="/dashboard" className="flex items-center space-x-2">
-              <div className="w-7 h-7 bg-gradient-to-r from-blue-600 to-green-500 rounded-lg flex items-center justify-center">
+              <div className="w-7 h-7 bg-gradient-to-r from-blue-600 to-amber-400 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-sm">F</span>
               </div>
-              <span className="text-lg font-bold text-foreground">FlexZora</span>
+              <span className="text-lg font-bold text-foreground">Flex<span className="text-amber-400">zora</span></span>
             </Link>
           </div>
           {user && (
             <div className="flex items-center gap-2">
               {isCompanySide && (
-                <Button size="sm" onClick={() => navigate('/gigs/create')} className="bg-gradient-to-r from-blue-600 to-green-500">
+                <Button size="sm" onClick={() => navigate('/gigs/create')} className="bg-gradient-to-r from-blue-600 to-amber-400">
                   <Plus className="w-4 h-4" />
                 </Button>
               )}
               <Button variant="ghost" size="sm" className="relative" onClick={() => setShowNotifications(true)}>
                 <Bell className="w-5 h-5" />
-                <Badge className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 text-xs bg-primary">3</Badge>
+                {unreadCount > 0 && (
+                  <Badge className="absolute -top-1 -right-1 h-5 min-w-5 rounded-full px-1 text-xs bg-primary">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </Badge>
+                )}
               </Button>
             </div>
           )}
@@ -231,10 +232,10 @@ const Navbar: React.FC = () => {
           >
             <div className="flex items-center justify-between h-14 px-4 border-b border-border/60">
               <Link to="/dashboard" className="flex items-center space-x-2" onClick={() => setMobileOpen(false)}>
-                <div className="w-7 h-7 bg-gradient-to-r from-blue-600 to-green-500 rounded-lg flex items-center justify-center">
+                <div className="w-7 h-7 bg-gradient-to-r from-blue-600 to-amber-400 rounded-lg flex items-center justify-center">
                   <span className="text-white font-bold text-sm">F</span>
                 </div>
-                <span className="text-lg font-bold">FlexZora</span>
+                <span className="text-lg font-bold">Flex<span className="text-amber-400">zora</span></span>
               </Link>
               <Button variant="ghost" size="sm" className="px-2" onClick={() => setMobileOpen(false)} aria-label="Close menu">
                 <X className="w-5 h-5" />
@@ -246,7 +247,7 @@ const Navbar: React.FC = () => {
                 <Button variant="outline" className="w-full" onClick={() => { setMobileOpen(false); navigate('/auth'); }}>
                   Sign In
                 </Button>
-                <Button className="w-full bg-gradient-to-r from-blue-600 to-green-500" onClick={() => { setMobileOpen(false); navigate('/auth?mode=signup'); }}>
+                <Button className="w-full bg-gradient-to-r from-blue-600 to-amber-400" onClick={() => { setMobileOpen(false); navigate('/auth?mode=signup'); }}>
                   Sign Up
                 </Button>
               </div>
@@ -259,16 +260,16 @@ const Navbar: React.FC = () => {
       <aside className="hidden md:flex flex-col w-60 shrink-0 border-r border-border/60 bg-card/40 backdrop-blur-xl sticky top-0 h-screen">
         <div className="flex items-center justify-between h-16 px-4 border-b border-border/60">
           <Link to="/dashboard" className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-green-500 rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-amber-400 rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-lg">F</span>
             </div>
-            <span className="text-xl font-bold text-foreground">FlexZora</span>
+            <span className="text-xl font-bold text-foreground">Flex<span className="text-amber-400">zora</span></span>
           </Link>
           {isCompanySide && user && (
             <Button
               size="sm"
               onClick={() => navigate('/gigs/create')}
-              className="bg-gradient-to-r from-blue-600 to-green-500"
+              className="bg-gradient-to-r from-blue-600 to-amber-400"
             >
               <Plus className="w-4 h-4 mr-1" />
               Gig
@@ -278,20 +279,6 @@ const Navbar: React.FC = () => {
 
         {user && (
           <>
-            {/* Worker "integrations" shortcut — preserved from the old top bar */}
-            {profile?.role === 'worker' && (
-              <div className="px-3 pt-3">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="w-full justify-start"
-                  onClick={() => navigate('/integrations')}
-                >
-                  <Building2 className="w-4 h-4 mr-2" />
-                  Integrations
-                </Button>
-              </div>
-            )}
             {navList}
             {footer}
           </>
@@ -302,7 +289,7 @@ const Navbar: React.FC = () => {
             <Button variant="outline" className="w-full" onClick={() => navigate('/auth')}>
               Sign In
             </Button>
-            <Button className="w-full bg-gradient-to-r from-blue-600 to-green-500" onClick={() => navigate('/auth?mode=signup')}>
+            <Button className="w-full bg-gradient-to-r from-blue-600 to-amber-400" onClick={() => navigate('/auth?mode=signup')}>
               Sign Up
             </Button>
           </div>

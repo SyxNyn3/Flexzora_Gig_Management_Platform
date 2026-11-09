@@ -27,9 +27,7 @@ const CalendarView = lazy(() => import('@/components/calendar/CalendarView'));
 const AvailabilityEditor = lazy(() => import('@/components/calendar/AvailabilityEditor'));
 const FinanceDashboard = lazy(() => import('@/components/finances/FinanceDashboard'));
 const ProfilePage = lazy(() => import('@/components/profile/ProfilePage'));
-const CompanyIntegrations = lazy(() => import('@/components/integrations/CompanyIntegrations'));
-const GmailIntegration = lazy(() => import('@/components/integrations/GmailIntegration'));
-const UnifiedSchedule = lazy(() => import('@/components/integrations/UnifiedSchedule'));
+const IntegrationsPage = lazy(() => import('@/components/integrations/IntegrationsPage'));
 const CompanyDashboard = lazy(() => import('@/components/integrations/CompanyDashboard'));
 const PaymentSuccess = lazy(() => import('@/components/payments/PaymentSuccess'));
 const SchedulingInterface = lazy(() => import('@/components/scheduling/SchedulingInterface'));
@@ -436,30 +434,18 @@ const AppRoutes: React.FC = () => {
           element={
             <ProtectedRoute>
               <Layout>
-                <CompanyIntegrations />
+                <IntegrationsPage />
               </Layout>
             </ProtectedRoute>
           }
         />
         <Route
           path="/integrations/gmail"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <GmailIntegration />
-              </Layout>
-            </ProtectedRoute>
-          }
+          element={<Navigate to="/integrations" replace />}
         />
         <Route
           path="/unified-schedule"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <UnifiedSchedule />
-              </Layout>
-            </ProtectedRoute>
-          }
+          element={<Navigate to="/integrations" replace />}
         />
         <Route
           path="/workforce"
