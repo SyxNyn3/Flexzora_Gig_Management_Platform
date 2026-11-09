@@ -51,6 +51,7 @@ const Navbar: React.FC = () => {
     { path: '/shifts', label: 'Shifts', icon: Calendar },
     { path: '/payouts', label: 'Payouts', icon: DollarSign },
     { path: '/ledger', label: 'Ledger', icon: Wallet },
+    { path: '/invoices', label: 'Invoices', icon: FileDown },
     { path: '/tax-playbook', label: 'Tax playbook', icon: Landmark },
     { path: '/start-pack', label: 'Start pack', icon: FileCheck },
     { path: '/deal-memos', label: 'Deal memos', icon: FileSignature },

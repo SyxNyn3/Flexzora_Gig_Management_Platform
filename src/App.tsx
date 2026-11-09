@@ -54,6 +54,7 @@ const PayoutsPage = lazy(() => import('@/pages/worker/PayoutsPage'));
 const LedgerPage = lazy(() => import('@/pages/worker/LedgerPage'));
 const StartPackPage = lazy(() => import('@/pages/worker/StartPackPage'));
 const DealMemosPage = lazy(() => import('@/pages/worker/DealMemosPage'));
+const InvoicesPage = lazy(() => import('@/pages/worker/InvoicesPage'));
 const CompanyDealMemosPage = lazy(() => import('@/pages/company/CompanyDealMemosPage'));
 const MarketBrowsePage = lazy(() => import('@/pages/market/MarketBrowsePage'));
 const ListingDetailPage = lazy(() => import('@/pages/market/ListingDetailPage'));
@@ -702,6 +703,16 @@ const AppRoutes: React.FC = () => {
             <ProtectedRoute><RoleRoute role="worker">
               <Layout>
                 <ListingDetailPage />
+              </Layout>
+            </RoleRoute></ProtectedRoute>
+          }
+        />
+        <Route
+          path="/invoices"
+          element={
+            <ProtectedRoute><RoleRoute role="worker">
+              <Layout>
+                <InvoicesPage />
               </Layout>
             </RoleRoute></ProtectedRoute>
           }
