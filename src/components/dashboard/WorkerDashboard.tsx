@@ -166,17 +166,16 @@ const WorkerDashboard: React.FC = () => {
         <div className="mb-8">
           <SetupChecklist />
         </div>
-        {/* Quick Stats — neutral surfaces; color is reserved for meaning
-            (status, alerts), not decoration. */}
+        {/* Quick Stats — neutral cards, colored text labels. */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Total Earnings</p>
-                  <p className="text-2xl font-bold">${stats.totalEarnings.toLocaleString()}</p>
+                  <p className="text-sm text-blue-500 dark:text-blue-400">Total Earnings</p>
+                  <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">${stats.totalEarnings.toLocaleString()}</p>
                 </div>
-                <DollarSign className="h-8 w-8 text-muted-foreground/60" />
+                <DollarSign className="h-8 w-8 text-blue-500/60" />
               </div>
             </CardContent>
           </Card>
@@ -185,10 +184,10 @@ const WorkerDashboard: React.FC = () => {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">This Month</p>
-                  <p className="text-2xl font-bold">${stats.thisMonth.toLocaleString()}</p>
+                  <p className="text-sm text-emerald-600 dark:text-emerald-400">This Month</p>
+                  <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">${stats.thisMonth.toLocaleString()}</p>
                 </div>
-                <TrendingUp className="h-8 w-8 text-muted-foreground/60" />
+                <TrendingUp className="h-8 w-8 text-emerald-600/60 dark:text-emerald-400/60" />
               </div>
             </CardContent>
           </Card>
@@ -197,10 +196,10 @@ const WorkerDashboard: React.FC = () => {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Completed</p>
-                  <p className="text-2xl font-bold">{stats.completedGigs}</p>
+                  <p className="text-sm text-violet-600 dark:text-violet-400">Completed</p>
+                  <p className="text-2xl font-bold text-violet-600 dark:text-violet-400">{stats.completedGigs}</p>
                 </div>
-                <Briefcase className="h-8 w-8 text-muted-foreground/60" />
+                <Briefcase className="h-8 w-8 text-violet-600/60 dark:text-violet-400/60" />
               </div>
             </CardContent>
           </Card>
@@ -209,14 +208,14 @@ const WorkerDashboard: React.FC = () => {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Rating</p>
+                  <p className="text-sm text-amber-600 dark:text-amber-400">Rating</p>
                   <div className="flex items-center">
-                    <p className="text-2xl font-bold">{stats.rating}</p>
-                    <Star className="h-5 w-5 text-muted-foreground ml-1" />
+                    <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">{stats.rating}</p>
+                    <Star className="h-5 w-5 text-amber-500 ml-1" />
                     <ReviewStars rating={stats.rating} size="sm" className="ml-1" />
                   </div>
                 </div>
-                <Users className="h-8 w-8 text-muted-foreground/60" />
+                <Users className="h-8 w-8 text-amber-600/60 dark:text-amber-400/60" />
               </div>
             </CardContent>
           </Card>
