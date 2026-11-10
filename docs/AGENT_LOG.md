@@ -475,3 +475,25 @@ can't force-match, #27 seats_needed frozen after match).
 - Deeper item (BACKLOG): per-menu quotes so the threshold is relative to the menu
   price, not one flat $25 cap.
 
+
+## One Connect consent scoping + per-app deep links (2026-11-10)
+
+- Root cause of "all options" on One's hosted page: the edge function never
+  sent `permission_set`, so One treated the app as "asks for everything"
+  and rendered its full catalog. Fixed by passing ONE_PERMISSION_SET
+  (added to Supabase secrets — it was missing remotely) as the
+  `permission_set` authorize param. Verified live: page now reads
+  "Flexzora is asking for Gmail, Google Calendar, Slack and 3 more".
+- `action` now accepted in POST body as well as query string.
+- New `action:"connections"` proxies One's `/connections/reachable` in key
+  mode (X-One-Secret + X-One-Connect-User-Id [+ org/project headers parsed
+  from connect_user_ref]) so /integrations shows per-app connected badges.
+- `body.app`/`body.theme` on start ride the URL fragment
+  (`one_open_app`, `one_theme`) — same mechanism as the official SDK —
+  for per-app deep links and dark theme.
+- /integrations rebuilt: six app cards (Gmail, Calendar, Drive, Sheets,
+  QuickBooks, Slack) with access level + per-app Connect buttons.
+- Security note for ledger: curl-level verification missed BOTH the
+  missing-apikey 401 and the missing-OPTIONS CORS 404 — only a real
+  browser catches gateway/preflight behavior. Browser e2e harness lives
+  in .diffui/browser/ (playwright-core + installed Edge, no download).
