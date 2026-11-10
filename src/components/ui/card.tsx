@@ -5,11 +5,20 @@ import { cn } from '@/lib/utils';
 const Card = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
+>(({ className, onPointerMove, ...props }, ref) => (
   <div
     ref={ref}
+    // Liquid glass: .glass supplies blur/border/specular; --gx/--gy steer the
+    // pointer-tracked sheen in index.css without a render loop.
+    onPointerMove={(e) => {
+      const el = e.currentTarget;
+      const r = el.getBoundingClientRect();
+      el.style.setProperty('--gx', ((e.clientX - r.left) / r.width).toFixed(3));
+      el.style.setProperty('--gy', ((e.clientY - r.top) / r.height).toFixed(3));
+      onPointerMove?.(e);
+    }}
     className={cn(
-      'rounded-xl border bg-card/80 text-card-foreground shadow backdrop-blur-xl transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5',
+      'glass rounded-xl text-card-foreground transition-all duration-200 hover:-translate-y-0.5',
       className
     )}
     {...props}

@@ -192,7 +192,7 @@ const Navbar: React.FC = () => {
     <>
       {/* Mobile top bar — fixed overlay (the flex row would otherwise treat
           it as a sidebar sibling). Main content pads below it via Layout. */}
-      <div className="md:hidden fixed top-0 inset-x-0 z-40 bg-card/70 border-b border-border/60 backdrop-blur-xl">
+      <div className="md:hidden fixed top-0 inset-x-0 z-40 glass glass-strong">
         <div className="flex items-center justify-between h-14 px-4">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="sm" className="px-2" onClick={() => setMobileOpen(true)} aria-label="Open menu">
@@ -229,7 +229,7 @@ const Navbar: React.FC = () => {
       {mobileOpen && (
         <div className="md:hidden fixed inset-0 z-50 bg-black/60" onClick={() => setMobileOpen(false)}>
           <aside
-            className="absolute left-0 top-0 h-full w-72 bg-card border-r border-border/60 flex flex-col"
+            className="glass absolute left-0 top-0 h-full w-72 flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between h-14 px-4 border-b border-border/60">
@@ -259,7 +259,7 @@ const Navbar: React.FC = () => {
       )}
 
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex flex-col w-60 shrink-0 border-r border-border/60 bg-card/40 backdrop-blur-xl sticky top-0 h-screen">
+      <aside className="glass hidden md:flex flex-col w-60 shrink-0 sticky top-0 h-screen">
         <div className="flex items-center justify-between h-16 px-4 border-b border-border/60">
           <Link to="/dashboard" className="flex items-center space-x-3">
             <div className="w-8 h-8 bg-gradient-to-br from-zinc-500 to-zinc-900 rounded-lg flex items-center justify-center">

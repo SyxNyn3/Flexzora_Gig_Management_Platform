@@ -113,6 +113,17 @@ p {
 
     /* Border radius for smooth, modern feel */
     --radius: 0.75rem;
+
+    /* Liquid glass surface tokens — light mode reads as frosted acrylic */
+    --glass-bg: 0 0% 100%;
+    --glass-opacity: 0.72;
+    --glass-blur: 24px;
+    --glass-border: 210 20% 100%;
+    --glass-border-opacity: 0.65;
+    --glass-highlight: 0 0% 100%;
+    --glass-highlight-opacity: 0.9;
+    --glass-sheen-opacity: 0.5;
+    --glass-shadow: 0 8px 32px hsl(215 25% 27% / 0.10), 0 2px 8px hsl(215 25% 27% / 0.06);
   }
 
   .dark {
@@ -178,6 +189,17 @@ p {
     --chart-3: 142 70% 50%;
     --chart-4: 280 60% 65%;
     --chart-5: 0 72% 60%;
+
+    /* Liquid glass surface tokens — dark mode reads as smoked glass */
+    --glass-bg: 222 20% 12%;
+    --glass-opacity: 0.58;
+    --glass-blur: 28px;
+    --glass-border: 210 30% 100%;
+    --glass-border-opacity: 0.14;
+    --glass-highlight: 0 0% 100%;
+    --glass-highlight-opacity: 0.14;
+    --glass-sheen-opacity: 0.08;
+    --glass-shadow: 0 12px 40px hsl(0 0% 0% / 0.45), 0 2px 8px hsl(0 0% 0% / 0.3);
   }
 }
 
@@ -382,6 +404,83 @@ p {
 /* AuthForm specific styles */
 .auth-form-input-group {
   position: relative;
+}
+
+@layer components {
+/* ── Liquid glass ──────────────────────────────────────────────────────
+   Apple-style translucent surfaces: backdrop blur + refraction-tinted
+   border + specular top edge + pointer-tracked sheen. Apply .glass to any
+   surface; pair with .glass-strong for overlays (nav, dialogs) that sit
+   above scrolling content. --gx/--gy (0-1) are set by pointermove on the
+   element and drive the sheen position — no JS animation loop needed.
+   Lives in @layer components so background and border utilities can still
+   override individual properties on special-case surfaces. */
+.glass {
+  --gx: 0.5;
+  --gy: 0.5;
+  position: relative;
+  background: hsl(var(--glass-bg) / var(--glass-opacity));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  border: 1px solid hsl(var(--glass-border) / var(--glass-border-opacity));
+  /* Specular top edge + soft depth shadow — the "pressed glass" rim */
+  box-shadow:
+    inset 0 1px 0 hsl(var(--glass-highlight) / var(--glass-highlight-opacity)),
+    inset 0 -1px 0 hsl(var(--glass-highlight) / calc(var(--glass-highlight-opacity) * 0.35)),
+    var(--glass-shadow);
+}
+
+/* Diagonal sheen that follows the pointer. --gx/--gy default to center so
+   the highlight is visible even before the first pointermove. */
+.glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(
+    420px circle at calc(var(--gx) * 100%) calc(var(--gy) * 100%),
+    hsl(var(--glass-highlight) / var(--glass-sheen-opacity)),
+    transparent 65%
+  );
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+
+.glass:hover::before {
+  opacity: 1;
+}
+
+/* Stronger variant for chrome that floats over content (nav, dialogs) */
+.glass-strong {
+  --glass-opacity: 0.82;
+  --glass-blur: 36px;
+  --glass-border-opacity: 0.2;
+}
+.dark .glass-strong {
+  --glass-opacity: 0.72;
+}
+}
+
+/* Hover lift — deeper shadow + slightly brighter rim. Kept inside the
+   components layer so it composes with .glass rather than being overridden
+   by utility box-shadows. */
+.glass:hover {
+  box-shadow:
+    inset 0 1px 0 hsl(var(--glass-highlight) / var(--glass-highlight-opacity)),
+    inset 0 -1px 0 hsl(var(--glass-highlight) / calc(var(--glass-highlight-opacity) * 0.35)),
+    var(--glass-shadow),
+    0 16px 48px hsl(0 0% 0% / 0.28);
+}
+
+/* Subtle inner refraction line used on thicker glass slabs */
+.glass::after {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: inset 0 0 0 1px hsl(var(--glass-highlight) / calc(var(--glass-highlight-opacity) * 0.4));
 }
 
 /* Utility classes for enhanced design */
