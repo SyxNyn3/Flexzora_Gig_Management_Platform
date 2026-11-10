@@ -22,20 +22,14 @@ export function ConnectButton({ label = 'Connect your apps' }: ConnectButtonProp
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { toast.error('Please sign in first'); setBusy(false); return; }
-      const res = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/one-connect`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify({ action: 'start' }),
-        },
-      );
-      const body = await res.json().catch(() => ({}));
-      if (!res.ok || !body.url) throw new Error(body.error || `HTTP ${res.status}`);
-      window.location.href = body.url;
+      // functions.invoke attaches apikey + the user's JWT automatically —
+      // a raw fetch without apikey gets 401'd at the gateway.
+      const { data, error } = await supabase.functions.invoke('one-connect', {
+        body: { action: 'start' },
+      });
+      if (error) throw error;
+      if (!data?.url) throw new Error('No authorize URL returned');
+      window.location.href = data.url;
     } catch (e) {
       toast.error(`Could not start connection: ${e instanceof Error ? e.message : 'unknown error'}`);
       setBusy(false);
