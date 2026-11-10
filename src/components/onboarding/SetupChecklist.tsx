@@ -80,6 +80,9 @@ export default function SetupChecklist() {
           .from('worker_skills').select('id', { count: 'exact', head: true })
           .eq('worker_id', profile.id);
         const connect = await getConnectStatus();
+        const { data: oneConn } = await supabase
+          .from('one_connections').select('profile_id')
+          .eq('profile_id', profile.id).maybeSingle();
         if (cancelled) return;
         const payout = payoutSetupStep(connect.data, connect.error != null);
         setSteps([
@@ -87,6 +90,12 @@ export default function SetupChecklist() {
           { label: 'Add a phone number for call texts', to: '/profile', done: !!profile.phone },
           { label: 'Apply to your first gig', to: '/gigs', done: (apps ?? 0) > 0 },
           { label: 'Set up payouts to get paid', to: '/payouts', done: payout.done, hint: payout.hint },
+          {
+            label: 'Connect Google Calendar',
+            to: '/integrations',
+            done: !!oneConn,
+            hint: 'Sync shifts to your calendar — optional but recommended.',
+          },
         ]);
       }
     })();

@@ -28,6 +28,7 @@ import {
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import ConnectNudge from '@/components/integrations/ConnectNudge';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 
 // Helper functions for date calculations
@@ -372,6 +373,11 @@ const CalendarView: React.FC = () => {
             : 'Manage your company\'s gig schedule and planning'
           }
         </p>
+      </div>
+
+      {/* One-time connect prompt — hidden once a grant exists */}
+      <div className="mb-6">
+        <ConnectNudge />
       </div>
 
       {/* Calendar */}

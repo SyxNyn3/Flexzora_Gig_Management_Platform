@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
 import { useHasCompanyMembership } from '@/hooks/useMarketplace';
-import { Bell, Calendar, DollarSign, LogOut, User, Briefcase, Plus, MessageSquare, Users, CalendarDays, Upload, Sparkles, Megaphone, KanbanSquare, FileDown, AlertTriangle, ShieldCheck, Inbox, Clock, UserCog, Wallet, FileCheck, Menu, X, Landmark, Store, FileSignature } from 'lucide-react';
+import { Bell, Calendar, DollarSign, LogOut, User, Briefcase, Plus, MessageSquare, Users, CalendarDays, Upload, Sparkles, Megaphone, KanbanSquare, FileDown, AlertTriangle, ShieldCheck, Inbox, Clock, UserCog, Wallet, FileCheck, Menu, X, Landmark, Store, FileSignature, Plug } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import NotificationCenter from '@/components/notifications/NotificationCenter';
 import { useNotifications } from '@/hooks/useSupabaseQuery';
@@ -61,6 +61,7 @@ const Navbar: React.FC = () => {
     { path: '/calendar', label: 'Calendar', icon: CalendarDays },
     { path: '/availability', label: 'Availability', icon: Clock },
     { path: '/finances', label: 'Finances', icon: DollarSign },
+    { path: '/integrations', label: 'Integrations', icon: Plug },
   ];
 
   const companyNavItems: NavItem[] = [
@@ -82,6 +83,7 @@ const Navbar: React.FC = () => {
     { path: '/gigs', label: 'Gigs', icon: Briefcase },
     { path: '/workforce', label: 'Workforce', icon: Users },
     { path: '/finances', label: 'Finances', icon: DollarSign },
+    { path: '/integrations', label: 'Integrations', icon: Plug },
   ];
 
   // A worker-profile account with a company_members row operates a company

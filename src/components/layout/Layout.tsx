@@ -7,8 +7,10 @@ interface LayoutProps {
 }
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
+  // overflow-x-clip (not hidden): hidden creates a scroll container on
+  // this ancestor, which breaks the sidebar's position:sticky pinning.
   return (
-    <div className="relative min-h-screen overflow-x-hidden bg-[#0A0A0B] text-zinc-100">
+    <div className="relative min-h-screen [overflow-x:clip] bg-[#0A0A0B] text-zinc-100">
       <div
         className="pointer-events-none absolute inset-0 opacity-[0.03]"
         style={{
