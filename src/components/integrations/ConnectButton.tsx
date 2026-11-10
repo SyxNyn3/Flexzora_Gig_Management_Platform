@@ -5,6 +5,11 @@ import { supabase } from '@/lib/supabase';
 
 interface ConnectButtonProps {
   label?: string;
+  /** One catalog slug ("gmail", "google-calendar", …). Opens that app's
+   *  connect screen first on One's hosted page instead of the full list. */
+  app?: string;
+  variant?: 'default' | 'outline' | 'secondary' | 'ghost';
+  size?: 'default' | 'sm' | 'lg' | 'icon';
 }
 
 /**
@@ -13,8 +18,17 @@ interface ConnectButtonProps {
  * PKCE/state row and returns One's authorize URL, which we navigate to.
  * The grant itself is stored server-side; the UI learns the outcome from
  * the ?one_connect=… redirect params on /integrations.
+ *
+ * One's hosted page is unavoidable — Google/Slack/QuickBooks OAuth consent
+ * cannot be iframed — but the permission set limits it to the six apps
+ * Flexzora asks for, and `app` deep-links straight to one app's screen.
  */
-export function ConnectButton({ label = 'Connect your apps' }: ConnectButtonProps) {
+export function ConnectButton({
+  label = 'Connect your apps',
+  app,
+  variant = 'default',
+  size = 'default',
+}: ConnectButtonProps) {
   const [busy, setBusy] = useState(false);
 
   const start = async () => {
@@ -25,7 +39,7 @@ export function ConnectButton({ label = 'Connect your apps' }: ConnectButtonProp
       // functions.invoke attaches apikey + the user's JWT automatically —
       // a raw fetch without apikey gets 401'd at the gateway.
       const { data, error } = await supabase.functions.invoke('one-connect', {
-        body: { action: 'start' },
+        body: { action: 'start', app, theme: 'dark' },
       });
       if (error) throw error;
       if (!data?.url) throw new Error('No authorize URL returned');
@@ -37,7 +51,7 @@ export function ConnectButton({ label = 'Connect your apps' }: ConnectButtonProp
   };
 
   return (
-    <Button onClick={start} disabled={busy}>
+    <Button onClick={start} disabled={busy} variant={variant} size={size}>
       {busy ? 'Redirecting…' : label}
     </Button>
   );

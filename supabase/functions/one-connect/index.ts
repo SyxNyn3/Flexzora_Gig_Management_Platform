@@ -33,6 +33,13 @@ const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || "";
 const clientId = Deno.env.get("ONE_CLIENT_ID") || "";
 const clientSecret = Deno.env.get("ONE_CLIENT_SECRET") || "";
+// Permission set ID scopes the consent page to exactly the apps in
+// one.connect.ts. Without it One treats the app as "asks for everything"
+// and shows its full 1,000+ app catalog — that was the "all options"
+// bug. ONE_CONNECT_KEY stays unused here; the connections action below
+// is its first consumer.
+const permissionSet = Deno.env.get("ONE_PERMISSION_SET") || "";
+const connectKey = Deno.env.get("ONE_CONNECT_KEY") || "";
 const appUrl = Deno.env.get("APP_URL") || "https://flexzora.pro";
 
 const admin = createClient(supabaseUrl, serviceKey);
@@ -73,7 +80,10 @@ serve(async (req) => {
   }
   try {
     const url = new URL(req.url);
-    const action = url.searchParams.get("action") || "start";
+    // action comes from the query string (?action=callback) for the GET
+    // callback and may also arrive in the POST JSON body.
+    const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
+    const action = url.searchParams.get("action") || body?.action || "start";
 
     // ── Start: authenticated SPA calls this, gets back the authorize URL ──
     if (req.method === "POST" && action === "start") {
@@ -84,6 +94,15 @@ serve(async (req) => {
       const userClient = createClient(supabaseUrl, anonKey);
       const { data: { user }, error } = await userClient.auth.getUser(jwt);
       if (error || !user) return json({ error: "Unauthorized" }, 401);
+
+      // Optional deep-link: body.app=<slug> opens that app's connect screen
+      // first on One's page; body.theme=dark|light themes the hosted page.
+      // Both ride the URL fragment, which survives One's redirect chain —
+      // same mechanism the official SDK's button uses.
+      const appSlug = typeof body?.app === "string"
+        ? body.app.trim().toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^-+|-+$/g, "")
+        : "";
+      const theme = body?.theme === "light" || body?.theme === "dark" ? body.theme : "";
 
       // Connect grants belong to the application profile, matching every
       // other worker-owned table in the schema.
@@ -107,8 +126,54 @@ serve(async (req) => {
       auth.searchParams.set("state", state);
       auth.searchParams.set("code_challenge", await pkceChallenge(verifier));
       auth.searchParams.set("code_challenge_method", "S256");
+      // Scopes One's consent page to the apps this Connect app asks for.
+      if (permissionSet) auth.searchParams.set("permission_set", permissionSet);
 
-      return json({ url: auth.toString() });
+      const frag = new URLSearchParams();
+      if (appSlug) frag.set("one_open_app", appSlug);
+      if (theme) frag.set("one_theme", theme);
+      const fragStr = frag.toString();
+      return json({ url: auth.toString() + (fragStr ? `#${fragStr}` : "") });
+    }
+
+    // ── Connections: which of the asked-for apps the grant actually
+    // reaches. Proxies One's /connections/reachable in key mode so the SPA
+    // can show per-app status without ever holding the connect key.
+    if (req.method === "POST" && action === "connections") {
+      const jwt = req.headers.get("Authorization")?.replace("Bearer ", "") ?? "";
+      const userClient = createClient(supabaseUrl, anonKey);
+      const { data: { user }, error } = await userClient.auth.getUser(jwt);
+      if (error || !user) return json({ error: "Unauthorized" }, 401);
+      if (!connectKey) return json({ error: "One Connect is not configured" }, 500);
+
+      const { data: profile } = await admin
+        .from("profiles").select("id").eq("user_id", user.id).single();
+      const { data: conn } = profile
+        ? await admin.from("one_connections").select("connect_user_ref")
+            .eq("profile_id", profile.id).maybeSingle()
+        : { data: null };
+      if (!conn?.connect_user_ref) return json({ connected: false, rows: [] });
+
+      // connect_user_ref is "cu_…;org=<id>;project=<id>" — the tenant parts
+      // were captured from the grant's token claims at callback time.
+      const ref = conn.connect_user_ref;
+      const connectUserId = ref.split(";")[0];
+      const orgId = ref.match(/(?:^|;)org=([^;]+)/)?.[1] ?? "";
+      const projectId = ref.match(/(?:^|;)project=([^;]+)/)?.[1] ?? "";
+
+      const headers: Record<string, string> = {
+        "X-One-Secret": connectKey,
+        "X-One-Connect-User-Id": connectUserId,
+      };
+      if (orgId) headers["X-One-Organization-Id"] = orgId;
+      if (projectId) headers["X-One-Project-Id"] = projectId;
+
+      const res = await fetch(`${ONE_API}/connections/reachable`, { headers });
+      if (!res.ok) {
+        return json({ connected: false, rows: [], error: `One returned ${res.status}` });
+      }
+      const body = await res.json();
+      return json({ connected: true, rows: body.rows ?? [] });
     }
 
     // ── Callback: One redirects the browser here after consent ──
