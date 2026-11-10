@@ -163,6 +163,49 @@ serve(async (req) => {
         return redirect("/integrations", { one_connect: "failed" });
       }
 
+      // Best-effort profile populate: the grant lets us read who the user
+      // is on One. Fill only EMPTY profile fields — never overwrite what
+      // the user typed themselves.
+      try {
+        const connectKey = Deno.env.get("ONE_CONNECT_KEY") || "";
+        if (connectKey) {
+          const whoHeaders: Record<string, string> = {
+            "X-One-Secret": connectKey,
+            "X-One-Connect-User-Id": connectUserId,
+          };
+          if (orgId) whoHeaders["X-One-Organization-Id"] = orgId;
+          if (projectId) whoHeaders["X-One-Project-Id"] = projectId;
+          const who = await fetch(`${ONE_API}/v1/users/whoami`, { headers: whoHeaders });
+          if (who.ok) {
+            const me = await who.json();
+            const patch: Record<string, string> = {};
+            const name = me.name || me.full_name || [me.first_name, me.last_name].filter(Boolean).join(" ");
+            if (name) patch.full_name = name;
+            if (me.email) patch.email = me.email;
+            if (me.picture || me.avatar_url) patch.avatar_url = me.picture || me.avatar_url;
+            if (Object.keys(patch).length) {
+              // COALESCE-style guard: only write fields that are currently
+              // null/empty so a reconnect can't clobber user edits.
+              const { data: prof } = await admin
+                .from("profiles").select("full_name,email,avatar_url")
+                .eq("id", flow.profile_id).single();
+              const safe: Record<string, string> = {};
+              for (const [k, v] of Object.entries(patch)) {
+                const cur = (prof as Record<string, string | null> | null)?.[k];
+                if (!cur) safe[k] = v;
+              }
+              if (Object.keys(safe).length) {
+                await admin.from("profiles").update(safe).eq("id", flow.profile_id);
+              }
+            }
+          } else {
+            console.error("whoami failed:", who.status, await who.text());
+          }
+        }
+      } catch (e) {
+        console.error("profile populate failed (non-fatal):", e);
+      }
+
       return redirect(flow.return_to || "/integrations", { one_connect: "connected" });
     }
 
