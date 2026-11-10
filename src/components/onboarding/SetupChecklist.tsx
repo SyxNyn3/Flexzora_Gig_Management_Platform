@@ -91,10 +91,10 @@ export default function SetupChecklist() {
           { label: 'Apply to your first gig', to: '/gigs', done: (apps ?? 0) > 0 },
           { label: 'Set up payouts to get paid', to: '/payouts', done: payout.done, hint: payout.hint },
           {
-            label: 'Connect Google Calendar',
+            label: 'Connect your apps (Calendar, Sheets, QuickBooks…)',
             to: '/integrations',
             done: !!oneConn,
-            hint: 'Sync shifts to your calendar — optional but recommended.',
+            hint: 'Sync shifts, documents, and invoices — optional but recommended.',
           },
         ]);
       }

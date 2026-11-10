@@ -44,9 +44,9 @@ const ConnectNudge: React.FC<{ className?: string }> = ({ className }) => {
           <Plug className="h-5 w-5 text-muted-foreground" />
         </div>
         <div className="flex-1">
-          <p className="font-medium">Connect Google Calendar &amp; Gmail</p>
+          <p className="font-medium">Connect your apps</p>
           <p className="text-sm text-muted-foreground mt-1">
-            Sync shifts to your calendar and let Flexzora help with scheduling — takes about a minute.
+            Link Gmail, Calendar, Drive, Sheets, QuickBooks, and Slack — takes about a minute.
           </p>
         </div>
         <div className="flex items-center gap-3 shrink-0">

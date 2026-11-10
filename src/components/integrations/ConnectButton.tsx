@@ -14,7 +14,7 @@ interface ConnectButtonProps {
  * The grant itself is stored server-side; the UI learns the outcome from
  * the ?one_connect=… redirect params on /integrations.
  */
-export function ConnectButton({ label = 'Connect Google & Calendar' }: ConnectButtonProps) {
+export function ConnectButton({ label = 'Connect your apps' }: ConnectButtonProps) {
   const [busy, setBusy] = useState(false);
 
   const start = async () => {

@@ -79,13 +79,13 @@ const IntegrationsPage: React.FC = () => {
       <Card className="mb-6 border-primary/30">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            Google account
+            Connected apps
             {connected && <CheckCircle2 className="h-5 w-5 text-emerald-500" />}
           </CardTitle>
           <CardDescription>
             {connected
-              ? 'Your Google account is connected. Calendar sync and Gmail features activate as they ship.'
-              : 'Link Google Calendar and Gmail through One Connect. You\'ll approve access on One\'s secure page — Flexzora never sees your password.'}
+              ? 'Your apps are connected. Calendar sync, document storage, and accounting features activate as they ship.'
+              : 'Connect Gmail, Google Calendar, Drive, Sheets, QuickBooks, and Slack through One Connect. You\'ll approve access on One\'s secure page — Flexzora never sees your passwords.'}
           </CardDescription>
         </CardHeader>
         <CardContent>
