@@ -37,10 +37,16 @@ const appUrl = Deno.env.get("APP_URL") || "https://flexzora.pro";
 
 const admin = createClient(supabaseUrl, serviceKey);
 
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+};
+
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
     status,
-    headers: { "Content-Type": "application/json" },
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
 const b64url = (bytes: Uint8Array) =>
@@ -59,6 +65,12 @@ function redirect(path: string, params: Record<string, string>) {
 }
 
 serve(async (req) => {
+  // Browser preflights carry no credentials — answer them before any auth
+  // logic or the SPA's POST dies at CORS (this was the live "button does
+  // nothing" bug: OPTIONS fell through to the 404 branch).
+  if (req.method === "OPTIONS") {
+    return new Response(null, { status: 204, headers: corsHeaders });
+  }
   try {
     const url = new URL(req.url);
     const action = url.searchParams.get("action") || "start";
