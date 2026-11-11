@@ -252,6 +252,17 @@ p {
   background-color: hsl(var(--primary-lighter));
 }
 
+/* Days outside the visible month render as bright white cells by
+   default — dim them into the dark theme instead so they read as
+   "not this month" rather than blank space. */
+.rbc-off-range-bg {
+  background-color: hsl(var(--muted) / 0.35);
+}
+
+.rbc-off-range {
+  color: hsl(var(--muted-foreground) / 0.45);
+}
+
 .rbc-event {
   border-radius: 6px;
   border: none;

@@ -136,11 +136,33 @@ const AvailabilityCalendar: React.FC = () => {
     }
   };
 
-  // One-click holiday preset: stamps every federal holiday not already
-  // unavailable. Existing notes/statuses are left alone — a worker who marked
-  // July 4 "tentative — maybe a gig" keeps their call.
-  const markHolidays = async () => {
-    const targets = usFederalHolidays(year).filter((h) => days.get(h.day)?.status !== 'unavailable');
+  // Federal-holiday preset, both directions. "Mark" stamps every holiday not
+  // already unavailable (existing notes/statuses are kept). "Restore" clears
+  // only the rows this preset created — identified by an empty note or the
+  // holiday's own name — so a worker's hand-marked "sister's wedding"
+  // unavailable day is never deleted by the toggle.
+  const holidayRows = usFederalHolidays(year);
+  const holidayBlocked = holidayRows.filter((h) => days.get(h.day)?.status === 'unavailable').length;
+
+  const toggleHolidays = async () => {
+    if (holidayBlocked > 0) {
+      // Restore: delete only preset-created rows (note empty or = holiday name)
+      // so the day returns to the default "assumed available" state.
+      let cleared = 0;
+      for (const h of holidayRows) {
+        const row = days.get(h.day);
+        if (row?.status === 'unavailable' && (!row.note || row.note === h.name)) {
+          try {
+            await clearAvailabilityDay(row.id);
+            setDays((prev) => { const n = new Map(prev); n.delete(h.day); return n; });
+            cleared++;
+          } catch { /* leave it; toast below reports the count */ }
+        }
+      }
+      toast.success(cleared ? `Restored ${cleared} holiday${cleared === 1 ? '' : 's'} to available` : 'No preset holiday marks to restore');
+      return;
+    }
+    const targets = holidayRows.filter((h) => days.get(h.day)?.status !== 'unavailable');
     if (!targets.length) return toast.info('All federal holidays already marked unavailable');
     let ok = 0;
     for (const h of targets) {
@@ -253,8 +275,8 @@ const AvailabilityCalendar: React.FC = () => {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" size="sm" onClick={markHolidays} disabled={loading || saving}>
-            Mark federal holidays unavailable
+          <Button variant="outline" size="sm" onClick={toggleHolidays} disabled={loading || saving}>
+            {holidayBlocked > 0 ? 'Make holidays available again' : 'Mark federal holidays unavailable'}
           </Button>
           <Button
             variant={paintMode ? 'default' : 'outline'}
