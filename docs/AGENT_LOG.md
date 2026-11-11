@@ -518,3 +518,19 @@ can't force-match, #27 seats_needed frozen after match).
   20261227000000_reviews_company_only applied live.
 - Layout: profile grid moved to xl breakpoint with a wider container so
   content doesn't bunch on one side at lg widths.
+
+## Google sign-in + Gemini Copilot wired (2026-11-11)
+
+- Google Cloud project "Flexzora" (flexzoraos@gmail.com) now holds: OAuth
+  consent screen + Web client (redirect URIs: Supabase auth callback +
+  reserved google-connect callback), Generative Language API enabled,
+  service-account-bound API key.
+- Supabase Auth: external_google_enabled via Management API; verified
+  /auth/v1/authorize?provider=google 302s to accounts.google.com.
+- VITE_ENABLE_GOOGLE_AUTH=true in .env.local AND Vercel production env.
+- llm-proxy secrets set: LLM_BASE_URL=generativelanguage openai-compat,
+  LLM_API_KEY=$GEMINI_API_KEY, LLM_MODEL=gemini-3.1-flash-lite (2.5-flash
+  and 2.0-flash are deprecated for new users; 3.5-flash returned empty
+  content under tight max_tokens). Direct curl verified the key+model.
+- Note: bound SA keys work with Authorization: Bearer on the OpenAI-compat
+  endpoint — verified live.
