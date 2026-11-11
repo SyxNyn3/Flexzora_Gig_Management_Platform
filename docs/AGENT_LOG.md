@@ -497,3 +497,24 @@ can't force-match, #27 seats_needed frozen after match).
   missing-apikey 401 and the missing-OPTIONS CORS 404 — only a real
   browser catches gateway/preflight behavior. Browser e2e harness lives
   in .diffui/browser/ (playwright-core + installed Edge, no download).
+
+## Profile page fixes — skills, certs, portfolio, reviews (2026-11-10)
+
+- Skills: free-text input minted mock `skill-<ts>` ids → UUID syntax error.
+  Replaced with a Select over the curated `skills` catalog (32 rows),
+  proficiency + years kept; dialog stays open for repeat adds and the
+  dropdown filters out skills already on the profile.
+- Certifications: credential type, issue date, and expiration date are now
+  required; new certs must include a verification document which is
+  uploaded and submitted for company review in the same flow.
+- Portfolio: was writing a JSON array to a non-existent
+  `profiles.portfolio_items` column (PGRST204) and minting fake
+  `portfolio-<ts>` ids — the "7 test cards" were unsaved client state.
+  Now does real CRUD on the `portfolio_items` table.
+- Reviews: "Anyone can view reviews" let the reviewee read reviews about
+  themselves. New policy limits SELECT to the author and company members
+  (excluding reviews about the caller's own profile). Own profile no
+  longer fetches or renders the reviews card. Migration
+  20261227000000_reviews_company_only applied live.
+- Layout: profile grid moved to xl breakpoint with a wider container so
+  content doesn't bunch on one side at lg widths.

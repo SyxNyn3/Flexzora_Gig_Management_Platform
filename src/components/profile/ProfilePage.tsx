@@ -10,11 +10,10 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
-import { DatabaseService, normalizeUrl } from '@/lib/supabase';
-import { useSkills, useWorkerSkills, useCertifications, useReviewsForWorker } from '@/hooks/useSupabaseQuery';
+import { DatabaseService, normalizeUrl, supabase } from '@/lib/supabase';
+import { useSkills, useWorkerSkills, useCertifications } from '@/hooks/useSupabaseQuery';
 import { useCertificationTypes } from '@/hooks/useMarketplace';
 import { Certification, PortfolioItem } from '@/lib/types';
-import ReviewsList from '@/components/reviews/ReviewsList';
 import ReviewStars from '@/components/reviews/ReviewStars';
 import { 
   Save,
@@ -60,7 +59,10 @@ const profileSchema = z.object({
 });
 
 const skillSchema = z.object({
-  skill_name: z.string().min(1, 'Skill name is required'),
+  // skill_id is the UUID FK into the curated `skills` catalog — a free-text
+  // name previously fell through to a mock `skill-<timestamp>` id that
+  // Postgres rejected with "invalid input syntax for type UUID".
+  skill_id: z.string().min(1, 'Please select a skill'),
   proficiency_level: z.number().min(1).max(5),
   years_experience: z.number().min(0).max(50),
 });
@@ -68,11 +70,11 @@ const skillSchema = z.object({
 const OTHER_CERT_TYPE = '__other__';
 
 const certificationSchema = z.object({
-  cert_type_code: z.string().optional(),
+  cert_type_code: z.string().min(1, 'Please select a credential type'),
   name: z.string().min(2, 'Certification name is required'),
   issuing_organization: z.string().optional(),
-  issue_date: z.string().optional(),
-  expiration_date: z.string().optional(),
+  issue_date: z.string().min(1, 'Issue date is required'),
+  expiration_date: z.string().min(1, 'Expiration date is required'),
   credential_id: z.string().optional(),
   credential_url: z.string().optional().refine((val) => {
     if (!val) return true;
@@ -100,7 +102,9 @@ const ProfilePage: React.FC = () => {
   const { data: workerSkills, refetch: refetchWorkerSkills } = useWorkerSkills(profile?.id || '');
   const { data: certifications, refetch: refetchCertifications } = useCertifications(profile?.id || '');
   const certTypes = useCertificationTypes();
-  useReviewsForWorker(profile?.id || '');
+  // Reviews about a worker are company-facing signal (hiring decisions,
+  // admin matching) — the reviewee must never read them, so this page does
+  // not fetch or render them. RLS enforces the same rule server-side.
 
   const form = useForm<ProfileForm>({
     resolver: zodResolver(profileSchema),
@@ -120,7 +124,7 @@ const ProfilePage: React.FC = () => {
   const skillForm = useForm<SkillForm>({
     resolver: zodResolver(skillSchema),
     defaultValues: {
-      skill_name: '',
+      skill_id: '',
       proficiency_level: 3,
       years_experience: 0,
     },
@@ -152,13 +156,25 @@ const ProfilePage: React.FC = () => {
         portfolio_url: profile.portfolio_url?.replace(/^https?:\/\//, '') || '',
         linkedin_url: profile.linkedin_url?.replace(/^https?:\/\//, '') || '',
       });
-      
-      // Initialize portfolio items from profile
-      if (profile.portfolio_items) {
-        setPortfolioItems(profile.portfolio_items);
-      }
     }
   }, [profile, form]);
+
+  // Portfolio items live in the portfolio_items table (one row per item).
+  // They used to be written to a non-existent profiles.portfolio_items JSON
+  // column, which PostgREST rejected and which also produced duplicate
+  // client-side cards. Load the real rows whenever the profile resolves.
+  React.useEffect(() => {
+    const loadPortfolio = async () => {
+      if (!profile?.id) return;
+      const { data, error } = await supabase
+        .from('portfolio_items')
+        .select('*')
+        .eq('worker_id', profile.id)
+        .order('created_at', { ascending: false });
+      if (!error) setPortfolioItems((data ?? []) as PortfolioItem[]);
+    };
+    loadPortfolio();
+  }, [profile?.id]);
 
   const onSubmit = async (data: ProfileForm) => {
     setLoading(true);
@@ -191,37 +207,31 @@ const ProfilePage: React.FC = () => {
     if (!profile) return;
 
     try {
-      // Check if skill already exists
-      const existingSkill = (workerSkills ?? []).find(ws => 
-        ws.skill?.name.toLowerCase() === data.skill_name.toLowerCase()
-      );
-
-      if (existingSkill) {
-        toast.error('You already have this skill added');
+      const skill = (skills ?? []).find(s => s.id === data.skill_id);
+      if (!skill) {
+        toast.error('Please select a skill from the list');
         return;
       }
 
-      // Find or create skill
-      let skillId = (skills ?? []).find(s => s.name.toLowerCase() === data.skill_name.toLowerCase())?.id;
-      
-      if (!skillId) {
-        // For demo mode or if skill doesn't exist, create a mock skill ID
-        skillId = `skill-${Date.now()}`;
+      // worker_skills.skill_id is a UUID FK — only catalog ids are valid.
+      const existingSkill = (workerSkills ?? []).find(ws => ws.skill?.id === data.skill_id);
+      if (existingSkill) {
+        toast.error(`You already have ${skill.name} added`);
+        return;
       }
 
-      const skillData = {
+      const { error } = await DatabaseService.addWorkerSkill({
         worker_id: profile.id,
-        skill_id: skillId,
+        skill_id: data.skill_id,
         proficiency_level: data.proficiency_level,
         years_experience: data.years_experience,
-      };
-
-      const { error } = await DatabaseService.addWorkerSkill(skillData);
+      });
       if (error) throw new Error(error);
 
-      toast.success('Skill added successfully!');
-      setShowSkillDialog(false);
-      skillForm.reset();
+      toast.success(`${skill.name} added!`);
+      // Keep the dialog open and reset so the next skill can be added
+      // immediately — the dropdown filters out skills already on the profile.
+      skillForm.reset({ skill_id: '', proficiency_level: 3, years_experience: 0 });
       await refetchWorkerSkills();
     } catch (error) {
       console.error('Error adding skill:', error);
@@ -242,17 +252,26 @@ const ProfilePage: React.FC = () => {
     }
   };
 
+  // Verification document chosen in the dialog. Required for new
+  // certifications — an unverified credential can't gate a call, so the
+  // upload + review submission happen atomically with the create.
+  const [certFile, setCertFile] = useState<File | null>(null);
+
   const onAddCertification = async (data: CertificationForm) => {
     if (!profile) return;
+    if (!editingCert && !certFile) {
+      toast.error('Upload the certification document to verify it');
+      return;
+    }
 
     try {
       const certData = {
         worker_id: profile.id,
-        cert_type_code: data.cert_type_code && data.cert_type_code !== OTHER_CERT_TYPE ? data.cert_type_code : undefined,
+        cert_type_code: data.cert_type_code !== OTHER_CERT_TYPE ? data.cert_type_code : undefined,
         name: data.name,
         issuing_organization: data.issuing_organization || undefined,
-        issue_date: data.issue_date || undefined,
-        expiration_date: data.expiration_date || undefined,
+        issue_date: data.issue_date,
+        expiration_date: data.expiration_date,
         credential_id: data.credential_id || undefined,
         credential_url: data.credential_url ? normalizeUrl(data.credential_url) : undefined,
         is_active: true,
@@ -263,13 +282,25 @@ const ProfilePage: React.FC = () => {
         if (error) throw new Error(error);
         toast.success('Certification updated successfully!');
       } else {
-        const { error } = await DatabaseService.addCertification(certData);
+        const { data: created, error } = await DatabaseService.addCertification(certData);
         if (error) throw new Error(error);
-        toast.success('Certification added successfully!');
+
+        // Upload the proof and submit for company verification.
+        if (certFile && created?.id) {
+          const up = await CertService.uploadDocument(profile.id, created.id, certFile);
+          if (up.error || !up.data) {
+            toast.error(up.error ?? 'Certification saved, but document upload failed');
+          } else {
+            const r = await CertService.submitForReview(created.id, up.data, certFile.name);
+            if (r.error) toast.error(`Saved, but review submission failed: ${r.error}`);
+          }
+        }
+        toast.success('Certification added — pending verification');
       }
 
       setShowCertDialog(false);
       setEditingCert(null);
+      setCertFile(null);
       certForm.reset();
       await refetchCertifications();
     } catch (error) {
@@ -315,6 +346,7 @@ const ProfilePage: React.FC = () => {
 
   const editCertification = (cert: Certification) => {
     setEditingCert(cert);
+    setCertFile(null);
     certForm.reset({
       cert_type_code: cert.cert_type_code || OTHER_CERT_TYPE,
       name: cert.name,
@@ -327,63 +359,60 @@ const ProfilePage: React.FC = () => {
     setShowCertDialog(true);
   };
 
+  // Portfolio CRUD goes through the portfolio_items table — the previous
+  // implementation wrote the whole array to a profiles.portfolio_items
+  // column that does not exist (PGRST204 schema-cache error) and minted
+  // client-side `portfolio-<ts>` ids that were never persisted.
+  const cleanPortfolioFields = (item: Partial<PortfolioItem>) => ({
+    title: item.title ?? undefined,
+    description: item.description?.trim() || null,
+    url: item.url?.trim() || null,
+    image_url: item.image_url?.trim() || null,
+    category: item.category?.trim() || null,
+    date_completed: item.date_completed || null,
+    client: item.client?.trim() || null,
+    is_featured: item.is_featured ?? false,
+  });
+
+  const reloadPortfolio = async () => {
+    if (!profile?.id) return;
+    const { data } = await supabase
+      .from('portfolio_items')
+      .select('*')
+      .eq('worker_id', profile.id)
+      .order('created_at', { ascending: false });
+    setPortfolioItems((data ?? []) as PortfolioItem[]);
+  };
+
   const handleAddPortfolioItem = async (item: Omit<PortfolioItem, 'id' | 'worker_id' | 'created_at' | 'updated_at'>) => {
     if (!profile) return;
-    
-    try {
-      const newItem = {
-        ...item,
-        id: `portfolio-${Date.now()}`,
-      } as PortfolioItem;
-      
-      const updatedItems = [...portfolioItems, newItem];
-      setPortfolioItems(updatedItems);
-      
-      const { error } = await updateProfile({ portfolio_items: updatedItems });
-      if (error) throw new Error(error);
-      
-      return;
-    } catch (error) {
-      console.error('Error adding portfolio item:', error);
-      throw new Error((error as Error).message || 'Failed to add portfolio item');
-    }
+    const { error } = await supabase
+      .from('portfolio_items')
+      .insert({ worker_id: profile.id, ...cleanPortfolioFields(item) });
+    if (error) throw new Error(error.message);
+    await reloadPortfolio();
   };
-  
+
   const handleUpdatePortfolioItem = async (id: string, updates: Partial<PortfolioItem>) => {
     if (!profile) return;
-    
-    try {
-      const updatedItems = portfolioItems.map(item => 
-        item.id === id ? { ...item, ...updates } : item
-      );
-      
-      setPortfolioItems(updatedItems);
-      
-      const { error } = await updateProfile({ portfolio_items: updatedItems });
-      if (error) throw new Error(error);
-      
-      return;
-    } catch (error) {
-      console.error('Error updating portfolio item:', error);
-      throw new Error((error as Error).message || 'Failed to update portfolio item');
-    }
+    const { error } = await supabase
+      .from('portfolio_items')
+      .update(cleanPortfolioFields(updates))
+      .eq('id', id)
+      .eq('worker_id', profile.id);
+    if (error) throw new Error(error.message);
+    await reloadPortfolio();
   };
-  
+
   const handleDeletePortfolioItem = async (id: string) => {
     if (!profile) return;
-    
-    try {
-      const updatedItems = portfolioItems.filter(item => item.id !== id);
-      setPortfolioItems(updatedItems);
-      
-      const { error } = await updateProfile({ portfolio_items: updatedItems });
-      if (error) throw new Error(error);
-      
-      return;
-    } catch (error) {
-      console.error('Error deleting portfolio item:', error);
-      throw new Error((error as Error).message || 'Failed to delete portfolio item');
-    }
+    const { error } = await supabase
+      .from('portfolio_items')
+      .delete()
+      .eq('id', id)
+      .eq('worker_id', profile.id);
+    if (error) throw new Error(error.message);
+    await reloadPortfolio();
   };
 
   const getProficiencyLabel = (level: number) => {
@@ -410,22 +439,22 @@ const ProfilePage: React.FC = () => {
 
   if (!profile) {
     return (
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header skeleton */}
         <div className="mb-8">
           <Skeleton className="h-8 w-64 mb-2" />
           <Skeleton className="h-4 w-96" />
         </div>
         
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
           {/* Profile sidebar skeleton */}
-          <div className="space-y-6">
+          <div className="space-y-6 xl:col-span-4">
             <Skeleton className="h-64" />
             <Skeleton className="h-48" />
           </div>
           
           {/* Main content skeleton */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="xl:col-span-8 space-y-6">
             <Skeleton className="h-96" />
             <Skeleton className="h-64" />
             <Skeleton className="h-64" />
@@ -436,7 +465,7 @@ const ProfilePage: React.FC = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -463,9 +492,9 @@ const ProfilePage: React.FC = () => {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
         {/* Profile Picture & Quick Info */}
-        <div className="space-y-6">
+        <div className="space-y-6 xl:col-span-4">
           <Card>
             <CardHeader>
               <CardTitle>Profile Picture</CardTitle>
@@ -580,7 +609,7 @@ const ProfilePage: React.FC = () => {
         </div>
 
         {/* Main Content */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="xl:col-span-8 space-y-6">
           {/* Basic Information */}
           <Card>
             <CardHeader>
@@ -936,20 +965,6 @@ const ProfilePage: React.FC = () => {
             />
           )}
           
-          {/* Reviews Section - Only for workers */}
-          {profile.role === 'worker' && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Reviews</CardTitle>
-                <CardDescription>
-                  What others are saying about {profile.full_name}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ReviewsList workerId={profile.id} />
-              </CardContent>
-            </Card>
-          )}
         </div>
       </div>
 
@@ -965,15 +980,25 @@ const ProfilePage: React.FC = () => {
           
           <form onSubmit={skillForm.handleSubmit(onAddSkill)} className="space-y-4">
             <div>
-              <Label htmlFor="skill_name">Skill Name</Label>
-              <Input
-                id="skill_name"
-                {...skillForm.register('skill_name')}
-                placeholder="e.g., Camera Operation, Sound Engineering"
-              />
-              {skillForm.formState.errors.skill_name && (
+              <Label>Skill</Label>
+              <Select
+                value={skillForm.watch('skill_id') || undefined}
+                onValueChange={(value) => skillForm.setValue('skill_id', value, { shouldValidate: true })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a skill" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(skills ?? [])
+                    .filter(s => !(workerSkills ?? []).some((ws: { skill?: { id?: string } | null }) => ws.skill?.id === s.id))
+                    .map(s => (
+                      <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+              {skillForm.formState.errors.skill_id && (
                 <p className="text-sm text-destructive mt-1">
-                  {skillForm.formState.errors.skill_name.message}
+                  {skillForm.formState.errors.skill_id.message}
                 </p>
               )}
             </div>
@@ -1023,6 +1048,7 @@ const ProfilePage: React.FC = () => {
         setShowCertDialog(open);
         if (!open) {
           setEditingCert(null);
+          setCertFile(null);
           certForm.reset();
         }
       }}>
@@ -1101,7 +1127,7 @@ const ProfilePage: React.FC = () => {
               </div>
 
               <div>
-                <Label htmlFor="expiration_date">Expiration Date (Optional)</Label>
+                <Label htmlFor="expiration_date">Expiration Date</Label>
                 <Input
                   id="expiration_date"
                   type="date"
@@ -1131,6 +1157,21 @@ const ProfilePage: React.FC = () => {
                   {certForm.formState.errors.credential_url.message}
                 </p>
               )}
+            </div>
+
+            <div>
+              <Label htmlFor="cert_document">
+                Verification Document{editingCert ? ' (Optional)' : '*'}
+              </Label>
+              <Input
+                id="cert_document"
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png"
+                onChange={(e) => setCertFile(e.target.files?.[0] ?? null)}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Upload the certificate or card — a company you work with verifies it before gated calls unlock.
+              </p>
             </div>
 
             <DialogFooter>
