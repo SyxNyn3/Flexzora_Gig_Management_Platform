@@ -72,7 +72,9 @@ const GigCommunication: React.FC<GigCommunicationProps> = ({ gigId, gigTitle, wo
     if (isLiveGig) {
       loadMessages();
     } else {
-      loadMockMessages();
+      // No demo messages — a non-live gig shows an empty thread, not
+      // fabricated crew chat.
+      setMessages([]);
     }
   }, [gigId]);
 
@@ -95,77 +97,6 @@ const GigCommunication: React.FC<GigCommunicationProps> = ({ gigId, gigTitle, wo
       sender_role: row.sender?.role === 'worker' ? 'worker' : 'company',
       confirmations: row.confirmations ?? [],
     })));
-  };
-
-  const loadMockMessages = () => {
-    const mockMessages: GigMessage[] = [
-      {
-        id: '1',
-        gig_id: gigId,
-        sender_id: 'company-1',
-        sender_name: 'Sarah Johnson',
-        sender_role: 'company',
-        message_type: 'instructions',
-        title: 'Show Blacks & PPE Requirements',
-        content: 'All blacks for the full call (black pants, black shirt, black shoes or boots). Steel-toes required on the dock. Bring your own hard hat, gloves, and headlamp — truss and motors are provided at the venue.',
-        recipients: ['all'],
-        priority: 'high',
-        requires_confirmation: true,
-        confirmations: [
-          { worker_id: 'worker-1', confirmed_at: '2024-01-12T10:30:00Z' }
-        ],
-        created_at: '2024-01-10T09:00:00Z',
-      },
-      {
-        id: '2',
-        gig_id: gigId,
-        sender_id: 'company-1',
-        sender_name: 'Sarah Johnson',
-        sender_role: 'company',
-        message_type: 'logistics',
-        title: 'Dock Access & Crew Parking',
-        content: 'Enter through Dock Door 4 off Merchant St — security has the crew list. Parking validated at the East Garage. Call time is 7:00 AM sharp at the Ballroom C dock ramp.',
-        recipients: ['all'],
-        priority: 'medium',
-        requires_confirmation: true,
-        confirmations: [],
-        created_at: '2024-01-11T14:20:00Z',
-      },
-      {
-        id: '3',
-        gig_id: gigId,
-        sender_id: 'company-1',
-        sender_name: 'Sarah Johnson',
-        sender_role: 'company',
-        message_type: 'payment',
-        title: 'Rate Card & Payout Confirmation',
-        content: 'Escrow is funded for this call — payout releases within 48 hours of timesheet approval. Rate confirmed at $48/hour; OT after 8 hours pays $72/hour, double-time after 12.',
-        recipients: ['all'],
-        priority: 'high',
-        requires_confirmation: false,
-        confirmations: [],
-        created_at: '2024-01-12T11:15:00Z',
-      },
-      {
-        id: '4',
-        gig_id: gigId,
-        sender_id: 'company-1',
-        sender_name: 'Sarah Johnson',
-        sender_role: 'company',
-        message_type: 'safety',
-        title: 'Rigging Safety Briefing - MANDATORY',
-        content: 'Mandatory safety briefing at 6:45 AM at the Ballroom C dock. Topics: motor points and dead-hang zones, overhead work flagging, emergency egress. No crew touches the deck without a signed briefing card.',
-        recipients: ['all'],
-        priority: 'urgent',
-        requires_confirmation: true,
-        confirmations: [
-          { worker_id: 'worker-1', confirmed_at: '2024-01-13T08:00:00Z' }
-        ],
-        created_at: '2024-01-13T06:00:00Z',
-      }
-    ];
-
-    setMessages(mockMessages);
   };
 
   const sendMessage = async () => {

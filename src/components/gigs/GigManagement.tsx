@@ -28,55 +28,6 @@ interface GigManagementProps {
   gigId?: string;
 }
 
-// Mock data for demo
-const mockGig = {
-  id: '1',
-  title: 'Convention Center Ballroom C — Load-In & Rigging Call',
-  description: 'Corporate keynote build: truss, motors, LED wall assembly and cable run. ETCP riggers preferred; all blacks + steel-toes required.',
-  company: { name: 'Rhino Staging', logo_url: null },
-  location: 'Convention Center Ballroom C',
-  start_date: '2024-01-15T08:00:00Z',
-  end_date: '2024-01-15T18:00:00Z',
-  hourly_rate: 48,
-  required_workers: 5,
-  status: 'published',
-};
-
-const mockWorkers = [
-  {
-    id: 'worker-1',
-    name: 'Marcus Webb',
-    email: 'marcus.webb@flexzora.dev',
-    hourly_rate: 48,
-    avatar_url: '',
-    status: 'accepted' as const,
-  },
-  {
-    id: 'worker-2',
-    name: 'Priya Raman',
-    email: 'priya.raman@flexzora.dev',
-    hourly_rate: 52,
-    avatar_url: '',
-    status: 'confirmed' as const,
-  },
-  {
-    id: 'worker-3',
-    name: 'Devon Carter',
-    email: 'devon.carter@flexzora.dev',
-    hourly_rate: 44,
-    avatar_url: '',
-    status: 'accepted' as const,
-  },
-];
-
-const mockApplications = [
-  { id: 'app-1', worker_id: 'worker-1', status: 'accepted' },
-  { id: 'app-2', worker_id: 'worker-2', status: 'accepted' },
-  { id: 'app-3', worker_id: 'worker-3', status: 'accepted' },
-  { id: 'app-4', worker_id: 'worker-4', status: 'pending' },
-  { id: 'app-5', worker_id: 'worker-5', status: 'pending' },
-];
-
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const GigManagement: React.FC<GigManagementProps> = ({ gigId: propGigId }) => {
@@ -89,26 +40,49 @@ const GigManagement: React.FC<GigManagementProps> = ({ gigId: propGigId }) => {
   const [selectedWorker, setSelectedWorker] = useState<string | null>(null);
 
   const isLiveGig = UUID_RE.test(gigId);
-  const { data: gigData } = useGig(isLiveGig ? gigId : null);
+  const { data: gigData, loading: gigLoading } = useGig(isLiveGig ? gigId : null);
   const { data: applicationData } = useApplications({ gigId: isLiveGig ? gigId : undefined });
 
-  // Live gig loaded → real roster/applications; otherwise the demo mock set
-  // (write actions are disabled below so mock ids never reach the database).
-  const live = isLiveGig && !!gigData;
-  const gig = gigData ?? mockGig;
-  const workers = live
-    ? (applicationData ?? [])
-        .filter((a) => a.status === 'accepted' || a.status === 'confirmed')
-        .map((a) => ({
-          id: a.worker_id,
-          name: a.worker?.full_name ?? 'Crew member',
-          email: a.worker?.email ?? '',
-          hourly_rate: a.worker?.hourly_rate ?? gig.hourly_rate ?? 0,
-          avatar_url: '',
-          status: a.status as 'accepted' | 'confirmed',
-        }))
-    : mockWorkers;
-  const applications = live ? (applicationData ?? []) : mockApplications;
+  // No demo fallback: a gig page either loads the real gig or says so.
+  // The old mock roster showed fake workers/payroll whenever the fetch
+  // missed — on a production page that's fabricated data presented as real.
+  if (!isLiveGig || (!gigLoading && !gigData)) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <Card>
+          <CardContent className="text-center py-16">
+            <Users className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+            <h2 className="text-lg font-semibold">Gig not found</h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              This gig doesn't exist or you don't have access to it.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (gigLoading || !gigData) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-4">
+        <div className="h-8 w-64 bg-muted animate-pulse rounded" />
+        <div className="h-64 bg-muted animate-pulse rounded-lg" />
+      </div>
+    );
+  }
+
+  const gig = gigData;
+  const workers = (applicationData ?? [])
+    .filter((a) => a.status === 'accepted' || a.status === 'confirmed')
+    .map((a) => ({
+      id: a.worker_id,
+      name: a.worker?.full_name ?? 'Crew member',
+      email: a.worker?.email ?? '',
+      hourly_rate: a.worker?.hourly_rate ?? gig.hourly_rate ?? 0,
+      avatar_url: '',
+      status: a.status as 'accepted' | 'confirmed',
+    }));
+  const applications = applicationData ?? [];
   const acceptedWorkers = workers;
 
   return (
@@ -262,8 +236,6 @@ const GigManagement: React.FC<GigManagementProps> = ({ gigId: propGigId }) => {
                     <Button
                       variant="outline"
                       size="sm"
-                      disabled={!live}
-                      title={live ? undefined : 'Demo roster — reviews need a live gig'}
                       onClick={(e) => {
                         e.stopPropagation();
                         setSelectedWorker(worker.id);
@@ -289,15 +261,11 @@ const GigManagement: React.FC<GigManagementProps> = ({ gigId: propGigId }) => {
         </TabsContent>
 
         <TabsContent value="payroll">
-          {isLiveGig ? (
-            <WorkerPayroll
-              gigId={gigId}
-              gigTitle={gig.title}
-              workers={acceptedWorkers}
-            />
-          ) : (
-            <p className="text-sm text-muted-foreground py-8 text-center">Demo roster — payroll runs against a live gig.</p>
-          )}
+          <WorkerPayroll
+            gigId={gigId}
+            gigTitle={gig.title}
+            workers={acceptedWorkers}
+          />
         </TabsContent>
 
         <TabsContent value="conflicts">
