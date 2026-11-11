@@ -48,6 +48,33 @@ function endOfWeek(date: Date): Date {
   return result;
 }
 
+// Fetch window must cover everything the active view can render. The old
+// code fetched only the current week, so an event created while looking at
+// another month was saved but never loaded — invisible in every view.
+function fetchRange(view: View, date: Date): [string, string] {
+  switch (view) {
+    case Views.MONTH: {
+      const ms = new Date(date.getFullYear(), date.getMonth(), 1);
+      const me = new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59, 999);
+      return [startOfWeek(ms).toISOString(), endOfWeek(me).toISOString()];
+    }
+    case Views.WEEK:
+      return [startOfWeek(date).toISOString(), endOfWeek(date).toISOString()];
+    case Views.DAY: {
+      const s = new Date(date); s.setHours(0, 0, 0, 0);
+      const e = new Date(date); e.setHours(23, 59, 59, 999);
+      return [s.toISOString(), e.toISOString()];
+    }
+    case Views.AGENDA:
+    default: {
+      // Agenda lists forward from the current date — cover ~9 months ahead.
+      const s = new Date(date.getFullYear(), date.getMonth() - 3, 1);
+      const e = new Date(date.getFullYear(), date.getMonth() + 6, 0, 23, 59, 59, 999);
+      return [s.toISOString(), e.toISOString()];
+    }
+  }
+}
+
 const localizer = momentLocalizer(moment);
 
 interface CalendarEvent {
@@ -91,11 +118,13 @@ const CalendarView: React.FC = () => {
   const [currentView, setCurrentView] = useState<View>(Views.MONTH);
   const [currentDate, setCurrentDate] = useState(new Date());
 
-  // Fetch calendar events from Supabase
+  // Fetch calendar events from Supabase — range follows the active view so
+  // every rendered day has its events loaded.
+  const [rangeStart, rangeEnd] = fetchRange(currentView, currentDate);
   const { data: dbEvents = [], loading: eventsLoading, refetch: refetchEvents } = useCalendarEvents(
     profile?.id || '',
-    startOfWeek(currentDate).toISOString(),
-    endOfWeek(currentDate).toISOString()
+    rangeStart,
+    rangeEnd
   );
 
   // Add item form state
@@ -210,7 +239,9 @@ const CalendarView: React.FC = () => {
         description: content,
         event_type: 'reminder' as const,
         start_time: new Date(`${format(selectedDate, 'yyyy-MM-dd')}T${reminderTime}:00`).toISOString(),
-        end_time: new Date(`${format(selectedDate, 'yyyy-MM-dd')}T${reminderTime}:00`).toISOString(),
+        // Zero-duration events (end === start) don't render in
+        // react-big-calendar — give reminders a 30-minute slot like notes.
+        end_time: new Date(new Date(`${format(selectedDate, 'yyyy-MM-dd')}T${reminderTime}:00`).getTime() + 30 * 60000).toISOString(),
         all_day: false,
         color: getPriorityColor(reminderPriority),
         metadata: {
