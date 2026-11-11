@@ -82,6 +82,14 @@ verify_jwt = true
 [functions.connect-status]
 verify_jwt = true
 
+# One Connect OAuth: the callback arrives as a top-level redirect from
+# WithOne with no Authorization header — the single-use state row is the
+# credential. The start/connections actions still verify the caller's JWT
+# inside the function, so the gateway check would only break the callback
+# (it 401'd every grant this way).
+[functions.one-connect]
+verify_jwt = false
+
 [functions.release-payout]
 verify_jwt = true
 
