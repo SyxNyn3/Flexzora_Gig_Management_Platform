@@ -37,6 +37,18 @@ interface Props {
   onSubmitted: () => void;
 }
 
+// Field must live at module scope: defining it inside the component gives
+// it a new identity every render, so React unmounts/remounts the input on
+// each keystroke (watch() re-renders) and the field loses focus after a
+// single character.
+const Field: React.FC<{ label: string; htmlFor: string; hint?: string; children: React.ReactNode }> = ({ label, htmlFor, hint, children }) => (
+  <div className="space-y-1.5">
+    <Label htmlFor={htmlFor} className="text-xs">{label}</Label>
+    {children}
+    {hint && <p className="text-[11px] text-muted-foreground">{hint}</p>}
+  </div>
+);
+
 /**
  * Guided W-9 wizard — collects the official form fields, renders a filled
  * facsimile PDF client-side, and files it through the same
@@ -113,14 +125,6 @@ const W9Wizard: React.FC<Props> = ({ open, onOpenChange, onSubmitted }) => {
 
   const err = (field: keyof W9FormData) =>
     errors[field] ? <p className="text-xs text-destructive dark:text-red-400 mt-1">{errors[field]?.message}</p> : null;
-
-  const Field: React.FC<{ label: string; htmlFor: string; hint?: string; children: React.ReactNode }> = ({ label, htmlFor, hint, children }) => (
-    <div className="space-y-1.5">
-      <Label htmlFor={htmlFor} className="text-xs">{label}</Label>
-      {children}
-      {hint && <p className="text-[11px] text-muted-foreground">{hint}</p>}
-    </div>
-  );
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!busy) onOpenChange(o); }}>

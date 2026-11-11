@@ -104,6 +104,12 @@ serve(async (req) => {
         : "";
       const theme = body?.theme === "light" || body?.theme === "dark" ? body.theme : "";
 
+      // Where to land after consent. Only same-origin paths are allowed —
+      // an absolute URL here would be an open redirect.
+      const returnTo = typeof body?.return_to === "string" && body.return_to.startsWith("/") && !body.return_to.startsWith("//")
+        ? body.return_to
+        : "/integrations";
+
       // Connect grants belong to the application profile, matching every
       // other worker-owned table in the schema.
       const { data: profile } = await admin
@@ -113,7 +119,7 @@ serve(async (req) => {
       const state = random(24);
       const verifier = random(48);
       const { error: flowErr } = await admin.from("one_connect_flows").insert({
-        state, profile_id: profileId, code_verifier: verifier,
+        state, profile_id: profileId, code_verifier: verifier, return_to: returnTo,
       });
       if (flowErr) return json({ error: "Could not start connect flow" }, 500);
 

@@ -39,7 +39,10 @@ export function ConnectButton({
       // functions.invoke attaches apikey + the user's JWT automatically —
       // a raw fetch without apikey gets 401'd at the gateway.
       const { data, error } = await supabase.functions.invoke('one-connect', {
-        body: { action: 'start', app, theme: 'dark' },
+        // return_to brings the user back to the page they clicked from
+        // (calendar, integrations, setup checklist) instead of always
+        // dumping them on /integrations.
+        body: { action: 'start', app, theme: 'dark', return_to: window.location.pathname + window.location.search },
       });
       if (error) throw error;
       if (!data?.url) throw new Error('No authorize URL returned');
