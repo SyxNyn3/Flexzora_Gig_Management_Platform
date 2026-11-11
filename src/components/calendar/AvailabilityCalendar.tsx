@@ -40,6 +40,10 @@ const ymd = (d: Date) =>
 const AvailabilityCalendar: React.FC = () => {
   const { profile } = useAuth();
   const [year, setYear] = useState(() => new Date().getFullYear());
+  // 'year' shows all 12 months small; 'month' zooms into one month with
+  // bigger cells so statuses are easy to read at a glance.
+  const [view, setView] = useState<'year' | 'month'>('year');
+  const [month, setMonth] = useState(() => new Date().getMonth());
   const [days, setDays] = useState<Map<string, AvailabilityDay>>(new Map());
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<string | null>(null);
@@ -146,7 +150,62 @@ const AvailabilityCalendar: React.FC = () => {
     toast.success(`Marked ${ok} federal holiday${ok === 1 ? '' : 's'} unavailable`);
   };
 
+  const stepMonth = (delta: number) => {
+    setMonth((m) => {
+      const next = m + delta;
+      if (next < 0) { setYear((y) => y - 1); return 11; }
+      if (next > 11) { setYear((y) => y + 1); return 0; }
+      return next;
+    });
+  };
+
   const todayStr = ymd(new Date());
+
+  // One month grid — shared by the year-at-a-glance and the zoomed month
+  // view; `large` bumps cell size/type for the single-month view.
+  const monthGrid = (mi: number, large = false) => {
+    const first = new Date(year, mi, 1);
+    const daysInMonth = new Date(year, mi + 1, 0).getDate();
+    const leadBlanks = first.getDay();
+    const cells: (string | null)[] = [
+      ...Array.from({ length: leadBlanks }, () => null),
+      ...Array.from({ length: daysInMonth }, (_, i) => ymd(new Date(year, mi, i + 1))),
+    ];
+    return (
+      <div className={large ? 'border border-border/60 rounded-lg p-3' : 'border border-border/60 rounded-lg p-2'}>
+        {large && <p className="text-sm font-semibold text-foreground mb-2 px-1">{MONTHS[mi]} {year}</p>}
+        <div className="grid grid-cols-7 gap-0.5 text-center">
+          {WEEKDAYS.map((w) => (
+            <span key={w} className={`${large ? 'text-xs' : 'text-[10px]'} text-muted-foreground/70 py-0.5`}>{w}</span>
+          ))}
+          {cells.map((dayStr, idx) => {
+            if (!dayStr) return <span key={`b${idx}`} />;
+            const row = days.get(dayStr);
+            const isToday = dayStr === todayStr;
+            const isHoliday = holidays.has(dayStr);
+            const isSelected = dayStr === selected;
+            const dayNum = Number(dayStr.slice(8));
+            return (
+              <button
+                key={dayStr}
+                type="button"
+                onClick={() => handleDayClick(dayStr)}
+                title={row?.note || (isHoliday ? holidays.get(dayStr) : undefined) || undefined}
+                className={`relative ${large ? 'h-11 text-sm' : 'h-7 text-[11px]'} rounded-sm transition-colors ${
+                  row ? STATUS_META[row.status].cell : 'hover:bg-accent'
+                } ${isToday ? 'ring-1 ring-primary' : ''} ${isSelected ? 'ring-2 ring-foreground' : ''} ${
+                  !row && isHoliday ? 'underline decoration-dotted decoration-amber-500/70' : ''
+                }`}
+              >
+                {dayNum}
+                {row?.note && <span className="absolute bottom-0.5 right-0.5 w-1 h-1 rounded-full bg-current opacity-70" />}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <Card>
@@ -154,16 +213,41 @@ const AvailabilityCalendar: React.FC = () => {
         <CardTitle className="flex items-center justify-between flex-wrap gap-2">
           <span className="flex items-center">
             <CalendarDays className="h-5 w-5 mr-2" />
-            Year calendar
+            Availability calendar
           </span>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => setYear((y) => y - 1)}>
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <span className="text-sm font-semibold w-16 text-center">{year}</span>
-            <Button variant="outline" size="sm" onClick={() => setYear((y) => y + 1)}>
-              <ChevronRight className="h-4 w-4" />
-            </Button>
+            <div className="flex rounded-md border border-border overflow-hidden">
+              {(['year', 'month'] as const).map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => setView(v)}
+                  className={`px-3 py-1 text-xs font-medium capitalize ${view === v ? 'bg-primary text-primary-foreground' : 'bg-transparent text-muted-foreground hover:bg-accent'}`}
+                >
+                  {v === 'year' ? 'Year' : 'Month'}
+                </button>
+              ))}
+            </div>
+            {view === 'year' ? (
+              <>
+                <Button variant="outline" size="sm" onClick={() => setYear((y) => y - 1)}>
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="text-sm font-semibold w-16 text-center">{year}</span>
+                <Button variant="outline" size="sm" onClick={() => setYear((y) => y + 1)}>
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button variant="outline" size="sm" onClick={() => stepMonth(-1)}>
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => stepMonth(1)}>
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </>
+            )}
           </div>
         </CardTitle>
       </CardHeader>
@@ -204,52 +288,17 @@ const AvailabilityCalendar: React.FC = () => {
         )}
 
         {loading ? (
-          <p className="text-sm text-muted-foreground py-8 text-center">Loading your year…</p>
+          <p className="text-sm text-muted-foreground py-8 text-center">Loading your calendar…</p>
+        ) : view === 'month' ? (
+          <div className="max-w-md mx-auto">{monthGrid(month, true)}</div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {MONTHS.map((month, mi) => {
-              const first = new Date(year, mi, 1);
-              const daysInMonth = new Date(year, mi + 1, 0).getDate();
-              const leadBlanks = first.getDay();
-              const cells: (string | null)[] = [
-                ...Array.from({ length: leadBlanks }, () => null),
-                ...Array.from({ length: daysInMonth }, (_, i) => ymd(new Date(year, mi, i + 1))),
-              ];
-              return (
-                <div key={month} className="border border-border/60 rounded-lg p-2">
-                  <p className="text-xs font-semibold text-muted-foreground mb-1 px-1">{month}</p>
-                  <div className="grid grid-cols-7 gap-0.5 text-center">
-                    {WEEKDAYS.map((w) => (
-                      <span key={w} className="text-[10px] text-muted-foreground/70 py-0.5">{w}</span>
-                    ))}
-                    {cells.map((dayStr, idx) => {
-                      if (!dayStr) return <span key={`b${idx}`} />;
-                      const row = days.get(dayStr);
-                      const isToday = dayStr === todayStr;
-                      const isHoliday = holidays.has(dayStr);
-                      const isSelected = dayStr === selected;
-                      const dayNum = Number(dayStr.slice(8));
-                      return (
-                        <button
-                          key={dayStr}
-                          type="button"
-                          onClick={() => handleDayClick(dayStr)}
-                          title={row?.note || (isHoliday ? holidays.get(dayStr) : undefined) || undefined}
-                          className={`relative h-7 text-[11px] rounded-sm transition-colors ${
-                            row ? STATUS_META[row.status].cell : 'hover:bg-accent'
-                          } ${isToday ? 'ring-1 ring-primary' : ''} ${isSelected ? 'ring-2 ring-foreground' : ''} ${
-                            !row && isHoliday ? 'underline decoration-dotted decoration-amber-500/70' : ''
-                          }`}
-                        >
-                          {dayNum}
-                          {row?.note && <span className="absolute bottom-0.5 right-0.5 w-1 h-1 rounded-full bg-current opacity-70" />}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
+            {MONTHS.map((monthName, mi) => (
+              <div key={monthName}>
+                <p className="text-xs font-semibold text-muted-foreground mb-1 px-1">{monthName}</p>
+                {monthGrid(mi)}
+              </div>
+            ))}
           </div>
         )}
 

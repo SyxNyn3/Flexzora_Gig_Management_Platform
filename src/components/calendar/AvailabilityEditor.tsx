@@ -125,7 +125,7 @@ const AvailabilityEditor: React.FC = () => {
   };
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
+    <div className="max-w-6xl mx-auto px-4 py-8 space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-foreground">Availability</h1>
         <p className="text-muted-foreground mt-1">
@@ -133,7 +133,66 @@ const AvailabilityEditor: React.FC = () => {
         </p>
       </div>
 
-      <AvailabilityCalendar />
+      {/* Desktop: calendar on the left, windows + feeds stacked on the
+          right so everything is visible without scrolling. Stacks on
+          mobile/tablet. */}
+      <div className="grid gap-6 xl:grid-cols-5 items-start">
+        <div className="xl:col-span-3">
+          <AvailabilityCalendar />
+        </div>
+
+        <div className="xl:col-span-2 space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <Link2 className="h-5 w-5 mr-2" />
+            Sync a calendar
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Connect the calendar you already use and its busy times show up here automatically — offers that clash with
+            your real life never reach you. Add as many feeds as you like (work, personal, family); they all merge.
+          </p>
+          <div className="rounded-md border border-border/60 bg-muted/30 p-3 text-xs text-muted-foreground space-y-1.5">
+            <p className="font-medium text-foreground/80">Where to find your feed URL (it's called "iCal" or "publish calendar"):</p>
+            <p><span className="font-medium">Google Calendar</span> — calendar.google.com → Settings → your calendar → "Secret address in iCal format"</p>
+            <p><span className="font-medium">Outlook</span> — outlook.com → Settings → Calendar → Shared calendars → "Publish a calendar" → ICS link</p>
+            <p><span className="font-medium">Apple</span> — iCloud.com → Calendar → share icon → Public link</p>
+          </div>
+          <div className="grid sm:grid-cols-[1fr_2fr_auto] gap-2">
+            <Input placeholder="Name (e.g. Personal)" value={feedName} onChange={e => setFeedName(e.target.value)} />
+            <Input placeholder="https:// or webcal:// feed URL" value={feedUrl} onChange={e => setFeedUrl(e.target.value)} />
+            <Button onClick={addImport} disabled={saving || !feedUrl.trim()}>Add feed</Button>
+          </div>
+          {imports.length > 0 && (
+            <div className="space-y-2 border-t pt-3">
+              {imports.map((imp) => (
+                <div key={imp.id} className="flex items-center justify-between gap-3 text-sm">
+                  <div className="min-w-0">
+                    <p className="font-medium truncate">{imp.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {imp.last_error
+                        ? <span className="text-destructive">{imp.last_error}</span>
+                        : imp.synced_at
+                          ? `${imp.block_count} busy blocks · synced ${format(parseISO(imp.synced_at), 'MMM d, h:mm a')}`
+                          : 'Not synced yet'}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <Button size="sm" variant="ghost" className="h-7" disabled={syncing !== null} onClick={() => syncImport(imp.id)} title="Re-fetch the feed">
+                      <RefreshCw className={`w-3.5 h-3.5 ${syncing === imp.id ? 'animate-spin' : ''}`} />
+                    </Button>
+                    <Button size="sm" variant="ghost" className="h-7" onClick={() => removeImport(imp.id)} title="Remove feed and its busy blocks">
+                      <Trash2 className="w-3.5 h-3.5 text-muted-foreground" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
@@ -177,52 +236,6 @@ const AvailabilityEditor: React.FC = () => {
           <Button onClick={addWindow} disabled={saving}>
             {saving ? 'Saving…' : 'Add window'}
           </Button>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <Link2 className="h-5 w-5 mr-2" />
-            Sync a calendar
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            Paste a personal iCal feed (Google Calendar → "Secret address in iCal format", Outlook → "Publish a calendar").
-            Events become blocked windows here, so offers that clash with your real calendar never reach you.
-          </p>
-          <div className="grid sm:grid-cols-[1fr_2fr_auto] gap-2">
-            <Input placeholder="Name (e.g. Personal)" value={feedName} onChange={e => setFeedName(e.target.value)} />
-            <Input placeholder="https:// or webcal:// feed URL" value={feedUrl} onChange={e => setFeedUrl(e.target.value)} />
-            <Button onClick={addImport} disabled={saving || !feedUrl.trim()}>Add feed</Button>
-          </div>
-          {imports.length > 0 && (
-            <div className="space-y-2 border-t pt-3">
-              {imports.map((imp) => (
-                <div key={imp.id} className="flex items-center justify-between gap-3 text-sm">
-                  <div className="min-w-0">
-                    <p className="font-medium truncate">{imp.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {imp.last_error
-                        ? <span className="text-destructive">{imp.last_error}</span>
-                        : imp.synced_at
-                          ? `${imp.block_count} busy blocks · synced ${format(parseISO(imp.synced_at), 'MMM d, h:mm a')}`
-                          : 'Not synced yet'}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    <Button size="sm" variant="ghost" className="h-7" disabled={syncing !== null} onClick={() => syncImport(imp.id)} title="Re-fetch the feed">
-                      <RefreshCw className={`w-3.5 h-3.5 ${syncing === imp.id ? 'animate-spin' : ''}`} />
-                    </Button>
-                    <Button size="sm" variant="ghost" className="h-7" onClick={() => removeImport(imp.id)} title="Remove feed and its busy blocks">
-                      <Trash2 className="w-3.5 h-3.5 text-muted-foreground" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
         </CardContent>
       </Card>
 
@@ -274,6 +287,8 @@ const AvailabilityEditor: React.FC = () => {
           )}
         </CardContent>
       </Card>
+        </div>
+      </div>
     </div>
   );
 };

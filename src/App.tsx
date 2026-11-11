@@ -50,6 +50,7 @@ const CertReviewPage = lazy(() => import('@/pages/company/CertReviewPage'));
 const TeamPage = lazy(() => import('@/pages/company/TeamPage'));
 const ShiftMarketplacePage = lazy(() => import('@/pages/worker/ShiftMarketplacePage'));
 const CrewBoardPage = lazy(() => import('@/pages/worker/CrewBoardPage'));
+const CrewHubPage = lazy(() => import('@/pages/worker/CrewHubPage'));
 const PayoutsPage = lazy(() => import('@/pages/worker/PayoutsPage'));
 const LedgerPage = lazy(() => import('@/pages/worker/LedgerPage'));
 const StartPackPage = lazy(() => import('@/pages/worker/StartPackPage'));
@@ -610,6 +611,18 @@ const AppRoutes: React.FC = () => {
             <ProtectedRoute><RoleRoute role="worker">
               <Layout>
                 <ShiftMarketplacePage />
+              </Layout>
+            </RoleRoute></ProtectedRoute>
+          }
+        />
+        {/* Crew hub — left-nav entry to each shift's crew board (rides,
+            bunks, grub, IOUs, board). Boards stay shift-scoped. */}
+        <Route
+          path="/crew"
+          element={
+            <ProtectedRoute><RoleRoute role="worker">
+              <Layout>
+                <CrewHubPage />
               </Layout>
             </RoleRoute></ProtectedRoute>
           }
