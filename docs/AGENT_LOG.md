@@ -534,3 +534,32 @@ can't force-match, #27 seats_needed frozen after match).
   content under tight max_tokens). Direct curl verified the key+model.
 - Note: bound SA keys work with Authorization: Bearer on the OpenAI-compat
   endpoint — verified live.
+
+## Native Google connect (Calendar) + Maps scaffolding (2026-11-24)
+
+- New edge function `google-connect` (verify_jwt=false, self-verifies on
+  authed actions — same pattern as one-connect). Actions: start / callback
+  / status / disconnect / sync / sync-event (X-Push-Secret from DB trigger).
+- Migration 20261228000000_google_connections: google_connections,
+  google_event_links, google_connect_flows — all RLS-enabled with NO
+  client policies; tokens are service-role only, never reach the browser.
+  calendar_events trigger notify_google_event_sync() pg_net-pings the
+  function on insert/update/delete; reads config from internal_config
+  (google_fn_url) + vault (push_internal_secret), same convention as
+  push dispatch.
+- google_fn_url registered in internal_config; GOOGLE_CLIENT_ID/SECRET
+  set as function secrets; function deployed and verified (401 unauth,
+  302 expired on bogus callback).
+- Integrations page: Google Calendar card is native (GoogleConnectCard —
+  account chooser, no One page). Gmail/Drive/Sheets still on One Connect
+  pending their own scopes; Slack/QuickBooks stay on One permanently.
+- Maps: gigs.latitude/longitude (migration 20261228010000); src/lib/maps.ts
+  lazy-loads Maps JS only when VITE_GOOGLE_MAPS_API_KEY exists;
+  CreateGigForm geocodes venue on save (best-effort); VenueMap renders on
+  GigDetails when coords exist. Needs a browser API key from the user.
+- USER TODO: add redirect URI
+  https://qgjtrosadftjrplubjaw.supabase.co/functions/v1/google-connect?action=callback
+  to the Google OAuth client; create Maps API key (JS + Geocoding,
+  referrer-restricted to flexzora.pro) → VITE_GOOGLE_MAPS_API_KEY.
+- Mock-data purge same day: GigManagement/GigCommunication demo fallbacks
+  removed (01a6869); 7 e2e waitlist test rows deleted from production.

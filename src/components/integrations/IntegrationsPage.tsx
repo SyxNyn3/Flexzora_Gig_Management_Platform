@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { ConnectButton } from './ConnectButton';
+import GoogleConnectCard from './GoogleConnectCard';
 
 /**
  * Integrations surface backed by One Connect (WithOne). The Connect app's
@@ -27,9 +28,12 @@ interface OneApp {
   icon: React.ComponentType<{ className?: string }>;
 }
 
+// Google Calendar moved to native Google OAuth (google-connect edge
+// function) — One Connect still brokers the apps that genuinely need a
+// third-party broker: Gmail/Drive/Sheets migrate next, Slack/QuickBooks
+// stay on One.
 const ONE_APPS: OneApp[] = [
   { slug: 'gmail', name: 'Gmail', access: 'Read only', description: 'Booking confirmations and crew email surfaced in your feed.', icon: Mail },
-  { slug: 'google-calendar', name: 'Google Calendar', access: 'Read & write', description: 'Push shifts to your calendar and check conflicts before booking.', icon: CalendarDays },
   { slug: 'google-drive', name: 'Google Drive', access: 'Full access', description: 'Deal memos, W-9s, receipts, and contracts stored in your Drive.', icon: HardDrive },
   { slug: 'google-sheets', name: 'Google Sheets', access: 'Full access', description: 'Import company roster sheets and export timesheets.', icon: FileSpreadsheet },
   { slug: 'quickbooks', name: 'QuickBooks', access: 'Full access', description: 'Invoices and expenses flow into your company\'s books.', icon: Calculator },
@@ -58,6 +62,17 @@ const IntegrationsPage: React.FC = () => {
     else if (result === 'declined') toast('Connection cancelled');
     else toast.error('Connection failed — please try again');
     searchParams.delete('one_connect');
+    setSearchParams(searchParams, { replace: true });
+  }, [searchParams, setSearchParams]);
+
+  // Native Google OAuth outcome (?google_connect=connected|expired|error).
+  useEffect(() => {
+    const result = searchParams.get('google_connect');
+    if (!result) return;
+    if (result === 'connected') toast.success('Google Calendar connected');
+    else if (result === 'expired') toast.error('That connect link expired — please try again');
+    else toast.error('Google connection failed — please try again');
+    searchParams.delete('google_connect');
     setSearchParams(searchParams, { replace: true });
   }, [searchParams, setSearchParams]);
 
@@ -130,6 +145,9 @@ const IntegrationsPage: React.FC = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          <div className="mb-4">
+            <GoogleConnectCard />
+          </div>
           {!checking && !hasGrant && <ConnectButton label="Connect your apps" />}
           <div className="grid sm:grid-cols-2 gap-3 mt-2">
             {ONE_APPS.map(({ slug, name, access, description, icon: Icon }) => {

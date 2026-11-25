@@ -22,6 +22,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
+import { geocodeAddress } from '@/lib/maps';
 import { invalidateCompanyMemberships } from '@/hooks/useMarketplace';
 import { Company, Skill } from '@/lib/types';
 import { 
@@ -285,12 +286,18 @@ const CreateGigForm: React.FC = () => {
 
     setLoading(true);
     try {
+      // Best-effort venue geocode — powers the map on gig details. Never
+      // blocks creation: no API key or no match just means no map.
+      const geo = await geocodeAddress(data.location);
+
       const gigData = {
         title: data.title,
         description: data.description,
         company_id: data.company_id,
         created_by: profile.id,
         location: data.location,
+        latitude: geo?.lat ?? null,
+        longitude: geo?.lng ?? null,
         start_date: new Date(data.start_date).toISOString(),
         end_date: new Date(data.end_date).toISOString(),
         hourly_rate: data.hourly_rate ? parseFloat(data.hourly_rate) : null,

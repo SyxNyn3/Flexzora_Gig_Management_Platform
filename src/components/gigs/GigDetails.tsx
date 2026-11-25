@@ -13,6 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { Gig, GigApplication } from '@/lib/types';
 import ReviewStars from '@/components/reviews/ReviewStars';
+import VenueMap from '@/components/gigs/VenueMap';
 import { 
   MapPin, 
   Calendar, 
@@ -360,6 +361,10 @@ const GigDetails: React.FC = () => {
                   </Badge>
                 )}
               </div>
+
+              {gig.latitude != null && gig.longitude != null && (
+                <VenueMap lat={gig.latitude} lng={gig.longitude} label={gig.location} />
+              )}
 
               <div className="flex items-center text-sm">
                 <Calendar className="h-4 w-4 mr-2 text-muted-foreground/70" />

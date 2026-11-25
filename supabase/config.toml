@@ -90,6 +90,13 @@ verify_jwt = true
 [functions.one-connect]
 verify_jwt = false
 
+# Native Google OAuth: same callback problem as one-connect — Google's
+# redirect carries no user JWT, so the single-use state row is the
+# credential. start/status/disconnect/sync still verify the caller's JWT
+# inside the function; sync-event uses X-Push-Secret from the DB trigger.
+[functions.google-connect]
+verify_jwt = false
+
 [functions.release-payout]
 verify_jwt = true
 

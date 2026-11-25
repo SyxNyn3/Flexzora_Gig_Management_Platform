@@ -523,6 +523,8 @@ export interface Gig {
   company_id: string;
   created_by: string;
   location: string;
+  latitude?: number | null;
+  longitude?: number | null;
   start_date: string;
   end_date: string;
   hourly_rate?: number;
