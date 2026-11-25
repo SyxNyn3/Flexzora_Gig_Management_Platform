@@ -26,6 +26,8 @@ import {
   ExternalLink,
   FileUp,
   ShieldCheck,
+  MapPin,
+  Loader2,
 } from 'lucide-react';
 import { CertService } from '@/lib/certs/service';
 import { AvatarService } from '@/lib/avatar';
@@ -158,6 +160,51 @@ const ProfilePage: React.FC = () => {
       });
     }
   }, [profile, form]);
+
+  // Home-base coordinates live in worker_sensitive (private table —
+  // companies only ever see derived distance, never the point itself).
+  // This powers worker_distances for "who's near this venue" matching.
+  const [homeLoc, setHomeLoc] = useState<{ lat: number; lng: number } | null>(null);
+  const [locBusy, setLocBusy] = useState(false);
+
+  React.useEffect(() => {
+    const loadHomeLoc = async () => {
+      if (!profile?.id) return;
+      const { data } = await supabase
+        .from('worker_sensitive')
+        .select('latitude, longitude')
+        .eq('worker_id', profile.id)
+        .maybeSingle();
+      if (data?.latitude != null && data?.longitude != null) {
+        setHomeLoc({ lat: data.latitude, lng: data.longitude });
+      }
+    };
+    loadHomeLoc();
+  }, [profile?.id]);
+
+  const captureHomeLocation = () => {
+    if (!profile?.id || locBusy) return;
+    if (typeof navigator === 'undefined' || !navigator.geolocation) {
+      toast.error('Location is not available on this device');
+      return;
+    }
+    setLocBusy(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        const { error } = await supabase
+          .from('worker_sensitive')
+          .upsert({ worker_id: profile.id, latitude: lat, longitude: lng }, { onConflict: 'worker_id' });
+        setLocBusy(false);
+        if (error) { toast.error('Could not save location'); return; }
+        setHomeLoc({ lat, lng });
+        toast.success('Home location saved — companies can now match you by distance');
+      },
+      () => { setLocBusy(false); toast.error('Location permission denied'); },
+      { enableHighAccuracy: true, timeout: 15_000 },
+    );
+  };
 
   // Portfolio items live in the portfolio_items table (one row per item).
   // They used to be written to a non-existent profiles.portfolio_items JSON
@@ -671,6 +718,29 @@ const ProfilePage: React.FC = () => {
                       placeholder="City, State"
                     />
                   </div>
+
+                  {profile.role === 'worker' && (
+                    <div className="sm:col-span-2">
+                      <Label>Home base (for distance matching)</Label>
+                      <div className="flex items-center gap-3 mt-1">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={captureHomeLocation}
+                          disabled={locBusy}
+                        >
+                          {locBusy ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <MapPin className="h-4 w-4 mr-2" />}
+                          {homeLoc ? 'Update my location' : 'Use my current location'}
+                        </Button>
+                        <span className="text-xs text-muted-foreground">
+                          {homeLoc
+                            ? 'Set — companies see distance to venues, never your exact address.'
+                            : 'Not set — lets companies find crew near the venue. Stored privately.'}
+                        </span>
+                      </div>
+                    </div>
+                  )}
 
                   {profile.role === 'worker' && (
                     <div>
