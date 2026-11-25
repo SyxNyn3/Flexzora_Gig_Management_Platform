@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
 import { useHasCompanyMembership } from '@/hooks/useMarketplace';
-import { Bell, Calendar, DollarSign, LogOut, User, Briefcase, Plus, MessageSquare, Users, CalendarDays, Upload, Sparkles, Megaphone, KanbanSquare, FileDown, AlertTriangle, ShieldCheck, Inbox, Clock, UserCog, Wallet, FileCheck, Menu, X, Landmark, Store, FileSignature, Plug } from 'lucide-react';
+import { Bell, Calendar, DollarSign, LogOut, User, Briefcase, Plus, MessageSquare, Users, CalendarDays, Upload, Sparkles, Megaphone, KanbanSquare, FileDown, AlertTriangle, ShieldCheck, Inbox, Clock, UserCog, Wallet, FileCheck, Menu, X, Landmark, Store, FileSignature, Plug, Mail } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import NotificationCenter from '@/components/notifications/NotificationCenter';
 import { useNotifications } from '@/hooks/useSupabaseQuery';
@@ -48,6 +48,7 @@ const Navbar: React.FC = () => {
   const workerNavItems: NavItem[] = [
     { path: '/dashboard', label: 'Dashboard', icon: Briefcase },
     { path: '/feed', label: 'Feed', icon: Inbox },
+    { path: '/offers', label: 'Offers', icon: Mail },
     { path: '/shifts', label: 'Shifts', icon: Calendar },
     { path: '/crew', label: 'Crew', icon: Users },
     { path: '/payouts', label: 'Payouts', icon: DollarSign },

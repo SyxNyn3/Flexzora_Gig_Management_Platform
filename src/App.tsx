@@ -63,6 +63,7 @@ const SellListingPage = lazy(() => import('@/pages/market/SellListingPage'));
 const MyListingsPage = lazy(() => import('@/pages/market/MyListingsPage'));
 const MarketOrdersPage = lazy(() => import('@/pages/market/MarketOrdersPage'));
 const TaxPlaybookPage = lazy(() => import('@/pages/worker/TaxPlaybookPage'));
+const OffersPage = lazy(() => import('@/pages/worker/OffersPage'));
 const PublicProfilePage = lazy(() => import('@/pages/PublicProfilePage'));
 const WaitlistAdminPage = lazy(() => import('@/pages/admin/WaitlistAdminPage'));
 const ResetPasswordPage = lazy(() => import('@/components/auth/ResetPasswordPage'));
@@ -623,6 +624,18 @@ const AppRoutes: React.FC = () => {
             <ProtectedRoute><RoleRoute role="worker">
               <Layout>
                 <CrewHubPage />
+              </Layout>
+            </RoleRoute></ProtectedRoute>
+          }
+        />
+        {/* Gig-offer inbox — Gmail-ingested production offers with
+            accept/decline/counter + auto-rules. */}
+        <Route
+          path="/offers"
+          element={
+            <ProtectedRoute><RoleRoute role="worker">
+              <Layout>
+                <OffersPage />
               </Layout>
             </RoleRoute></ProtectedRoute>
           }

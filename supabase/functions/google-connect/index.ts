@@ -30,13 +30,22 @@ const appUrl = Deno.env.get("APP_URL") || "https://flexzora.pro";
 const admin = createClient(supabaseUrl, serviceKey);
 
 // calendar.events covers read+write of events — everything the push sync
-// needs. openid/email/profile identify which Google account connected.
+// needs. gmail.readonly powers gig-offer ingestion (subjects/snippets are
+// filtered for call offers; bodies of matches go through the LLM parser).
+// openid/email/profile identify which Google account connected.
 const SCOPES = [
   "openid",
   "email",
   "profile",
   "https://www.googleapis.com/auth/calendar.events",
+  "https://www.googleapis.com/auth/gmail.readonly",
 ].join(" ");
+
+const GMAIL_API = "https://gmail.googleapis.com/gmail/v1/users/me";
+// Reuses the llm-proxy secrets — same Gemini OpenAI-compatible endpoint.
+const LLM_BASE = Deno.env.get("LLM_BASE_URL") || "";
+const LLM_KEY = Deno.env.get("LLM_API_KEY") || "";
+const LLM_MODEL = Deno.env.get("LLM_MODEL") || "";
 
 const GOOGLE_AUTH = "https://accounts.google.com/o/oauth2/v2/auth";
 const GOOGLE_TOKEN = "https://oauth2.googleapis.com/token";
@@ -216,6 +225,109 @@ async function syncAll(profileId: string) {
     if (r.ok) synced++;
   }
   return { synced, skipped: false };
+}
+
+/** Extract structured offer fields from an email via the configured LLM.
+ *  Falls back to empty object on any failure — a raw offer is still useful. */
+async function parseOfferWithLLM(subject: string, snippet: string, from: string) {
+  if (!LLM_BASE || !LLM_KEY || !LLM_MODEL) return {};
+  try {
+    const res = await fetch(`${LLM_BASE}/chat/completions`, {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${LLM_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: LLM_MODEL,
+        temperature: 0,
+        max_tokens: 400,
+        messages: [
+          {
+            role: "system",
+            content: "You extract gig/shift offer details from production crew emails. Reply with ONLY a JSON object, no prose: {\"is_offer\":bool,\"role\":string|null,\"company\":string|null,\"call_date\":\"ISO8601\"|null,\"end_date\":\"ISO8601\"|null,\"location\":string|null,\"rate\":number|null,\"notes\":string|null}. Dates must be absolute ISO; if only relative dates appear, resolve them against today. is_offer=false for marketing/newsletters.",
+          },
+          { role: "user", content: `From: ${from}\nSubject: ${subject}\n\n${snippet}` },
+        ],
+      }),
+    });
+    if (!res.ok) return {};
+    const data = await res.json();
+    const text = data?.choices?.[0]?.message?.content ?? "";
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    return jsonMatch ? JSON.parse(jsonMatch[0]) : {};
+  } catch {
+    return {};
+  }
+}
+
+/** Evaluate a worker's enabled offer_rules against freshly ingested offers.
+ *  Matching rules auto-accept / decline / counter; require_no_conflict rules
+ *  flag overlapping calls as 'conflict' for manual review instead. */
+async function applyOfferRules(profileId: string, offerIds: string[]) {
+  if (!offerIds.length) return { evaluated: 0, acted: 0 };
+  const { data: rules } = await admin
+    .from("offer_rules").select("*").eq("worker_id", profileId).eq("enabled", true);
+  if (!rules?.length) return { evaluated: offerIds.length, acted: 0 };
+
+  const { data: offers } = await admin
+    .from("gig_offers").select("*").in("id", offerIds).eq("status", "new");
+  let acted = 0;
+
+  for (const offer of offers ?? []) {
+    const haystack = `${offer.sender ?? ""} ${offer.subject ?? ""} ${offer.body_excerpt ?? ""}`.toLowerCase();
+    const rule = (rules as Record<string, unknown>[]).find((r) => {
+      const senderMatch = !r.match_sender ||
+        haystack.includes(String(r.match_sender).toLowerCase());
+      const kw = (r.match_keywords as string[] | null) ?? [];
+      const kwMatch = kw.length === 0 || kw.some((k) => haystack.includes(k.toLowerCase()));
+      return senderMatch && kwMatch;
+    });
+    if (!rule) continue;
+
+    const parsed = (offer.parsed ?? {}) as Record<string, unknown>;
+    let status = String(rule.action);
+
+    // Conflict gate: does the parsed call window overlap a real calendar event?
+    if (rule.require_no_conflict && parsed.call_date) {
+      const start = new Date(String(parsed.call_date));
+      const end = parsed.end_date ? new Date(String(parsed.end_date)) : new Date(start.getTime() + 8 * 3600_000);
+      const { data: overlap } = await admin
+        .from("calendar_events").select("id")
+        .eq("user_id", profileId)
+        .lt("start_time", end.toISOString())
+        .or(`end_time.gt.${start.toISOString()},end_time.is.null`)
+        .limit(1);
+      if (overlap?.length) {
+        await admin.from("gig_offers").update({
+          status: "conflict", updated_at: new Date().toISOString(),
+        }).eq("id", offer.id);
+        continue;
+      }
+    }
+
+    const patch: Record<string, unknown> = {
+      status, updated_at: new Date().toISOString(),
+    };
+    if (status === "countered" && rule.counter_rate) {
+      patch.parsed = { ...parsed, counter_rate: rule.counter_rate };
+    }
+    await admin.from("gig_offers").update(patch).eq("id", offer.id);
+
+    // Auto-accepted calls land on the calendar (which then pushes to Google).
+    if (status === "accepted" && parsed.call_date) {
+      await admin.from("calendar_events").insert({
+        user_id: profileId,
+        title: `🎪 ${parsed.role ?? "Gig"} — ${parsed.company ?? offer.sender ?? "offer"}`,
+        description: `Auto-accepted by rule "${rule.name}".\n${parsed.location ?? ""}`,
+        event_type: "gig",
+        start_time: String(parsed.call_date),
+        end_time: parsed.end_date ? String(parsed.end_date) : undefined,
+        all_day: false,
+        color: "#10B981",
+        metadata: { source: "offer", offer_id: offer.id, auto_rule: rule.name },
+      });
+    }
+    acted++;
+  }
+  return { evaluated: offers?.length ?? 0, acted };
 }
 
 serve(async (req) => {
@@ -408,6 +520,117 @@ serve(async (req) => {
         }
       }
       return json({ imported, updated, skipped });
+    }
+
+    // ── Offers: list the worker's ingested gig offers ──
+    if (action === "offers") {
+      const { data } = await admin
+        .from("gig_offers").select("*")
+        .eq("worker_id", profileId).order("created_at", { ascending: false })
+        .limit(100);
+      return json({ offers: data ?? [] });
+    }
+
+    // ── Offer action: worker accepts / declines / counters ──
+    if (action === "offer-action") {
+      const { offer_id, decision, counter_rate } = body ?? {};
+      if (!offer_id || !["accepted", "declined", "countered"].includes(decision)) {
+        return json({ error: "bad request" }, 400);
+      }
+      const { data: offer } = await admin
+        .from("gig_offers").select("*")
+        .eq("id", offer_id).eq("worker_id", profileId).maybeSingle();
+      if (!offer) return json({ error: "not found" }, 404);
+
+      const parsed = (offer.parsed ?? {}) as Record<string, unknown>;
+      const patch: Record<string, unknown> = {
+        status: decision, updated_at: new Date().toISOString(),
+      };
+      if (decision === "countered" && counter_rate) patch.parsed = { ...parsed, counter_rate };
+
+      // Accepting logs the call to the worker's calendar immediately —
+      // same table the Google push trigger watches, so it lands on their
+      // Google Calendar too when connected.
+      if (decision === "accepted" && parsed.call_date) {
+        const start = String(parsed.call_date);
+        const end = parsed.end_date ? String(parsed.end_date) : start;
+        await admin.from("calendar_events").insert({
+          user_id: profileId,
+          title: `🎪 ${parsed.role ?? "Gig"} — ${parsed.company ?? offer.sender ?? "offer"}`,
+          description: `Auto-logged from offer: ${offer.subject ?? ""}\n${parsed.location ?? ""}`,
+          event_type: "gig",
+          start_time: start,
+          end_time: end === start ? undefined : end,
+          all_day: false,
+          color: "#10B981",
+          metadata: { source: "offer", offer_id: offer.id, gig_id: offer.gig_id ?? null },
+        });
+      }
+      await admin.from("gig_offers").update(patch).eq("id", offer_id);
+      return json({ ok: true });
+    }
+
+    // ── Gmail sync: pull recent inbox messages, filter for offers, parse,
+    //    store, then run the worker's auto-rules over the new rows ──
+    if (action === "gmail-sync") {
+      const conn = await loadConnection(profileId);
+      if (!conn) return json({ error: "Not connected" }, 400);
+      const granted = (conn as unknown as { scopes?: string }).scopes ?? "";
+      if (!granted.includes("gmail.readonly")) {
+        return json({ error: "reconnect", message: "Reconnect Google to grant Gmail access" }, 400);
+      }
+      const token = await validToken(conn);
+      if (!token) return json({ error: "Google token expired — reconnect" }, 400);
+
+      const listRes = await fetch(
+        `${GMAIL_API}/messages?q=${encodeURIComponent("is:inbox newer_than:14d")}&maxResults=50`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      if (!listRes.ok) return json({ error: `Gmail ${listRes.status}` }, 502);
+      const list = await listRes.json();
+      const ids: string[] = (list.messages ?? []).map((m: { id: string }) => m.id);
+
+      // Keyword gate — cheap prefilter before spending LLM tokens. Production
+      // crew offers almost always contain one of these in subject/snippet.
+      const OFFER_RE = /\b(gig|call\s?time|load[- ]?in|strike|crew|shift|festival|concert|stage|backstage|tech(?:nician)?|rigging|a2|audio|lighting|video|forklift|security|talent)\b/i;
+
+      const candidates: { id: string; from: string; subject: string; snippet: string; date: string }[] = [];
+      for (const id of ids.slice(0, 50)) {
+        const mres = await fetch(
+          `${GMAIL_API}/messages/${id}?format=metadata&metadataHeaders=From&metadataHeaders=Subject&metadataHeaders=Date`,
+          { headers: { Authorization: `Bearer ${token}` } },
+        );
+        if (!mres.ok) continue;
+        const msg = await mres.json();
+        const headers = (msg.payload?.headers ?? []) as { name: string; value: string }[];
+        const h = (n: string) => headers.find((x) => x.name.toLowerCase() === n)?.value ?? "";
+        const from = h("from"), subject = h("subject"), snippet = msg.snippet ?? "";
+        if (OFFER_RE.test(subject) || OFFER_RE.test(snippet) || OFFER_RE.test(from)) {
+          candidates.push({ id, from, subject, snippet, date: h("date") });
+        }
+        if (candidates.length >= 10) break; // cap LLM spend per sync
+      }
+
+      let parsed_count = 0, inserted = 0;
+      const newOfferIds: string[] = [];
+      for (const c of candidates) {
+        const parsed = await parseOfferWithLLM(c.subject, c.snippet, c.from);
+        parsed_count++;
+        const { data: ins, error } = await admin.from("gig_offers").upsert({
+          worker_id: profileId,
+          source: "gmail",
+          external_id: c.id,
+          sender: c.from,
+          subject: c.subject,
+          body_excerpt: c.snippet.slice(0, 2000),
+          parsed,
+        }, { onConflict: "worker_id,source,external_id", ignoreDuplicates: true }).select("id");
+        if (!error && ins?.length) { inserted++; newOfferIds.push(ins[0].id); }
+      }
+
+      // Auto-rules: evaluate only freshly inserted offers.
+      const auto = await applyOfferRules(profileId, newOfferIds);
+      return json({ scanned: ids.length, candidates: candidates.length, parsed: parsed_count, inserted, auto });
     }
 
     return json({ error: "Unknown action" }, 400);
