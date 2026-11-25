@@ -78,9 +78,14 @@ const GoogleConnectCard: React.FC = () => {
         ) : connected ? (
           <>
             <Button size="sm" variant="outline" disabled={busy !== null}
-              onClick={() => call('sync', 'Calendar synced')}>
-              {busy === 'sync' ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <RefreshCw className="h-4 w-4 mr-1" />}
-              Sync now
+              onClick={() => call('sync', 'Pushed to Google Calendar')}>
+              {busy === 'sync' ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <RefreshCw className="h-4 w-4 animate-spin mr-1" />}
+              Push to Google
+            </Button>
+            <Button size="sm" variant="outline" disabled={busy !== null}
+              onClick={() => call('pull', 'Google events imported')}>
+              {busy === 'pull' ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <CalendarDays className="h-4 w-4 mr-1" />}
+              Import from Google
             </Button>
             <Button size="sm" variant="ghost" disabled={busy !== null}
               onClick={() => call('disconnect', 'Google Calendar disconnected')}>

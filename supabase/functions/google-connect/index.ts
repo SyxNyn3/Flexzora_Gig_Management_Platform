@@ -11,6 +11,7 @@ import { createClient } from "npm:@supabase/supabase-js@2.39.0";
  *  - status       (JWT)  → {connected, google_email}
  *  - disconnect   (JWT)  → revokes the grant, deletes tokens + event links
  *  - sync         (JWT)  → pushes all future calendar_events to Google Cal
+ *  - pull         (JWT)  → imports Google events into calendar_events
  *  - sync-event   (X-Push-Secret) → DB trigger ping: upsert/delete one event
  *
  * Tokens live only in google_connections (RLS: service-role only). The
@@ -123,6 +124,13 @@ async function pushEvent(conn: GoogleConn, eventId: string) {
   const { data: ev } = await admin
     .from("calendar_events").select("*").eq("id", eventId).maybeSingle();
   if (!ev) return { ok: false, reason: "missing" };
+
+  // Echo guard: events imported FROM Google (metadata.source='google')
+  // must never be pushed back — that would duplicate them remotely and
+  // the pull/push pair would fight forever.
+  if ((ev.metadata as Record<string, unknown> | null)?.source === "google") {
+    return { ok: false, reason: "echo" };
+  }
 
   const { data: link } = await admin
     .from("google_event_links").select("google_event_id")
@@ -329,6 +337,77 @@ serve(async (req) => {
 
     if (action === "sync") {
       return json(await syncAll(profileId));
+    }
+
+    // ── Pull: import Google Calendar events into calendar_events ──
+    // Events Flexzora pushed carry extendedProperties.private.flexzora_event_id
+    // — skip those or they'd echo back as duplicates. Imported rows get
+    // metadata.google_event_id so re-pulls update instead of duplicating.
+    if (action === "pull") {
+      const conn = await loadConnection(profileId);
+      if (!conn) return json({ error: "Not connected" }, 400);
+      const token = await validToken(conn);
+      if (!token) return json({ error: "Google token expired — reconnect" }, 400);
+
+      const timeMin = new Date().toISOString();
+      const timeMax = new Date(Date.now() + 90 * 86400000).toISOString();
+      const listRes = await fetch(
+        `${CAL_API}/calendars/${encodeURIComponent(conn.calendar_id)}/events?timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&maxResults=250`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      if (!listRes.ok) return json({ error: `Google ${listRes.status}` }, 502);
+      const list = await listRes.json();
+
+      // Existing imports keyed by google event id → update path.
+      const { data: existing } = await admin
+        .from("calendar_events").select("id, metadata")
+        .eq("user_id", profileId)
+        .filter("metadata->>source", "eq", "google");
+      const byGoogleId = new Map<string, string>();
+      for (const row of existing ?? []) {
+        const gid = (row.metadata as Record<string, unknown>)?.google_event_id;
+        if (typeof gid === "string") byGoogleId.set(gid, row.id);
+      }
+
+      let imported = 0, updated = 0, skipped = 0;
+      for (const ge of list.items ?? []) {
+        if (ge.extendedProperties?.private?.flexzora_event_id) { skipped++; continue; }
+        if (ge.status === "cancelled") { skipped++; continue; }
+
+        const start = ge.start?.dateTime ?? (ge.start?.date ? `${ge.start.date}T00:00:00Z` : null);
+        if (!start) { skipped++; continue; }
+        const end = ge.end?.dateTime ?? (ge.end?.date ? `${ge.end.date}T00:00:00Z` : null);
+        const allDay = !!ge.start?.date && !ge.start?.dateTime;
+        const title = ge.summary || "(no title)";
+        const description = ge.description ?? "";
+        const row = {
+          user_id: profileId,
+          title: `📅 ${title}`,
+          description,
+          event_type: "note" as const,
+          start_time: start,
+          end_time: end,
+          all_day: allDay,
+          color: "#8B5CF6",
+          metadata: {
+            source: "google",
+            google_event_id: ge.id,
+            html_link: ge.htmlLink ?? null,
+          },
+        };
+
+        const existingId = byGoogleId.get(ge.id);
+        if (existingId) {
+          const { error } = await admin.from("calendar_events")
+            .update({ title: row.title, description: row.description, start_time: row.start_time, end_time: row.end_time, all_day: row.all_day })
+            .eq("id", existingId);
+          if (!error) updated++;
+        } else {
+          const { error } = await admin.from("calendar_events").insert(row);
+          if (!error) imported++;
+        }
+      }
+      return json({ imported, updated, skipped });
     }
 
     return json({ error: "Unknown action" }, 400);
