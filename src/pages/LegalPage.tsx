@@ -17,7 +17,11 @@ const PRIVACY = [
   },
   {
     h: 'Third parties',
-    body: `We use Supabase (database, auth, file storage), Stripe (payments and payouts, when enabled), and transactional email providers. Each processes data only as needed to provide their service to us.`,
+    body: `We use Supabase (database, auth, file storage), Stripe (payments and payouts, when enabled), Google (sign-in and optional Calendar/Gmail connections), Twilio (SMS notifications, when enabled), and transactional email providers. Each processes data only as needed to provide their service to us.`,
+  },
+  {
+    h: 'Connected accounts',
+    body: `If you connect Google Calendar or Gmail, we access only what the granted scopes allow: calendar events for sync and message metadata/content of emails matching gig-offer filters. OAuth tokens are stored server-side and are never exposed to other users or used for advertising. You can disconnect at any time in Integrations, which revokes access and deletes stored tokens.`,
   },
   {
     h: 'Your choices',
@@ -70,7 +74,7 @@ const LegalPage: React.FC<{ doc: 'privacy' | 'terms' }> = ({ doc }) => {
           <ArrowLeft className="h-4 w-4" /> Back to Flexzora
         </Link>
         <h1 className="text-3xl font-black tracking-tight mb-2">{title}</h1>
-        <p className="text-sm text-zinc-500 mb-10">Last updated: October 2026 · Private beta</p>
+        <p className="text-sm text-zinc-500 mb-10">Last updated: November 2026 · Private beta</p>
         <div className="space-y-8">
           {sections.map((s) => (
             <section key={s.h}>
