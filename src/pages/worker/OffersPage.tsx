@@ -106,7 +106,14 @@ const OffersPage: React.FC = () => {
     });
     setSyncing(false);
     if (error) {
-      toast.error(error.message?.includes('reconnect') ? 'Reconnect Google Calendar first to grant Gmail access' : 'Gmail sync failed');
+      // functions.invoke throws on non-2xx — the response body still holds
+      // our {error} detail, so read it before falling back to a generic msg.
+      let detail = '';
+      try {
+        const ctx = (error as { context?: Response }).context;
+        if (ctx) detail = (await ctx.json())?.error ?? '';
+      } catch { /* body already consumed or not json */ }
+      toast.error(detail || 'Gmail sync failed');
       return;
     }
     toast.success(`Scanned ${data?.scanned ?? 0} emails — ${data?.inserted ?? 0} new offers, ${data?.auto?.acted ?? 0} auto-handled`);

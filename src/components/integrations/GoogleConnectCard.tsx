@@ -56,7 +56,12 @@ const GoogleConnectCard: React.FC = () => {
       if (successMsg) toast.success(successMsg);
       await refresh();
     } catch (e) {
-      toast.error(`Google connect failed: ${e instanceof Error ? e.message : 'unknown error'}`);
+      let detail = '';
+      try {
+        const ctx = (e as { context?: Response }).context;
+        if (ctx) detail = (await ctx.clone().json())?.error ?? '';
+      } catch { /* ignore */ }
+      toast.error(detail || `Google connect failed: ${e instanceof Error ? e.message : 'unknown error'}`);
     }
     setBusy(null);
   };
