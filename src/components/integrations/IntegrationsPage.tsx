@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-  Plug, Mail, CalendarDays, HardDrive, FileSpreadsheet, Calculator,
+  Plug, Mail, CalendarDays, Calculator,
   MessagesSquare, Building2, CheckCircle2, Loader2,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -28,14 +28,10 @@ interface OneApp {
   icon: React.ComponentType<{ className?: string }>;
 }
 
-// Google Calendar moved to native Google OAuth (google-connect edge
-// function) — One Connect still brokers the apps that genuinely need a
-// third-party broker: Gmail/Drive/Sheets migrate next, Slack/QuickBooks
-// stay on One.
+// All Google apps moved to native Google OAuth (google-connect edge
+// function) — One Connect now only brokers what genuinely needs a
+// third-party broker: Slack and QuickBooks.
 const ONE_APPS: OneApp[] = [
-  { slug: 'gmail', name: 'Gmail', access: 'Read only', description: 'Booking confirmations and crew email surfaced in your feed.', icon: Mail },
-  { slug: 'google-drive', name: 'Google Drive', access: 'Full access', description: 'Deal memos, W-9s, receipts, and contracts stored in your Drive.', icon: HardDrive },
-  { slug: 'google-sheets', name: 'Google Sheets', access: 'Full access', description: 'Import company roster sheets and export timesheets.', icon: FileSpreadsheet },
   { slug: 'quickbooks', name: 'QuickBooks', access: 'Full access', description: 'Invoices and expenses flow into your company\'s books.', icon: Calculator },
   { slug: 'slack', name: 'Slack', access: 'Read & write', description: 'Shift alerts and call notifications in your team channels.', icon: MessagesSquare },
 ];

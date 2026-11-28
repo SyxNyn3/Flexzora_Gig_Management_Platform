@@ -29,9 +29,12 @@ const appUrl = Deno.env.get("APP_URL") || "https://flexzora.pro";
 
 const admin = createClient(supabaseUrl, serviceKey);
 
-// calendar.events covers read+write of events — everything the push sync
-// needs. gmail.readonly powers gig-offer ingestion (subjects/snippets are
-// filtered for call offers; bodies of matches go through the LLM parser).
+// One Google consent grants every Google app Flexzora uses natively —
+// One Connect is being removed for Google entirely:
+//   calendar.events  → push/pull shifts, reminders, notes
+//   gmail.readonly   → gig-offer ingestion
+//   drive.readonly   → deal memos, W-9s, receipts stored in the worker's Drive
+//   spreadsheets     → roster sheet import / timesheet export
 // openid/email/profile identify which Google account connected.
 const SCOPES = [
   "openid",
@@ -39,6 +42,8 @@ const SCOPES = [
   "profile",
   "https://www.googleapis.com/auth/calendar.events",
   "https://www.googleapis.com/auth/gmail.readonly",
+  "https://www.googleapis.com/auth/drive.readonly",
+  "https://www.googleapis.com/auth/spreadsheets",
 ].join(" ");
 
 const GMAIL_API = "https://gmail.googleapis.com/gmail/v1/users/me";
