@@ -26,7 +26,8 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
-  Star
+  Star,
+  Navigation
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -43,6 +44,9 @@ const GigDetails: React.FC = () => {
   const [coverLetter, setCoverLetter] = useState('');
   const [proposedRate, setProposedRate] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  // Worker home coords (worker_sensitive is self-readable) — powers the
+  // "X mi away" hint and turn-by-turn directions to the venue.
+  const [homeLoc, setHomeLoc] = useState<{ lat: number; lng: number } | null>(null);
 
   useEffect(() => {
     if (id) {
@@ -128,6 +132,29 @@ const GigDetails: React.FC = () => {
   useEffect(() => {
     if (gig) fetchWorkerRating();
   }, [gig]);
+
+  useEffect(() => {
+    const loadHome = async () => {
+      if (!profile?.id) return;
+      const { data } = await supabase
+        .from('worker_sensitive')
+        .select('latitude, longitude')
+        .eq('worker_id', profile.id)
+        .maybeSingle();
+      if (data?.latitude != null && data?.longitude != null) {
+        setHomeLoc({ lat: data.latitude, lng: data.longitude });
+      }
+    };
+    loadHome();
+  }, [profile?.id]);
+
+  // Great-circle distance in miles — fine for "how far is this gig" hints.
+  const milesAway = (a: { lat: number; lng: number }, b: { lat: number; lng: number }) => {
+    const R = 3958.8, rad = Math.PI / 180;
+    const dLat = (b.lat - a.lat) * rad, dLng = (b.lng - a.lng) * rad;
+    const h = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * rad) * Math.cos(b.lat * rad) * Math.sin(dLng / 2) ** 2;
+    return 2 * R * Math.asin(Math.sqrt(h));
+  };
 
   const handleApplicationSubmit = async () => {
     if (!gig || !profile) return;
@@ -363,7 +390,26 @@ const GigDetails: React.FC = () => {
               </div>
 
               {gig.latitude != null && gig.longitude != null && (
-                <VenueMap lat={gig.latitude} lng={gig.longitude} label={gig.location} />
+                <>
+                  <VenueMap lat={gig.latitude} lng={gig.longitude} label={gig.location} />
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => window.open(
+                        `https://www.google.com/maps/dir/?api=1&destination=${gig.latitude},${gig.longitude}`,
+                        '_blank', 'noopener',
+                      )}
+                    >
+                      <Navigation className="h-4 w-4 mr-1" /> Get directions
+                    </Button>
+                    {homeLoc && (
+                      <span className="text-xs text-muted-foreground">
+                        ≈ {Math.round(milesAway(homeLoc, { lat: gig.latitude!, lng: gig.longitude! }))} mi from your saved location
+                      </span>
+                    )}
+                  </div>
+                </>
               )}
 
               <div className="flex items-center text-sm">
